@@ -1,0 +1,97 @@
+/**
+ * Copyright (c) 2026 NoqtaBeda (noqtabeda@163.com)
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ **/
+
+#ifndef REFLECT_CPP26_UTILS_CONCEPTS_HPP
+#define REFLECT_CPP26_UTILS_CONCEPTS_HPP
+
+#include <type_traits>
+
+namespace reflect_cpp26 {
+#define REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(category) \
+  template <class T>                                         \
+  concept category##_type = std::is_##category##_v<T>;
+
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(abstract)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(aggregate)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(arithmetic)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(array)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(bounded_array)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(class)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(compound)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(empty)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(enum)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(final)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(function)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(fundamental)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(lvalue_reference)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(implicit_lifetime)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(member_function_pointer)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(member_object_pointer)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(member_pointer)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(object)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(pointer)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(polymorphic)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(reference)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(rvalue_reference)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(scalar)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(scoped_enum)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(unbounded_array)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(union)
+
+#define REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(category) \
+  template <class T>                                             \
+  concept non_##category##_type = !std::is_##category##_v<T>;
+
+// Some std traits are removed due to ambiguity concerns.
+// e.g. Does 'non_bounded_array' refer to an array type that is not bounded,
+//      or any type that is not a bounded array?
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(abstract)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(aggregate)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(arithmetic)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(array)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(class)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(compound)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(empty)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(enum)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(final)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(function)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(fundamental)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(implicit_lifetime)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(member_pointer)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(object)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(pointer)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(polymorphic)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(reference)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(scalar)
+REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(union)
+
+#undef REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT
+#undef REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG
+
+template <class T>
+concept class_or_union_type = std::is_class_v<T> || std::is_union_v<T>;
+
+template <class T>
+concept integral_or_enum_type = std::is_integral_v<T> || std::is_enum_v<T>;
+}  // namespace reflect_cpp26
+
+#endif  // REFLECT_CPP26_UTILS_CONCEPTS_HPP

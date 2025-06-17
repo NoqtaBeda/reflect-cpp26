@@ -1,0 +1,12 @@
+---
+Language: Cpp
+BasedOnStyle: Google
+AccessModifierOffset: -2
+AlignOperands: AlignAfterOperator
+AllowShortEnumsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Empty
+BinPackArguments: false
+BinPackParameters: OnePerLine
+BreakBeforeBinaryOperators: NonAssignment
+ColumnLimit: 100
+...

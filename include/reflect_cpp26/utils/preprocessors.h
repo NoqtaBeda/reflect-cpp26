@@ -1,0 +1,204 @@
+/**
+ * Copyright (c) 2025 NoqtaBeda (noqtabeda@163.com)
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ **/
+
+#ifndef REFLECT_CPP26_UTILS_PREPROCESSORS_H
+#define REFLECT_CPP26_UTILS_PREPROCESSORS_H
+
+#define _REFLECT_CPP26_MACRO_TO_STRING_IMPL(x) #x
+#define REFLECT_CPP26_MACRO_TO_STRING(x) _REFLECT_CPP26_MACRO_TO_STRING_IMPL(x)
+
+#define _REFLECT_CPP26_MACRO_CONCAT_IMPL(x, y) x##y
+#define REFLECT_CPP26_MACRO_CONCAT(x, y) _REFLECT_CPP26_MACRO_CONCAT_IMPL(x, y)
+
+#define _REFLECT_CPP26_MACRO_N_ARGS_IMPL_EXTRACT(   \
+                                      _placeholder, \
+   _1,  _2,  _3,  _4,  _5,  _6,  _7,  _8,  _9, _10, \
+  _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, \
+  _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, \
+  _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, \
+  _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, \
+  _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, \
+  _61, _62, _63, _64, N, ...) N
+
+#define _REFLECT_CPP26_MACRO_N_ARGS_IMPL(...)       \
+  _REFLECT_CPP26_MACRO_N_ARGS_IMPL_EXTRACT(         \
+              "placeholder", ##__VA_ARGS__,         \
+                        64, 63, 62, 61, 60,         \
+    59, 58, 57, 56, 55, 54, 53, 52, 51, 50,         \
+    49, 48, 47, 46, 45, 44, 43, 42, 41, 40,         \
+    39, 38, 37, 36, 35, 34, 33, 32, 31, 30,         \
+    29, 28, 27, 26, 25, 24, 23, 22, 21, 20,         \
+    19, 18, 17, 16, 15, 14, 13, 12, 11, 10,         \
+     9,  8,  7,  6,  5,  4,  3,  2,  1,  0)
+
+/**
+ * Gets the number of macro arguments (up to 64).
+ */
+#define REFLECT_CPP26_MACRO_N_ARGS(...) \
+  _REFLECT_CPP26_MACRO_N_ARGS_IMPL(__VA_ARGS__)
+
+#define _REFLECT_CPP26_MACRO_FOREACH_0(F)
+#define _REFLECT_CPP26_MACRO_FOREACH_1(F, x) F(x)
+#define _REFLECT_CPP26_MACRO_FOREACH_2(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_1(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_3(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_2(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_4(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_3(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_5(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_4(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_6(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_5(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_7(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_6(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_8(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_7(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_9(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_8(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_10(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_9(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_11(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_10(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_12(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_11(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_13(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_12(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_14(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_13(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_15(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_14(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_16(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_15(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_17(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_16(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_18(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_17(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_19(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_18(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_20(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_19(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_21(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_20(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_22(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_21(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_23(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_22(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_24(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_23(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_25(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_24(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_26(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_25(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_27(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_26(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_28(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_27(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_29(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_28(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_30(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_29(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_31(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_30(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_32(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_31(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_33(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_32(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_34(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_33(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_35(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_34(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_36(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_35(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_37(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_36(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_38(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_37(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_39(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_38(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_40(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_39(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_41(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_40(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_42(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_41(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_43(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_42(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_44(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_43(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_45(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_44(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_46(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_45(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_47(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_46(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_48(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_47(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_49(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_48(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_50(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_49(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_51(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_50(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_52(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_51(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_53(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_52(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_54(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_53(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_55(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_54(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_56(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_55(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_57(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_56(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_58(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_57(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_59(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_58(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_60(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_59(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_61(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_60(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_62(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_61(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_63(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_62(F, __VA_ARGS__)
+#define _REFLECT_CPP26_MACRO_FOREACH_64(F, x, ...) F(x) \
+  _REFLECT_CPP26_MACRO_FOREACH_63(F, __VA_ARGS__)
+
+#define _REFLECT_CPP26_MACRO_FOREACH_N(F, ...) \
+  REFLECT_CPP26_MACRO_CONCAT(                  \
+    _REFLECT_CPP26_MACRO_FOREACH_,             \
+     REFLECT_CPP26_MACRO_N_ARGS(__VA_ARGS__)   \
+  )(F, ##__VA_ARGS__)
+
+#define _REFLECT_CPP26_MACRO_FOREACH_IMPL(F, ...) \
+  _REFLECT_CPP26_MACRO_FOREACH_N(F, ##__VA_ARGS__)
+
+/**
+ * Preforms for-each macro expansion with unary function-like macro F.
+ * Supports up to 64 elements.
+ */
+#define REFLECT_CPP26_MACRO_FOREACH(F, ...) \
+  _REFLECT_CPP26_MACRO_FOREACH_IMPL(F, ##__VA_ARGS__)
+
+#endif // REFLECT_CPP26_UTILS_PREPROCESSORS_H

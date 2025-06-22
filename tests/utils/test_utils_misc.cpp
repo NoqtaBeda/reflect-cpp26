@@ -96,7 +96,7 @@ struct C : B {
 TEST(UtilsMisc, MetaUtility)
 {
   constexpr auto obj = C::make(1, 2, 3, 4, 5);
-  EXPECT_EQ_STATIC(1, obj.[:rfl::reflect_pointer_to_member(&C::a):]);
-  EXPECT_EQ_STATIC(2, obj.[:rfl::reflect_pointer_to_member(&C::b):]);
-  EXPECT_EQ_STATIC(3, obj.[:rfl::reflect_pointer_to_member(&C::c):]);
+  EXPECT_EQ_STATIC(1, obj.[:rfl::reflect_pointer_to_direct_member(&C::a):]);
+  EXPECT_EQ_STATIC(2, obj.[:rfl::reflect_pointer_to_direct_member(&C::b):]);
+  EXPECT_EQ_STATIC(3, obj.[:rfl::reflect_pointer_to_direct_member(&C::c):]);
 }

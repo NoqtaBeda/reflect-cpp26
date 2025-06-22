@@ -1,0 +1,67 @@
+common:
+  reflect_cpp26: unexpected
+
+enum/enum_cast_from_string_dense:
+  patterns:
+    opcode_add:
+      exact_count: 1
+    111.*112.*99.*111.*100.*101.*95: unexpected # "opcode_" mangled as NTTP
+
+enum/enum_cast_from_string_sparse:
+  patterns:
+    opcode_add:
+      exact_count: 1
+    111.*112.*99.*111.*100.*101.*95: unexpected # "opcode_" mangled as NTTP
+
+enum/enum_index_dense:
+  patterns:
+    opcode_add: unexpected
+    111.*112.*99.*111.*100.*101.*95: unexpected # "opcode_" mangled as NTTP
+
+enum/enum_index_sparse:
+  patterns:
+    opcode_add: unexpected
+    111.*112.*99.*111.*100.*101.*95: unexpected # "opcode_" mangled as NTTP
+
+enum/enum_json:
+  patterns:
+    \"opcode_add\":1: unexpected
+    opcode_add:
+      exact_count: 1
+    111.*112.*99.*111.*100.*101.*95: unexpected # "opcode_" mangled as NTTP
+
+enum/enum_json_static:
+  patterns:
+    \"opcode_add\":1:
+      exact_count: 3
+    opcode_add:
+      exact_count: 3 # 'opcode_add' shall appear nowhere else
+    111.*112.*99.*111.*100.*101.*95: unexpected # "opcode_" mangled as NTTP
+
+enum/enum_name_dense:
+  patterns:
+    opcode_add:
+      exact_count: 1
+    111.*112.*99.*111.*100.*101.*95: unexpected # "opcode_" mangled as NTTP
+
+enum/enum_name_sparse:
+  patterns:
+    opcode_add:
+      exact_count: 1
+    111.*112.*99.*111.*100.*101.*95: unexpected # "opcode_" mangled as NTTP
+
+validators/arithmetic_boundary_test:
+  patterns:
+    Expects: unexpected
+    "Invalid member": unexpected
+    minimum: unexpected
+    maximum: unexpected
+
+validators/arithmetic_boundary_test_with_error:
+  patterns:
+    "Expects value":
+      exact_count: 1
+    "Invalid member":
+      exact_count: 1
+    minimum: unexpected
+    maximum: unexpected

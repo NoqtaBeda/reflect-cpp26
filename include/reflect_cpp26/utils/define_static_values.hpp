@@ -51,25 +51,6 @@ consteval auto define_static_string_impl(Range& range)
     substitute(^^array_to_string_view_v, { std::meta::reflect_constant(arr) }));
   return sv;
 }
-
-template <class BidirRange>
-consteval auto try_remove_trailing_null_characters(
-  const BidirRange& range, bool removes_trailing_null_characters)
-{
-  if (!removes_trailing_null_characters) {
-    return std::ranges::subrange{range};
-  }
-  auto start_pos = std::ranges::begin(range);
-  auto end_pos = std::ranges::end(range);
-  for (; start_pos != end_pos; ) {
-    auto prev = std::ranges::prev(end_pos);
-    if (*prev != '\0') {
-      break; // end_pos stops at the first '\0'
-    }
-    end_pos = prev;
-  }
-  return std::ranges::subrange{start_pos, end_pos};
-}
 } // namespace impl
 
 /**
@@ -96,8 +77,7 @@ consteval auto define_static_array(meta_span<T> range) {
  */
 template <std::ranges::input_range Range>
   requires (is_char_type_v<std::ranges::range_value_t<Range>>)
-consteval auto define_static_string(
-  Range&& range, bool removes_trailing_null_characters = false)
+consteval auto define_static_string(Range&& range)
   /* -> meta_basic_string_view<T> */
 {
   using T = std::ranges::range_value_t<Range>;
@@ -109,39 +89,24 @@ consteval auto define_static_string(
       return define_static_string(std::basic_string_view{range});
     }
   }
-  if constexpr (std::ranges::bidirectional_range<Range>) {
-    auto subrange = impl::try_remove_trailing_null_characters(
-      range, removes_trailing_null_characters);
-
-    using SubrangeT = decltype(subrange);
-    using ImplFnSignature = ResultT(*)(SubrangeT&);
-    auto N = std::meta::reflect_constant(std::ranges::distance(subrange));
-    auto impl_fn = extract<ImplFnSignature>(
-      substitute(^^impl::define_static_string_impl, {N, ^^T, ^^SubrangeT}));
-    return impl_fn(subrange);
-  } else {
-    auto vec = range | std::ranges::to<std::vector>();
-    return define_static_string(vec, removes_trailing_null_characters);
-  }
+  using ImplFnSignature = ResultT(*)(Range&);
+  auto N = std::meta::reflect_constant(std::ranges::distance(range));
+  auto impl_fn = extract<ImplFnSignature>(
+    substitute(^^impl::define_static_string_impl, {N, ^^T, ^^Range}));
+  return impl_fn(range);
 }
 
 // Specialization to prevent repeated meta-definition.
 template <class T>
 consteval auto define_static_string(
-  meta_basic_string_view<T> range,
-  bool removes_trailing_null_characters = false) -> meta_basic_string_view<T>
+  meta_basic_string_view<T> range) -> meta_basic_string_view<T>
 {
   // Makes sure the resulted range is null-terminated
   if (*range.end() != '\0') {
     auto sv = static_cast<std::basic_string_view<T>>(range);
     return define_static_string(sv);
   }
-  if (!removes_trailing_null_characters) {
-    return range;
-  }
-  auto [head, tail] = range;
-  for (; head < tail && tail[-1] == '\0'; --tail) {}
-  return {head, tail};
+  return range;
 }
 } // namespace reflect_cpp26
 

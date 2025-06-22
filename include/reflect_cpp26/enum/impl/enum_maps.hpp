@@ -70,12 +70,10 @@ template <class E>
 consteval auto make_enum_name_map_kv_pairs()
 {
   using kv_pair_t = std::pair<to_int64_or_uint64_t<E>, meta_string_view>;
-  auto entries = enumerators_of(^^E);
-  auto res = make_reserved_vector<kv_pair_t>(entries.size());
-  for (auto e: entries) {
-    auto k = to_int64_or_uint64(extract<E>(e));
-    auto v = reflect_cpp26::define_static_string(identifier_of(e));
-    res.emplace_back(k, v);
+  auto res = make_reserved_vector<kv_pair_t>(enum_count_v<E>);
+  for (auto [k, v]: enum_entries<E>()) {
+    auto msv = meta_string_view::from_std_string_view(v);
+    res.emplace_back(to_int64_or_uint64(k), msv);
   }
   std::ranges::stable_sort(res, {}, get_first);
   auto [dup_begin, dup_end] = std::ranges::unique(res, {}, get_first);
@@ -95,16 +93,22 @@ consteval auto make_enum_name_map()
 }
 
 template <class E>
+consteval auto make_enum_from_string_kv_pairs()
+{
+  using kv_pair_t = std::pair<meta_string_view, to_int64_or_uint64_t<E>>;
+  auto res = make_reserved_vector<kv_pair_t>(enum_count_v<E>);
+  for (auto [k, v]: enum_entries<E>()) {
+    auto msv = meta_string_view::from_std_string_view(v);
+    res.emplace_back(msv, to_int64_or_uint64(k));
+  }
+  return res;
+}
+
+template <class E>
 consteval auto make_enum_from_string_map()
 {
-  constexpr auto transform_fn = [](std::meta::info e) {
-    return std::pair{
-      reflect_cpp26::define_static_string(identifier_of(e)),
-      to_int64_or_uint64(extract<E>(e)),
-    };
-  };
   return REFLECT_CPP26_STRING_KEY_FIXED_MAP(
-    enumerators_of(^^E) | std::views::transform(transform_fn));
+    make_enum_from_string_kv_pairs<E>());
 }
 
 struct enum_indices_t {

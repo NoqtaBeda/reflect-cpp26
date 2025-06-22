@@ -38,30 +38,55 @@ struct reduce_memberwise_result_t {
   size_t false_count;
 };
 
+// ---- reduce_direct_memberwise ----
+
 template <template <class...> class Predicate, class... Ts>
 consteval auto reduce_direct_memberwise()
 {
   auto true_count = 0zU;
   auto false_count = 0zU;
-  constexpr auto min_member_size = std::ranges::min(
-    {public_direct_nsdm_of(^^Ts).size()...});
+  constexpr auto N = std::min({public_direct_nsdm_of(^^Ts).size()...});
 
-  auto ith_nsdm_type = [](std::meta::info T, size_t I) {
+  auto ith_nsdm_type = [](std::meta::info T, size_t I) constexpr {
     return type_of(public_direct_nsdm_of(T)[I]);
   };
-  REFLECT_CPP26_EXPAND_I(min_member_size).for_each(
-    [&true_count, &false_count, ith_nsdm_type](auto I) {
-      constexpr auto cur_pred_meta = 
-        substitute(^^Predicate, {ith_nsdm_type(^^Ts, I)...});
-      using CurPred = [:cur_pred_meta:];
-      (CurPred::value ? true_count : false_count) += 1;
-    });
+  template for (constexpr auto I: std::views::iota(0zU, N)) {
+    using CurPred = [: substitute(^^Predicate, {ith_nsdm_type(^^Ts, I)...}) :];
+    (CurPred::value ? true_count : false_count) += 1;
+  }
   return reduce_memberwise_result_t{true_count, false_count};
 }
 
 template <template <class...> class Predicate, class... Ts>
 constexpr auto reduce_direct_memberwise_v =
   reduce_direct_memberwise<Predicate, std::remove_cv_t<Ts>...>();
+
+// ---- reduce_flattened_memberwise ----
+
+template <template <class...> class Predicate, class... Ts>
+consteval auto reduce_flattened_memberwise()
+{
+  auto true_count = 0zU;
+  auto false_count = 0zU;
+  constexpr auto N = std::min({public_flattened_nsdm_v<Ts>.size()...});
+
+  auto ith_nsdm_type = []<class T>(std::type_identity<T>, auto I) {
+    return type_of(public_flattened_nsdm_v<T>[I].member);
+  };
+  template for (constexpr auto I: std::views::iota(0zU, N)) {
+    constexpr auto cur_pred_meta = substitute(
+      ^^Predicate, {ith_nsdm_type(std::type_identity<Ts>(), I)...});
+    using CurPred = [:cur_pred_meta:];
+    (CurPred::value ? true_count : false_count) += 1;
+  }
+  return reduce_memberwise_result_t{true_count, false_count};
+}
+
+template <template <class...> class Predicate, class... Ts>
+constexpr auto reduce_flattened_memberwise_v =
+  reduce_flattened_memberwise<Predicate, std::remove_cv_t<Ts>...>();
+
+// ---- reduce_direct_memberwise_meta and reduce_flattened_memberwise_meta ----
 
 template <class Arg, size_t N, invocable_r_with_n<bool, Arg, N> Predicate>
 consteval auto reduce_memberwise_meta(
@@ -94,48 +119,26 @@ template <class Predicate, class... Ts>
 constexpr auto reduce_direct_memberwise_meta_v =
   reduce_direct_memberwise_meta<Predicate, std::remove_cv_t<Ts>...>();
 
-template <template <class...> class Predicate, class... Ts>
-consteval auto reduce_flattened_memberwise()
-{
-  auto true_count = 0zU;
-  auto false_count = 0zU;
-  constexpr auto min_member_size = std::min({
-    public_flattened_nsdm_v<Ts>.size()...});
-
-  auto ith_nsdm_type = []<class T>(std::type_identity<T>, auto I) {
-    return type_of(get<I>(public_flattened_nsdm_v<T>).member);
-  };
-  REFLECT_CPP26_EXPAND_I(min_member_size).for_each(
-    [&true_count, &false_count, ith_nsdm_type](auto I) {
-      constexpr auto cur_pred_meta = substitute(
-        ^^Predicate, {ith_nsdm_type(std::type_identity<Ts>(), I)...});
-      using CurPred = [:cur_pred_meta:];
-      (CurPred::value ? true_count : false_count) += 1;
-    });
-  return reduce_memberwise_result_t{true_count, false_count};
-}
-
-template <template <class...> class Predicate, class... Ts>
-constexpr auto reduce_flattened_memberwise_v =
-  reduce_flattened_memberwise<Predicate, std::remove_cv_t<Ts>...>();
-
 template <class Predicate, class... Ts>
 consteval auto reduce_flattened_memberwise_meta()
 {
-  // predicate(flattened_data_member_spec...) -> bool
-  constexpr auto with_specs = is_invocable_r_n_v<
-    bool, Predicate, flattened_data_member_spec, sizeof...(Ts)>;
+  // predicate(flattened_data_member_info...) -> bool
+  constexpr auto with_info_struct = is_invocable_r_n_v<
+    bool, Predicate, flattened_data_member_info, sizeof...(Ts)>;
   // predicate(std::meta::info...) -> bool
   constexpr auto with_info = is_invocable_r_n_v<
     bool, Predicate, std::meta::info, sizeof...(Ts)>;
 
-  if constexpr (with_specs) {
-    auto nsdm = std::array{public_flattened_nsdm_v<Ts>.to_vector()...};
+  if constexpr (with_info_struct) {
+    auto nsdm = std::array{
+      std::vector(std::from_range, public_flattened_nsdm_v<Ts>)...};
     return reduce_memberwise_meta(Predicate{}, nsdm);
   } else {
     static_assert(with_info, "Invalid call signature of predicate.");
     auto nsdm = std::array{
-      public_flattened_nsdm_v<Ts>.to_members().to_vector()...};
+      (public_flattened_nsdm_v<Ts>
+        | std::views::transform(&flattened_data_member_info::member)
+        | std::ranges::to<std::vector>())...};
     return reduce_memberwise_meta(Predicate{}, nsdm);
   }
 }
@@ -208,7 +211,7 @@ REFLECT_CPP26_MEMBERWISE_REDUCTION_V_LIST(
  *     jth-flattened-member-of(Ts...[K - 1], j))
  *   is true for all/any/none of j = 0 to N - 1 where
  *     jth-flattened-member-of(T, j) gets the
- *       std::meta::info or flattened_data_member_spec
+ *       std::meta::info or flattened_data_member_info
  *       of j-th flattened accessible non-static data member of class T.
  *     N and K are same as above.
  */

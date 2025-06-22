@@ -35,87 +35,147 @@ option("full-header-test")
   set_showmenu(true)
   add_defines("ENABLE_FULL_HEADER_TEST")
 
-function make_test_case(path, suffix, callback)
+function parse_test_case_path(path, group_prefix, path_prefix)
   local _, last_slash_index = string.find(path, ".*/")
-  local case_group = string.sub(path, 1, last_slash_index - 1)
-  local case_target_name = string.gsub(path, "/", "-") .. suffix
-  local case_src_file_path = path .. ".cpp"
+  local group = group_prefix .. "/" .. string.sub(path, 1, last_slash_index - 1)
+  local target = group_prefix .. "-" .. string.gsub(path, "/", "-")
+  local cpp_path = path_prefix .. "/" .. path .. ".cpp"
+  return group, target, cpp_path
+end
 
-  target(case_target_name, function ()
+function make_test_case(path)
+  local group_name, target_name, cpp_path =
+    parse_test_case_path(path, "tests", "tests")
+
+  target(target_name, function ()
     set_kind("binary")
-    set_group(case_group)
-    add_files(case_src_file_path)
+    set_group(group_name)
+    add_files(cpp_path)
     set_languages("c++26")
     add_includedirs("include", ".")
-    add_cxxflags("-freflection-latest", "-ftemplate-backtrace-limit=0")
+    add_cxxflags("-freflection-latest")
     add_packages("gtest")
+    add_options("full-header-test")
     add_options("static-test")
+  end)
+end
 
-    if (callback ~= nil) then
-      callback()
-    end
+function make_asm_check_case(path)
+  local group_name, target_name, cpp_path =
+    parse_test_case_path(path, "asm_check", "tests/asm_check")
+
+  target(target_name, function ()
+    set_kind("shared")
+    set_group(group_name)
+    add_files(cpp_path)
+    set_languages("c++26")
+    add_includedirs("include", ".")
+    add_cxxflags("-freflection-latest")
+
+    set_strip("all")
+    set_symbols("hidden")
+    set_optimize("fastest")
+
+    set_policy("build.intermediate_directory", false)
+    set_targetdir("$(buildir)/asm_check")
   end)
 end
 
 meta_test_cases = {
   -- Utility
-  "tests/utils/test_constant",
-  "tests/utils/test_identifier_naming",
-  "tests/utils/test_meta_tuple",
-  "tests/utils/test_preprocessors",
-  "tests/utils/test_to_string",
-  "tests/utils/test_utils_misc",
-  "tests/utils/fixed_map/test_integral_key",
-  "tests/utils/fixed_map/test_string_key",
+  "utils/test_constant",
+  "utils/test_identifier_naming",
+  "utils/test_meta_tuple",
+  "utils/test_preprocessors",
+  "utils/test_to_string",
+  "utils/test_utils_misc",
+  "utils/fixed_map/test_integral_key",
+  "utils/fixed_map/test_string_key",
   -- Type Traits
-  "tests/type_traits/test_function_types",
-  "tests/type_traits/test_is_invocable",
-  "tests/type_traits/test_tuple_like_elementwise",
-  "tests/type_traits/test_tuple_like_types_1",
-  "tests/type_traits/test_tuple_like_types_2",
-  "tests/type_traits/class_types/test_member_pointers",
-  "tests/type_traits/class_types/test_member_reflections",
-  "tests/type_traits/class_types/test_flattened_accessible_nsdm",
-  "tests/type_traits/class_types/test_flattenable_types",
-  "tests/type_traits/class_types/test_structured_types",
-  "tests/type_traits/class_types/test_class_memberwise_predicate",
+  "type_traits/test_function_types",
+  "type_traits/test_is_invocable",
+  "type_traits/test_tuple_like_elementwise",
+  "type_traits/test_tuple_like_types_1",
+  "type_traits/test_tuple_like_types_2",
+  "type_traits/class_types/test_member_pointers",
+  "type_traits/class_types/test_member_reflections",
+  "type_traits/class_types/test_flattened_accessible_nsdm",
+  "type_traits/class_types/test_flattenable_types",
+  "type_traits/class_types/test_structured_types",
+  "type_traits/class_types/test_class_memberwise_predicate",
   -- Enum
-  "tests/enum/test_enum_cast_from_integer",
-  "tests/enum/test_enum_cast_from_string",
-  "tests/enum/test_enum_contains_integer",
-  "tests/enum/test_enum_contains_string",
-  "tests/enum/test_enum_count",
-  "tests/enum/test_enum_entries",
-  "tests/enum/test_enum_for_each",
-  "tests/enum/test_enum_hash",
-  "tests/enum/test_enum_index",
-  "tests/enum/test_enum_json_static",
-  "tests/enum/test_enum_json",
-  "tests/enum/test_enum_meta_entries",
-  "tests/enum/test_enum_name",
-  "tests/enum/test_enum_names",
-  "tests/enum/test_enum_switch",
-  "tests/enum/test_enum_type_name",
-  "tests/enum/test_enum_unique_count",
-  "tests/enum/test_enum_unique_index",
-  "tests/enum/test_enum_values",
+  "enum/test_enum_cast_from_integer",
+  "enum/test_enum_cast_from_string",
+  "enum/test_enum_contains_integer",
+  "enum/test_enum_contains_string",
+  "enum/test_enum_count",
+  "enum/test_enum_entries",
+  "enum/test_enum_hash",
+  "enum/test_enum_index",
+  "enum/test_enum_json_static",
+  "enum/test_enum_json",
+  "enum/test_enum_meta_entries",
+  "enum/test_enum_name",
+  "enum/test_enum_names",
+  "enum/test_enum_switch",
+  "enum/test_enum_type_name",
+  "enum/test_enum_unique_count",
+  "enum/test_enum_unique_index",
+  "enum/test_enum_values",
   -- Lookup
-  "tests/lookup/test_class_lookup_table_by_enum",
-  "tests/lookup/test_class_lookup_table_by_name",
-  "tests/lookup/test_namespace_lookup_table_by_enum",
-  "tests/lookup/test_namespace_lookup_table_by_name",
+  "lookup/test_class_lookup_table_by_enum",
+  "lookup/test_class_lookup_table_by_name",
+  "lookup/test_namespace_lookup_table_by_enum",
+  "lookup/test_namespace_lookup_table_by_name",
   -- Type Operations
-  "tests/type_operations/test_comparison",
-  "tests/type_operations/test_define_aggregate",
-  "tests/type_operations/test_to_structured",
-  -- Annotations
-  "tests/annotations/test_properties",
-  -- TODO: Debugging
-  "tests/annotations/validators/test_leaf_validators_1",
-  "tests/annotations/validators/test_leaf_validators_2",
-  "tests/annotations/validators/test_compound_validators",
+  "type_operations/test_comparison",
+  "type_operations/test_define_aggregate",
+  "type_operations/test_to_structured",
+  -- Validators
+  "validators/compound/test_for_each",
+  "validators/compound/test_front_back",
+  "validators/compound/test_min_max_element",
+  "validators/compound/test_size",
+  "validators/leaf/test_arithmetic",
+  "validators/leaf/test_boundary_options_exclusion",
+  "validators/leaf/test_custom_validator",
+  "validators/leaf/test_non_empty",
+  "validators/leaf/test_non_null",
+  "validators/leaf/test_sorted",
 }
 
 for i, path in ipairs(meta_test_cases) do
-  make_test_case(path, "")
+  make_test_case(path)
 end
+
+meta_asm_check_cases = {
+  -- Enum
+  "enum/enum_cast_from_string_dense",
+  "enum/enum_cast_from_string_sparse",
+  "enum/enum_index_dense",
+  "enum/enum_index_sparse",
+  "enum/enum_json",
+  "enum/enum_json_static",
+  "enum/enum_name_dense",
+  "enum/enum_name_sparse",
+  -- Validators
+  "validators/arithmetic_boundary_test",
+  "validators/arithmetic_boundary_test_with_error",
+}
+
+for i, path in ipairs(meta_asm_check_cases) do
+  make_asm_check_case(path)
+end
+
+target("run_asm_check", function ()
+  set_kind("phony")
+  for i, path in ipairs(meta_asm_check_cases) do
+    local _, target_name, _ =
+      parse_test_case_path(path, "asm_check", "tests/asm_check")
+    add_deps(target_name)
+  end
+  on_run(function (target)
+    os.exec("python3 tests/asm_check/run.py -R $(projectdir) -c")
+  end)
+  set_targetdir("$(buildir)/asm_check")
+end)

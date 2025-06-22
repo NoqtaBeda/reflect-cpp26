@@ -59,7 +59,7 @@ constexpr auto is_generic_comparable_with() -> bool
     return all_of_v<is_array_or_inconvertible_to_ptr, T, U>;
   } else if constexpr (is_directly_comparable_with<LeafComparator, T, U>) {
     return true;
-  } else if constexpr (are_input_range_v<T, U>) {
+  } else if constexpr (are_input_ranges_v<T, U>) {
     using VT = std::ranges::range_value_t<T>;
     using VU = std::ranges::range_value_t<U>;
     return is_generic_comparable_with_v<LeafComparator, VT, VU>;
@@ -87,7 +87,7 @@ struct generic_comparison_interface {
       return Derived::compare_range(t, u);
     } else if constexpr (requires { leaf_comp(t, u); }) {
       return leaf_comp(t, u);
-    } else if constexpr (are_input_range_v<T, U>) {
+    } else if constexpr (are_input_ranges_v<T, U>) {
       return Derived::compare_range(t, u);
     } else if constexpr (are_tuple_like_of_same_size_v<T, U>) {
       return Derived::compare_tuple_like(t, u);
@@ -135,7 +135,7 @@ struct generic_equal_t
   template <class T, class U>
   static constexpr auto compare_range(const T& t, const U& u) -> bool
   {
-    if (are_forward_range_v<T, U>
+    if (are_forward_ranges_v<T, U>
         && std::ranges::distance(t) != std::ranges::distance(u)) {
       return false;
     }
@@ -146,7 +146,7 @@ struct generic_equal_t
         return false;
       }
     }
-    if constexpr (!are_forward_range_v<T, U>) {
+    if constexpr (!are_forward_ranges_v<T, U>) {
       return ti == t_end && ui == u_end;
     } else {
       return true;
@@ -169,7 +169,7 @@ struct generic_not_equal_t
   template <class T, class U>
   static constexpr auto compare_range(const T& t, const U& u) -> bool
   {
-    if (are_forward_range_v<T, U>
+    if (are_forward_ranges_v<T, U>
         && std::ranges::distance(t) != std::ranges::distance(u)) {
       return true;
     }
@@ -180,7 +180,7 @@ struct generic_not_equal_t
         return true;
       }
     }
-    if constexpr (!are_forward_range_v<T, U>) {
+    if constexpr (!are_forward_ranges_v<T, U>) {
       return (ti == t_end) ^ (ui == u_end);
     } else {
       return false;

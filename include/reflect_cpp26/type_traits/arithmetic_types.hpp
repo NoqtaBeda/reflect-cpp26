@@ -23,36 +23,29 @@
 #ifndef REFLECT_CPP26_TYPE_TRAITS_ARITHMETIC_TYPES_HPP
 #define REFLECT_CPP26_TYPE_TRAITS_ARITHMETIC_TYPES_HPP
 
-// Root header: include C++ stdlib headers only to prevent circular dependency.
+// Root header: include C++ stdlib headers and <config.h> only
+// to prevent circular dependency.
+#include <reflect_cpp26/utils/config.h>
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
 
 namespace reflect_cpp26 {
-#define REFLECT_CPP26_CHAR_TYPE_FOR_EACH(F) \
-  F(char)                                   \
-  F(wchar_t)                                \
-  F(char8_t)                                \
-  F(char16_t)                               \
-  F(char32_t)
-
+namespace impl {
 template <class T>
-struct is_char_type : std::false_type {};
+struct is_char_type_impl : std::false_type {};
 
-#define REFLECT_CPP26_SPECIALIZE_IS_CHAR_TYPE(CharT)              \
-  template <>                                                     \
-  struct is_char_type<CharT> : std::true_type {};                 \
-  template <>                                                     \
-  struct is_char_type<const CharT> : std::true_type {};           \
-  template <>                                                     \
-  struct is_char_type<volatile CharT> : std::true_type {};        \
-  template <>                                                     \
-  struct is_char_type<const volatile CharT> : std::true_type {};
-
-REFLECT_CPP26_CHAR_TYPE_FOR_EACH(REFLECT_CPP26_SPECIALIZE_IS_CHAR_TYPE)
-
-#undef REFLECT_CPP26_CHAR_TYPE_FOR_EACH
-#undef REFLECT_CPP26_SPECIALIZE_IS_CHAR_TYPE
+template <>
+struct is_char_type_impl<char> : std::true_type {};
+template <>
+struct is_char_type_impl<wchar_t> : std::true_type {};
+template <>
+struct is_char_type_impl<char8_t> : std::true_type {};
+template <>
+struct is_char_type_impl<char16_t> : std::true_type {};
+template <>
+struct is_char_type_impl<char32_t> : std::true_type {};
+} // namespace impl
 
 /**
  * Whether T is a (possibly cv-qualified) character type.
@@ -64,21 +57,11 @@ REFLECT_CPP26_CHAR_TYPE_FOR_EACH(REFLECT_CPP26_SPECIALIZE_IS_CHAR_TYPE)
  * according to C++ standard.
  */
 template <class T>
-constexpr bool is_char_type_v = is_char_type<T>::value;
+constexpr bool is_char_type_v =
+  impl::is_char_type_impl<std::remove_cv_t<T>>::value;
 
 template <class T>
 concept char_type = is_char_type_v<T>;
-
-/**
- * Whether T is a (possibly cv-qualified) integer type.
- */
-template <class T>
-constexpr bool is_integer_type_v = std::is_integral_v<T>
-  && !std::is_same_v<std::remove_cv_t<T>, bool>
-  && !is_char_type_v<T>;
-
-template <class T>
-concept integer_type = is_integer_type_v<T>;
 
 /**
  * Whether T is a (possibly cv-qualified) integral type which is not bool.
@@ -90,42 +73,41 @@ constexpr bool is_non_bool_integral_v = std::is_integral_v<T>
 template <class T>
 concept non_bool_integral = is_non_bool_integral_v<T>;
 
+/**
+ * Whether T is a (possibly cv-qualified) integer type.
+ */
+template <class T>
+constexpr bool is_integer_type_v = is_non_bool_integral_v<T>
+  && !is_char_type_v<T>;
+
+template <class T>
+concept integer_type = is_integer_type_v<T>;
+
 namespace impl {
-template <size_t SizeBytes, bool IsUnsigned>
-struct integral_to_integer_helper {
-  static_assert(false, "Invalid (SizeBytes, IsUnsigned) combination.");
-};
-
-#define REFLECT_CPP26_INTEGRAL_TO_INTEGER_FOR_EACH(F) \
-  F(1, false, int8_t)                                 \
-  F(1, true, uint8_t)                                 \
-  F(2, false, int16_t)                                \
-  F(2, true, uint16_t)                                \
-  F(4, false, int32_t)                                \
-  F(4, true, uint32_t)                                \
-  F(8, false, int64_t)                                \
-  F(8, true, uint64_t)
-
-#define REFLECT_CPP26_SPECIALIZE_INTEGRAL_TO_INTEGER_HELPER(N, U, T)  \
-  template <>                                                         \
-  struct integral_to_integer_helper<N, U> {                           \
-    using type = T;                                                   \
-  };
-
-REFLECT_CPP26_INTEGRAL_TO_INTEGER_FOR_EACH(
-  REFLECT_CPP26_SPECIALIZE_INTEGRAL_TO_INTEGER_HELPER)
-
-#undef REFLECT_CPP26_INTEGRAL_TO_INTEGER_FOR_EACH
-#undef REFLECT_CPP26_SPECIALIZE_INTEGRAL_TO_INTEGER_HELPER
+consteval auto integral_to_integer_impl(std::meta::info T) -> std::meta::info
+{
+  switch (size_of(T)) {
+    case 1:
+      return is_signed_type(T) ? ^^int8_t : ^^uint8_t;
+    case 2:
+      return is_signed_type(T) ? ^^int16_t : ^^uint16_t;
+    case 4:
+      return is_signed_type(T) ? ^^int32_t : ^^uint32_t;
+    case 8:
+      return is_signed_type(T) ? ^^int64_t : ^^uint64_t;
+    default:
+      compile_error("Unsupported type.");
+      return std::meta::info{};
+  }
+}
 } // namespace impl
 
 /**
  * Transforms an arbitrary integral type (including bool and characters)
  * to integer type with the same size and signedness
  */
-template <class T>
-using integral_to_integer_t = typename
-  impl::integral_to_integer_helper<sizeof(T), std::is_unsigned_v<T>>::type;
+template <std::integral T>
+using integral_to_integer_t = [: impl::integral_to_integer_impl(^^T) :];
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_TYPE_TRAITS_ARITHMETIC_TYPES_HPP

@@ -498,7 +498,7 @@ consteval auto make_character_based_string_key_map(
   using fn_signature = integral_key_map_meta_result (*)(
     const std::vector<KVPair>&, const string_key_map_options&);
 
-  auto fn = extract_substituted<fn_signature>(
+  auto fn = extract<fn_signature>(
     ^^make_character_based_string_key_map_impl,
     std::meta::reflect_constant(index), ^^KVPair);
 
@@ -568,10 +568,6 @@ constexpr bool test_bucket_size(
         vis[h % bucket_size + delta] = ok = true;
         break;
       }
-    }
-    if !consteval {
-      std::println("h = {:016x}: {}", h, ok ? "OK" : "NOT OK");
-      std::println("vis = {}", vis);
     }
     if (!ok) { return false; }
   }

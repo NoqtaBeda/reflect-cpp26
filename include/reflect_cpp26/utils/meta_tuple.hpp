@@ -23,8 +23,9 @@
 #ifndef REFLECT_CPP26_UTILS_META_TUPLE_HPP
 #define REFLECT_CPP26_UTILS_META_TUPLE_HPP
 
-// Note: Beware circular dependency when including type_traits/* headers.
 #include <reflect_cpp26/type_traits/template_instance.hpp>
+#include <reflect_cpp26/type_traits/tuple_like_types.hpp>
+#include <reflect_cpp26/utils/expand.hpp>
 #include <reflect_cpp26/utils/functional.hpp>
 #include <reflect_cpp26/utils/meta_utility.hpp>
 #include <ranges>
@@ -32,8 +33,6 @@
 namespace reflect_cpp26 {
 template <class... Args>
 struct meta_tuple {
-  static_assert(sizeof...(Args) >= 1,
-    "At least 1 template parameter required.");
   static constexpr auto tuple_size = sizeof...(Args);
 
   struct underlying_type;
@@ -46,7 +45,7 @@ struct meta_tuple {
 
 private:
   static constexpr auto get_nth_field(size_t n) {
-    return all_direct_nsdm_of(^^underlying_type)[n];
+    return all_direct_nsdm_v<underlying_type>[n];
   }
 
 public:
@@ -55,7 +54,7 @@ public:
   // cvref dropped during CTAD
   constexpr meta_tuple(const Args&... args) : values{args...} {}
 
-  template <class TupleLike>
+  template <tuple_like_of<Args...> TupleLike>
   constexpr auto& operator=(TupleLike&& tuple)
   {
     constexpr auto members = all_direct_nsdm_of(^^underlying_type);

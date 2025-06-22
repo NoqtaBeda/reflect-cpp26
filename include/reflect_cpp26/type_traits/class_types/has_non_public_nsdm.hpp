@@ -44,7 +44,7 @@ consteval bool has_non_public_nsdm(std::meta::info T);
 template <class T>
 constexpr auto has_non_public_nsdm_v = false;
 
-template <class_without_virtual_inheritance T>
+template <class_type T>
 constexpr auto has_non_public_nsdm_v<T> =
   impl::has_non_public_nsdm(^^std::remove_cv_t<T>);
 

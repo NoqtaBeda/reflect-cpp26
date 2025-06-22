@@ -58,16 +58,17 @@ namespace reflect_cpp26 {
   concept range_concept##_of_exactly = std::ranges::range_concept<Range>  \
     && std::is_same_v<std::ranges::range_value_t<Range>, T>;              \
                                                                           \
+  /* 's' suffix as plural form: 'ranges' and 'views' */                   \
   template <class... Ranges>                                              \
-  constexpr auto are_##range_concept##_v =                                \
+  constexpr auto are_##range_concept##s_v =                               \
     (std::ranges::range_concept<Ranges> && ...);                          \
                                                                           \
   template <class T, class... Ranges>                                     \
-  constexpr auto are_##range_concept##_of_v =                             \
+  constexpr auto are_##range_concept##s_of_v =                            \
     (range_concept##_of<Ranges, T> && ...);                               \
                                                                           \
   template <class T, class... Ranges>                                     \
-  constexpr auto are_##range_concept##_of_exactly_v =                     \
+  constexpr auto are_##range_concept##s_of_exactly_v =                    \
     (range_concept##_of_exactly<Ranges, T> && ...);
 
 REFLECT_CPP26_RANGE_CONCEPTS_FOR_EACH(REFLECT_CPP26_DEFINE_RANGE_CONCEPTS)
@@ -101,16 +102,16 @@ REFLECT_CPP26_RANGE_CONCEPTS_FOR_EACH(REFLECT_CPP26_DEFINE_RANGE_CONCEPTS)
       && std::ranges::common_range<Range>;                                \
                                                                           \
   template <class... Ranges>                                              \
-  constexpr auto are_common_##range_concept##_v =                         \
+  constexpr auto are_common_##range_concept##s_v =                        \
     (std::ranges::range_concept<Ranges> && ...)                           \
       && (std::ranges::common_range<Ranges> && ...);                      \
                                                                           \
   template <class T, class... Ranges>                                     \
-  constexpr auto are_common_##range_concept##_of_v =                      \
+  constexpr auto are_common_##range_concept##s_of_v =                     \
     (common_##range_concept##_of<Ranges, T> && ...);                      \
                                                                           \
   template <class T, class... Ranges>                                     \
-  constexpr auto are_common_##range_concept##_of_exactly_v =              \
+  constexpr auto are_common_##range_concept##s_of_exactly_v =             \
     (common_##range_concept##_of_exactly<Ranges, T> && ...);
 
 REFLECT_CPP26_RANGE_CONCEPTS_FOR_EACH(REFLECT_CPP26_DEFINE_RANGE_CONCEPTS)
@@ -119,9 +120,33 @@ REFLECT_CPP26_RANGE_CONCEPTS_FOR_EACH(REFLECT_CPP26_DEFINE_RANGE_CONCEPTS)
 #undef REFLECT_CPP26_RANGE_CONCEPTS_FOR_EACH
 #undef REFLECT_CPP26_CONST_RANGE_CONCEPTS_FOR_EACH
 
+template <class Range, class T>
+concept output_range_of_exactly = std::ranges::output_range<Range, T> &&
+  std::is_same_v<std::ranges::range_value_t<Range>, T>;
+
+template <class Range, class T>
+concept common_output_range_of = std::ranges::output_range<Range, T> &&
+  std::ranges::common_range<Range>;
+
+template <class Range, class T>
+concept common_output_range_of_exactly = output_range_of_exactly<Range, T> &&
+  std::ranges::common_range<Range>;
+
 template <class T, class... Ranges>
-constexpr auto are_output_range_v =
+constexpr auto are_output_ranges_of_v =
   (std::ranges::output_range<Ranges, T> && ...);
+
+template <class T, class... Ranges>
+constexpr auto are_output_ranges_of_exactly_v =
+  (output_range_of_exactly<Ranges, T> && ...);
+
+template <class T, class... Ranges>
+constexpr auto are_common_output_ranges_of_v =
+  (common_output_range_of<Ranges, T> && ...);
+
+template <class T, class... Ranges>
+constexpr auto are_common_output_ranges_of_exactly_v =
+  (common_output_range_of_exactly<Ranges, T> && ...);
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_UTILS_RANGES_HPP

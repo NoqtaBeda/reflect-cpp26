@@ -23,16 +23,19 @@
 #ifndef REFLECT_CPP26_TYPE_TRAITS_TUPLE_LIKE_ELEMENTWISE_HPP
 #define REFLECT_CPP26_TYPE_TRAITS_TUPLE_LIKE_ELEMENTWISE_HPP
 
-#include <reflect_cpp26/type_traits/extraction.hpp>
 #include <reflect_cpp26/type_traits/tuple_like_types.hpp>
-#include <reflect_cpp26/utils/expand.hpp>
 #include <reflect_cpp26/utils/type_tuple.hpp>
 #include <reflect_cpp26/utils/utility.hpp>
 
 namespace reflect_cpp26 {
 namespace impl {
-template <class... Ts>
-constexpr auto min_tuple_size_v = std::min({std::tuple_size_v<Ts>...});
+consteval auto min_tuple_size(std::initializer_list<std::meta::info> Ts)
+{
+  auto transform_fn = [](std::meta::info T) {
+    return extract<size_t>(substitute(^^std::tuple_size_v, {T}));
+  };
+  return std::ranges::min(Ts | std::views::transform(transform_fn));
+}
 
 struct reduce_elementwise_result_t {
   size_t true_count;
@@ -40,46 +43,55 @@ struct reduce_elementwise_result_t {
 };
 
 template <template <class...> class Pred, class... Tuples>
-consteval auto reduce_elementwise()
+consteval auto reduce_elementwise() -> reduce_elementwise_result_t
 {
+  constexpr auto min_size = min_tuple_size({^^Tuples...});
   auto true_count = 0zU;
   auto false_count = 0zU;
-  constexpr auto min_tuple_size = std::min({std::tuple_size_v<Tuples>...});
-  REFLECT_CPP26_EXPAND_I(min_tuple_size).for_each(
-    [&true_count, &false_count](auto I) {
-      constexpr auto ith_elements =
-        std::array{^^std::tuple_element_t<I, Tuples>...};
-      constexpr auto cur_result = [:substitute(^^Pred, ith_elements):]::value;
-      (cur_result ? true_count : false_count) += 1;
-    });
-  return reduce_elementwise_result_t{true_count, false_count};
+
+  template for (constexpr auto I: std::views::iota(0zU, min_size)) {
+    constexpr auto ith_elements =
+      std::array{^^std::tuple_element_t<I, Tuples>...};
+    constexpr auto cur_result = [:substitute(^^Pred, ith_elements):]::value;
+    (cur_result ? true_count : false_count) += 1;
+  }
+  return {true_count, false_count};
 }
 
 template <template <class...> class Pred, class... Tuples>
 constexpr auto reduce_elementwise_v = reduce_elementwise<Pred, Tuples...>();
 
 consteval auto elementwise_zip_substitute(
-  std::meta::info Transform, std::span<const std::meta::info> Tuples,
-  size_t min_tuple_size)
+  std::meta::info Transform, std::initializer_list<std::meta::info> Tuples)
 {
-  auto results = std::vector<std::meta::info>{};
-  results.reserve(min_tuple_size);
+  auto min_size = min_tuple_size(Tuples);
+  auto n = std::ranges::size(Tuples);
+  auto results = make_reserved_vector<std::meta::info>(min_size);
 
-  for (auto i = 0zU; i < min_tuple_size; i++) {
+  for (auto i = 0zU; i < min_size; i++) {
     auto I = std::meta::reflect_constant(i);
-    auto ith_elements = Tuples | std::views::transform([I](std::meta::info T) {
-      return substitute(^^std::tuple_element_t, I, T);
-    });
+    auto ith_elements = make_reserved_vector<std::meta::info>(n);
+    for (auto T: Tuples) {
+      ith_elements.push_back(substitute(^^std::tuple_element_t, I, T));
+    }
     results.push_back(substitute(Transform, ith_elements));
   }
   return substitute(^^type_tuple, results);
 }
 
 template <template <class...> class Transform, class... Tuples>
-using elementwise_zip_substituted = [:
-  elementwise_zip_substitute(
-    ^^Transform, std::array{^^Tuples...}, min_tuple_size_v<Tuples...>)
-:];
+using elementwise_zip_substituted =
+  [: elementwise_zip_substitute(^^Transform, {^^Tuples...}) :];
+
+template <class Traits>
+struct extract_traits_type {
+  using type = typename Traits::type;
+};
+
+template <class Traits>
+struct extract_traits_value {
+  static constexpr auto value = Traits::value;
+};
 } // namespace impl
 
 /**
@@ -136,7 +148,7 @@ using elementwise_zip_substitute_t = impl::elementwise_zip_substituted<
  */
 template <template <class...> class Transform, tuple_like T, tuple_like... Ts>
 using elementwise_zip_transform_t =
-  type_tuple_transform_t<extract_traits_type,
+  type_tuple_transform_t<impl::extract_traits_type,
     impl::elementwise_zip_substituted<
       Transform, std::remove_cvref_t<T>, std::remove_cvref_t<Ts>...>>;
 
@@ -148,7 +160,7 @@ using elementwise_zip_transform_t =
  */
 template <template <class...> class Transform, tuple_like T, tuple_like... Ts>
 constexpr auto elementwise_zip_transform_v =
-  type_tuple_transform_v<extract_traits_value,
+  type_tuple_transform_v<impl::extract_traits_value,
     impl::elementwise_zip_substituted<
       Transform, std::remove_cvref_t<T>, std::remove_cvref_t<Ts>...>>;
 } // namespace reflect_cpp26

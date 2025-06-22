@@ -28,27 +28,24 @@
 #include <reflect_cpp26/utils/concepts.hpp>
 
 namespace reflect_cpp26 {
+namespace impl {
 // (std::meta::info...) -> std::meta::info
 template <class F, size_t N>
-concept transformer_invocable_with_n_metas =
-  std::is_default_constructible_v<F>
-    && is_invocable_r_n_v<std::meta::info, F, std::meta::info, N>;
+concept transformer_from_info = std::is_default_constructible_v<F> &&
+  is_invocable_r_n_v<std::meta::info, F, std::meta::info, N>;
 
-// (flattened_data_member_spec...) -> std::meta::info
+// (flattened_data_member_info...) -> std::meta::info
 template <class F, size_t N>
-concept transformer_invocable_with_n_specs =
-  std::is_default_constructible_v<F>
-    && is_invocable_r_n_v<std::meta::info, F, flattened_data_member_spec, N>;
+concept transformer_from_info_struct = std::is_default_constructible_v<F> &&
+  is_invocable_r_n_v<std::meta::info, F, flattened_data_member_info, N>;
 
-namespace impl {
 template <class Transform, class... Ts>
-  requires (transformer_invocable_with_n_metas<Transform, sizeof...(Ts)>)
+  requires (transformer_from_info<Transform, sizeof...(Ts)>)
 struct aggregate_by_direct_memberwise {
   struct type;
 
   consteval {
-    constexpr auto min_member_size =
-      std::ranges::min({public_direct_nsdm_of(^^Ts).size()...});
+    auto min_member_size = std::min({public_direct_nsdm_of(^^Ts).size()...});
     auto members = std::vector<std::meta::info>{};
     members.reserve(min_member_size);
 
@@ -64,26 +61,25 @@ struct aggregate_by_direct_memberwise {
 };
 
 template <class Transform, class... Ts>
-  requires (transformer_invocable_with_n_specs<Transform, sizeof...(Ts)>
-         || transformer_invocable_with_n_metas<Transform, sizeof...(Ts)>)
+  requires (transformer_from_info<Transform, sizeof...(Ts)>
+         || transformer_from_info_struct<Transform, sizeof...(Ts)>)
 struct aggregate_by_flattened_memberwise {
-  static constexpr auto invocable_with_spec =
-    transformer_invocable_with_n_specs<Transform, sizeof...(Ts)>;
-
   static consteval auto ith_member_getter(size_t i) -> std::meta::info
   {
-    if constexpr (invocable_with_spec) {
-      return Transform{}(public_flattened_nsdm_v<Ts>.values[i]...);
+    constexpr auto uses_info_struct =
+      transformer_from_info_struct<Transform, sizeof...(Ts)>;
+
+    if constexpr (uses_info_struct) {
+      return Transform{}(public_flattened_nsdm_v<Ts>[i]...);
     } else {
-      return Transform{}(public_flattened_nsdm_v<Ts>.values[i].member...);
+      return Transform{}(public_flattened_nsdm_v<Ts>[i].member...);
     }
   }
 
   struct type;
 
   consteval {
-    constexpr auto min_member_size =
-      std::ranges::min({public_flattened_nsdm_v<Ts>.size()...});
+    auto min_member_size = std::min({public_flattened_nsdm_v<Ts>.size()...});
     auto members = std::vector<std::meta::info>{};
     members.reserve(min_member_size);
 

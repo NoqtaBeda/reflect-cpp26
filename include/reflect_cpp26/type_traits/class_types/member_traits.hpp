@@ -69,25 +69,16 @@ struct member_pointer_traits {
 template <non_function_type R, class T>
 struct member_pointer_traits<R T::*> {
   static constexpr auto category = member_category::object;
-  // Type of the data member
   using target_type = R;
-  // Where is the data member defined
   using direct_parent_type = T;
 };
 
 template <function_type F, class T>
 struct member_pointer_traits<F T::*> {
   static constexpr auto category = member_category::function;
-  // Traits of F (including ellipsis and specifier flags).
   using function_traits_type = function_traits<F>;
-  // Return type of the member function
   using target_type = typename function_traits_type::result_type;
-  // Where is the member function defined
   using direct_parent_type = T;
-  // args_type = type_tuple<Args...> where Args... are the arguments type
-  // The member function signature (omitting all specifiers) is
-  // either Ret(Args...) or Ret(Args..., ...),
-  // depending on function_traits_type::has_ellipsis_parameter.
   using args_type = typename function_traits_type::args_type;
 };
 
@@ -132,7 +123,7 @@ concept accessible_by_member_function_pointer =
 
 /**
   * Disjunction of is_accessible_by_member_object_pointer_v<T, MemPtr>
-  *            and is_accessible_by_member_function_pointer_v<T, MemPtr>;
+  * and is_accessible_by_member_function_pointer_v<T, MemPtr>.
   */
 template <class T, auto MemPtr>
   requires (is_non_null_member_pointer_value_v<MemPtr>)

@@ -30,6 +30,7 @@
 #include <algorithm>
 #include <concepts>
 #include <type_traits>
+#include <utility>
 
 namespace reflect_cpp26 {
 namespace impl {

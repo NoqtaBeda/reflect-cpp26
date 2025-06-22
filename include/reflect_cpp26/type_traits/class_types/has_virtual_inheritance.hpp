@@ -60,10 +60,11 @@ concept class_without_virtual_inheritance =
 namespace impl {
 consteval bool has_virtual_inheritance(std::meta::info T)
 {
-  return std::ranges::any_of(all_direct_bases_of(T), [](std::meta::info base) {
+  auto check_fn = [](std::meta::info base) {
     return is_virtual(base)
       || extract_bool(^^has_virtual_inheritance_v, type_of(base));
-  });
+  };
+  return std::ranges::any_of(all_direct_bases_of(T), check_fn);
 }
 } // namespace impl
 } // namespace reflect_cpp26

@@ -25,22 +25,32 @@
 
 #include <reflect_cpp26/utils/type_tuple.hpp>
 
+#define REFLECT_CPP26_FUNCTION_TRAIT_FLAGS_FOR_EACH(F)  \
+  F(has_ellipsis_parameter)                             \
+  F(is_const)                                           \
+  F(is_volatile)                                        \
+  F(is_lvalue_reference_qualified)                      \
+  F(is_rvalue_reference_qualified)                      \
+  F(is_noexcept)
+
 namespace reflect_cpp26 {
 struct function_trait_flags {
-  bool has_ellipsis_parameter;
-  bool is_const;
-  bool is_volatile;
-  bool is_lvalue_reference;
-  bool is_rvalue_reference;
-  bool is_noexcept;
+#define REFLECT_CPP26_MAKE_FUNCTION_TRAIT_FLAG_MEMBER(flag) bool flag;
+  // Members see above
+  REFLECT_CPP26_FUNCTION_TRAIT_FLAGS_FOR_EACH(
+    REFLECT_CPP26_MAKE_FUNCTION_TRAIT_FLAG_MEMBER)
 
   constexpr bool operator==(const function_trait_flags&) const = default;
 };
+#undef REFLECT_CPP26_MAKE_FUNCTION_TRAIT_FLAG_MEMBER
 
 template <class Fn>
 struct function_traits {
   static constexpr auto is_function = false;
 };
+
+#define REFLECT_CPP26_MAKE_FUNCTION_TRAIT_FLAG_MEMBER(flag) \
+  static constexpr bool flag = flags.flag;
 
 /**
  * Extracts type info of function type
@@ -57,18 +67,8 @@ struct function_traits {
   struct function_traits<Ret AfterRet qualifiers> {                         \
     static constexpr auto is_function = true;                               \
     static constexpr auto flags = function_trait_flags{__VA_ARGS__};        \
-    static constexpr auto has_ellipsis_parameter =                          \
-      flags.has_ellipsis_parameter;                                         \
-    static constexpr auto is_const =                                        \
-      flags.is_const;                                                       \
-    static constexpr auto is_volatile =                                     \
-      flags.is_volatile;                                                    \
-    static constexpr auto is_lvalue_reference =                             \
-      flags.is_lvalue_reference;                                            \
-    static constexpr auto is_rvalue_reference =                             \
-      flags.is_rvalue_reference;                                            \
-    static constexpr auto is_noexcept =                                     \
-      flags.is_noexcept;                                                    \
+    REFLECT_CPP26_FUNCTION_TRAIT_FLAGS_FOR_EACH(                            \
+      REFLECT_CPP26_MAKE_FUNCTION_TRAIT_FLAG_MEMBER)                        \
                                                                             \
     using result_type = Ret;                                                \
     using args_type = type_tuple<Args...>;                                  \
@@ -97,15 +97,16 @@ struct function_traits {
   REFLECT_CPP26_SPECIALIZE_FUNCTION_TRAITS_CV(qualifiers,             \
     __VA_ARGS__);                                                     \
   REFLECT_CPP26_SPECIALIZE_FUNCTION_TRAITS_CV(& qualifiers,           \
-    .is_lvalue_reference = true, __VA_ARGS__);                        \
+    .is_lvalue_reference_qualified = true, __VA_ARGS__);              \
   REFLECT_CPP26_SPECIALIZE_FUNCTION_TRAITS_CV(&& qualifiers,          \
-    .is_rvalue_reference = true, __VA_ARGS__)
+    .is_rvalue_reference_qualified = true, __VA_ARGS__)
 
 // 2 variants: with / without noexcept
 REFLECT_CPP26_SPECIALIZE_FUNCTION_TRAITS_REF(/* n/a */, /* no flags */);
 REFLECT_CPP26_SPECIALIZE_FUNCTION_TRAITS_REF(noexcept, .is_noexcept = true);
 // Total: 2 x 4 x 3 x 2 = 48
 
+#undef REFLECT_CPP26_MAKE_FUNCTION_TRAIT_FLAG_MEMBER
 #undef REFLECT_CPP26_SPECIALIZE_FUNCTION_TRAITS
 #undef REFLECT_CPP26_SPECIALIZE_FUNCTION_TRAITS_VA_ARG
 #undef REFLECT_CPP26_SPECIALIZE_FUNCTION_TRAITS_CV
@@ -133,39 +134,23 @@ REFLECT_CPP26_SPECIALIZE_TO_FUNCTION_POINTER((Args..., ...) noexcept)
 #undef REFLECT_CPP26_SPECIALIZE_TO_FUNCTION_POINTER
 
 template <class T>
-struct to_function {
-  static constexpr auto enabled = false; // type undefined
-};
+struct to_function {}; // type undefined
 
-template <class T>
-  requires (std::is_function_v<T>)
+template <function_type T>
 struct to_function<T> {
-  static constexpr auto enabled = true;
   using type = T;
 };
 
-template <class T>
-  requires (std::is_function_v<T>)
+template <function_type T>
 struct to_function<T*> {
-  static constexpr auto enabled = true;
   using type = T;
 };
 
-template <class T, class U>
-  requires (std::is_function_v<T>)
+template <function_type T, class U>
 struct to_function<T U::*> {
-  static constexpr auto enabled = true;
   using type = T;
 };
 } // namespace impl
-
-/**
- * Checks whether T can be converted to a function pointer type.
- */
-template <class T>
-constexpr auto is_convertible_to_function_pointer_v =
-  requires { std::declval<
-    typename impl::to_function_pointer<std::remove_cvref_t<T>>::type>(); };
 
 /**
  * If T is a function type, converts function T to the corresponding
@@ -174,16 +159,15 @@ constexpr auto is_convertible_to_function_pointer_v =
  * In all other cases, the program is ill-formed.
  */
 template <class T>
-  requires (is_convertible_to_function_pointer_v<T>)
 using to_function_pointer_t =
   typename impl::to_function_pointer<std::remove_cvref_t<T>>::type;
 
 /**
- * Checks whether T can be converted to a function type.
+ * Checks whether T can be converted to a function pointer type.
  */
 template <class T>
-constexpr auto is_convertible_to_function_v =
-  impl::to_function<std::remove_cvref_t<T>>::enabled;
+constexpr auto is_convertible_to_function_pointer_v =
+  requires { std::declval<to_function_pointer_t<T>>(); };
 
 /**
  * Converts T to a function type.
@@ -193,8 +177,14 @@ constexpr auto is_convertible_to_function_v =
  * Otherwise, the program is ill-formed.
  */
 template <class T>
-  requires (is_convertible_to_function_v<T>)
 using to_function_t = typename impl::to_function<std::remove_cvref_t<T>>::type;
+
+/**
+ * Checks whether T can be converted to a function type.
+ */
+template <class T>
+constexpr auto is_convertible_to_function_v =
+  requires { std::declval<to_function_t<T>>(); };
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_TYPE_TRAITS_FUNCTION_TYPES_HPP

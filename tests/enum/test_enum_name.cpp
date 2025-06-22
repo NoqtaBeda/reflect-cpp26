@@ -26,7 +26,7 @@
 #ifdef ENABLE_FULL_HEADER_TEST
 #include <reflect_cpp26/enum.hpp>
 #else
-#include <reflect_cpp26/enum/enum_names.hpp>
+#include <reflect_cpp26/enum/enum_name.hpp>
 #endif
 
 // Note: this wrapper is required to convert result to std::string

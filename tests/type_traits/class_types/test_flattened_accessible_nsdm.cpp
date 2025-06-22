@@ -21,6 +21,7 @@
  **/
 
 #include "tests/test_options.hpp"
+#include <cassert>
 
 #ifdef ENABLE_FULL_HEADER_TEST
 #include <reflect_cpp26/type_traits.hpp>
@@ -29,23 +30,6 @@
 #endif
 
 namespace rfl = reflect_cpp26;
-
-template <size_t I, auto... Values>
-constexpr auto get_offset(rfl::constant<Values...> members) {
-  return get<I>(members).actual_offset.bytes;
-}
-
-template <size_t I, auto... Values>
-constexpr auto get_bf_offset(rfl::constant<Values...> members)
-{
-  auto offset = get<I>(members).actual_offset;
-  return offset.bytes * CHAR_BIT + offset.bits;
-}
-
-template <size_t I, auto... Values>
-constexpr auto get_bf_size(rfl::constant<Values...> members) {
-  return bit_size_of(get<I>(members).member);
-}
 
 template <class T>
 void force_write_by_offset(void* base, uintptr_t offset, T value)
@@ -70,18 +54,28 @@ void force_write_bf_by_offset(
   size_t u64_index = offset_bits / 64;
   size_t u64_offset_bits = offset_bits % 64;
 
-  if (u64_offset_bits + size_bits <= 64) {
-    auto mask = ((uint64_t{1} << size_bits) - 1) << u64_offset_bits;
-    u64_arr[u64_index] &= ~mask;
-    u64_arr[u64_index] |= (value << u64_offset_bits) & mask;
-    return;
-  }
-  auto size_bits_first_part = 64 - u64_offset_bits;
-  force_write_bf_by_offset(base, offset_bits, size_bits_first_part, value);
-  auto size_bits_second_part = size_bits - size_bits_first_part;
-  force_write_bf_by_offset(
-    base, offset_bits + size_bits_first_part, size_bits_second_part,
-    value >> size_bits_first_part);
+  assert(u64_offset_bits + size_bits <= 64);
+  auto mask = ((uint64_t{1} << size_bits) - 1) << u64_offset_bits;
+  u64_arr[u64_index] &= ~mask;
+  u64_arr[u64_index] |= (value << u64_offset_bits) & mask;
+}
+
+consteval ptrdiff_t get_offset(
+  std::span<const rfl::flattened_data_member_info> members, size_t index)
+{
+  return members[index].actual_offset_bytes();
+}
+
+consteval ptrdiff_t get_bf_offset(
+  std::span<const rfl::flattened_data_member_info> members, size_t index)
+{
+  return members[index].actual_offset_bits();
+}
+
+consteval ptrdiff_t get_bf_size(
+  std::span<const rfl::flattened_data_member_info> members, size_t index)
+{
+  return bit_size_of(members[index].member);
 }
 
 struct foo_t {
@@ -92,6 +86,26 @@ struct foo_t {
 private:
   double _timestamp;
 };
+
+TEST(TypeTraitsClassTypes, NSDMListMonostate)
+{
+  constexpr auto std_monostate_members =
+    rfl::public_flattened_nsdm_v<std::monostate>;
+  static_assert(std_monostate_members.size() == 0);
+}
+
+TEST(TypeTraitsClassTypes, NSDMListFoo)
+{
+  constexpr auto foo_members = rfl::public_flattened_nsdm_v<foo_t>;
+  static_assert(foo_members.size() == 2);
+  static_assert(foo_members[0].actual_offset_bytes() == 0z);
+  static_assert(foo_members[1].actual_offset_bytes() == 4z);
+
+  auto foo = foo_t{};
+  foo.[:foo_members[0].member:] = 21;
+  foo.[:foo_members[1].member:] = 42;
+  EXPECT_EQ("21,42", std::format("{},{}", foo.x, foo.y));
+}
 
 struct bar_1_t : foo_t {
   float average_rating;
@@ -106,11 +120,50 @@ protected:
   void call_bar();
 };
 
+TEST(TypeTraitsClassTypes, NSDMListBar1)
+{
+  constexpr auto bar_1_members = rfl::public_flattened_nsdm_v<bar_1_t>;
+  static_assert(bar_1_members.size() == 4);
+  static_assert(bar_1_members[0].actual_offset_bytes() == 0z);
+  static_assert(bar_1_members[1].actual_offset_bytes() == 4z);
+  static_assert(bar_1_members[2].actual_offset_bytes() == 16z);
+  static_assert(bar_1_members[3].actual_offset_bytes() == 20z);
+
+  auto bar_1 = bar_1_t{};
+  bar_1.[:bar_1_members[0].member:] = 63;
+  bar_1.[:bar_1_members[1].member:] = 84;
+  bar_1.[:bar_1_members[2].member:] = 4.5;
+  bar_1.[:bar_1_members[3].member:] = 123;
+  EXPECT_EQ("63,84", std::format("{},{}", bar_1.x, bar_1.y));
+  EXPECT_EQ("average_rating = 4.5, rating_count = 123", bar_1.dump());
+}
+
 struct bar_2_t : std::pair<int32_t, int32_t>, protected bar_1_t {
   float first; // Shadows member 'first' of base
 protected:
   char d2;
 };
+
+TEST(TypeTraitsClassTypes, NSDMListBar2)
+{
+  constexpr auto bar_2_members = rfl::public_flattened_nsdm_v<bar_2_t>;
+  static_assert(bar_2_members.size() == 3);
+
+  auto bar_2 = bar_2_t{};
+  bar_2.[:bar_2_members[0].member:] = 100;
+  bar_2.[:bar_2_members[1].member:] = 200;
+  bar_2.[:bar_2_members[2].member:] = 3.125;
+  auto first_from_base = &std::pair<int32_t, int32_t>::first;
+  EXPECT_EQ("100,200,3.125", std::format(
+    "{},{},{}", bar_2.*first_from_base, bar_2.second, bar_2.first));
+
+  bar_2 = bar_2_t{};
+  force_write_by_offset(&bar_2, get_offset(bar_2_members, 0), 400);
+  force_write_by_offset(&bar_2, get_offset(bar_2_members, 1), 800);
+  force_write_by_offset(&bar_2, get_offset(bar_2_members, 2), -6.25f);
+  EXPECT_EQ("400,800,-6.25", std::format(
+    "{},{},{}", bar_2.*first_from_base, bar_2.second, bar_2.first));
+}
 
 struct bar_3_t
   : private std::array<int16_t, 6>
@@ -130,6 +183,28 @@ protected:
   char d4;
 };
 
+TEST(TypeTraitsClassTypes, NSDMListBar3)
+{
+  constexpr auto bar_3_members = rfl::public_flattened_nsdm_v<bar_3_t>;
+  static_assert(bar_3_members.size() == 3);
+
+  auto bar_3 = bar_3_t{};
+  bar_3.[:bar_3_members[0].member:] = 1000;
+  bar_3.[:bar_3_members[1].member:] = 2000;
+  bar_3.[:bar_3_members[2].member:] = -1234.5;
+  auto first_from_base = &std::pair<int32_t, int32_t>::first;
+  EXPECT_EQ("1000,2000,-1234.5", std::format(
+    "{},{},{}", bar_3.*first_from_base, bar_3.second, bar_3.first));
+
+  bar_3 = bar_3_t{};
+  force_write_by_offset(&bar_3, get_offset(bar_3_members, 0), 400);
+  force_write_by_offset(&bar_3, get_offset(bar_3_members, 1), 800);
+  force_write_by_offset(&bar_3, get_offset(bar_3_members, 2), -6.25f);
+  EXPECT_EQ("400,800,-6.25", std::format(
+    "{},{},{}", bar_3.*first_from_base, bar_3.second, bar_3.first));
+  EXPECT_EQ("[0, 0, 0, 0, 0, 0]", bar_3.dump_private_base());
+}
+
 class baz_1_t : public bar_1_t, public bar_3_t {
 private:
   std::array<char, 3> f;
@@ -146,110 +221,24 @@ public:
   }
 };
 
-TEST(TypeTraitsClassTypes, NSDMListMonostate)
-{
-  constexpr auto std_monostate_members =
-    rfl::public_flattened_nsdm_v<std::monostate>;
-  static_assert(std_monostate_members.size() == 0);
-}
-
-TEST(TypeTraitsClassTypes, NSDMListFoo)
-{
-  constexpr auto foo_members =
-    rfl::public_flattened_nsdm_v<foo_t>;
-  static_assert(foo_members.size() == 2);
-  auto expected_offsets = std::array{0z, 4z};
-  EXPECT_THAT(foo_members.to_actual_offset_bytes().values,
-    testing::ContainerEq(expected_offsets));
-
-  auto foo = foo_t{};
-  foo.[:get<0>(foo_members).member:] = 21;
-  foo.[:get<1>(foo_members).member:] = 42;
-  EXPECT_EQ("21,42", std::format("{},{}", foo.x, foo.y));
-}
-
-TEST(TypeTraitsClassTypes, NSDMListBar1)
-{
-  constexpr auto bar_1_members =
-    rfl::public_flattened_nsdm_v<bar_1_t>;
-  static_assert(bar_1_members.size() == 4);
-  auto expected_offsets = std::array{0z, 4z, 16z, 20z};
-  EXPECT_THAT(bar_1_members.to_actual_offset_bytes().values,
-    testing::ContainerEq(expected_offsets));
-
-  auto bar_1 = bar_1_t{};
-  bar_1.[:get<0>(bar_1_members).member:] = 63;
-  bar_1.[:get<1>(bar_1_members).member:] = 84;
-  bar_1.[:get<2>(bar_1_members).member:] = 4.5;
-  bar_1.[:get<3>(bar_1_members).member:] = 123;
-  EXPECT_EQ("63,84", std::format("{},{}", bar_1.x, bar_1.y));
-  EXPECT_EQ("average_rating = 4.5, rating_count = 123", bar_1.dump());
-}
-
-TEST(TypeTraitsClassTypes, NSDMListBar2)
-{
-  constexpr auto bar_2_members =
-    rfl::public_flattened_nsdm_v<bar_2_t>;
-  static_assert(bar_2_members.size() == 3);
-
-  auto bar_2 = bar_2_t{};
-  bar_2.[:get<0>(bar_2_members).member:] = 100;
-  bar_2.[:get<1>(bar_2_members).member:] = 200;
-  bar_2.[:get<2>(bar_2_members).member:] = 3.125;
-  auto first_from_base = &std::pair<int32_t, int32_t>::first;
-  EXPECT_EQ("100,200,3.125", std::format(
-    "{},{},{}", bar_2.*first_from_base, bar_2.second, bar_2.first));
-
-  bar_2 = bar_2_t{};
-  force_write_by_offset(&bar_2, get_offset<0>(bar_2_members), 400);
-  force_write_by_offset(&bar_2, get_offset<1>(bar_2_members), 800);
-  force_write_by_offset(&bar_2, get_offset<2>(bar_2_members), -6.25f);
-  EXPECT_EQ("400,800,-6.25", std::format(
-    "{},{},{}", bar_2.*first_from_base, bar_2.second, bar_2.first));
-}
-
-TEST(TypeTraitsClassTypes, NSDMListBar3)
-{
-  constexpr auto bar_3_members =
-    rfl::public_flattened_nsdm_v<bar_3_t>;
-  static_assert(bar_3_members.size() == 3);
-
-  auto bar_3 = bar_3_t{};
-  bar_3.[:get<0>(bar_3_members).member:] = 1000;
-  bar_3.[:get<1>(bar_3_members).member:] = 2000;
-  bar_3.[:get<2>(bar_3_members).member:] = -1234.5;
-  auto first_from_base = &std::pair<int32_t, int32_t>::first;
-  EXPECT_EQ("1000,2000,-1234.5", std::format(
-    "{},{},{}", bar_3.*first_from_base, bar_3.second, bar_3.first));
-
-  bar_3 = bar_3_t{};
-  force_write_by_offset(&bar_3, get_offset<0>(bar_3_members), 400);
-  force_write_by_offset(&bar_3, get_offset<1>(bar_3_members), 800);
-  force_write_by_offset(&bar_3, get_offset<2>(bar_3_members), -6.25f);
-  EXPECT_EQ("400,800,-6.25", std::format(
-    "{},{},{}", bar_3.*first_from_base, bar_3.second, bar_3.first));
-  EXPECT_EQ("[0, 0, 0, 0, 0, 0]", bar_3.dump_private_base());
-}
-
 TEST(TypeTraitsClassTypes, NSDMListBaz1)
 {
-  constexpr auto baz_1_members =
-    rfl::public_flattened_nsdm_v<baz_1_t>;
+  constexpr auto baz_1_members = rfl::public_flattened_nsdm_v<baz_1_t>;
   static_assert(baz_1_members.size() == 9);
 
   auto baz_1 = baz_1_t{};
   // inherited from bar_1
-  baz_1.[:get<0>(baz_1_members).member:] = 123;
-  baz_1.[:get<1>(baz_1_members).member:] = 456;
-  baz_1.[:get<2>(baz_1_members).member:] = -1.25;
-  baz_1.[:get<3>(baz_1_members).member:] = 789;
+  baz_1.[:baz_1_members[0].member:] = 123;
+  baz_1.[:baz_1_members[1].member:] = 456;
+  baz_1.[:baz_1_members[2].member:] = -1.25;
+  baz_1.[:baz_1_members[3].member:] = 789;
   // inherited from bar_3
-  baz_1.[:get<4>(baz_1_members).member:] = 111;
-  baz_1.[:get<5>(baz_1_members).member:] = 222;
-  baz_1.[:get<6>(baz_1_members).member:] = -3.875;
+  baz_1.[:baz_1_members[4].member:] = 111;
+  baz_1.[:baz_1_members[5].member:] = 222;
+  baz_1.[:baz_1_members[6].member:] = -3.875;
   // direct members of baz_1
-  baz_1.[:get<7>(baz_1_members).member:] = {10, 20, 30, 50};
-  baz_1.[:get<8>(baz_1_members).member:] = 110;
+  baz_1.[:baz_1_members[7].member:] = {10, 20, 30, 50};
+  baz_1.[:baz_1_members[8].member:] = 110;
   EXPECT_EQ("123,456", std::format("{},{}", baz_1.x, baz_1.y));
   EXPECT_EQ("average_rating = -1.25, rating_count = 789, "
             "e = [10, 20, 30, 50], e_sum = 110, f = ['a', 'b', 'c']",
@@ -261,18 +250,18 @@ TEST(TypeTraitsClassTypes, NSDMListBaz1)
 
   baz_1 = baz_1_t{};
   // inherited from bar_1
-  force_write_by_offset(&baz_1, get_offset<0>(baz_1_members), 11);
-  force_write_by_offset(&baz_1, get_offset<1>(baz_1_members), 22);
-  force_write_by_offset(&baz_1, get_offset<2>(baz_1_members), 3.375f);
-  force_write_by_offset(&baz_1, get_offset<3>(baz_1_members), 44);
+  force_write_by_offset(&baz_1, get_offset(baz_1_members, 0), 11);
+  force_write_by_offset(&baz_1, get_offset(baz_1_members, 1), 22);
+  force_write_by_offset(&baz_1, get_offset(baz_1_members, 2), 3.375f);
+  force_write_by_offset(&baz_1, get_offset(baz_1_members, 3), 44);
   // inherited from bar_3
-  force_write_by_offset(&baz_1, get_offset<4>(baz_1_members), 55);
-  force_write_by_offset(&baz_1, get_offset<5>(baz_1_members), 66);
-  force_write_by_offset(&baz_1, get_offset<6>(baz_1_members), -7.75f);
+  force_write_by_offset(&baz_1, get_offset(baz_1_members, 4), 55);
+  force_write_by_offset(&baz_1, get_offset(baz_1_members, 5), 66);
+  force_write_by_offset(&baz_1, get_offset(baz_1_members, 6), -7.75f);
   // direct members of baz_1
-  force_write_by_offset(&baz_1, get_offset<7>(baz_1_members),
+  force_write_by_offset(&baz_1, get_offset(baz_1_members, 7),
     std::array<int32_t, 4>{8, 9, 10, 11});
-  force_write_by_offset(&baz_1, get_offset<8>(baz_1_members), 38);
+  force_write_by_offset(&baz_1, get_offset(baz_1_members, 8), 38);
   EXPECT_EQ("11,22", std::format("{},{}", baz_1.x, baz_1.y));
   EXPECT_EQ("average_rating = 3.375, rating_count = 44, "
             "e = [8, 9, 10, 11], e_sum = 38, f = ['a', 'b', 'c']",
@@ -293,18 +282,17 @@ struct references_t {
 // to target value by the C++ compiler.
 TEST(TypeTraitsClassTypes, NSDMListReferences)
 {
-  constexpr auto ref_members =
-    rfl::public_flattened_nsdm_v<references_t>;
+  constexpr auto ref_members = rfl::public_flattened_nsdm_v<references_t>;
   static_assert(ref_members.size() == 4);
-  auto expected_offsets = std::array<ptrdiff_t, 4>{
-    0, sizeof(void*), sizeof(void*) * 2, sizeof(void*) * 3};
-  EXPECT_THAT(ref_members.to_actual_offset_bytes().values,
-    testing::ContainerEq(expected_offsets));
+  static_assert(ref_members[0].actual_offset_bytes() == 0 * sizeof(void*));
+  static_assert(ref_members[1].actual_offset_bytes() == 1 * sizeof(void*));
+  static_assert(ref_members[2].actual_offset_bytes() == 2 * sizeof(void*));
+  static_assert(ref_members[3].actual_offset_bytes() == 3 * sizeof(void*));
 
   auto [i, ll, f, d] = std::tuple{1, 2LL, 3.5f, 4.75};
   auto foo = references_t{i, ll, f, d};
-  foo.[:get<0>(ref_members).member:] += 100;
-  foo.[:get<2>(ref_members).member:] += 200;
+  foo.[:ref_members[0].member:] += 100;
+  foo.[:ref_members[2].member:] += 200;
   EXPECT_EQ("101, 2, 203.5, 4.75",
     std::format("{}, {}, {}, {}", foo.i, foo.cll,
       static_cast<float>(foo.vf), static_cast<double>(foo.cvd)));
@@ -312,10 +300,10 @@ TEST(TypeTraitsClassTypes, NSDMListReferences)
     std::format("{}, {}, {}, {}", i, ll, f, d));
 
   // Ignores cv qualifiers by reinterpret_cast
-  force_write_ref_by_offset(&foo, get_offset<0>(ref_members), 100);
-  force_write_ref_by_offset(&foo, get_offset<1>(ref_members), 200LL);
-  force_write_ref_by_offset(&foo, get_offset<2>(ref_members), 300.0f);
-  force_write_ref_by_offset(&foo, get_offset<3>(ref_members), 400.0);
+  force_write_ref_by_offset(&foo, get_offset(ref_members, 0), 100);
+  force_write_ref_by_offset(&foo, get_offset(ref_members, 1), 200LL);
+  force_write_ref_by_offset(&foo, get_offset(ref_members, 2), 300.0f);
+  force_write_ref_by_offset(&foo, get_offset(ref_members, 3), 400.0);
   EXPECT_EQ("100, 200, 300, 400",
     std::format("{}, {}, {}, {}", foo.i, foo.cll,
       static_cast<float>(foo.vf), static_cast<double>(foo.cvd)));
@@ -349,46 +337,38 @@ struct bit_fields_B_t : bit_fields_A_t {
 
 TEST(TypeTraitsClassTypes, NSDMListBitFields)
 {
-  constexpr auto members =
-    rfl::public_flattened_nsdm_v<bit_fields_B_t>;
+  constexpr auto members = rfl::public_flattened_nsdm_v<bit_fields_B_t>;
   static_assert(members.size() == 8);
 
   auto bf = bit_fields_B_t{};
-  bf.[:get<0>(members).member:] = true;
-  bf.[:get<1>(members).member:] = 10;
-  bf.[:get<2>(members).member:] = 12345;
-  bf.[:get<3>(members).member:] = false;
-  bf.[:get<4>(members).member:] = 6;
-  bf.[:get<5>(members).member:] = true;
-  bf.[:get<6>(members).member:] = 3;
-  bf.[:get<7>(members).member:] = 123456789012345uLL;
+  bf.[:members[0].member:] = true;
+  bf.[:members[1].member:] = 10;
+  bf.[:members[2].member:] = 12345;
+  bf.[:members[3].member:] = false;
+  bf.[:members[4].member:] = 6;
+  bf.[:members[5].member:] = true;
+  bf.[:members[6].member:] = 3;
+  bf.[:members[7].member:] = 123456789012345uLL;
   EXPECT_EQ("1, 10, 12345", bf.dump_A());
   EXPECT_EQ("0, 6, 1, 3, 123456789012345", bf.dump_B());
 
-  uint64_t arr[2] = {0, 0};
-  force_write_bf_by_offset(arr, 40, 42, 0x355'5555'5555uLL);
-  EXPECT_EQ(0x5555'5500'0000'0000uLL, arr[0])
-    << "Implementation error of testing tools.";
-  EXPECT_EQ(0x0000'0000'0003'5555uLL, arr[1])
-    << "Implementation error of testing tools.";
-
   bf = bit_fields_B_t{};
   force_write_bf_by_offset(
-    &bf, get_bf_offset<0>(members), get_bf_size<0>(members), 1);
+    &bf, get_bf_offset(members, 0), get_bf_size(members, 0), 1);
   force_write_bf_by_offset(
-    &bf, get_bf_offset<1>(members), get_bf_size<1>(members), 10);
+    &bf, get_bf_offset(members, 1), get_bf_size(members, 1), 10);
   force_write_bf_by_offset(
-    &bf, get_bf_offset<2>(members), get_bf_size<2>(members), 12345);
+    &bf, get_bf_offset(members, 2), get_bf_size(members, 2), 12345);
   force_write_bf_by_offset(
-    &bf, get_bf_offset<3>(members), get_bf_size<3>(members), 0);
+    &bf, get_bf_offset(members, 3), get_bf_size(members, 3), 0);
   force_write_bf_by_offset(
-    &bf, get_bf_offset<4>(members), get_bf_size<4>(members), 6);
+    &bf, get_bf_offset(members, 4), get_bf_size(members, 4), 6);
   force_write_bf_by_offset(
-    &bf, get_bf_offset<5>(members), get_bf_size<5>(members), 1);
+    &bf, get_bf_offset(members, 5), get_bf_size(members, 5), 1);
   force_write_bf_by_offset(
-    &bf, get_bf_offset<6>(members), get_bf_size<6>(members), 3);
+    &bf, get_bf_offset(members, 6), get_bf_size(members, 6), 3);
   force_write_bf_by_offset(
-    &bf, get_bf_offset<7>(members), get_bf_size<7>(members), 1234567890123uLL);
+    &bf, get_bf_offset(members, 7), get_bf_size(members, 7), 1234567890123uLL);
   EXPECT_EQ("1, 10, 12345", bf.dump_A());
   EXPECT_EQ("0, 6, 1, 3, 1234567890123", bf.dump_B());
 }
@@ -461,43 +441,39 @@ TEST(TypeTraitsClassTypes, NSDMListPolymorphic)
   static_assert(members.size() == 11);
 
   constexpr auto obj1 = D{10};
-  EXPECT_EQ_STATIC(10, obj1.[:get<0>(members).member:]);
-  EXPECT_EQ_STATIC(11, obj1.[:get<1>(members).member:]);
-  EXPECT_EQ_STATIC(20, obj1.[:get<2>(members).member:]);
-  EXPECT_EQ_STATIC(21, obj1.[:get<3>(members).member:]);
-  EXPECT_EQ_STATIC(30, obj1.[:get<4>(members).member:]);
-  EXPECT_EQ_STATIC(31, obj1.[:get<5>(members).member:]);
-  EXPECT_EQ_STATIC(32, obj1.[:get<6>(members).member:]);
-  EXPECT_EQ_STATIC(40, obj1.[:get<7>(members).member:]);
-  EXPECT_EQ_STATIC(41, obj1.[:get<8>(members).member:]);
-  EXPECT_EQ_STATIC(42, obj1.[:get<9>(members).member:]);
-  EXPECT_EQ_STATIC(43, obj1.[:get<10>(members).member:]);
+  EXPECT_EQ_STATIC(10, obj1.[:members[0].member:]);
+  EXPECT_EQ_STATIC(11, obj1.[:members[1].member:]);
+  EXPECT_EQ_STATIC(20, obj1.[:members[2].member:]);
+  EXPECT_EQ_STATIC(21, obj1.[:members[3].member:]);
+  EXPECT_EQ_STATIC(30, obj1.[:members[4].member:]);
+  EXPECT_EQ_STATIC(31, obj1.[:members[5].member:]);
+  EXPECT_EQ_STATIC(32, obj1.[:members[6].member:]);
+  EXPECT_EQ_STATIC(40, obj1.[:members[7].member:]);
+  EXPECT_EQ_STATIC(41, obj1.[:members[8].member:]);
+  EXPECT_EQ_STATIC(42, obj1.[:members[9].member:]);
+  EXPECT_EQ_STATIC(43, obj1.[:members[10].member:]);
 
   auto obj2 = obj1;
-  force_write_by_offset(&obj2, get_offset<0>(members), uint32_t{123});
-  force_write_by_offset(&obj2, get_offset<1>(members), uint8_t{45});
-  force_write_by_offset(&obj2, get_offset<2>(members), uint8_t{67});
-  force_write_by_offset(&obj2, get_offset<3>(members), uint64_t{890});
-  force_write_by_offset(&obj2, get_offset<4>(members), uint32_t{12});
-  force_write_by_offset(&obj2, get_offset<5>(members), uint32_t{34});
-  force_write_by_offset(&obj2, get_offset<6>(members), uint8_t{56});
-  force_write_by_offset(&obj2, get_offset<7>(members), uint8_t{78});
-  force_write_by_offset(&obj2, get_offset<8>(members), uint16_t{90});
-  force_write_by_offset(&obj2, get_offset<9>(members), uint16_t{1234});
-  force_write_by_offset(&obj2, get_offset<10>(members), uint16_t{5678});
-  EXPECT_EQ(123, obj2.a1);
-  EXPECT_EQ(45, obj2.a2);
-  EXPECT_EQ(67, obj2.b1);
-  EXPECT_EQ(890, obj2.b2);
-  EXPECT_EQ(12, obj2.c1);
-  EXPECT_EQ(34, obj2.c2);
-  EXPECT_EQ(56, obj2.c3);
-  EXPECT_EQ(78, obj2.d1);
-  EXPECT_EQ(90, obj2.d2);
-  EXPECT_EQ(1234, obj2.d3);
-  EXPECT_EQ(5678, obj2.d4);
-  EXPECT_EQ(7080, static_cast<A&>(obj2).get_from_a());
-  EXPECT_EQ(7013672, static_cast<B&>(obj2).get_from_b());
-  EXPECT_EQ(6999632, static_cast<C&>(obj2).get_from_c());
-  EXPECT_EQ(4456, obj2.get_from_d());
+  force_write_by_offset(&obj2, get_offset(members, 0), uint32_t{1});
+  force_write_by_offset(&obj2, get_offset(members, 1), uint8_t{2});
+  force_write_by_offset(&obj2, get_offset(members, 2), uint8_t{3});
+  force_write_by_offset(&obj2, get_offset(members, 3), uint64_t{4});
+  force_write_by_offset(&obj2, get_offset(members, 4), uint32_t{5});
+  force_write_by_offset(&obj2, get_offset(members, 5), uint32_t{6});
+  force_write_by_offset(&obj2, get_offset(members, 6), uint8_t{7});
+  force_write_by_offset(&obj2, get_offset(members, 7), uint8_t{8});
+  force_write_by_offset(&obj2, get_offset(members, 8), uint16_t{9});
+  force_write_by_offset(&obj2, get_offset(members, 9), uint16_t{10});
+  force_write_by_offset(&obj2, get_offset(members, 10), uint16_t{11});
+  EXPECT_EQ(1, obj2.a1);
+  EXPECT_EQ(2, obj2.a2);
+  EXPECT_EQ(3, obj2.b1);
+  EXPECT_EQ(4, obj2.b2);
+  EXPECT_EQ(5, obj2.c1);
+  EXPECT_EQ(6, obj2.c2);
+  EXPECT_EQ(7, obj2.c3);
+  EXPECT_EQ(8, obj2.d1);
+  EXPECT_EQ(9, obj2.d2);
+  EXPECT_EQ(10, obj2.d3);
+  EXPECT_EQ(11, obj2.d4);
 }

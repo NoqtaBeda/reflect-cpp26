@@ -23,6 +23,8 @@
 #ifndef REFLECT_CPP26_TYPE_TRAITS_TYPE_TUPLE_HPP
 #define REFLECT_CPP26_TYPE_TRAITS_TYPE_TUPLE_HPP
 
+#include <reflect_cpp26/type_traits/template_instance.hpp>
+#include <reflect_cpp26/utils/config.h>
 #include <reflect_cpp26/utils/constant.hpp>
 #include <ranges>
 #include <tuple>
@@ -34,76 +36,60 @@ struct type_tuple {
   static constexpr auto size = sizeof...(Args);
 };
 
-template <class... Tuples>
-struct type_tuple_cat {
-  static_assert(!"Both TupleA and TupleB should be instance of type_tuple.");
-};
+namespace impl {
+consteval auto make_type_tuple_cat_type(
+  std::initializer_list<std::meta::info> Tuples) -> std::meta::info
+{
+  auto params = std::vector<std::meta::info>{};
+  for (auto T: Tuples) {
+    params.append_range(template_arguments_of(remove_cvref(T)));
+  }
+  return substitute(^^type_tuple, params);
+}
 
-template <class... Args>
-struct type_tuple_cat<type_tuple<Args...>> {
-  using type = type_tuple<Args...>;
-};
+consteval auto make_type_tuple_push_front_type(
+  std::meta::info Tuple, std::meta::info T) -> std::meta::info
+{
+  auto params = std::vector{T};
+  params.append_range(template_arguments_of(remove_cvref(Tuple)));
+  return substitute(^^type_tuple, params);
+}
 
-template <class... ArgsA, class... ArgsB, class... Args>
-struct type_tuple_cat<type_tuple<ArgsA...>, type_tuple<ArgsB...>, Args...> {
-  using type = typename type_tuple_cat<
-    type_tuple<ArgsA..., ArgsB...>, Args...>::type;
-};
+consteval auto make_type_tuple_push_back_type(
+  std::meta::info Tuple, std::meta::info T) -> std::meta::info
+{
+  auto params = template_arguments_of(remove_cvref(Tuple));
+  params.push_back(T);
+  return substitute(^^type_tuple, params);
+}
+} // namespace impl
 
 /**
  * Concatenates Tuples to a single type_tuple.
  */
-template <class... Tuples>
-using type_tuple_cat_t = typename type_tuple_cat<Tuples...>::type;
-
-template <class Tuple, class T>
-struct type_tuple_push_front {
-  static_assert(false, "The 1st parameter is not an instance of type_tuple.");
-};
-
-template <class... Args, class T>
-struct type_tuple_push_front<type_tuple<Args...>, T> {
-  using type = type_tuple<T, Args...>;
-};
+template <template_instance_of<type_tuple>... Tuples>
+using type_tuple_cat_t = [: impl::make_type_tuple_cat_type({^^Tuples...}) :];
 
 /**
  * Prepends T to the head of Tuple.
  */
-template <class Tuple, class T>
-using type_tuple_push_front_t = typename type_tuple_push_front<Tuple, T>::type;
-
-template <class Tuple, class T>
-struct type_tuple_push_back {
-  static_assert(false, "The 1st parameter is not an instance of type_tuple.");
-};
-
-template <class... Args, class T>
-struct type_tuple_push_back<type_tuple<Args...>, T> {
-  using type = type_tuple<Args..., T>;
-};
+template <template_instance_of<type_tuple> Tuple, class T>
+using type_tuple_push_front_t =
+  [: impl::make_type_tuple_push_front_type(^^Tuple, ^^T) :];
 
 /**
  * Appends T to the tail of Tuple.
  */
-template <class Tuple, class T>
-using type_tuple_push_back_t = typename type_tuple_push_back<Tuple, T>::type;
-
-template <class T, size_t N>
-struct type_tuple_repeat {
-  using prev_type = typename type_tuple_repeat<T, N - 1>::type;
-  using type = type_tuple_push_back_t<prev_type, T>;
-};
-
-template <class T>
-struct type_tuple_repeat<T, 0> {
-  using type = type_tuple<>;
-};
+template <template_instance_of<type_tuple> Tuple, class T>
+using type_tuple_push_back_t =
+  [: impl::make_type_tuple_push_back_type(^^Tuple, ^^T) :];
 
 /**
  * Makes type_tuple<T, T, ...> with T repeated N times.
  */
 template <class T, size_t N>
-using type_tuple_repeat_t = typename type_tuple_repeat<T, N>::type;
+using type_tuple_repeat_t =
+  [: substitute(^^type_tuple, std::views::repeat(^^T, N)) :];
 
 template <template <class...> class Traits, class TypeTuple>
 struct type_tuple_apply {
@@ -116,57 +102,42 @@ struct type_tuple_apply<Traits, type_tuple<Args...>> : Traits<Args...> {};
 /**
  * Extracts Traits<Args...>::type where TypeTuple = type_tuple<Args...>.
  */
-template <template <class...> class Traits, class TypeTuple>
-using type_tuple_apply_t =
-  typename type_tuple_apply<Traits, TypeTuple>::type;
+template <template <class...> class Traits,
+          template_instance_of<type_tuple> TypeTuple>
+using type_tuple_apply_t = typename type_tuple_apply<Traits, TypeTuple>::type;
 
 /**
  * Extracts Traits<Args...>::value where TypeTuple = type_tuple<Args...>.
  */
-template <template <class...> class Traits, class TypeTuple>
-constexpr auto type_tuple_apply_v =
-  type_tuple_apply<Traits, TypeTuple>::value;
-
-template <template <class...> class Template, class TypeTuple>
-struct type_tuple_substitute {
-  static_assert(false, "The 2nd parameter is not an instance of type_tuple.");
-};
-
-template <template <class...> class Template, class... Args>
-struct type_tuple_substitute<Template, type_tuple<Args...>> {
-  using type = Template<Args...>;
-};
+template <template <class...> class Traits,
+          template_instance_of<type_tuple> TypeTuple>
+constexpr auto type_tuple_apply_v = type_tuple_apply<Traits, TypeTuple>::value;
 
 /**
  * Instantiates Template<Args...> where TypeTuple = type_tuple<Args...>.
  */
-template <template <class...> class Template, class TypeTuple>
+template <template <class...> class Template,
+          template_instance_of<type_tuple> TypeTuple>
 using type_tuple_substitute_t =
-  typename type_tuple_substitute<Template, TypeTuple>::type;
+  [: substitute(^^Template, template_arguments_of(^^TypeTuple)) :];
 
 namespace impl {
-template <template <class...> class Predicate, class Func, class TypeTuple>
-struct type_tuple_is_invocable_generic {
-  static_assert(false, "The last parameter is not an instance of type_tuple.");
-};
+consteval bool type_tuple_is_invocable_generic(
+  std::meta::info pred_v, std::meta::info Func, std::meta::info Tuple)
+{
+  auto params = std::vector<std::meta::info>{Func};
+  params.append_range(template_arguments_of(remove_cvref(Tuple)));
+  return extract<bool>(substitute(pred_v, params));
+}
 
-template <template <class...> class Predicate, class Func, class... Args>
-struct type_tuple_is_invocable_generic<Predicate, Func, type_tuple<Args...>> {
-  static constexpr auto value = Predicate<Func, Args...>::value;
-};
-
-template <template <class...> class Predicate,
-          class R, class Func, class TypeTuple>
-struct type_tuple_is_invocable_r_generic {
-  static_assert(false, "The last parameter is not an instance of type_tuple.");
-};
-
-template <template <class...> class Predicate,
-          class R, class Func, class... Args>
-struct type_tuple_is_invocable_r_generic<
-  Predicate, R, Func, type_tuple<Args...>> {
-  static constexpr auto value = Predicate<R, Func, Args...>::value;
-};
+consteval bool type_tuple_is_invocable_r_generic(
+  std::meta::info pred_v, std::meta::info R, std::meta::info Func,
+  std::meta::info Tuple)
+{
+  auto params = std::vector<std::meta::info>{R, Func};
+  params.append_range(template_arguments_of(remove_cvref(Tuple)));
+  return extract<bool>(substitute(pred_v, params));
+}
 
 template <template <class> class Traits, class TypeTuple>
 struct type_tuple_transform_to_type {
@@ -193,37 +164,37 @@ struct type_tuple_transform_to_value<Traits, type_tuple<Args...>> {
  * Equivalent to std::is_invocable_v<Func, Args...> where
  * TypeTuple = type_tuple<Args...>.
  */
-template <class Func, class TypeTuple>
+template <class Func, template_instance_of<type_tuple> TypeTuple>
 constexpr auto type_tuple_is_invocable_v =
-  impl::type_tuple_is_invocable_generic<
-    std::is_invocable, Func, TypeTuple>::value;
+  impl::type_tuple_is_invocable_generic(
+    ^^std::is_invocable_v, ^^Func, ^^TypeTuple);
 
 /**
  * Equivalent to std::is_nothrow_invocable_v<Func, Args...> where
  * TypeTuple = type_tuple<Args...>.
  */
-template <class Func, class TypeTuple>
+template <class Func, template_instance_of<type_tuple> TypeTuple>
 constexpr auto type_tuple_is_nothrow_invocable_v =
-  impl::type_tuple_is_invocable_generic<
-    std::is_nothrow_invocable, Func, TypeTuple>::value;
+  impl::type_tuple_is_invocable_generic(
+    ^^std::is_nothrow_invocable_v, ^^Func, ^^TypeTuple);
 
 /**
  * Equivalent to std::is_invocable_r_v<R, Func, Args...> where
  * TypeTuple = type_tuple<Args...>.
  */
-template <class R, class Func, class TypeTuple>
+template <class R, class Func, template_instance_of<type_tuple> TypeTuple>
 constexpr auto type_tuple_is_invocable_r_v =
-  impl::type_tuple_is_invocable_r_generic<
-    std::is_invocable_r, R, Func, TypeTuple>::value;
+  impl::type_tuple_is_invocable_r_generic(
+    ^^std::is_invocable_r_v, ^^R, ^^Func, ^^TypeTuple);
 
 /**
  * Equivalent to std::is_nothrow_invocable_r_v<R, Func, Args...> where
  * TypeTuple = type_tuple<Args...>.
  */
-template <class R, class Func, class TypeTuple>
+template <class R, class Func, template_instance_of<type_tuple> TypeTuple>
 constexpr auto type_tuple_is_nothrow_invocable_r_v =
-  impl::type_tuple_is_invocable_r_generic<
-    std::is_nothrow_invocable_r, R, Func, TypeTuple>::value;
+  impl::type_tuple_is_invocable_r_generic(
+    ^^std::is_nothrow_invocable_r_v, ^^R, ^^Func, ^^TypeTuple);
 
 /**
  * Makes type_tuple<Ts...> where

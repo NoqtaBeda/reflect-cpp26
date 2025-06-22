@@ -17,6 +17,9 @@ xmake f -m <debug|release> \
 
 xmake build --group=tests/**
 LD_LIBRARY_PATH=<path-to-libc++> xmake run --group=tests/**
+
+# ASM check to test whether rudundant symbols exist in the build target
+LD_LIBRARY_PATH=<path-to-libc++> xmake run run_asm_check
 ```
 
 # TODO

@@ -23,18 +23,23 @@
 #ifndef REFLECT_CPP26_ENUM_ENUM_SWITCH_HPP
 #define REFLECT_CPP26_ENUM_ENUM_SWITCH_HPP
 
-#include <reflect_cpp26/enum/enum_for_each.hpp>
+#include <reflect_cpp26/enum/enum_meta_entries.hpp>
+#include <reflect_cpp26/utils/constant.hpp>
+#include <reflect_cpp26/utils/utility.hpp>
+#include <type_traits>
 
 namespace reflect_cpp26 {
 namespace impl {
 template <class R, class E, class Func>
 constexpr auto enum_switch_is_invocable_r() -> bool
 {
-  auto res = true;
-  enum_for_each<E>([&res](auto e) {
-    return res &= std::is_invocable_r_v<R, Func, decltype(e)>;
-  });
-  return res;
+  template for (constexpr auto entry: enum_meta_entries<E>()) {
+    constexpr auto ev = extract<E>(entry);
+    if (!std::is_invocable_r_v<R, Func, constant<ev>>) {
+      return false;
+    }
+  }
+  return true;
 }
 
 template <class R, class E, class Func>
@@ -44,60 +49,52 @@ constexpr auto enum_switch_is_invocable_r_v =
 template <class E, class Func>
 constexpr auto enum_switch_invoke_result() -> std::meta::info
 {
-  auto results = std::vector<std::meta::info>{};
-  enum_for_each<E>([&results](auto e) {
-    results.push_back(^^std::invoke_result_t<Func, decltype(e)>);
-  });
-  return substitute(^^std::common_type, results);
+  auto results = make_reserved_vector<std::meta::info>(enum_count_v<E>);
+  template for (constexpr auto entry: enum_meta_entries<E>()) {
+    constexpr auto ev = extract<E>(entry);
+    results.push_back(^^std::invoke_result_t<Func, constant<ev>>);
+  }
+  return substitute(^^std::common_type_t, results);
 }
 
 template <class E, class Func>
-using enum_switch_invoke_result_wrapped_t =
-  [: enum_switch_invoke_result<E, Func>() :];
-
-// Note: using result_t = typename [: result<E, Func>() :]::type does not work
-// with experimental C++26 compiler, thus wrapped_t above is required.
-template <class E, class Func>
-using enum_switch_invoke_result_t =
-  typename enum_switch_invoke_result_wrapped_t<E, Func>::type;
+using enum_switch_invoke_result_t = [: enum_switch_invoke_result<E, Func>() :];
 
 template <class E, class Func>
 constexpr auto enum_switch_void(Func&& func, E value) -> void
 {
-  enum_for_each<E>([&func, value](auto e) {
-    if (e == value) {
-      func(e);
-      return false; // false: Does not continue
+  template for (constexpr auto entry: enum_meta_entries<E>()) {
+    constexpr auto ev = extract<E>(entry);
+    if (ev == value) {
+      func(constant<ev>());
+      return;
     }
-    return true; // true: Continues
-  });
+  }
 }
 
 template <class T, class E, class Func>
 constexpr auto enum_switch_optional(Func&& func, E value) -> std::optional<T>
 {
   auto res = std::optional<T>{};
-  enum_for_each<E>([&func, value, &res](auto e) {
-    if (e == value) {
-      res = func(e);
-      return false; // false: Does not continue
+  template for (constexpr auto entry: enum_meta_entries<E>()) {
+    constexpr auto ev = extract<E>(entry);
+    if (ev == value) {
+      res = func(constant<ev>());
+      break;
     }
-    return true; // true: Continues
-  });
+  }
   return res;
 }
 
 template <class T, class E, class Func>
-constexpr auto enum_switch_value(Func&& func, E value, T init)
-  /* -> ResultT */
+constexpr auto enum_switch_value(Func&& func, E value, T init) -> T
 {
-  enum_for_each<E>([&func, value, &init](auto e) {
-    if (e == value) {
-      init = func(e);
-      return false; // false: Does not continue
+  template for (constexpr auto entry: enum_meta_entries<E>()) {
+    constexpr auto ev = extract<E>(entry);
+    if (ev == value) {
+      return func(constant<ev>());
     }
-    return true; // true: Continues
-  });
+  }
   return init;
 }
 } // namespace impl

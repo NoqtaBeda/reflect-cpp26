@@ -28,14 +28,6 @@
 #include <reflect_cpp26/utils/meta_utility.hpp>
 
 namespace reflect_cpp26 {
-namespace impl {
-template <class T>
-consteval auto walk_public_nsdm() -> std::meta::info;
-
-template <class T>
-using public_flattened_nsdm_t = [: walk_public_nsdm<T>() :];
-} // namespace impl
-
 /**
  * Usage (functions below are in namespace std::meta):
  * - type_of(member) gets its value type
@@ -43,10 +35,10 @@ using public_flattened_nsdm_t = [: walk_public_nsdm<T>() :];
  * - parent_of(member) gets the direct class that defines this member
  *   - May be some (possibly indirect) base class of T
  * - offset_of(member) gets its offset inside parent_of(member)
- *   - Note: this offset is NOT relative to T. Use actual_offset instead.
+ *   - Note: to get the offset that is relative to T. Use actual_offset instead.
  * - alignment_of(member) gets its alignment.
  */
-struct flattened_data_member_spec {
+struct flattened_data_member_info {
   /**
    * Reflection to a public non-static data member of T,
    * either defined by T directly or inherited from some base class.
@@ -56,53 +48,47 @@ struct flattened_data_member_spec {
    * Actual offset of member relative to T.
    */
   std::meta::member_offset actual_offset;
-};
 
-template <flattened_data_member_spec... Members>
-struct flattened_data_member_spec_constant : constant<Members...> {
-  using base = constant<Members...>;
-
-  static constexpr auto to_members()
-  {
-    constexpr auto map_fn = [](auto cur) { return cur.value.member; };
-    return base::template map<map_fn>();
+  consteval size_t actual_offset_bits() const {
+    return actual_offset.bytes * CHAR_BIT + actual_offset.bits;
   }
 
-  static constexpr auto to_actual_offsets()
-  {
-    constexpr auto map_fn = [](auto cur) { return cur.value.actual_offset; };
-    return base::template map<map_fn>();
-  }
-
-  static constexpr auto to_actual_offset_bytes()
-  {
-    constexpr auto map_fn = [](auto cur) {
-      if (is_bit_field(cur.value.member)) {
-        compile_error("Invalid transformation with bit-fields.");
-      }
-      return cur.value.actual_offset.bytes;
-    };
-    return base::template map<map_fn>();
-  }
-
-  static constexpr auto to_actual_offset_bits()
-  {
-    constexpr auto map_fn = [](auto cur) {
-      auto a = cur.value.actual_offset;
-      return a.bytes * CHAR_BIT + a.bits;
-    };
-    return base::template map<map_fn>();
+  consteval size_t actual_offset_bytes() const {
+    if (actual_offset.bits != 0) {
+      compile_error("Can not get offset bytes of bit-fields.");
+    }
+    return actual_offset.bytes;
   }
 };
+
+namespace impl {
+template <size_t N>
+consteval auto make_flattened_nsdm_array(
+  const std::vector<flattened_data_member_info>& input) /* -> std::array */
+{
+  if (input.size() != N) {
+    compile_error("Implementation error: size mismatch.");
+  }
+  auto res = std::array<flattened_data_member_info, N>{};
+  std::ranges::copy(input, res.begin());
+  return res;
+}
+
+consteval size_t count_public_flattened_ndsm(std::meta::info T);
+
+template <class T>
+consteval auto walk_public_nsdm() -> std::vector<flattened_data_member_info>;
+
+template <class T>
+constexpr auto public_flattened_nsdm_count_v =
+  impl::count_public_flattened_ndsm(remove_cv(^^T));
+} // namespace impl
 
 /**
  * Gets a full list of non-static data members (NSDM) with public access
  * of non-union class T, including:
  * (1) Direct public NSDMs of T;
  * (2) All public NSDMs inherited from public base classes of T.
- *
- * The result NSDM list is of type constant<m1, m2, ...>, where each mi is
- * a flattened_data_member_spec of the data member.
  *
  * Define the inheritance graph of T as a DAG where each directed edge X -> Y
  * represents direct inheritance relationship (Y is a direct public base class
@@ -114,53 +100,56 @@ struct flattened_data_member_spec_constant : constant<Members...> {
  * inheritance graph is not a tree (e.g. "diamond inheritance").
  */
 template <class_without_virtual_inheritance T>
-constexpr auto public_flattened_nsdm_v = impl::public_flattened_nsdm_t<T>{};
+constexpr auto public_flattened_nsdm_v =
+  impl::make_flattened_nsdm_array<impl::public_flattened_nsdm_count_v<T>>(
+    impl::walk_public_nsdm<std::remove_cv_t<T>>());
 
 namespace impl {
-template <class T>
-consteval auto walk_public_nsdm() -> std::meta::info
+consteval size_t count_public_flattened_ndsm(std::meta::info T)
 {
-  auto members = std::vector<std::meta::info>{};
-  REFLECT_CPP26_EXPAND(public_direct_bases_of(^^T)).for_each(
-    [&members](auto base) {
-      if (is_virtual(base.value)) {
-        compile_error("Virtual inheritance is disallowed.");
-      }
-      using BaseType = [:type_of(base.value):];
-      constexpr auto base_offset = offset_of(base.value).bytes;
-      constexpr auto from_base =
-        public_flattened_nsdm_v<BaseType>;
+  auto res = public_direct_nsdm_of(T).size();
+  for (auto base: public_direct_bases_of(T)) {
+    if (is_virtual(base)) {
+      compile_error("Virtual inheritance is disallowed.");
+    }
+    res += extract<size_t>(^^public_flattened_nsdm_count_v, type_of(base));
+  }
+  return res;
+}
 
-      from_base.for_each([&members](flattened_data_member_spec sp) {
-        sp.actual_offset.bytes += base_offset;
-        members.push_back(std::meta::reflect_constant(sp));
-      });
-    });
-  REFLECT_CPP26_EXPAND(public_direct_nsdm_of(^^T))
-    .for_each([&members](auto cur_member) {
-      auto cur_member_spec = flattened_data_member_spec{
-        .member = cur_member,
-        .actual_offset = offset_of(cur_member.value),
-      };
-      members.push_back(std::meta::reflect_constant(cur_member_spec));
-    });
-  return substitute(^^flattened_data_member_spec_constant, members);
+template <class T>
+consteval auto walk_public_nsdm() -> std::vector<flattened_data_member_info>
+{
+  auto members = std::vector<flattened_data_member_info>{};
+  template for (constexpr auto base: public_direct_bases_v<T>) {
+    if (is_virtual(base)) {
+      compile_error("Virtual inheritance is disallowed.");
+    }
+    auto base_offset = offset_of(base).bytes;
+
+    using B = [:type_of(base):];
+    for (auto [member, offset]: public_flattened_nsdm_v<B>) {
+      offset.bytes += base_offset;
+      members.push_back({member, offset});
+    }
+  }
+  for (auto member: public_direct_nsdm_of(^^T)) {
+    members.push_back({member, offset_of(member)});
+  }
+  return members;
 }
 
 template <class T>
 consteval auto check_flattened_members()
 {
-  constexpr auto members = public_flattened_nsdm_v<T>;
-  return members.all_of([](auto cur_spec) {
-    // Each member must be accessible; No union member is allowed.
-    return is_accessible_by_member_reflection_v<T, cur_spec.value.member> &&
-      !is_union_type(type_of(cur_spec.value.member));
-  });
+  for (auto [member, _]: public_flattened_nsdm_v<T>) {
+    auto M = std::meta::reflect_constant(member);
+    if (!extract_bool(^^is_accessible_by_member_reflection_v, ^^T, M)) {
+      return false;
+    }
+  }
+  return true;
 }
-
-template <class T>
-constexpr auto check_flattened_members_v =
-  check_flattened_members<std::remove_cv_t<T>>();
 } // namespace impl
 
 /**
@@ -197,7 +186,7 @@ constexpr auto is_partially_flattenable_v =
 
 template <class_without_virtual_inheritance T>
 constexpr auto is_partially_flattenable_v<T> =
-  impl::check_flattened_members_v<std::remove_cv_t<T>>;
+  impl::check_flattened_members<std::remove_cv_t<T>>();
 
 template <class T>
 concept partially_flattenable = is_partially_flattenable_v<T>;
@@ -221,8 +210,8 @@ template <class T>
 constexpr auto is_flattenable_v = std::is_scalar_v<T> || std::is_array_v<T>;
 
 template <class_without_virtual_inheritance T>
-constexpr auto is_flattenable_v<T> = is_partially_flattenable_v<T>
-  && !has_non_public_nsdm_v<T>;
+constexpr auto is_flattenable_v<T> =
+  is_partially_flattenable_v<T> && !has_non_public_nsdm_v<T>;
 
 template <class T>
 concept flattenable = is_flattenable_v<T>;
@@ -231,8 +220,7 @@ template <class T>
 concept flattenable_class = is_flattenable_v<T> && std::is_class_v<T>;
 
 namespace impl {
-template <class T>
-consteval auto is_flattenable_aggregate() -> bool;
+consteval bool is_flattenable_aggregate(std::meta::info T);
 } // namespace impl
 
 /**
@@ -249,8 +237,8 @@ constexpr auto is_flattenable_aggregate_v = std::is_array_v<T>;
 
 template <class T>
   requires (std::is_class_v<T> && std::is_aggregate_v<T>)
-constexpr auto is_flattenable_aggregate_v<T> = is_flattenable_v<T>
-  && impl::is_flattenable_aggregate<std::remove_cv_t<T>>();
+constexpr auto is_flattenable_aggregate_v<T> =
+  is_flattenable_v<T> && impl::is_flattenable_aggregate(remove_cv(^^T));
 
 template <class T>
 concept flattenable_aggregate = is_flattenable_aggregate_v<T>;
@@ -260,31 +248,28 @@ concept flattenable_aggregate_class =
   is_flattenable_aggregate_v<T> && std::is_class_v<T>;
 
 namespace impl {
-template <class T>
-consteval auto is_flattenable_aggregate() -> bool
+consteval bool is_flattenable_aggregate(std::meta::info T)
 {
-  static_assert(std::is_class_v<T>, "Non-class type not allowed.");
-  if constexpr (!std::is_aggregate_v<T>) {
+  if (!is_class_type(T)) {
+    compile_error("Non-class types are not allowed here.");
+  }
+  if (!is_aggregate_type(T)) {
     return false;
-  } else {
-    auto all_bases_are_flattenable =
-      REFLECT_CPP26_EXPAND(all_direct_bases_of(^^T)).all_of([](auto base) {
-        // Each base should be flattenable **aggregate** as well;
-        using BaseType = [:std::meta::type_of(base):];
-        return is_public(base.value) && !is_virtual(base.value) &&
-          is_flattenable_aggregate_v<BaseType>;
-      });
-    if (!all_bases_are_flattenable) {
+  }
+  for (auto base: all_direct_bases_of(T)) {
+    auto ok = is_public(base) && !is_virtual(base) &&
+      extract_bool(^^is_flattenable_aggregate_v, type_of(base));
+    if (!ok) {
       return false;
     }
-    // Checks direct members of T
-    auto all_members_are_flattenable = std::ranges::all_of(
-      all_direct_nsdm_of(^^T),
-      [](std::meta::info member) {
-        return is_public(member) && !is_union_type(type_of(member));
-      });
-    return all_members_are_flattenable;
   }
+  for (auto member: all_direct_bases_of(T)) {
+    auto ok = is_public(member) && !is_union_type(type_of(member));
+    if (!ok) {
+      return false;
+    }
+  }
+  return true;
 }
 } // namespace impl
 } // namespace reflect_cpp26

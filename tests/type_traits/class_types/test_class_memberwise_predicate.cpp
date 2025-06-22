@@ -122,24 +122,24 @@ struct bar_t {
 };
 
 struct type_identifier_length_is_odd {
-  static consteval auto operator()(rfl::flattened_data_member_spec spec) {
+  static consteval auto operator()(rfl::flattened_data_member_info spec) {
     return identifier_of(type_of(spec.member)).size() % 2 == 1;
   }
 };
 
 struct type_identifier_length_is_even {
-  static consteval auto operator()(rfl::flattened_data_member_spec spec) {
+  static consteval auto operator()(rfl::flattened_data_member_info spec) {
     return identifier_of(type_of(spec.member)).size() % 2 == 0;
   }
 };
 
 struct actual_offset_is_odd {
-  static consteval auto operator()(rfl::flattened_data_member_spec spec) {
+  static consteval auto operator()(rfl::flattened_data_member_info spec) {
     return spec.actual_offset.bytes % 2 == 1;
   }
 };
 
-// No inheritance, unary predicate(reflect_cpp26::flattened_data_member_spec)
+// No inheritance, unary predicate(reflect_cpp26::flattened_data_member_info)
 static_assert(rfl::all_of_flattened_memberwise_meta_v<
   type_identifier_length_is_even, bar_t>);
 static_assert(NOT rfl::all_of_flattened_memberwise_meta_v<
@@ -218,7 +218,7 @@ struct all_are_non_arrays {
 
 struct all_are_non_arrays_by_spec {
   template <class... Args>
-    requires (std::is_same_v<Args, rfl::flattened_data_member_spec> && ...)
+    requires (std::is_same_v<Args, rfl::flattened_data_member_info> && ...)
   static constexpr auto operator()(Args... args) {
     return ((!is_array_type(type_of(args.member))) && ...);
   }

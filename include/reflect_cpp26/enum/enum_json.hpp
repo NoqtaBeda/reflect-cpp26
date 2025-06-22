@@ -80,7 +80,7 @@ constexpr auto enum_json(EntriesSpan entries) -> std::string
 
 template <class E, enum_entry_order Order>
 constexpr auto enum_json_v =
-  reflect_cpp26::define_static_string(enum_json(enum_entries<E, Order>()));
+  std::define_static_string(enum_json(enum_entries<E, Order>()));
 } // namespace impl
 
 /**

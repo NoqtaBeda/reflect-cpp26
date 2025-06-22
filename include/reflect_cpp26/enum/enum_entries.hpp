@@ -23,9 +23,8 @@
 #ifndef REFLECT_CPP26_ENUM_ENUM_ENTRIES_HPP
 #define REFLECT_CPP26_ENUM_ENUM_ENTRIES_HPP
 
-#include <reflect_cpp26/enum/enum_count.hpp>
-#include <reflect_cpp26/enum/enum_for_each.hpp>
-#include <reflect_cpp26/utils/define_static_values.hpp>
+#include <reflect_cpp26/enum/enum_names.hpp>
+#include <reflect_cpp26/enum/enum_values.hpp>
 #include <algorithm>
 #include <span>
 #include <utility>
@@ -39,11 +38,12 @@ template <class E, enum_entry_order Order>
 consteval auto make_enum_entries() /* -> std::array<enum_entry_t<E>, N> */
 {
   auto entries = std::array<enum_entry_t<E>, enum_count_v<E>>{};
-  enum_meta_for_each<E, Order>([&entries](auto index, auto ec) {
-    entries[index].first = [:ec:];
-    entries[index].second =
-      reflect_cpp26::define_static_string(identifier_of(ec.value));
-  });
+  auto values = enum_values<E, Order>();
+  auto names = enum_names<E, Order>();
+  for (auto i = 0zU; i < enum_count_v<E>; i++) {
+    entries[i].first = values[i];
+    entries[i].second = names[i];
+  }
   return entries;
 }
 

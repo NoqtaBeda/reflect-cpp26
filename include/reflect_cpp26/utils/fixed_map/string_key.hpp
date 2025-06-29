@@ -23,13 +23,21 @@
 #ifndef REFLECT_CPP26_UTILS_FIXED_MAP_STRING_KEY_HPP
 #define REFLECT_CPP26_UTILS_FIXED_MAP_STRING_KEY_HPP
 
+#include <reflect_cpp26/utils/ctype.hpp>
 #include <reflect_cpp26/utils/fixed_map/impl/common.hpp>
 #include <reflect_cpp26/utils/fixed_map/integral_key.hpp>
+#include <reflect_cpp26/utils/meta_string_view.hpp>
 #include <reflect_cpp26/utils/string_hash.hpp>
+#include <reflect_cpp26/utils/type_tuple.hpp>
 #include <climits>
 
 namespace reflect_cpp26 {
 struct string_key_map_options {
+  // Whether the fixed map is built in a case-insensitive manner.
+  bool case_insensitive = false;
+  // Whether optimization is enabled by using the i-th character as key
+  // where i is the index such that every input string differs at index i.
+  bool enables_lookup_by_differed_character = false;
   // Mimimum load factor for length-based, ith-character-based or hash-based
   // string-key flat map, where holes are filled with value-initialized Value{}.
   double min_load_factor = 0.5;
@@ -51,6 +59,8 @@ namespace reflect_cpp26::impl {
 template <class KVPair>
 struct string_key_kv_pair_wrapper_by_length {
   using underlying_type = KVPair;
+  using tuple_elements = type_tuple<size_t, KVPair>;
+
   KVPair underlying;
 
   static constexpr auto make(KVPair kv_pair) {
@@ -73,6 +83,8 @@ struct string_key_kv_pair_wrapper_by_length {
 template <size_t J, class KVPair>
 struct string_key_kv_pair_wrapper_by_character {
   using underlying_type = KVPair;
+  using character_type = char_type_t<std::tuple_element_t<0, underlying_type>>;
+  using tuple_elements = type_tuple<character_type, KVPair>;
 
   static constexpr auto differed_index = J;
   KVPair underlying;
@@ -93,73 +105,120 @@ struct string_key_kv_pair_wrapper_by_character {
     }
   }
 };
-} // namespace reflect_cpp26::impl
 
-template <class KVPair>
-struct std::tuple_size<
-  reflect_cpp26::impl::string_key_kv_pair_wrapper_by_length<KVPair>>
-  : std::integral_constant<size_t, 2> {};
+struct string_key_equal_t {
+  struct equal_length_tag_t {};
+  static constexpr auto equal_length = equal_length_tag_t{};
 
-template <size_t J, class KVPair>
-struct std::tuple_size<
-  reflect_cpp26::impl::string_key_kv_pair_wrapper_by_character<J, KVPair>>
-  : std::integral_constant<size_t, 2> {};
+  static constexpr uint64_t hash(const string_like auto& u) {
+    return bkdr_hash64(u);
+  }
 
-template <size_t I, class KVPair>
-  requires (I < 2)
-struct std::tuple_element<I,
-    reflect_cpp26::impl::string_key_kv_pair_wrapper_by_length<KVPair>> {
-  using type = std::conditional_t<(I == 0), size_t, KVPair>;
+  static constexpr auto convert_char(char_type auto c) {
+    return c;
+  }
+
+  template <char_type CharT, string_like_of<CharT> StringU>
+  static constexpr bool operator()(
+    meta_basic_string_view<CharT> t, const StringU& u)
+  {
+    return t == u;
+  }
+
+  template <char_type CharT, string_like_of<CharT> StringU>
+  static constexpr bool operator()(
+    meta_basic_string_view<CharT> t, const StringU& u, equal_length_tag_t)
+  {
+    const auto* iu = std::ranges::data(u);
+    for (const auto *it = t.head; it < t.tail; ++it, ++iu) {
+      if (*it != *iu) { return false; }
+    }
+    return true;
+  }
 };
 
-template <size_t I, size_t J, class KVPair>
-  requires (I < 2)
-struct std::tuple_element<I,
-    reflect_cpp26::impl::string_key_kv_pair_wrapper_by_character<J, KVPair>> {
-  using type = std::conditional_t<(I == 0), char, KVPair>;
+struct string_key_ascii_ci_equal_t {
+  struct equal_length_tag_t {};
+  static constexpr auto equal_length = equal_length_tag_t{};
+
+  static constexpr uint64_t hash(const string_like auto& u) {
+    return ascii_ci_bkdr_hash64(u);
+  }
+
+  static constexpr auto convert_char(char_type auto c) {
+    return ascii_tolower(c);
+  }
+
+  template <char_type CharT, string_like_of<CharT> StringU>
+  static constexpr bool operator()(
+    meta_basic_string_view<CharT> t, const StringU& u)
+  {
+    return t.length() == u.length() && operator()(t, u, equal_length);
+  }
+
+  // t has already been converted to all-lower case.
+  template <char_type CharT, string_like_of<CharT> StringU>
+  static constexpr bool operator()(
+    meta_basic_string_view<CharT> t, const StringU& u, equal_length_tag_t)
+  {
+    const auto* iu = std::ranges::data(u);
+    for (const auto *it = t.head; it < t.tail; ++it, ++iu) {
+      if (*it != ascii_tolower(*iu)) { return false; }
+    }
+    return true;
+  }
 };
 
-namespace reflect_cpp26::impl {
+// -------- Implementation of various string-key fixed maps --------
+
+// Empty: Input is an empty kv-pair list.
 template <class KVPair>
 struct empty_string_key_map {
   using key_type = std::tuple_element_t<0, KVPair>;
   using value_type = std::tuple_element_t<1, KVPair>;
   using result_type = const value_type&;
-  static_assert(std::is_same_v<key_type, meta_string_view>);
+  using character_type = char_type_t<key_type>;
 
   static constexpr size_t size() {
     return 0;
   }
-  static constexpr auto get(std::string_view) -> std::pair<result_type, bool> {
+  static constexpr auto get(std::basic_string_view<character_type>)
+    -> std::pair<result_type, bool> {
     return {map_null_value_v<value_type>, false};
   }
-  static constexpr auto operator[](std::string_view) -> const value_type& {
+
+  static constexpr auto operator[](std::basic_string_view<character_type>)
+    -> const value_type& {
     return map_null_value_v<value_type>;
   }
 };
 
-#define REFLECT_CPP26_STRING_KEY_MAP_COMMON_INTERFACE                     \
-  constexpr auto operator[](std::string_view key) const -> result_type {  \
-    return get(key).first;                                                \
+#define REFLECT_CPP26_STRING_KEY_MAP_COMMON_INTERFACE                         \
+  constexpr auto operator[](std::basic_string_view<character_type> key) const \
+    -> result_type {                                                          \
+    return get(key).first;                                                    \
   }
 
-template <class KVPair>
+// Naive: Compares string contents one-by-one.
+template <class EqComp, class KVPair>
 struct naive_string_key_map {
   using key_type = std::tuple_element_t<0, KVPair>;
   using value_type = std::tuple_element_t<1, KVPair>;
   using result_type = std::invoke_result_t<get_second_t, const KVPair&>;
-  static_assert(std::is_same_v<key_type, meta_string_view>);
+  using character_type = char_type_t<key_type>;
 
+  // Alignment is not needed for linear searching
   meta_span<KVPair> _entries;
 
   constexpr size_t size() const {
     return _entries.size();
   }
 
-  constexpr auto get(std::string_view key) const -> std::pair<result_type, bool>
+  constexpr auto get(std::basic_string_view<character_type> key) const
+    -> std::pair<result_type, bool>
   {
     for (const auto& cur: _entries) {
-      if (get_first(cur) == key) {
+      if (EqComp::operator()(get_first(cur), key)) {
         return {get_second(cur), true};
       }
     }
@@ -169,7 +228,9 @@ struct naive_string_key_map {
   REFLECT_CPP26_STRING_KEY_MAP_COMMON_INTERFACE
 };
 
-template <class Underlying>
+// By-length: Candidate data structure when all the keys have distinct length.
+// The underlying data structure takes key length as key.
+template <class EqComp, class Underlying>
 struct string_key_map_by_length {
   // => string_key_kv_pair_wrapper_by_length<KVPair>
   using kv_pair_wrapper_type = typename Underlying::kv_pair_type;
@@ -178,7 +239,7 @@ struct string_key_map_by_length {
   using key_type = std::tuple_element_t<0, kv_pair_type>;
   using value_type = std::tuple_element_t<1, kv_pair_type>;
   using result_type = std::invoke_result_t<get_second_t, const kv_pair_type&>;
-  static_assert(std::is_same_v<key_type, meta_string_view>);
+  using character_type = char_type_t<key_type>;
 
   Underlying _underlying;
 
@@ -186,10 +247,16 @@ struct string_key_map_by_length {
     return _underlying.size();
   }
 
-  constexpr auto get(std::string_view key) const -> std::pair<result_type, bool>
+  constexpr auto get(std::basic_string_view<character_type> key) const
+    -> std::pair<result_type, bool>
   {
     auto [kv_pair, found] = _underlying.get(key.length());
-    if (!found || get_first(kv_pair) != key) {
+    if (!found) {
+      return {map_null_value_v<value_type>, false};
+    }
+    auto keys_are_equal =
+      EqComp::operator()(get_first(kv_pair), key, EqComp::equal_length);
+    if (!keys_are_equal) {
       return {map_null_value_v<value_type>, false};
     }
     return {get_second(kv_pair), true};
@@ -198,7 +265,10 @@ struct string_key_map_by_length {
   REFLECT_CPP26_STRING_KEY_MAP_COMMON_INTERFACE
 };
 
-template <class Underlying>
+// By-character: Candidate data structure when all the keys have distinct
+// characters at index I. The underlying data structure takes the I-th character
+// of each string as key.
+template <class EqComp, class Underlying>
 struct string_key_map_by_character {
   // => string_key_kv_pair_wrapper_by_character<I, KVPair>
   using kv_pair_wrapper_type = typename Underlying::kv_pair_type;
@@ -207,7 +277,7 @@ struct string_key_map_by_character {
   using key_type = std::tuple_element_t<0, kv_pair_type>;
   using value_type = std::tuple_element_t<1, kv_pair_type>;
   using result_type = std::invoke_result_t<get_second_t, const kv_pair_type&>;
-  static_assert(std::is_same_v<key_type, meta_string_view>);
+  using character_type = char_type_t<key_type>;
 
   static constexpr auto differed_index = kv_pair_wrapper_type::differed_index;
   Underlying _underlying;
@@ -216,14 +286,16 @@ struct string_key_map_by_character {
     return _underlying.size();
   }
 
-  constexpr auto get(std::string_view key) const -> std::pair<result_type, bool>
+  constexpr auto get(std::basic_string_view<character_type> key) const
+    -> std::pair<result_type, bool>
   {
     if (key.length() <= differed_index) {
       return {map_null_value_v<value_type>, false};
     }
 
-    auto [kv_pair, found] = _underlying.get(key[differed_index]);
-    if (!found || get_first(kv_pair) != key) {
+    auto c = EqComp::convert_char(key[differed_index]);
+    auto [kv_pair, found] = _underlying.get(c);
+    if (!found || !EqComp::operator()(get_first(kv_pair), key)) {
       return {map_null_value_v<value_type>, false};
     }
     return {get_second(kv_pair), true};
@@ -246,14 +318,16 @@ template <class KVPair>
 using string_key_kv_pair_aligned_wrapper_with_hash =
   alignment_adjusted_wrapper<string_key_kv_pair_wrapper_with_hash<KVPair>>;
 
-template <class KVPair, template <class> class Derived>
+// By-hash-table: Hash table is built for all the keys with open addressing.
+// Precondition: No hash collision.
+template <class EqComp, class KVPair, template <class, class> class Derived>
 struct string_key_map_by_hash_base {
   using key_type = std::tuple_element_t<0, KVPair>;
   using value_type = std::tuple_element_t<1, KVPair>;
   using result_type = std::invoke_result_t<get_second_t, const KVPair&>;
-  static_assert(std::is_same_v<key_type, meta_string_view>);
+  using character_type = char_type_t<key_type>;
 
-  using derived_type = Derived<KVPair>;
+  using derived_type = Derived<EqComp, KVPair>;
   using wrapper_type = string_key_kv_pair_aligned_wrapper_with_hash<KVPair>;
 
   meta_span<wrapper_type> _entries;
@@ -267,20 +341,18 @@ struct string_key_map_by_hash_base {
     return static_cast<const derived_type*>(this)->do_get_modulo(hash);
   }
 
-  constexpr auto get(std::string_view key) const -> std::pair<result_type, bool>
+  constexpr auto get(std::basic_string_view<character_type> key) const
+    -> std::pair<result_type, bool>
   {
-    auto key_hash = bkdr_hash64(key);
+    auto key_hash = EqComp::hash(key);
     auto i = get_modulo(key_hash);
     template for (constexpr auto delta: string_key_hash_map_probing_deltas) {
       const auto& cur = _entries[i + delta].underlying;
-      if (get_first(cur.underlying).head == nullptr) {
-        return {map_null_value_v<value_type>, false};
-      }
+      if (get_first(cur.underlying).head == nullptr) { break; }
+
       if (cur.hash == key_hash) {
-        if (get_first(cur.underlying) == key) {
-          return {get_second(cur.underlying), true};
-        }
-        return {map_null_value_v<value_type>, false};
+        if (!EqComp::operator()(get_first(cur.underlying), key)) { break; }
+        return {get_second(cur.underlying), true};
       }
     }
     return {map_null_value_v<value_type>, false};
@@ -289,9 +361,10 @@ struct string_key_map_by_hash_base {
   REFLECT_CPP26_STRING_KEY_MAP_COMMON_INTERFACE
 };
 
-template <class KVPair>
+// By-hash-table (faster): Bucket size is always power of 2.
+template <class EqComp, class KVPair>
 struct string_key_map_by_hash_fast
-  : string_key_map_by_hash_base<KVPair, string_key_map_by_hash_fast>
+  : string_key_map_by_hash_base<EqComp, KVPair, string_key_map_by_hash_fast>
 {
   // Assertion: buchet_size_mask = 2^n - 1
   size_t _bucket_size_mask;
@@ -300,9 +373,10 @@ struct string_key_map_by_hash_fast
   }
 };
 
-template <class KVPair>
+// By-hash-table (slower): Bucket size is arbitrary and modulo is more costly.
+template <class EqComp, class KVPair>
 struct string_key_map_by_hash_slow
-  : string_key_map_by_hash_base<KVPair, string_key_map_by_hash_slow>
+  : string_key_map_by_hash_base<EqComp, KVPair, string_key_map_by_hash_slow>
 {
   // bucket_size == entries.size() - string_key_hash_map_probing_size
   size_t _bucket_size;
@@ -311,13 +385,14 @@ struct string_key_map_by_hash_slow
   }
 };
 
-// Assertion: No hash collision
-template <class KVPair>
+// By-hash with binary search:
+// Precondition: No hash collision.
+template <class EqComp, class KVPair>
 struct string_key_map_by_hash_binary_search_fast {
   using key_type = std::tuple_element_t<0, KVPair>;
   using value_type = std::tuple_element_t<1, KVPair>;
   using result_type = std::invoke_result_t<get_second_t, const KVPair&>;
-  static_assert(std::is_same_v<key_type, meta_string_view>);
+  using character_type = char_type_t<key_type>;
 
   using wrapper_type = string_key_kv_pair_aligned_wrapper_with_hash<KVPair>;
   meta_span<wrapper_type> _entries;
@@ -326,17 +401,16 @@ struct string_key_map_by_hash_binary_search_fast {
     return _entries.size();
   }
 
-  constexpr auto get(std::string_view key) const -> std::pair<result_type, bool>
+  constexpr auto get(std::basic_string_view<character_type> key) const
+    -> std::pair<result_type, bool>
   {
-    auto key_hash = bkdr_hash64(key);
+    auto key_hash = EqComp::hash(key);
     for (auto head = _entries.head, tail = _entries.tail; head < tail; ) {
       const auto* mid = head + (tail - head) / 2;
       const auto& [mid_hash, mid_kv_pair] = mid->underlying;
       if (mid_hash == key_hash) {
-        if (get_first(mid_kv_pair) == key) {
-          return {get_second(mid_kv_pair), true};
-        }
-        return {map_null_value_v<value_type>, false};
+        if (!EqComp::operator()(get_first(mid_kv_pair), key)) { break; }
+        return {get_second(mid_kv_pair), true};
       }
       (mid_hash < key_hash) ? (head = mid + 1) : (tail = mid);
     }
@@ -346,12 +420,13 @@ struct string_key_map_by_hash_binary_search_fast {
   REFLECT_CPP26_STRING_KEY_MAP_COMMON_INTERFACE
 };
 
-template <class KVPair>
+// By-hash with binary search and hash collision.
+template <class EqComp, class KVPair>
 struct string_key_map_by_hash_binary_search_slow {
   using key_type = std::tuple_element_t<0, KVPair>;
   using value_type = std::tuple_element_t<1, KVPair>;
   using result_type = std::invoke_result_t<get_second_t, const KVPair&>;
-  static_assert(std::is_same_v<key_type, meta_string_view>);
+  using character_type = char_type_t<key_type>;
 
   using wrapper_type = string_key_kv_pair_aligned_wrapper_with_hash<KVPair>;
   meta_span<wrapper_type> _entries;
@@ -360,16 +435,17 @@ struct string_key_map_by_hash_binary_search_slow {
     return _entries.size();
   }
 
-  constexpr auto get(std::string_view key) const -> std::pair<result_type, bool>
+  constexpr auto get(std::basic_string_view<character_type> key) const
+    -> std::pair<result_type, bool>
   {
-    auto key_hash = bkdr_hash64(key);
+    auto key_hash = EqComp::hash(key);
     auto pos = std::ranges::lower_bound(_entries, key_hash, {},
       [](const auto& entry) {
         return entry.underlying.hash;
       });
     for (; pos < _entries.end() && pos->underlying.hash == key_hash; ++pos) {
       const auto& cur = pos->underlying.underlying;
-      if (get_first(cur) == key) {
+      if (EqComp::operator()(get_first(cur), key)) {
         return {get_second(cur), true};
       }
     }
@@ -379,13 +455,14 @@ struct string_key_map_by_hash_binary_search_slow {
   REFLECT_CPP26_STRING_KEY_MAP_COMMON_INTERFACE
 };
 
-// Assertion: No hash collision
-template <class KVPair>
+// By-hash with binary search:
+// Precondition: No hash collision.
+template <class EqComp, class KVPair>
 struct string_key_map_by_hash_linear_search {
   using key_type = std::tuple_element_t<0, KVPair>;
   using value_type = std::tuple_element_t<1, KVPair>;
   using result_type = std::invoke_result_t<get_second_t, const KVPair&>;
-  static_assert(std::is_same_v<key_type, meta_string_view>);
+  using character_type = char_type_t<key_type>;
 
   // Alignment is not needed for linear search.
   using wrapper_type = string_key_kv_pair_wrapper_with_hash<KVPair>;
@@ -395,17 +472,16 @@ struct string_key_map_by_hash_linear_search {
     return _entries.size();
   }
 
-  constexpr auto get(std::string_view key) const -> std::pair<result_type, bool>
+  constexpr auto get(std::basic_string_view<character_type> key) const
+    -> std::pair<result_type, bool>
   {
-    auto key_hash = bkdr_hash64(key);
+    auto key_hash = EqComp::hash(key);
     for (const auto& [hash, kv_pair]: _entries) {
       if (hash != key_hash) {
         continue;
       }
-      if (get_first(kv_pair) == key) {
-        return {get_second(kv_pair), true};
-      }
-      return {map_null_value_v<value_type>, false};
+      if (!EqComp::operator()(get_first(kv_pair), key)) { break; }
+      return {get_second(kv_pair), true};
     }
     return {map_null_value_v<value_type>, false};
   }
@@ -413,49 +489,122 @@ struct string_key_map_by_hash_linear_search {
   REFLECT_CPP26_STRING_KEY_MAP_COMMON_INTERFACE
 };
 
+// -------- Selecting and building fixed map data structure --------
+
 struct string_key_map_meta_result {
-  enum {
+  struct with_entries_t {
+    std::meta::info type;
+    std::meta::info entries;
+  };
+
+  struct with_integral_key_t {
+    std::meta::info type_template;
+    std::meta::info eq_type;
+    integral_key_map_meta_result underlying;
+  };
+
+  struct as_hash_table_t {
+    std::meta::info type;
+    std::meta::info entries;
+    size_t actual_size;
+    size_t bucket_size_or_mask;
+  };
+
+  enum class result_type {
     direct,
-    length_based,
-    character_based,
+    with_entries,
+    with_integral_key,
+    as_hash_table,
   } type;
 
   union {
-    std::meta::info as_direct;
-    integral_key_map_meta_result as_length_based;
-    integral_key_map_meta_result as_character_based;
+    std::meta::info direct;
+    with_entries_t with_entries;
+    with_integral_key_t with_integral_key;
+    as_hash_table_t as_hash_table;
   };
 };
 
 template <class KVPair>
-consteval auto make_naive_string_key_map(
-  const std::vector<KVPair>& kv_pairs) -> std::meta::info
+consteval void check_string_key_map_input(
+  const std::vector<KVPair>& kv_pairs, const string_key_map_options& options)
 {
-  if (kv_pairs.empty()) {
-    return std::meta::reflect_constant(empty_string_key_map<KVPair>{});
+  if (options.case_insensitive) {
+    for (const auto& [k, _]: kv_pairs) {
+      if (is_ascii_string(k)) { continue; }
+      compile_error("Only ASCII strings allowed.");
+    }
   }
-  auto res = naive_string_key_map<KVPair>{
-    ._entries = reflect_cpp26::define_static_array(kv_pairs)};
-  return std::meta::reflect_constant(res);
+}
+
+consteval auto string_key_eq_type(bool case_insensitive)
+{
+  return case_insensitive
+    ? ^^string_key_ascii_ci_equal_t
+    : ^^string_key_equal_t;
+}
+
+template <class KVPair>
+consteval auto make_naive_string_key_map(
+  const std::vector<KVPair>& kv_pairs, const string_key_map_options& options)
+  -> string_key_map_meta_result
+{
+  using enum string_key_map_meta_result::result_type;
+  if (kv_pairs.empty()) {
+    auto res = std::meta::reflect_constant(empty_string_key_map<KVPair>{});
+    return {.type = direct, .direct = res};
+  }
+  auto eq_type = string_key_eq_type(options.case_insensitive);
+  auto type = substitute(^^naive_string_key_map, eq_type, ^^KVPair);
+  auto entries = reflect_cpp26::define_static_array(kv_pairs);
+  return {
+    .type = with_entries,
+    .with_entries = {
+      .type = type,
+      .entries = std::meta::reflect_constant(entries),
+    }
+  };
+}
+
+template <class KVPair>
+consteval bool key_lengths_are_all_distinct(
+  const std::vector<KVPair>& kv_pairs, size_t* min_length)
+{
+  auto lengths = make_reserved_vector<size_t>(kv_pairs.size());
+  for (const auto& [k, _]: kv_pairs) {
+    lengths.push_back(k.length());
+  }
+  std::ranges::sort(lengths);
+  *min_length = lengths.front();
+  auto dup_pos = std::ranges::adjacent_find(lengths);
+  return dup_pos == lengths.end();
 }
 
 template <class KVPair>
 consteval auto make_length_based_string_key_map(
-  const std::vector<KVPair>& length_sorted_kv_pairs,
-  const string_key_map_options& options)
-  -> integral_key_map_meta_result
+  const std::vector<KVPair>& kv_pairs, const string_key_map_options& options)
+  -> string_key_map_meta_result
 {
-  auto wrapped = length_sorted_kv_pairs | std::views::transform(
+  auto wrapped = kv_pairs | std::views::transform(
     string_key_kv_pair_wrapper_by_length<KVPair>::make);
 
-  return make_integral_key_map(wrapped, {
-    .already_sorted = true,
+  auto underlying = make_integral_key_map(wrapped, {
     .already_unique = true,
     .default_value_is_always_invalid = true,
     .min_load_factor = options.min_load_factor,
     .dense_part_threshold = options.dense_part_threshold,
     .binary_search_threshold = options.binary_search_threshold,
   });
+
+  auto eq_type = string_key_eq_type(options.case_insensitive);
+  return {
+    .type = string_key_map_meta_result::result_type::with_integral_key,
+    .with_integral_key = {
+      .type_template = ^^string_key_map_by_length,
+      .eq_type = eq_type,
+      .underlying = underlying,
+    },
+  };
 }
 
 template <class KVPair>
@@ -475,32 +624,42 @@ consteval bool characters_are_all_different(
 
 template <size_t I, class KVPair>
 consteval auto make_character_based_string_key_map_impl(
-  const std::vector<KVPair>& kv_pairs,
-  const string_key_map_options& options)
-  -> integral_key_map_meta_result
+  const std::vector<KVPair>& kv_pairs, const string_key_map_options& options)
+  -> string_key_map_meta_result
 {
   auto wrapped = kv_pairs | std::views::transform(
     string_key_kv_pair_wrapper_by_character<I, KVPair>::make);
 
-  return make_integral_key_map(wrapped, {
+  auto underlying = make_integral_key_map(wrapped, {
+    .already_unique = true,
     .default_value_is_always_invalid = true,
     .min_load_factor = options.min_load_factor,
     .dense_part_threshold = options.dense_part_threshold,
     .binary_search_threshold = options.binary_search_threshold,
   });
+
+  auto eq_type = string_key_eq_type(options.case_insensitive);
+  return {
+    .type = string_key_map_meta_result::result_type::with_integral_key,
+    .with_integral_key = {
+      .type_template = ^^string_key_map_by_character,
+      .eq_type = eq_type,
+      .underlying = underlying,
+    },
+  };
 }
 
 template <class KVPair>
 consteval auto make_character_based_string_key_map(
   const std::vector<KVPair>& kv_pairs, size_t index,
-  const string_key_map_options& options)
+  const string_key_map_options& options) -> string_key_map_meta_result
 {
-  using fn_signature = integral_key_map_meta_result (*)(
+  using fn_signature = string_key_map_meta_result (*)(
     const std::vector<KVPair>&, const string_key_map_options&);
 
+  auto I = std::meta::reflect_constant(index);
   auto fn = extract<fn_signature>(
-    ^^make_character_based_string_key_map_impl,
-    std::meta::reflect_constant(index), ^^KVPair);
+    ^^make_character_based_string_key_map_impl, I, ^^KVPair);
 
   return fn(kv_pairs, options);
 }
@@ -513,46 +672,64 @@ constexpr bool has_hash_collision(std::vector<uint64_t> hash_values)
 
 template <class KVPair>
 consteval auto make_hash_linear_search_based_string_key_map(
-  const std::vector<KVPair>& kv_pairs,
-  const std::vector<uint64_t>& hash_values) -> std::meta::info
+  const std::vector<KVPair>& kv_pairs, const std::vector<uint64_t>& hash_values,
+  const string_key_map_options& options) -> string_key_map_meta_result
 {
   using wrapper_type = string_key_kv_pair_wrapper_with_hash<KVPair>;
-  auto entries = std::vector<wrapper_type>{};
-  entries.reserve(kv_pairs.size());
+  auto entries_vec = std::vector<wrapper_type>{};
+  entries_vec.reserve(kv_pairs.size());
   for (auto i = 0zU, n = kv_pairs.size(); i < n; i++) {
-    entries.push_back({.hash = hash_values[i], .underlying = kv_pairs[i]});
+    entries_vec.push_back({.hash = hash_values[i], .underlying = kv_pairs[i]});
   }
-  auto res = string_key_map_by_hash_linear_search<KVPair>{
-    ._entries = reflect_cpp26::define_static_array(entries)
+  auto eq_type = string_key_eq_type(options.case_insensitive);
+  auto type = substitute(
+    ^^string_key_map_by_hash_linear_search, eq_type, ^^KVPair);
+  auto entries = reflect_cpp26::define_static_array(entries_vec);
+  return {
+    .type = string_key_map_meta_result::result_type::with_entries,
+    .with_entries = {
+      .type = type,
+      .entries = std::meta::reflect_constant(entries),
+    },
   };
-  return std::meta::reflect_constant(res);
 }
 
 template <class KVPair>
 consteval auto make_hash_search_based_string_key_map(
   const std::vector<KVPair>& kv_pairs, const std::vector<uint64_t>& hash_values,
-  bool has_hash_collision, size_t binary_search_threshold) -> std::meta::info
+  bool has_hash_collision, const string_key_map_options& options)
+  -> string_key_map_meta_result
 {
-  if (kv_pairs.size() < binary_search_threshold) {
+  // Linear search
+  if (kv_pairs.size() < options.binary_search_threshold) {
     return make_hash_linear_search_based_string_key_map(
-      kv_pairs, hash_values);
+      kv_pairs, hash_values, options);
   }
+  // ... or binary search
   using wrapper_type = string_key_kv_pair_aligned_wrapper_with_hash<KVPair>;
-  auto entries = std::vector<wrapper_type>{};
-  entries.reserve(kv_pairs.size());
+  auto entries_vec = std::vector<wrapper_type>{};
+  entries_vec.reserve(kv_pairs.size());
   for (auto i = 0zU, n = kv_pairs.size(); i < n; i++) {
-    entries.push_back({{.hash = hash_values[i], .underlying = kv_pairs[i]}});
+    entries_vec.push_back(
+      {{.hash = hash_values[i], .underlying = kv_pairs[i]}});
   }
-  std::ranges::sort(entries, {}, [](const auto& v) {
+  std::ranges::sort(entries_vec, {}, [](const auto& v) {
     return v.underlying.hash;
   });
-  auto static_entries = reflect_cpp26::define_static_array(entries);
-  if (has_hash_collision) {
-    auto res = string_key_map_by_hash_binary_search_slow{static_entries};
-    return std::meta::reflect_constant(res);
-  }
-  auto res = string_key_map_by_hash_binary_search_fast{static_entries};
-  return std::meta::reflect_constant(res);
+
+  auto eq_type = string_key_eq_type(options.case_insensitive);
+  auto type_template = has_hash_collision
+    ? ^^string_key_map_by_hash_binary_search_slow
+    : ^^string_key_map_by_hash_binary_search_fast;
+  auto type = substitute(type_template, eq_type, ^^KVPair);
+  auto entries = reflect_cpp26::define_static_array(entries_vec);
+  return {
+    .type = string_key_map_meta_result::result_type::with_entries,
+    .with_entries = {
+      .type = type,
+      .entries = std::meta::reflect_constant(entries),
+    },
+  };
 }
 
 constexpr bool test_bucket_size(
@@ -580,14 +757,10 @@ consteval auto find_best_bucket_size(
   auto size = hash_values.size();
   auto limit = static_cast<size_t>(size / min_load_factor);
   for (auto n = std::bit_ceil(size); n <= limit; n <<= 1) {
-    if (test_bucket_size(hash_values, n)) {
-      return n;
-    }
+    if (test_bucket_size(hash_values, n)) { return n; }
   }
   for (auto n = size + (size % 2 == 0); n <= limit; n += 2) {
-    if (test_bucket_size(hash_values, n)) {
-      return n;
-    }
+    if (test_bucket_size(hash_values, n)) { return n; }
   }
   return 0; // Failed
 }
@@ -595,7 +768,8 @@ consteval auto find_best_bucket_size(
 template <class KVPair>
 consteval auto make_hash_table_based_string_key_map(
   const std::vector<KVPair>& kv_pairs, const std::vector<uint64_t>& hash_values,
-  uint64_t bucket_size) -> std::meta::info
+  uint64_t bucket_size, const string_key_map_options& options)
+  -> string_key_map_meta_result
 {
   using wrapper_type = string_key_kv_pair_aligned_wrapper_with_hash<KVPair>;
   auto table = std::vector<wrapper_type>(
@@ -611,128 +785,126 @@ consteval auto make_hash_table_based_string_key_map(
       }
     }
   }
-  auto underlying_range = reflect_cpp26::define_static_array(table);
-  if (std::has_single_bit(bucket_size)) {
-    auto res = string_key_map_by_hash_fast<KVPair>{
-      {._entries = underlying_range, ._actual_size = kv_pairs.size()},
-      /* ._bucket_size_mask = */ bucket_size - 1,
-    };
-    return std::meta::reflect_constant(res);
-  }
-  auto res = string_key_map_by_hash_slow<KVPair>{
-    {._entries = underlying_range, ._actual_size = kv_pairs.size()},
-    /* ._bucket_size = */ bucket_size,
+  auto is_fast = std::has_single_bit(bucket_size);
+  auto eq_type = string_key_eq_type(options.case_insensitive);
+  auto type_template = is_fast
+    ? ^^string_key_map_by_hash_fast
+    : ^^string_key_map_by_hash_slow;
+  auto type = substitute(type_template, eq_type, ^^KVPair);
+  auto entries = reflect_cpp26::define_static_array(table);
+  return {
+    .type = string_key_map_meta_result::result_type::as_hash_table,
+    .as_hash_table = {
+      .type = type,
+      .entries = std::meta::reflect_constant(entries),
+      .actual_size = kv_pairs.size(),
+      .bucket_size_or_mask = bucket_size - !!is_fast,
+    }
   };
-  return std::meta::reflect_constant(res);
 }
 
-template <string_key_kv_pair KVPair>
+// Precondition: All keys in kv_pairs are lower case
+// if options.case_insensitive is true.
+template <class KVPair>
 consteval auto make_string_key_map_impl(
   std::vector<KVPair> kv_pairs, string_key_map_options options)
   -> string_key_map_meta_result
 {
+  check_string_key_map_input(kv_pairs, options);
   // (1) Empty or naive
   if (kv_pairs.size() < options.optimization_threshold) {
-    return {
-      .type = string_key_map_meta_result::direct,
-      .as_direct = make_naive_string_key_map(kv_pairs),
-    };
+    return make_naive_string_key_map(kv_pairs, options);
   }
-  auto proj_length_fn = [](const KVPair& p) {
-    return get_first(p).length();
-  };
-  std::ranges::sort(kv_pairs, {}, proj_length_fn);
-  auto len_dup_pos = std::ranges::adjacent_find(kv_pairs, {}, proj_length_fn);
   // (2) Length-based
-  if (kv_pairs.end() == len_dup_pos) {
-    auto res = make_length_based_string_key_map(kv_pairs, options);
-    return {
-      .type = string_key_map_meta_result::length_based,
-      .as_length_based = res,
-    };
+  auto min_length = size_t{};
+  if (key_lengths_are_all_distinct(kv_pairs, &min_length)) {
+    return make_length_based_string_key_map(kv_pairs, options);
   }
   // (3) ith-character-based
-  auto min_length = get_first(kv_pairs.front()).length();
-  for (auto i = 0zU; i < min_length; i++) {
-    if (!characters_are_all_different(kv_pairs, i)) {
-      continue;
+  if (options.enables_lookup_by_differed_character) {
+    for (auto i = 0zU; i < min_length; i++) {
+      if (!characters_are_all_different(kv_pairs, i)) { continue; }
+      return make_character_based_string_key_map(kv_pairs, i, options);
     }
-    auto res = make_character_based_string_key_map(kv_pairs, i, options);
-    return {
-      .type = string_key_map_meta_result::character_based,
-      .as_character_based = res,
-    };
   }
+
   auto to_hash_fn = [](const KVPair& p) { return bkdr_hash64(get_first(p)); };
   auto hash_values = kv_pairs
     | std::views::transform(to_hash_fn)
     | std::ranges::to<std::vector>();
   // (4) Hash binary search: slow path due to hash collision
   if (has_hash_collision(hash_values)) {
-    auto res = make_hash_search_based_string_key_map(
-      kv_pairs, hash_values, true, options.binary_search_threshold);
-    return {
-      .type = string_key_map_meta_result::direct,
-      .as_direct = res,
-    };
+    return make_hash_search_based_string_key_map(
+      kv_pairs, hash_values, true, options);
   }
   auto best_bucket_size =
     find_best_bucket_size(hash_values, options.min_load_factor);
   // (5) Hash-table-based (hash collision is excluded)
   if (best_bucket_size != 0) {
-    auto res = make_hash_table_based_string_key_map(
-      kv_pairs, hash_values, best_bucket_size);
-    return {
-      .type = string_key_map_meta_result::direct,
-      .as_direct = res,
-    };
+    return make_hash_table_based_string_key_map(
+      kv_pairs, hash_values, best_bucket_size, options);
   }
-  // (6) Hash binary search: fast path, without hash collision
-  auto res = make_hash_search_based_string_key_map(
-    kv_pairs, hash_values, false, options.binary_search_threshold);
-  return {
-    .type = string_key_map_meta_result::direct,
-    .as_direct = res,
-  };
+  // (6) Hash linear or binary search: fast path, without hash collision
+  return make_hash_search_based_string_key_map(
+    kv_pairs, hash_values, false, options);
 }
 
 template <std::ranges::input_range KVPairRange>
+  requires (string_key_kv_pair<std::ranges::range_value_t<KVPairRange>>)
 consteval auto make_string_key_map(
   KVPairRange&& kv_pairs, string_key_map_options options = {})
   -> string_key_map_meta_result
 {
-  constexpr auto input_is_vector =
-    is_template_instance_of_v<KVPairRange, std::vector>;
-  if constexpr (input_is_vector) {
-    return make_string_key_map_impl(
-      std::forward<KVPairRange>(kv_pairs), options);
+  using kv_pair_type = std::ranges::range_value_t<KVPairRange>;
+  using kv_pair_key_type = std::tuple_element_t<0, kv_pair_type>;
+  using kv_pair_value_type = std::tuple_element_t<1, kv_pair_type>;
+  using element_type = typename kv_pair_key_type::value_type; // CharT
+
+  using canonical_kv_pair_type =
+    std::pair<meta_basic_string_view<element_type>, kv_pair_value_type>;
+  auto converted = std::vector<canonical_kv_pair_type>();
+  if (options.case_insensitive) {
+    for (const auto& [k, v]: kv_pairs) {
+      auto k_lower = reflect_cpp26::define_static_string(ascii_tolower(k));
+      converted.emplace_back(k_lower, v);
+    }
   } else {
-    auto vec = std::forward<KVPairRange>(kv_pairs)
-             | std::ranges::to<std::vector>();
-    return make_string_key_map_impl(std::move(vec), options);
+    for (const auto& [k, v]: kv_pairs) {
+      converted.emplace_back(reflect_cpp26::define_static_string(k), v);
+    }
   }
+  return make_string_key_map_impl(converted, options);
 }
 
-#define REFLECT_CPP26_STRING_KEY_FIXED_MAP_EXTRACT(matched_type)   \
-  template <string_key_map_meta_result V>                          \
-    requires (V.type == string_key_map_meta_result::matched_type)  \
+#define REFLECT_CPP26_STRING_KEY_FIXED_MAP_EXTRACT(matched_type)               \
+  template <string_key_map_meta_result V>                                      \
+    requires (V.type == string_key_map_meta_result::result_type::matched_type) \
   constexpr auto extract_string_key_map_v<V>
 
 template <string_key_map_meta_result V>
 constexpr auto extract_string_key_map_v = compile_error("Placeholder");
 
 REFLECT_CPP26_STRING_KEY_FIXED_MAP_EXTRACT(direct) =
-  extract<V.as_direct>();
+  extract<V.direct>();
 
-REFLECT_CPP26_STRING_KEY_FIXED_MAP_EXTRACT(length_based) =
-  string_key_map_by_length{
-    ._underlying = extract_integral_key_map_v<V.as_length_based>
-  };
+REFLECT_CPP26_STRING_KEY_FIXED_MAP_EXTRACT(with_entries) = []() {
+  using map_type = [: V.with_entries.type :];
+  return map_type{._entries = extract<V.with_entries.entries>()};
+}();
 
-REFLECT_CPP26_STRING_KEY_FIXED_MAP_EXTRACT(character_based) =
-  string_key_map_by_character{
-    ._underlying = extract_integral_key_map_v<V.as_character_based>
-  };
+REFLECT_CPP26_STRING_KEY_FIXED_MAP_EXTRACT(with_integral_key) = []() {
+  constexpr auto U = V.with_integral_key;
+  constexpr auto underlying = extract_integral_key_map_v<U.underlying>;
+  using map_type =
+    [: substitute(U.type_template, U.eq_type, ^^decltype(underlying)) :];
+  return map_type{._underlying = underlying};
+}();
+
+REFLECT_CPP26_STRING_KEY_FIXED_MAP_EXTRACT(as_hash_table) = []() {
+  constexpr auto U = V.as_hash_table;
+  using map_type = [: U.type :];
+  return map_type{{extract<U.entries>(), U.actual_size}, U.bucket_size_or_mask};
+}();
 
 #undef REFLECT_CPP26_STRING_KEY_FIXED_MAP_EXTRACT
 } // namespace reflect_cpp26::impl

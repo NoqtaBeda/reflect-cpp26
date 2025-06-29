@@ -23,8 +23,8 @@
 #ifndef REFLECT_CPP26_TYPE_TRAITS_TUPLE_LIKE_TYPES_HPP
 #define REFLECT_CPP26_TYPE_TRAITS_TUPLE_LIKE_TYPES_HPP
 
-// Note: Be careful when including other headers in reflect_cpp26
-// in case of circular dependency
+// Root header: Include only:
+// (1) C++ stdlib; (2) utils/config.h; (3) Other root headers
 #include <reflect_cpp26/type_traits/type_comparison.hpp>
 #include <reflect_cpp26/utils/config.h>
 #include <algorithm>

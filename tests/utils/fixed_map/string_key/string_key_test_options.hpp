@@ -20,31 +20,28 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_TYPE_TRAITS_TYPE_COMPARISON_HPP
-#define REFLECT_CPP26_TYPE_TRAITS_TYPE_COMPARISON_HPP
+#pragma once
 
-// Root header: Include only:
-// (1) C++ stdlib; (2) utils/config.h; (3) Other root headers
-#include <type_traits>
+#include "tests/utils/fixed_map/fixed_map_test_options.hpp"
+#include <string>
+#include <string_view>
+#include <ranges>
 
-namespace reflect_cpp26 {
-/**
- * Whether T is exactly the same with one of Args.
- */
-template <class T, class... Args>
-constexpr bool is_same_as_one_of_v = (std::is_same_v<T, Args> || ...);
+#define FIXED_MAP(...) REFLECT_CPP26_STRING_KEY_FIXED_MAP(__VA_ARGS__)
 
-template <class T, class... Args>
-concept same_as_one_of = is_same_as_one_of_v<T, Args...>;
+// #define FOR_EACH_CHARACTER_TYPE(F)  \
+//   F(char, Char)                     \
+//   F(wchar_t, WChar)                 \
+//   F(char8_t, Char8)                 \
+//   F(char16_t, Char16)               \
+//   F(char32_t, Char32)
 
-template <class T, class... Args>
-concept same_as_none_of = !is_same_as_one_of_v<T, Args...>;
-
-/**
- * Whether T and Args... are all the exactly same.
- */
-template <class T, class... Args>
-constexpr bool are_all_same_v = (std::is_same_v<T, Args> && ...);
-} // namespace reflect_cpp26
-
-#endif // REFLECT_CPP26_TYPE_TRAITS_TYPE_COMPARISON_HPP
+template <class ToCharT, class FromCharT>
+constexpr auto to(const FromCharT* str) -> std::basic_string<ToCharT>
+{
+  auto from_sv = std::basic_string_view<FromCharT>(str);
+  auto transform_fn = [](FromCharT c) {
+    return static_cast<ToCharT>(c);
+  };
+  return {std::from_range, from_sv | std::views::transform(transform_fn)};
+}

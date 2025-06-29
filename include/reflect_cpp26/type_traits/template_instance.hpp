@@ -23,8 +23,8 @@
 #ifndef REFLECT_CPP26_TYPE_TRAITS_TEMPLATE_INSTANCE_HPP
 #define REFLECT_CPP26_TYPE_TRAITS_TEMPLATE_INSTANCE_HPP
 
-// Circular dependency prevention: This header should not include anything
-// other than C++ std library or <config.h>.
+// Root header: Include only:
+// (1) C++ stdlib; (2) utils/config.h; (3) Other root headers
 #include <type_traits>
 
 namespace reflect_cpp26 {

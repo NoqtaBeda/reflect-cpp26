@@ -44,7 +44,7 @@ constexpr auto byte_to_hex_table_v =
 
 constexpr auto to_string(char8_t value, bool quoted = false) -> std::string
 {
-  if (isprint(value)) {
+  if (ascii_isprint(value)) {
     if (quoted) {
       auto res = std::string(3zU, '\'');
       res[1] = value;
@@ -298,7 +298,7 @@ constexpr auto write_display_string(
       continue;
     }
     // (2) Printable characters (including whitespace ' ')
-    if (isprint(*input_cur)) {
+    if (ascii_isprint(*input_cur)) {
       *buffer_cur++ = *input_cur;
       continue;
     }

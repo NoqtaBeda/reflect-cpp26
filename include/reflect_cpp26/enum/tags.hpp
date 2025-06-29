@@ -20,31 +20,13 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_TYPE_TRAITS_TYPE_COMPARISON_HPP
-#define REFLECT_CPP26_TYPE_TRAITS_TYPE_COMPARISON_HPP
-
-// Root header: Include only:
-// (1) C++ stdlib; (2) utils/config.h; (3) Other root headers
-#include <type_traits>
+#ifndef REFLECT_CPP26_ENUM_TAGS_HPP
+#define REFLECT_CPP26_ENUM_TAGS_HPP
 
 namespace reflect_cpp26 {
-/**
- * Whether T is exactly the same with one of Args.
- */
-template <class T, class... Args>
-constexpr bool is_same_as_one_of_v = (std::is_same_v<T, Args> || ...);
+struct case_insensitive_tag_t {};
 
-template <class T, class... Args>
-concept same_as_one_of = is_same_as_one_of_v<T, Args...>;
-
-template <class T, class... Args>
-concept same_as_none_of = !is_same_as_one_of_v<T, Args...>;
-
-/**
- * Whether T and Args... are all the exactly same.
- */
-template <class T, class... Args>
-constexpr bool are_all_same_v = (std::is_same_v<T, Args> && ...);
+constexpr auto case_insensitive = case_insensitive_tag_t{};
 } // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_TYPE_TRAITS_TYPE_COMPARISON_HPP
+#endif // REFLECT_CPP26_ENUM_TAGS_HPP

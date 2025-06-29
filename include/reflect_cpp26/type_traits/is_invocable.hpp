@@ -23,8 +23,8 @@
 #ifndef REFLECT_CPP26_TYPE_TRAITS_IS_INVOCABLE_HPP
 #define REFLECT_CPP26_TYPE_TRAITS_IS_INVOCABLE_HPP
 
-// Root header: include config.h and C++ stdlib headers only
-// to prevent circular dependency.
+// Root header: Include only:
+// (1) C++ stdlib; (2) utils/config.h; (3) Other root headers
 #include <reflect_cpp26/utils/config.h>
 #include <ranges>
 #include <type_traits>

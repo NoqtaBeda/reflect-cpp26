@@ -28,25 +28,39 @@
 
 namespace rfl = reflect_cpp26;
 
+#define REFLECT_CPP26_CTYPE_PREDICATE_FOR_EACH(F) \
+  F(isalnum)                                      \
+  F(isalpha)                                      \
+  F(islower)                                      \
+  F(isupper)                                      \
+  F(isdigit)                                      \
+  F(isxdigit)                                     \
+  F(isblank)                                      \
+  F(iscntrl)                                      \
+  F(isgraph)                                      \
+  F(isspace)                                      \
+  F(isprint)                                      \
+  F(ispunct)
+
 TEST(UtilsMisc, CType)
 {
   for (unsigned char i = 0; i <= 127; i++) {
 #define MAKE_EXPECT_EQ(fn)                            \
-    EXPECT_EQ(!!std::fn(i), rfl::fn(i))               \
+    EXPECT_EQ(!!std::fn(i), rfl::ascii_##fn(i))       \
       << std::format("Wrong " #fn "('\\x{:x}')", i);
 
     REFLECT_CPP26_CTYPE_PREDICATE_FOR_EACH(MAKE_EXPECT_EQ)
 #undef MAKE_EXPECT_EQ
   }
 
-#define MAKE_EXPECT_FALSE(fn)       \
-  EXPECT_FALSE(rfl::fn(value))      \
+#define MAKE_EXPECT_FALSE(fn)                                               \
+  EXPECT_FALSE(rfl::ascii_##fn(value))                                      \
     << std::format("Wrong " #fn "({}): Failed to detect overflow.", value);
 
-#define TEST_OVERFLOW(type, expr)                             \
-  do {                                                        \
-    auto value = static_cast<type>(expr);                     \
-    REFLECT_CPP26_CTYPE_PREDICATE_FOR_EACH(MAKE_EXPECT_FALSE); \
+#define TEST_OVERFLOW(type, expr)                               \
+  do {                                                          \
+    auto value = static_cast<type>(expr);                       \
+    REFLECT_CPP26_CTYPE_PREDICATE_FOR_EACH(MAKE_EXPECT_FALSE);  \
   } while (false)
 
   TEST_OVERFLOW(int, -128);

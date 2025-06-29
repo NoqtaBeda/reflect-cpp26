@@ -13,7 +13,8 @@ xmake f -m <debug|release> \
         --sdk=<llvm-root> \
         --cxxflags="-stdlib=libc++" \
         --ldflags="-stdlib=libc++" \
-        --toolchain=llvm
+        --toolchain=llvm  \
+        (optional parameters see above)
 
 xmake build --group=tests/**
 LD_LIBRARY_PATH=<path-to-libc++> xmake run --group=tests/**
@@ -39,6 +40,11 @@ LD_LIBRARY_PATH=<path-to-libc++> xmake run run_asm_check
 * Improvements to `constant`:
   * `map`, `filter` with index
   * `index_of`, `last_index_of`, `includes` with start index
+* Missing UT for string-key fixed map (in utils):
+  * Case-insensitive UT with `string_key_map_by_hash_binary_search_slow`;
+  * Hash collision cases with every hash-related scenario;
+  * Wide character cases with every hash-related scenario.
+    * the underlying hash function shall be redesigned for wide char types.
 
 Validators to be implemented:
 | Name | Implemented | Tested |

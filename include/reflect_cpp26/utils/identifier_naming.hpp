@@ -97,24 +97,24 @@ constexpr void visit_identifier_segments_inner_nal(
   for (auto len = input.length(); tail < len; ++tail) {
     switch (state) {
       case identifier_parsing_state_nal::init:
-        state = isupper(input[tail])
+        state = ascii_isupper(input[tail])
           ? identifier_parsing_state_nal::first_upper
           : identifier_parsing_state_nal::lower_or_digit;
         break;
       case identifier_parsing_state_nal::lower_or_digit:
-        if (isupper(input[tail])) {
+        if (ascii_isupper(input[tail])) {
           visitor(input.substr(head, tail - head));
           state = identifier_parsing_state_nal::first_upper;
           head = tail;
         }
         break;
       case identifier_parsing_state_nal::first_upper:
-        state = isupper(input[tail])
+        state = ascii_isupper(input[tail])
           ? identifier_parsing_state_nal::subsequent_upper
           : identifier_parsing_state_nal::lower_or_digit;
         break;
       case identifier_parsing_state_nal::subsequent_upper:
-        if (!isupper(input[tail])) {
+        if (!ascii_isupper(input[tail])) {
           visitor(input.substr(head, tail - head - 1));
           state = identifier_parsing_state_nal::lower_or_digit;
           head = tail - 1;
@@ -139,24 +139,24 @@ constexpr void visit_identifier_segments_inner_nau(
   for (auto len = input.length(); tail < len; ++tail) {
     switch (state) {
       case identifier_parsing_state_nau::init:
-        state = islower(input[tail])
+        state = ascii_islower(input[tail])
           ? identifier_parsing_state_nau::lower
           : identifier_parsing_state_nau::first_upper_or_digit;
         break;
       case identifier_parsing_state_nau::lower:
-        if (!islower(input[tail])) {
+        if (!ascii_islower(input[tail])) {
           visitor(input.substr(head, tail - head));
           state = identifier_parsing_state_nau::first_upper_or_digit;
           head = tail;
         }
         break;
       case identifier_parsing_state_nau::first_upper_or_digit:
-        state = islower(input[tail])
+        state = ascii_islower(input[tail])
           ? identifier_parsing_state_nau::lower
           : identifier_parsing_state_nau::subsequent_upper_or_digit;
         break;
       case identifier_parsing_state_nau::subsequent_upper_or_digit:
-        if (islower(input[tail])) {
+        if (ascii_islower(input[tail])) {
           visitor(input.substr(head, tail - head - 1));
           state = identifier_parsing_state_nau::lower;
           head = tail - 1;
@@ -194,7 +194,7 @@ constexpr bool visit_identifier_segments(
     return false;
   }
   auto first_char = input.front();
-  if (isdigit(first_char) || !is_valid_identifier_char(first_char)) {
+  if (ascii_isdigit(first_char) || !is_valid_identifier_char(first_char)) {
     REFLECT_CPP26_ERROR_IF_CONSTEVAL("Invalid first character.");
     return false;
   }
@@ -230,13 +230,13 @@ constexpr auto make_snake_case_segment(
     return buffer;
   }
   if (first_is_lower) {
-    *buffer++ = tolower(segment.front());
+    *buffer++ = ascii_tolower(segment.front());
     first_is_lower = false;
   } else {
-    *buffer++ = toupper(segment.front());
+    *buffer++ = ascii_toupper(segment.front());
   }
   for (auto i = 1zU, n = segment.length(); i < n; i++) {
-    *buffer++ = tolower(segment[i]);
+    *buffer++ = ascii_tolower(segment[i]);
   }
   return buffer;
 }
@@ -308,14 +308,14 @@ constexpr auto to_camel_snake_or_kebab_case_impl(
   constexpr std::string to_##name##_case(                               \
     std::string_view identifier, non_alpha_as_lower_tag_t tag)          \
   {                                                                     \
-    return impl::to_snake_or_kebab_case_impl<transform<char>>(          \
+    return impl::to_snake_or_kebab_case_impl<transform>(                \
       identifier, delim, tag);                                          \
   }                                                                     \
                                                                         \
   constexpr std::string to_##name##_case(                               \
     std::string_view identifier, non_alpha_as_upper_tag_t tag)          \
   {                                                                     \
-    return impl::to_snake_or_kebab_case_impl<transform<char>>(          \
+    return impl::to_snake_or_kebab_case_impl<transform>(                \
       identifier, delim, tag);                                          \
   }                                                                     \
   /* Digits as lower case by default. */                                \
@@ -323,10 +323,10 @@ constexpr auto to_camel_snake_or_kebab_case_impl(
     return to_##name##_case(identifier, non_alpha_as_lower);            \
   }
 
-REFLECT_CPP26_TO_SNAKE_OR_KEBAB_CASE(snake, tolower, '_')
-REFLECT_CPP26_TO_SNAKE_OR_KEBAB_CASE(all_caps_snake, toupper, '_')
-REFLECT_CPP26_TO_SNAKE_OR_KEBAB_CASE(kebab, tolower, '-')
-REFLECT_CPP26_TO_SNAKE_OR_KEBAB_CASE(all_caps_kebab, toupper, '-')
+REFLECT_CPP26_TO_SNAKE_OR_KEBAB_CASE(snake, ascii_tolower, '_')
+REFLECT_CPP26_TO_SNAKE_OR_KEBAB_CASE(all_caps_snake, ascii_toupper, '_')
+REFLECT_CPP26_TO_SNAKE_OR_KEBAB_CASE(kebab, ascii_tolower, '-')
+REFLECT_CPP26_TO_SNAKE_OR_KEBAB_CASE(all_caps_kebab, ascii_toupper, '-')
 
 #undef REFLECT_CPP26_TO_SNAKE_OR_KEBAB_CASE
 
@@ -383,7 +383,7 @@ constexpr auto convert_identifier(
   switch (to_rule) {
     case identifier_naming_rule::no_change: {
       auto is_valid = !identifier.empty()
-        && !isdigit(identifier.front())
+        && !ascii_isdigit(identifier.front())
         && std::ranges::all_of(identifier, impl::is_valid_identifier_char);
       return is_valid ? std::string{identifier}
                       : std::string{impl::invalid_identifier_str};

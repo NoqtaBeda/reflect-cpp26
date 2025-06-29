@@ -55,13 +55,13 @@ using traits_of_a = rfl::member_pointer_traits<decltype(&A::a)>;
 static_assert(traits_of_a::category == rfl::member_category::function);
 static_assert(std::is_same_v<traits_of_a::target_type, char>);
 static_assert(std::is_same_v<traits_of_a::direct_parent_type, A>);
-static_assert(std::tuple_size_v<traits_of_a::args_type> == 3);
+static_assert(traits_of_a::args_type::size == 3);
 static_assert(std::is_same_v<
-  std::tuple_element_t<0, traits_of_a::args_type>, int>);
+  rfl::ith_element_t<0, traits_of_a::args_type>, int>);
 static_assert(std::is_same_v<
-  std::tuple_element_t<1, traits_of_a::args_type>, float>);
+  rfl::ith_element_t<1, traits_of_a::args_type>, float>);
 static_assert(std::is_same_v<
-  std::tuple_element_t<2, traits_of_a::args_type>, double>);
+  rfl::ith_element_t<2, traits_of_a::args_type>, double>);
 // Function traits
 constexpr auto expected_function_traits_of_a = rfl::function_trait_flags{};
 static_assert(traits_of_a::function_traits_type::flags

@@ -26,6 +26,7 @@
 #include <reflect_cpp26/type_traits/template_instance.hpp>
 #include <reflect_cpp26/utils/config.h>
 #include <reflect_cpp26/utils/constant.hpp>
+#include <reflect_cpp26/utils/functional.hpp>
 #include <ranges>
 #include <tuple>
 #include <type_traits>
@@ -35,6 +36,9 @@ template <class... Args>
 struct type_tuple {
   static constexpr auto size = sizeof...(Args);
 };
+
+template <size_t I, template_instance_of<type_tuple> TypeTuple>
+using ith_element_t = [: template_arguments_of(^^TypeTuple)[I] :];
 
 namespace impl {
 consteval auto make_type_tuple_cat_type(
@@ -213,18 +217,27 @@ using type_tuple_transform_t =
 template <template <class> class Traits, class TypeTuple>
 constexpr auto type_tuple_transform_v =
   impl::type_tuple_transform_to_value<Traits, TypeTuple>::value;
+
+namespace impl {
+template <class T>
+concept tuple_elements_defined = requires {
+  { typename T::tuple_elements{} } -> template_instance_of<type_tuple>;
+};
+} // namespace impl
 } // namespace reflect_cpp26
 
-// Note: Despite std::tuple_size and std::tuple_element being specialized,
-// type_tuple is not tuple-like since getters are not defined.
+/**
+ * Convenient way to mark a type as tuple-like by specifying it's tuple elements
+ * in 'tuple_elements' type member which is an instance of type_tuple.
+ */
+template <reflect_cpp26::impl::tuple_elements_defined TupleLike>
+struct std::tuple_size<TupleLike>
+  : std::integral_constant<size_t, TupleLike::tuple_elements::size> {};
 
-template <class... Args>
-struct std::tuple_size<reflect_cpp26::type_tuple<Args...>>
-  : std::integral_constant<size_t, sizeof...(Args)> {};
-
-template <size_t I, class... Args>
-struct std::tuple_element<I, reflect_cpp26::type_tuple<Args...>> {
-  using type = Args...[I];
+template <size_t I, reflect_cpp26::impl::tuple_elements_defined TupleLike>
+struct std::tuple_element<I, TupleLike> {
+  using tuple_elements = typename TupleLike::tuple_elements;
+  using type = reflect_cpp26::ith_element_t<I, tuple_elements>;
 };
 
 #endif // REFLECT_CPP26_TYPE_TRAITS_TYPE_TUPLE_HPP

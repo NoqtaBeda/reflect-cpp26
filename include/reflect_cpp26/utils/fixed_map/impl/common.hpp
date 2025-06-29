@@ -23,9 +23,12 @@
 #ifndef REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_COMMON_HPP
 #define REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_COMMON_HPP
 
+#include <reflect_cpp26/type_traits/arithmetic_types.hpp>
+#include <reflect_cpp26/type_traits/string_like_types.hpp>
 #include <reflect_cpp26/type_traits/tuple_like_types.hpp>
 #include <reflect_cpp26/utils/functional.hpp>
 #include <reflect_cpp26/utils/meta_string_view.hpp>
+#include <reflect_cpp26/utils/meta_utility.hpp>
 #include <bit>
 #include <utility>
 
@@ -39,9 +42,7 @@ concept integral_key_kv_pair = pair_like<KVPair> &&
 
 template <class KVPair>
 concept string_key_kv_pair = pair_like<KVPair> &&
-  std::is_same_v<
-    std::tuple_element_t<0, std::remove_cv_t<KVPair>>, meta_string_view> &&
-  get_first(map_null_value_v<KVPair>).head == nullptr;
+  is_string_like_v<std::tuple_element_t<0, std::remove_cvref_t<KVPair>>>;
 
 template <class T>
 struct alignment_adjusted_wrapper {
@@ -71,11 +72,13 @@ constexpr bool do_is_null(T C::* v) {
   return v == nullptr;
 }
 
-constexpr bool do_is_null(std::string_view v) {
+template <char_type CharT, class Traits>
+constexpr bool do_is_null(std::basic_string_view<CharT, Traits> v) {
   return v.data() == nullptr;
 }
 
-constexpr bool do_is_null(meta_string_view v) {
+template <char_type CharT>
+constexpr bool do_is_null(meta_basic_string_view<CharT> v) {
   return v.head == nullptr;
 }
 

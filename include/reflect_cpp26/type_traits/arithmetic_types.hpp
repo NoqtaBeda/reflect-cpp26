@@ -23,8 +23,8 @@
 #ifndef REFLECT_CPP26_TYPE_TRAITS_ARITHMETIC_TYPES_HPP
 #define REFLECT_CPP26_TYPE_TRAITS_ARITHMETIC_TYPES_HPP
 
-// Root header: include C++ stdlib headers and <config.h> only
-// to prevent circular dependency.
+// Root header: Include only:
+// (1) C++ stdlib; (2) utils/config.h; (3) Other root headers
 #include <reflect_cpp26/utils/config.h>
 #include <cstddef>
 #include <cstdint>

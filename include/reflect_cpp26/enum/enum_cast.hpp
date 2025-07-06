@@ -24,6 +24,7 @@
 #define REFLECT_CPP26_ENUM_ENUM_CAST_HPP
 
 #include <reflect_cpp26/enum/enum_contains.hpp>
+#include <reflect_cpp26/enum/tags.hpp>
 #include <reflect_cpp26/utils/concepts.hpp>
 #include <reflect_cpp26/utils/utility.hpp>
 
@@ -37,6 +38,17 @@ constexpr auto enum_cast(std::string_view str)
   -> std::optional<std::remove_cv_t<E>>
 {
   auto [v, found] = impl::enum_from_string_map_v<E>.get(str);
+  if (found) {
+    return static_cast<E>(v);
+  }
+  return std::nullopt;
+}
+
+template <enum_type E>
+constexpr auto enum_cast(std::string_view str, case_insensitive_tag_t)
+  -> std::optional<std::remove_cv_t<E>>
+{
+  auto [v, found] = impl::enum_from_ci_string_map_v<E>.get(str);
   if (found) {
     return static_cast<E>(v);
   }

@@ -26,11 +26,33 @@
 #include <reflect_cpp26/type_traits/arithmetic_types.hpp>
 #include <reflect_cpp26/type_traits/string_like_types.hpp>
 #include <reflect_cpp26/type_traits/tuple_like_types.hpp>
+#include <reflect_cpp26/utils/define_static_values.hpp>
 #include <reflect_cpp26/utils/functional.hpp>
+#include <reflect_cpp26/utils/meta_span.hpp>
 #include <reflect_cpp26/utils/meta_string_view.hpp>
 #include <reflect_cpp26/utils/meta_utility.hpp>
 #include <bit>
 #include <utility>
+
+#define REFLECT_CPP26_INTEGRAL_KEY_MAP_COMMON_INTERFACE                 \
+  constexpr auto get(non_bool_integral auto key) const                  \
+    -> std::pair<result_type, bool>                                     \
+  {                                                                     \
+    if (!in_range<key_type>(key)) {                                     \
+      return {map_null_value_v<value_type>, false};                     \
+    }                                                                   \
+    return get(static_cast<key_type>(key));                             \
+  }                                                                     \
+                                                                        \
+  constexpr result_type operator[](non_bool_integral auto key) const {  \
+    return get(key).first;                                              \
+  }
+
+#define REFLECT_CPP26_STRING_KEY_MAP_COMMON_INTERFACE                         \
+  constexpr auto operator[](std::basic_string_view<character_type> key) const \
+    -> result_type {                                                          \
+    return get(key).first;                                                    \
+  }
 
 namespace reflect_cpp26::impl {
 template <class Value>
@@ -52,7 +74,28 @@ struct alignment_adjusted_wrapper {
   static constexpr auto make(T value) -> alignment_adjusted_wrapper<T> {
     return {.underlying = std::move(value)};
   }
+
+  template <class InputIter>
+  static constexpr auto make_static_array(InputIter first, InputIter last)
+    -> meta_span<alignment_adjusted_wrapper<T>>
+  {
+    auto res = std::vector<alignment_adjusted_wrapper<T>>{};
+    for (; first != last; ++first) {
+      res.push_back(make(*first));
+    }
+    return reflect_cpp26::define_static_array(res);
+  }
 };
+
+template <class KVPair>
+struct string_key_kv_pair_wrapper_with_hash {
+  uint64_t hash;
+  KVPair underlying;
+};
+
+template <class KVPair>
+using string_key_kv_pair_aligned_wrapper_with_hash =
+  alignment_adjusted_wrapper<string_key_kv_pair_wrapper_with_hash<KVPair>>;
 
 namespace flat_map {
 constexpr bool do_is_null(std::integral auto v) {
@@ -83,7 +126,7 @@ constexpr bool do_is_null(meta_basic_string_view<CharT> v) {
 }
 
 constexpr bool do_is_null(const string_key_kv_pair auto& kv_pair) {
-  return get_first(kv_pair).head == nullptr;
+  return do_is_null(get_first(kv_pair));
 }
 
 template <class T>
@@ -101,6 +144,16 @@ template <class T>
 constexpr bool is_null(const T& v) {
   return flat_map::do_is_null(v);
 }
+
+template <auto R>
+constexpr auto extract_fixed_map_v = compile_error("Invalid result type.");
+
+#define REFLECT_CPP26_EXTRACT_FIXED_MAP(T)    \
+  template <auto R>                           \
+    requires (std::is_same_v<decltype(R), T>) \
+  constexpr auto extract_fixed_map_v<R>
+
+REFLECT_CPP26_EXTRACT_FIXED_MAP(std::meta::info) = extract<R>();
 } // namespace reflect_cpp26::impl
 
 #endif // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_COMMON_HPP

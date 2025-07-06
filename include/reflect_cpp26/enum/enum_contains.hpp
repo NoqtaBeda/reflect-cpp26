@@ -24,6 +24,7 @@
 #define REFLECT_CPP26_ENUM_ENUM_CONTAINS_HPP
 
 #include <reflect_cpp26/enum/impl/enum_maps.hpp>
+#include <reflect_cpp26/enum/tags.hpp>
 #include <reflect_cpp26/utils/concepts.hpp>
 #include <reflect_cpp26/utils/utility.hpp>
 
@@ -58,6 +59,11 @@ constexpr bool enum_contains(I value)
 template <enum_type E>
 constexpr bool enum_contains(std::string_view str) {
   return impl::enum_from_string_map_v<E>.get(str).second;
+}
+
+template <enum_type E>
+constexpr bool enum_contains(std::string_view str, case_insensitive_tag_t) {
+  return impl::enum_from_ci_string_map_v<E>.get(str).second;
 }
 } // namespace reflect_cpp26
 

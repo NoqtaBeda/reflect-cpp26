@@ -32,256 +32,292 @@
 using namespace reflect_cpp26;
 
 template <class E>
-constexpr bool test_invalid_cases_common()
+constexpr void test_invalid_cases_common()
 {
-  static_assert(NOT enum_contains<E>("ZERO"));
-  static_assert(NOT enum_contains<E>("hello_world"));
-  static_assert(NOT enum_contains<E>(" zero "));
-  static_assert(NOT enum_contains<E>("0"));
-  static_assert(NOT enum_contains<E>(""));
-  static_assert(NOT enum_contains<E>("-"));
-  return true;
+  EXPECT_FALSE_STATIC(enum_contains<E>("ZERO"));
+  EXPECT_FALSE_STATIC(enum_contains<E>("hello_world"));
+  EXPECT_FALSE_STATIC(enum_contains<E>(" zero "));
+  EXPECT_FALSE_STATIC(enum_contains<E>("0"));
+  EXPECT_FALSE_STATIC(enum_contains<E>(""));
+  EXPECT_FALSE_STATIC(enum_contains<E>("-"));
 }
 
 template <class E>
-constexpr bool test_foo_signed_common()
+constexpr void test_foo_signed_common()
 {
-  static_assert(enum_contains<E>("four"));
-  static_assert(enum_contains<E>("one"));
-  static_assert(enum_contains<E>("error"));
-  static_assert(enum_contains<E>("five"));
-  static_assert(enum_contains<E>("zero"));
-  static_assert(enum_contains<E>("seven"));
-  static_assert(enum_contains<E>("invalid"));
-  static_assert(enum_contains<E>("six"));
-  static_assert(enum_contains<E>("two"));
-  return test_invalid_cases_common<E>();
+  EXPECT_TRUE_STATIC(enum_contains<E>("four"));
+  EXPECT_TRUE_STATIC(enum_contains<E>("one"));
+  EXPECT_TRUE_STATIC(enum_contains<E>("error"));
+  EXPECT_TRUE_STATIC(enum_contains<E>("five"));
+  EXPECT_TRUE_STATIC(enum_contains<E>("zero"));
+  EXPECT_TRUE_STATIC(enum_contains<E>("seven"));
+  EXPECT_TRUE_STATIC(enum_contains<E>("invalid"));
+  EXPECT_TRUE_STATIC(enum_contains<E>("six"));
+  EXPECT_TRUE_STATIC(enum_contains<E>("two"));
 }
 
-static_assert(test_foo_signed_common<foo_signed>());
-static_assert(test_foo_signed_common<foo_signed_reorder>());
-static_assert(test_foo_signed_common<foo_signed_rep>());
-static_assert(enum_contains<foo_signed_rep>("yi"));
-static_assert(enum_contains<foo_signed_rep>("er"));
+TEST(EnumContainsString, FooSigned)
+{
+  test_foo_signed_common<foo_signed>();
+  test_invalid_cases_common<foo_signed>();
+}
 
-static_assert(enum_contains<bar_unsigned>("fourteen"));
-static_assert(enum_contains<bar_unsigned>("twelve"));
-static_assert(enum_contains<bar_unsigned>("one"));
-static_assert(enum_contains<bar_unsigned>("thirteen"));
-static_assert(enum_contains<bar_unsigned>("zero"));
-static_assert(enum_contains<bar_unsigned>("error"));
-static_assert(enum_contains<bar_unsigned>("ten"));
-static_assert(enum_contains<bar_unsigned>("eleven"));
-static_assert(enum_contains<bar_unsigned>("three"));
-static_assert(enum_contains<bar_unsigned>("invalid"));
-static_assert(enum_contains<bar_unsigned>("two"));
+TEST(EnumContainsString, FooSignedReorder)
+{
+  test_foo_signed_common<foo_signed_reorder>();
+  test_invalid_cases_common<foo_signed_reorder>();
+}
 
-static_assert(enum_contains<baz_signed>("san"));
-static_assert(enum_contains<baz_signed>("er"));
-static_assert(enum_contains<baz_signed>("yi"));
-static_assert(enum_contains<baz_signed>("ling"));
-static_assert(enum_contains<baz_signed>("fuyi"));
+TEST(EnumContainsString, FooSignedRep)
+{
+  test_foo_signed_common<foo_signed_rep>();
+  test_invalid_cases_common<foo_signed_rep>();
+  EXPECT_TRUE_STATIC(enum_contains<foo_signed_rep>("yi"));
+  EXPECT_TRUE_STATIC(enum_contains<foo_signed_rep>("er"));
+}
 
-static_assert(test_invalid_cases_common<baz_signed>());
-static_assert(NOT enum_contains<baz_signed>("one"));
-static_assert(NOT enum_contains<baz_signed>("si"));
+TEST(EnumContainsString, BarUnsigned)
+{
+  EXPECT_TRUE_STATIC(enum_contains<bar_unsigned>("fourteen"));
+  EXPECT_TRUE_STATIC(enum_contains<bar_unsigned>("twelve"));
+  EXPECT_TRUE_STATIC(enum_contains<bar_unsigned>("one"));
+  EXPECT_TRUE_STATIC(enum_contains<bar_unsigned>("thirteen"));
+  EXPECT_TRUE_STATIC(enum_contains<bar_unsigned>("zero"));
+  EXPECT_TRUE_STATIC(enum_contains<bar_unsigned>("error"));
+  EXPECT_TRUE_STATIC(enum_contains<bar_unsigned>("ten"));
+  EXPECT_TRUE_STATIC(enum_contains<bar_unsigned>("eleven"));
+  EXPECT_TRUE_STATIC(enum_contains<bar_unsigned>("three"));
+  EXPECT_TRUE_STATIC(enum_contains<bar_unsigned>("invalid"));
+  EXPECT_TRUE_STATIC(enum_contains<bar_unsigned>("two"));
+  test_invalid_cases_common<bar_unsigned>();
+}
 
-static_assert(enum_contains<qux_unsigned>("er"));
-static_assert(enum_contains<qux_unsigned>("fuyi"));
-static_assert(enum_contains<qux_unsigned>("yi"));
-static_assert(enum_contains<qux_unsigned>("san"));
-static_assert(enum_contains<qux_unsigned>("ling"));
-static_assert(enum_contains<qux_unsigned>("si"));
+TEST(EnumContainsString, BazSigned)
+{
+  EXPECT_TRUE_STATIC(enum_contains<baz_signed>("san"));
+  EXPECT_TRUE_STATIC(enum_contains<baz_signed>("er"));
+  EXPECT_TRUE_STATIC(enum_contains<baz_signed>("yi"));
+  EXPECT_TRUE_STATIC(enum_contains<baz_signed>("ling"));
+  EXPECT_TRUE_STATIC(enum_contains<baz_signed>("fuyi"));
 
-static_assert(test_invalid_cases_common<qux_unsigned>());
-static_assert(NOT enum_contains<qux_unsigned>("3"));
-static_assert(NOT enum_contains<qux_unsigned>("zero"));
+  EXPECT_FALSE_STATIC(enum_contains<baz_signed>("one"));
+  EXPECT_FALSE_STATIC(enum_contains<baz_signed>("si"));
+  test_invalid_cases_common<baz_signed>();
+}
 
-static_assert(test_invalid_cases_common<empty>());
-static_assert(NOT enum_contains<empty>("zero"));
-static_assert(NOT enum_contains<empty>("invalid"));
+TEST(EnumContainsString, QuxUnsigned)
+{
+  EXPECT_TRUE_STATIC(enum_contains<qux_unsigned>("er"));
+  EXPECT_TRUE_STATIC(enum_contains<qux_unsigned>("fuyi"));
+  EXPECT_TRUE_STATIC(enum_contains<qux_unsigned>("yi"));
+  EXPECT_TRUE_STATIC(enum_contains<qux_unsigned>("san"));
+  EXPECT_TRUE_STATIC(enum_contains<qux_unsigned>("ling"));
+  EXPECT_TRUE_STATIC(enum_contains<qux_unsigned>("si"));
 
-static_assert(enum_contains<single>("value"));
-static_assert(test_invalid_cases_common<single>());
-static_assert(NOT enum_contains<single>("233"));
+  EXPECT_FALSE_STATIC(enum_contains<qux_unsigned>("3"));
+  EXPECT_FALSE_STATIC(enum_contains<qux_unsigned>("zero"));
+  test_invalid_cases_common<qux_unsigned>();
+}
 
-static_assert(enum_contains<single_rep>("laugh"));
-static_assert(enum_contains<single_rep>("hahaha"));
-static_assert(enum_contains<single_rep>("over"));
-static_assert(enum_contains<single_rep>("and_over"));
-static_assert(enum_contains<single_rep>("again"));
-static_assert(enum_contains<single_rep>("unstoppable"));
+TEST(EnumConstainsString, Empty)
+{
+  test_invalid_cases_common<empty>();
+  EXPECT_FALSE_STATIC(enum_contains<empty>("zero"));
+  EXPECT_FALSE_STATIC(enum_contains<empty>("invalid"));
+}
 
-static_assert(test_invalid_cases_common<single_rep>());
-static_assert(NOT enum_contains<single_rep>("value"));
+TEST(EnumConstainsString, Single)
+{
+  EXPECT_TRUE_STATIC(enum_contains<single>("value"));
+  EXPECT_FALSE_STATIC(enum_contains<single>("233"));
+  test_invalid_cases_common<single>();
+}
 
-static_assert(enum_contains<color>("hot_pink"));
-static_assert(enum_contains<color>("purple"));
-static_assert(enum_contains<color>("blanched_almond"));
-static_assert(enum_contains<color>("steel_blue"));
-static_assert(enum_contains<color>("alice_blue"));
-static_assert(enum_contains<color>("maroon"));
-static_assert(enum_contains<color>("medium_blue"));
-static_assert(enum_contains<color>("fire_brick"));
-static_assert(enum_contains<color>("yellow_green"));
-static_assert(enum_contains<color>("light_gray"));
-static_assert(enum_contains<color>("salmon"));
-static_assert(enum_contains<color>("medium_slate_blue"));
-static_assert(enum_contains<color>("dark_turquoise"));
-static_assert(enum_contains<color>("medium_sea_green"));
-static_assert(enum_contains<color>("dark_sea_green"));
-static_assert(enum_contains<color>("pale_green"));
-static_assert(enum_contains<color>("dark_orange"));
-static_assert(enum_contains<color>("light_blue"));
-static_assert(enum_contains<color>("olive"));
-static_assert(enum_contains<color>("orange_red"));
-static_assert(enum_contains<color>("mint_cream"));
-static_assert(enum_contains<color>("tomato"));
-static_assert(enum_contains<color>("lavender_blush"));
-static_assert(enum_contains<color>("pale_violet_red"));
-static_assert(enum_contains<color>("dark_olive_green"));
-static_assert(enum_contains<color>("moccasin"));
-static_assert(enum_contains<color>("crimson"));
-static_assert(enum_contains<color>("deep_sky_blue"));
-static_assert(enum_contains<color>("pink"));
-static_assert(enum_contains<color>("burly_wood"));
-static_assert(enum_contains<color>("sienna"));
-static_assert(enum_contains<color>("dark_golden_rod"));
-static_assert(enum_contains<color>("old_lace"));
-static_assert(enum_contains<color>("pale_golden_rod"));
-static_assert(enum_contains<color>("gainsboro"));
-static_assert(enum_contains<color>("honey_dew"));
-static_assert(enum_contains<color>("dark_green"));
-static_assert(enum_contains<color>("light_coral"));
-static_assert(enum_contains<color>("peach_puff"));
-static_assert(enum_contains<color>("deep_pink"));
-static_assert(enum_contains<color>("light_sea_green"));
-static_assert(enum_contains<color>("gray"));
-static_assert(enum_contains<color>("sky_blue"));
-static_assert(enum_contains<color>("lime"));
-static_assert(enum_contains<color>("cornsilk"));
-static_assert(enum_contains<color>("light_golden_rod_yellow"));
-static_assert(enum_contains<color>("blue_violet"));
-static_assert(enum_contains<color>("light_slate_gray"));
-static_assert(enum_contains<color>("saddle_brown"));
-static_assert(enum_contains<color>("navy"));
-static_assert(enum_contains<color>("aquamarine"));
-static_assert(enum_contains<color>("olive_drab"));
-static_assert(enum_contains<color>("sandy_brown"));
-static_assert(enum_contains<color>("powder_blue"));
-static_assert(enum_contains<color>("dark_gray"));
-static_assert(enum_contains<color>("medium_purple"));
-static_assert(enum_contains<color>("violet"));
-static_assert(enum_contains<color>("midnight_blue"));
-static_assert(enum_contains<color>("chartreuse"));
-static_assert(enum_contains<color>("spring_green"));
-static_assert(enum_contains<color>("forest_green"));
-static_assert(enum_contains<color>("cadet_blue"));
-static_assert(enum_contains<color>("dim_gray"));
-static_assert(enum_contains<color>("royal_blue"));
-static_assert(enum_contains<color>("light_yellow"));
-static_assert(enum_contains<color>("lemon_chiffon"));
-static_assert(enum_contains<color>("chocolate"));
-static_assert(enum_contains<color>("thistle"));
-static_assert(enum_contains<color>("peru"));
-static_assert(enum_contains<color>("cornflower_blue"));
-static_assert(enum_contains<color>("gold"));
-static_assert(enum_contains<color>("cyan"));
-static_assert(enum_contains<color>("medium_turquoise"));
-static_assert(enum_contains<color>("turquoise"));
-static_assert(enum_contains<color>("ghost_white"));
-static_assert(enum_contains<color>("slate_gray"));
-static_assert(enum_contains<color>("indian_red"));
-static_assert(enum_contains<color>("wheat"));
-static_assert(enum_contains<color>("white"));
-static_assert(enum_contains<color>("light_pink"));
-static_assert(enum_contains<color>("medium_spring_green"));
-static_assert(enum_contains<color>("medium_aquamarine"));
-static_assert(enum_contains<color>("magenta"));
-static_assert(enum_contains<color>("khaki"));
-static_assert(enum_contains<color>("medium_violet_red"));
-static_assert(enum_contains<color>("papaya_whip"));
-static_assert(enum_contains<color>("navajo_white"));
-static_assert(enum_contains<color>("light_green"));
-static_assert(enum_contains<color>("green"));
-static_assert(enum_contains<color>("teal"));
-static_assert(enum_contains<color>("fuchsia"));
-static_assert(enum_contains<color>("dodger_blue"));
-static_assert(enum_contains<color>("medium_orchid"));
-static_assert(enum_contains<color>("rebecca_purple"));
-static_assert(enum_contains<color>("tan"));
-static_assert(enum_contains<color>("red"));
-static_assert(enum_contains<color>("indigo"));
-static_assert(enum_contains<color>("ivory"));
-static_assert(enum_contains<color>("dark_khaki"));
-static_assert(enum_contains<color>("green_yellow"));
-static_assert(enum_contains<color>("brown"));
-static_assert(enum_contains<color>("misty_rose"));
-static_assert(enum_contains<color>("pale_turquoise"));
-static_assert(enum_contains<color>("bisque"));
-static_assert(enum_contains<color>("snow"));
-static_assert(enum_contains<color>("rosy_brown"));
-static_assert(enum_contains<color>("dark_magenta"));
-static_assert(enum_contains<color>("antique_white"));
-static_assert(enum_contains<color>("light_salmon"));
-static_assert(enum_contains<color>("orchid"));
-static_assert(enum_contains<color>("silver"));
-static_assert(enum_contains<color>("light_steel_blue"));
-static_assert(enum_contains<color>("linen"));
-static_assert(enum_contains<color>("floral_white"));
-static_assert(enum_contains<color>("white_smoke"));
-static_assert(enum_contains<color>("dark_salmon"));
-static_assert(enum_contains<color>("orange"));
-static_assert(enum_contains<color>("black"));
-static_assert(enum_contains<color>("sea_green"));
-static_assert(enum_contains<color>("light_sky_blue"));
-static_assert(enum_contains<color>("dark_violet"));
-static_assert(enum_contains<color>("dark_slate_gray"));
-static_assert(enum_contains<color>("aqua"));
-static_assert(enum_contains<color>("dark_blue"));
-static_assert(enum_contains<color>("blue"));
-static_assert(enum_contains<color>("slate_blue"));
-static_assert(enum_contains<color>("dark_red"));
-static_assert(enum_contains<color>("lavender"));
-static_assert(enum_contains<color>("plum"));
-static_assert(enum_contains<color>("sea_shell"));
-static_assert(enum_contains<color>("yellow"));
-static_assert(enum_contains<color>("coral"));
-static_assert(enum_contains<color>("azure"));
-static_assert(enum_contains<color>("dark_orchid"));
-static_assert(enum_contains<color>("lawn_green"));
-static_assert(enum_contains<color>("light_cyan"));
-static_assert(enum_contains<color>("lime_green"));
-static_assert(enum_contains<color>("dark_slate_blue"));
-static_assert(enum_contains<color>("beige"));
-static_assert(enum_contains<color>("dark_cyan"));
-static_assert(enum_contains<color>("golden_rod"));
-static_assert(enum_contains<color>("magenta"));
-static_assert(test_invalid_cases_common<color>());
+TEST(EnumConstainsString, SingleRep)
+{
+  EXPECT_TRUE_STATIC(enum_contains<single_rep>("laugh"));
+  EXPECT_TRUE_STATIC(enum_contains<single_rep>("hahaha"));
+  EXPECT_TRUE_STATIC(enum_contains<single_rep>("over"));
+  EXPECT_TRUE_STATIC(enum_contains<single_rep>("and_over"));
+  EXPECT_TRUE_STATIC(enum_contains<single_rep>("again"));
+  EXPECT_TRUE_STATIC(enum_contains<single_rep>("unstoppable"));
 
-static_assert(enum_contains<terminal_color>("blue"));
-static_assert(enum_contains<terminal_color>("bright_yellow"));
-static_assert(enum_contains<terminal_color>("green"));
-static_assert(enum_contains<terminal_color>("cyan"));
-static_assert(enum_contains<terminal_color>("bright_green"));
-static_assert(enum_contains<terminal_color>("black"));
-static_assert(enum_contains<terminal_color>("bright_white"));
-static_assert(enum_contains<terminal_color>("yellow"));
-static_assert(enum_contains<terminal_color>("bright_blue"));
-static_assert(enum_contains<terminal_color>("bright_red"));
-static_assert(enum_contains<terminal_color>("red"));
-static_assert(enum_contains<terminal_color>("bright_magenta"));
-static_assert(enum_contains<terminal_color>("bright_black"));
-static_assert(enum_contains<terminal_color>("white"));
-static_assert(enum_contains<terminal_color>("magenta"));
+  EXPECT_FALSE_STATIC(enum_contains<single_rep>("value"));
+  test_invalid_cases_common<single_rep>();
+}
 
-static_assert(test_invalid_cases_common<terminal_color>());
-static_assert(NOT enum_contains<terminal_color>("fuchsia"));
+TEST(EnumConstainsString, Color)
+{
+  EXPECT_TRUE_STATIC(enum_contains<color>("hot_pink"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("purple"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("blanched_almond"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("steel_blue"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("alice_blue"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("maroon"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("medium_blue"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("fire_brick"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("yellow_green"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("light_gray"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("salmon"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("medium_slate_blue"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("dark_turquoise"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("medium_sea_green"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("dark_sea_green"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("pale_green"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("dark_orange"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("light_blue"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("olive"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("orange_red"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("mint_cream"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("tomato"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("lavender_blush"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("pale_violet_red"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("dark_olive_green"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("moccasin"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("crimson"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("deep_sky_blue"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("pink"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("burly_wood"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("sienna"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("dark_golden_rod"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("old_lace"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("pale_golden_rod"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("gainsboro"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("honey_dew"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("dark_green"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("light_coral"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("peach_puff"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("deep_pink"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("light_sea_green"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("gray"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("sky_blue"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("lime"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("cornsilk"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("light_golden_rod_yellow"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("blue_violet"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("light_slate_gray"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("saddle_brown"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("navy"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("aquamarine"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("olive_drab"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("sandy_brown"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("powder_blue"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("dark_gray"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("medium_purple"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("violet"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("midnight_blue"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("chartreuse"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("spring_green"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("forest_green"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("cadet_blue"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("dim_gray"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("royal_blue"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("light_yellow"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("lemon_chiffon"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("chocolate"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("thistle"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("peru"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("cornflower_blue"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("gold"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("cyan"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("medium_turquoise"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("turquoise"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("ghost_white"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("slate_gray"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("indian_red"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("wheat"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("white"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("light_pink"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("medium_spring_green"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("medium_aquamarine"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("magenta"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("khaki"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("medium_violet_red"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("papaya_whip"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("navajo_white"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("light_green"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("green"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("teal"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("fuchsia"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("dodger_blue"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("medium_orchid"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("rebecca_purple"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("tan"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("red"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("indigo"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("ivory"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("dark_khaki"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("green_yellow"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("brown"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("misty_rose"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("pale_turquoise"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("bisque"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("snow"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("rosy_brown"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("dark_magenta"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("antique_white"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("light_salmon"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("orchid"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("silver"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("light_steel_blue"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("linen"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("floral_white"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("white_smoke"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("dark_salmon"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("orange"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("black"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("sea_green"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("light_sky_blue"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("dark_violet"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("dark_slate_gray"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("aqua"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("dark_blue"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("blue"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("slate_blue"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("dark_red"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("lavender"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("plum"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("sea_shell"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("yellow"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("coral"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("azure"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("dark_orchid"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("lawn_green"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("light_cyan"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("lime_green"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("dark_slate_blue"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("beige"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("dark_cyan"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("golden_rod"));
+  EXPECT_TRUE_STATIC(enum_contains<color>("magenta"));
+  test_invalid_cases_common<color>();
+}
 
-static_assert(enum_contains<hash_collision>("_wSYZDRpiQJf8Rfv"));
-static_assert(enum_contains<hash_collision>("_cuFFJIHGp_jNJKS"));
-static_assert(test_invalid_cases_common<hash_collision>());
+TEST(EnumConstainsString, TerminalColor)
+{
+  EXPECT_TRUE_STATIC(enum_contains<terminal_color>("blue"));
+  EXPECT_TRUE_STATIC(enum_contains<terminal_color>("bright_yellow"));
+  EXPECT_TRUE_STATIC(enum_contains<terminal_color>("green"));
+  EXPECT_TRUE_STATIC(enum_contains<terminal_color>("cyan"));
+  EXPECT_TRUE_STATIC(enum_contains<terminal_color>("bright_green"));
+  EXPECT_TRUE_STATIC(enum_contains<terminal_color>("black"));
+  EXPECT_TRUE_STATIC(enum_contains<terminal_color>("bright_white"));
+  EXPECT_TRUE_STATIC(enum_contains<terminal_color>("yellow"));
+  EXPECT_TRUE_STATIC(enum_contains<terminal_color>("bright_blue"));
+  EXPECT_TRUE_STATIC(enum_contains<terminal_color>("bright_red"));
+  EXPECT_TRUE_STATIC(enum_contains<terminal_color>("red"));
+  EXPECT_TRUE_STATIC(enum_contains<terminal_color>("bright_magenta"));
+  EXPECT_TRUE_STATIC(enum_contains<terminal_color>("bright_black"));
+  EXPECT_TRUE_STATIC(enum_contains<terminal_color>("white"));
+  EXPECT_TRUE_STATIC(enum_contains<terminal_color>("magenta"));
 
-TEST(EnumContainsString, StaticAll) {
-  EXPECT_TRUE(true); // All test cases done by static assertions above.
+  EXPECT_FALSE_STATIC(enum_contains<terminal_color>("fuchsia"));
+  test_invalid_cases_common<terminal_color>();
+}
+
+TEST(EnumConstainsString, HashCollision)
+{
+  EXPECT_TRUE_STATIC(enum_contains<hash_collision>("_wSYZDRpiQJf8Rfv"));
+  EXPECT_TRUE_STATIC(enum_contains<hash_collision>("_cuFFJIHGp_jNJKS"));
+  test_invalid_cases_common<hash_collision>();
 }

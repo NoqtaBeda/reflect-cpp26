@@ -20,23 +20,22 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_ENUM_HPP
-#define REFLECT_CPP26_ENUM_HPP
+#ifndef REFLECT_CPP26_ENUM_ENUM_COMPARISON_OPERATORS_HPP
+#define REFLECT_CPP26_ENUM_ENUM_COMPARISON_OPERATORS_HPP
 
-#include <reflect_cpp26/enum/enum_bitwise_operators.hpp>
-#include <reflect_cpp26/enum/enum_cast.hpp>
-#include <reflect_cpp26/enum/enum_comparison_operators.hpp>
-#include <reflect_cpp26/enum/enum_contains.hpp>
-#include <reflect_cpp26/enum/enum_count.hpp>
-#include <reflect_cpp26/enum/enum_entries.hpp>
-#include <reflect_cpp26/enum/enum_hash.hpp>
-#include <reflect_cpp26/enum/enum_index.hpp>
-#include <reflect_cpp26/enum/enum_json.hpp>
-#include <reflect_cpp26/enum/enum_meta_entries.hpp>
-#include <reflect_cpp26/enum/enum_name.hpp>
-#include <reflect_cpp26/enum/enum_names.hpp>
-#include <reflect_cpp26/enum/enum_switch.hpp>
-#include <reflect_cpp26/enum/enum_type_name.hpp>
-#include <reflect_cpp26/enum/enum_values.hpp>
+#include <reflect_cpp26/enum/impl/enum_operator_macros.hpp>
+#include <reflect_cpp26/utils/concepts.hpp>
 
-#endif // REFLECT_CPP26_ENUM_HPP
+namespace reflect_cpp26::comparison_operators {
+template <enum_type E>
+REFLECT_CPP26_DEFINE_ENUM_BINARY_OPERATOR_R(E, std::strong_ordering, <=>)
+
+template <enum_type E>
+REFLECT_CPP26_DEFINE_ENUM_BINARY_OPERATOR_R(E, bool, ==)
+} // namespace reflect_cpp26::comparison_operators
+
+#define REFLECT_CPP26_DEFINE_ENUM_COMPARISON_OPERATORS(E)                   \
+  REFLECT_CPP26_DEFINE_ENUM_BINARY_OPERATOR_R(E, std::strong_ordering, <=>) \
+  REFLECT_CPP26_DEFINE_ENUM_BINARY_OPERATOR_R(E, bool, ==)
+
+#endif // REFLECT_CPP26_ENUM_ENUM_COMPARISON_OPERATORS_HPP

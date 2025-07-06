@@ -24,6 +24,7 @@
 #define REFLECT_CPP26_TYPE_TRAITS_TYPE_TUPLE_HPP
 
 #include <reflect_cpp26/type_traits/template_instance.hpp>
+#include <reflect_cpp26/type_traits/tuple_like_types.hpp>
 #include <reflect_cpp26/utils/config.h>
 #include <reflect_cpp26/utils/constant.hpp>
 #include <reflect_cpp26/utils/functional.hpp>
@@ -223,7 +224,21 @@ template <class T>
 concept tuple_elements_defined = requires {
   { typename T::tuple_elements{} } -> template_instance_of<type_tuple>;
 };
+
+consteval auto tuple_elements_to_type_tuple(std::meta::info T)
+{
+  auto n = extract<size_t>(substitute(^^std::tuple_size_v, {T}));
+  auto elements = std::vector<std::meta::info>{};
+  for (auto i = 0zU; i < n; i++) {
+    auto I = std::meta::reflect_constant(i);
+    elements.push_back(substitute(^^std::tuple_element_t, {I, T}));
+  }
+  return substitute(^^type_tuple, elements);
+}
 } // namespace impl
+
+template <tuple_like Tuple>
+using tuple_elements_t = [: impl::tuple_elements_to_type_tuple(^^Tuple) :];
 } // namespace reflect_cpp26
 
 /**

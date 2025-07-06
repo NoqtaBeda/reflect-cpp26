@@ -94,7 +94,7 @@ void test_by_hash_search_with_collision_common()
   static_assert(std::is_same_v<
     typename decltype(map)::result_type, const wrapper_t<size_t>&>);
   EXPECT_THAT(display_string_of(^^decltype(map)),
-    testing::HasSubstr("string_key_map_by_hash_binary_search_slow"));
+    testing::HasSubstr("string_key_map_with_hash_collision"));
   EXPECT_EQ_STATIC(strings_with_hash_collision.size(), map.size());
 
   EXPECT_FOUND_STATIC(0, map, to<CharT>("0BCPElfPXEtMOUE"));

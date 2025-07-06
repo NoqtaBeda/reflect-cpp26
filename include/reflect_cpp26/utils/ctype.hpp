@@ -149,9 +149,6 @@ struct ascii_tolower_t
 struct ascii_toupper_t
   : impl::ascii_ctype_conversion_common_t<ascii_toupper_t>
 {
-  using base_type = impl::ascii_ctype_conversion_common_t<ascii_toupper_t>;
-  using base_type::operator();
-
   static constexpr auto convert_char(non_bool_integral auto c) {
     return ascii_islower(c) ? c + 'A' - 'a' : c;
   }

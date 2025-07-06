@@ -58,7 +58,7 @@ void test_by_hash_table_common_1()
   static_assert(std::is_same_v<
     typename decltype(map)::result_type, const wrapper_t<int>&>);
   EXPECT_THAT(display_string_of(^^decltype(map)),
-              testing::HasSubstr("string_key_map_by_hash_fast"));
+              testing::HasSubstr("string_key_map_by_hash_table_fast"));
   EXPECT_EQ_STATIC(8, map.size());
   EXPECT_EQ_STATIC(7, map._bucket_size_mask);
 
@@ -100,7 +100,7 @@ void test_by_hash_table_common_ci_1()
   static_assert(std::is_same_v<
     typename decltype(map)::result_type, const wrapper_t<int>&>);
   EXPECT_THAT(display_string_of(^^decltype(map)),
-              testing::HasSubstr("string_key_map_by_hash_fast"));
+              testing::HasSubstr("string_key_map_by_hash_table_fast"));
   EXPECT_EQ_STATIC(8, map.size());
   EXPECT_EQ_STATIC(7, map._bucket_size_mask);
 

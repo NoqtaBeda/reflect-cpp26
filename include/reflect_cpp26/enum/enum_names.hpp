@@ -25,6 +25,7 @@
 
 #include <reflect_cpp26/enum/enum_meta_entries.hpp>
 #include <reflect_cpp26/utils/concepts.hpp>
+#include <reflect_cpp26/utils/ctype.hpp>
 
 namespace reflect_cpp26 {
 namespace impl {
@@ -40,7 +41,22 @@ constexpr auto enum_names()
 }
 
 template <class E, enum_entry_order Order>
+constexpr auto enum_ic_names()
+{
+  auto res = std::array<std::string_view, enum_count_v<E>>{};
+  auto index = 0zU;
+  for (auto e: enum_meta_entries_v<E, Order>) {
+    auto s = ascii_tolower(identifier_of(e));
+    res[index++] = std::define_static_string(s);
+  }
+  return res;
+}
+
+template <class E, enum_entry_order Order = enum_entry_order::original>
 constexpr auto enum_names_v = enum_names<E, Order>();
+
+template <class E, enum_entry_order Order = enum_entry_order::original>
+constexpr auto enum_ic_names_v = enum_ic_names<E, Order>();
 } // namespace impl
 
 /**

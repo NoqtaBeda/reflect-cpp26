@@ -49,7 +49,7 @@ void test_by_hash_table_common_3()
   static_assert(std::is_same_v<
     typename decltype(map)::result_type, const wrapper_t<int>&>);
   EXPECT_THAT(display_string_of(^^decltype(map)),
-              testing::HasSubstr("string_key_map_by_hash_slow"));
+              testing::HasSubstr("string_key_map_by_hash_table_slow"));
   EXPECT_EQ_STATIC(28, map.size());
   EXPECT_EQ_STATIC(33, map._bucket_size); // Modulo: 0 ~ 25, 31, 32
 
@@ -89,7 +89,7 @@ void test_by_hash_table_common_ci_3()
   static_assert(std::is_same_v<
     typename decltype(map)::result_type, const wrapper_t<int>&>);
   EXPECT_THAT(display_string_of(^^decltype(map)),
-              testing::HasSubstr("string_key_map_by_hash_slow"));
+              testing::HasSubstr("string_key_map_by_hash_table_slow"));
   EXPECT_EQ_STATIC(28, map.size());
   EXPECT_EQ_STATIC(33, map._bucket_size); // Modulo: 0 ~ 25, 31, 32
 

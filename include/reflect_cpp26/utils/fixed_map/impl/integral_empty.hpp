@@ -20,23 +20,39 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_ENUM_HPP
-#define REFLECT_CPP26_ENUM_HPP
+#ifndef REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_INTEGRAL_EMPTY_HPP
+#define REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_INTEGRAL_EMPTY_HPP
 
-#include <reflect_cpp26/enum/enum_bitwise_operators.hpp>
-#include <reflect_cpp26/enum/enum_cast.hpp>
-#include <reflect_cpp26/enum/enum_comparison_operators.hpp>
-#include <reflect_cpp26/enum/enum_contains.hpp>
-#include <reflect_cpp26/enum/enum_count.hpp>
-#include <reflect_cpp26/enum/enum_entries.hpp>
-#include <reflect_cpp26/enum/enum_hash.hpp>
-#include <reflect_cpp26/enum/enum_index.hpp>
-#include <reflect_cpp26/enum/enum_json.hpp>
-#include <reflect_cpp26/enum/enum_meta_entries.hpp>
-#include <reflect_cpp26/enum/enum_name.hpp>
-#include <reflect_cpp26/enum/enum_names.hpp>
-#include <reflect_cpp26/enum/enum_switch.hpp>
-#include <reflect_cpp26/enum/enum_type_name.hpp>
-#include <reflect_cpp26/enum/enum_values.hpp>
+#include <reflect_cpp26/utils/fixed_map/impl/common.hpp>
 
-#endif // REFLECT_CPP26_ENUM_HPP
+namespace reflect_cpp26::impl {
+template <class KVPair>
+struct empty_integral_key_map {
+  using kv_pair_type = KVPair;
+  using key_type = std::tuple_element_t<0, KVPair>;
+  using value_type = std::tuple_element_t<1, KVPair>;
+
+  static constexpr size_t size() {
+    return 0;
+  }
+
+  static constexpr auto get(non_bool_integral auto)
+    -> std::pair<const value_type&, bool> {
+    return {map_null_value_v<value_type>, false};
+  }
+
+  static constexpr auto operator[](non_bool_integral auto)
+    -> const value_type& {
+    return map_null_value_v<value_type>;
+  }
+};
+
+// -------- Builder --------
+
+template <class KVPair>
+consteval auto make_empty_integral_key_map() -> std::meta::info {
+  return std::meta::reflect_constant(empty_integral_key_map<KVPair>{});
+}
+} // namespace reflect_cpp26::impl
+
+#endif // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_INTEGRAL_EMPTY_HPP

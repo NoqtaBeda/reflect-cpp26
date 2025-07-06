@@ -24,6 +24,7 @@
 #define REFLECT_CPP26_LOOKUP_LOOKUP_TABLE_BY_NAME_HPP
 
 #include <reflect_cpp26/lookup/impl/lookup_table_common.hpp>
+#include <reflect_cpp26/utils/expand.hpp>
 #include <reflect_cpp26/utils/fixed_map/string_key.hpp>
 
 namespace reflect_cpp26 {

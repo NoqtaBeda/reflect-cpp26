@@ -28,9 +28,6 @@ LD_LIBRARY_PATH=<path-to-libc++> xmake run run_asm_check
   * `enum_fusion`
   * Functions for enum flags
   * IOStream operators
-  * Bitwise operators
-  * containers
-  * Case-insensitive enum name comparison
 * Validators
   * (see the table below)
   * Recursive validation
@@ -40,6 +37,7 @@ LD_LIBRARY_PATH=<path-to-libc++> xmake run run_asm_check
 * Improvements to `constant`:
   * `map`, `filter` with index
   * `index_of`, `last_index_of`, `includes` with start index
+* utils/fixed_set
 * Missing UT for string-key fixed map (in utils):
   * Case-insensitive UT with `string_key_map_by_hash_binary_search_slow`;
   * Hash collision cases with every hash-related scenario;

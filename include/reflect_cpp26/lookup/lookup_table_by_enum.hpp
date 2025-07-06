@@ -25,6 +25,7 @@
 
 #include <reflect_cpp26/enum/enum_cast.hpp>
 #include <reflect_cpp26/lookup/impl/lookup_table_common.hpp>
+#include <reflect_cpp26/utils/expand.hpp>
 #include <reflect_cpp26/utils/fixed_map/integral_key.hpp>
 #include <reflect_cpp26/utils/identifier_naming.hpp>
 

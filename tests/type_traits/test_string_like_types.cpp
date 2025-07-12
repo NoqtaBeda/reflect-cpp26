@@ -32,6 +32,38 @@
 
 namespace rfl = reflect_cpp26;
 
+struct ci_char_traits : public std::char_traits<char> {
+  static char to_upper(char ch) {
+    return std::toupper((unsigned char) ch);
+  }
+
+  static bool eq(char c1, char c2) {
+    return to_upper(c1) == to_upper(c2);
+  }
+
+  static bool lt(char c1, char c2) {
+    return to_upper(c1) < to_upper(c2);
+  }
+
+  static int compare(const char* s1, const char* s2, std::size_t n)
+  {
+    for (; n-- != 0; ++s1, ++s2) {
+      if (to_upper(*s1) < to_upper(*s2)) { return -1; }
+      if (to_upper(*s1) > to_upper(*s2)) { return 1; }
+    }
+    return 0;
+  }
+
+  static const char* find(const char* s, std::size_t n, char a)
+  {
+    const auto ua{to_upper(a)};
+    for (; n-- != 0; s++) {
+      if (to_upper(*s) == ua) { return s; }
+    }
+    return nullptr;
+  }
+};
+
 // -------- string_like --------
 
 // String and string view
@@ -68,11 +100,18 @@ static_assert(NOT rfl::is_string_like_v<const volatile char[32]>);
 static_assert(NOT rfl::is_string_like_v<const volatile char (&)[]>);
 static_assert(NOT rfl::is_string_like_v<const volatile char (&)[32]>);
 
+// Contiguous ranges
+static_assert(rfl::is_string_like_v<std::vector<char>>);
+static_assert(rfl::is_string_like_v<std::array<wchar_t, 32>>);
+static_assert(rfl::is_string_like_v<std::basic_string<char, ci_char_traits>>);
+static_assert(rfl::is_string_like_v<
+  std::basic_string_view<char, ci_char_traits>>);
+static_assert(rfl::is_string_like_v<
+  std::ranges::subrange<const char16_t*, const char16_t*>>);
+
 // Other types
 static_assert(NOT rfl::is_string_like_v<int>);
 static_assert(NOT rfl::is_string_like_v<char>);
-static_assert(NOT rfl::is_string_like_v<std::vector<char>>);
-static_assert(NOT rfl::is_string_like_v<std::array<char, 32>>);
 static_assert(NOT rfl::is_string_like_v<int[]>);
 static_assert(NOT rfl::is_string_like_v<int[32]>);
 static_assert(NOT rfl::is_string_like_v<std::array<const char*, 2>>);
@@ -128,10 +167,20 @@ static_assert(NOT rfl::is_string_like_of_v<char32_t (&)[32], char16_t>);
 static_assert(NOT rfl::is_string_like_of_v<const volatile char[], char8_t>);
 static_assert(NOT rfl::is_string_like_of_v<const volatile char (&)[], char8_t>);
 
+// Contiguous ranges
+static_assert(rfl::is_string_like_of_v<std::vector<char>, char>);
+static_assert(rfl::is_string_like_of_v<std::array<wchar_t, 32>, wchar_t>);
+static_assert(rfl::is_string_like_of_v<
+  std::basic_string<char, ci_char_traits>, char>);
+static_assert(rfl::is_string_like_of_v<
+  std::basic_string_view<char, ci_char_traits>, char>);
+static_assert(rfl::is_string_like_of_v<
+  std::ranges::subrange<const char16_t*, const char16_t*>, char16_t>);
+
 static_assert(NOT rfl::is_string_like_of_v<int, wchar_t>);
 static_assert(NOT rfl::is_string_like_of_v<char, char>);
-static_assert(NOT rfl::is_string_like_of_v<std::vector<char>, char>);
-static_assert(NOT rfl::is_string_like_of_v<std::array<char, 32>, char>);
+static_assert(NOT rfl::is_string_like_of_v<std::vector<char>, char8_t>);
+static_assert(NOT rfl::is_string_like_of_v<std::array<wchar_t, 32>, char16_t>);
 static_assert(NOT rfl::is_string_like_of_v<int[], char>);
 static_assert(NOT rfl::is_string_like_of_v<int[32], char8_t>);
 static_assert(NOT rfl::is_string_like_of_v<std::array<const char*, 2>, char>);

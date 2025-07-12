@@ -43,7 +43,7 @@ enum class flags_1 {
 
 TEST(EnumBitwiseOperators, OutOfBox)
 {
-  using namespace rfl::bitwise_operators;
+  using namespace rfl::enum_bitwise_operators;
   EXPECT_EQ_STATIC(flags_1::seven, flags_1::one | flags_1::two | flags_1::four);
   EXPECT_EQ_STATIC(flags_1::four, flags_1::five & flags_1::six);
   EXPECT_EQ_STATIC(flags_1::three, flags_1::five ^ flags_1::six);

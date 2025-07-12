@@ -26,13 +26,13 @@
 #include <reflect_cpp26/enum/impl/enum_operator_macros.hpp>
 #include <reflect_cpp26/utils/concepts.hpp>
 
-namespace reflect_cpp26::comparison_operators {
+namespace reflect_cpp26::enum_comparison_operators {
 template <enum_type E>
 REFLECT_CPP26_DEFINE_ENUM_BINARY_OPERATOR_R(E, std::strong_ordering, <=>)
 
 template <enum_type E>
 REFLECT_CPP26_DEFINE_ENUM_BINARY_OPERATOR_R(E, bool, ==)
-} // namespace reflect_cpp26::comparison_operators
+} // namespace reflect_cpp26::enum_comparison_operators
 
 #define REFLECT_CPP26_DEFINE_ENUM_COMPARISON_OPERATORS(E)                   \
   REFLECT_CPP26_DEFINE_ENUM_BINARY_OPERATOR_R(E, std::strong_ordering, <=>) \

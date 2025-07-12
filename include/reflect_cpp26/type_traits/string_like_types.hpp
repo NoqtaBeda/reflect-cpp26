@@ -39,7 +39,7 @@ consteval bool is_string_like_impl()
   if constexpr (std::ranges::contiguous_range<T>) {
     using V = std::ranges::range_value_t<T>;
     if constexpr (is_char_type_v<V>) {
-      return std::is_convertible_v<D, std::basic_string_view<V>>;
+      return requires (D range) { std::basic_string_view<V>(range); };
     } else {
       return false;
     }

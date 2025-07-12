@@ -29,6 +29,9 @@
 #include <reflect_cpp26/enum/enum_contains.hpp>
 #include <reflect_cpp26/enum/enum_count.hpp>
 #include <reflect_cpp26/enum/enum_entries.hpp>
+#include <reflect_cpp26/enum/enum_flags_cast.hpp>
+#include <reflect_cpp26/enum/enum_flags_contains.hpp>
+#include <reflect_cpp26/enum/enum_flags_name.hpp>
 #include <reflect_cpp26/enum/enum_hash.hpp>
 #include <reflect_cpp26/enum/enum_index.hpp>
 #include <reflect_cpp26/enum/enum_json.hpp>

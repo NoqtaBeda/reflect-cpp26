@@ -156,6 +156,30 @@ struct ascii_toupper_t
 
 constexpr auto ascii_tolower = ascii_tolower_t{};
 constexpr auto ascii_toupper = ascii_toupper_t{};
+
+struct ascii_trim_t {
+  template <string_like StringT>
+  static constexpr auto operator()(const StringT& str)
+    /* -> std::basic_string_view */
+  {
+    auto sv = std::basic_string_view{str};
+    return do_trim(sv);
+  }
+
+private:
+  template <class CharT, class Traits>
+  static constexpr auto do_trim(std::basic_string_view<CharT, Traits> str)
+    -> std::basic_string_view<CharT, Traits>
+  {
+    auto head = str.begin();
+    auto before_tail = str.end() - 1;
+    for (; head <= before_tail && ascii_isspace(*head); ++head) {}
+    for (; head <= before_tail && ascii_isspace(*before_tail); --before_tail) {}
+    return {head, before_tail + 1};
+  }
+};
+
+constexpr auto ascii_trim = ascii_trim_t{};
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_UTILS_CTYPE_HPP

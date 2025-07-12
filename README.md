@@ -26,8 +26,13 @@ LD_LIBRARY_PATH=<path-to-libc++> xmake run run_asm_check
 # TODO
 * Enum functions or types not implemented (compared to [magic_enum](https://github.com/Neargye/magic_enum)):
   * `enum_fusion`
-  * Functions for enum flags
   * IOStream operators
+  * `std::format` and `fmt::format`
+* Type traits
+  * Recursively flattenable
+  * Redesign tuple element and class data member predicates
+* Type operations
+  * Redesign `to_aggregate`
 * Validators
   * (see the table below)
   * Recursive validation

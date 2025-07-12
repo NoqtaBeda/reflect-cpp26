@@ -43,7 +43,7 @@ enum class flags_1 {
 
 TEST(EnumComparisonOperators, OutOfBox)
 {
-  using namespace rfl::comparison_operators;
+  using namespace rfl::enum_comparison_operators;
 
   EXPECT_TRUE_STATIC(flags_1::one < flags_1::two);
   EXPECT_FALSE_STATIC(flags_1::one > flags_1::two);

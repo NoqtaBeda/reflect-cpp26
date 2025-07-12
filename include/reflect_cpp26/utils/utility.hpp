@@ -151,10 +151,42 @@ struct to_underlying_t {
 };
 constexpr auto to_underlying = to_underlying_t{};
 
-template <class T, class Alloc = std::allocator<T>>
-constexpr auto make_reserved_vector(size_t n) -> std::vector<T, Alloc>
+template <std::unsigned_integral To, std::integral From>
+constexpr auto zero_extend(From from)
 {
-  auto res = std::vector<T, Alloc>{};
+  if constexpr (std::is_signed_v<From>) {
+    auto u = std::make_unsigned_t<From>(from);
+    return static_cast<To>(u);
+  } else {
+    return static_cast<To>(from);
+  }
+}
+
+template <std::signed_integral To, std::integral From>
+constexpr auto sign_extend(From from)
+{
+  if constexpr (std::is_signed_v<From>) {
+    return static_cast<To>(from);
+  } else {
+    auto s = std::make_signed_t<From>(from);
+    return static_cast<To>(s);
+  }
+}
+
+template <class T, class Allocator = std::allocator<T>>
+constexpr auto make_reserved_vector(size_t n) -> std::vector<T, Allocator>
+{
+  auto res = std::vector<T, Allocator>{};
+  res.reserve(n);
+  return res;
+}
+
+template <class CharT = char, class Traits = std::char_traits<CharT>,
+          class Allocator = std::allocator<CharT>>
+constexpr auto make_reserved_string(size_t n)
+  -> std::basic_string<CharT, Traits, Allocator>
+{
+  auto res = std::basic_string<CharT, Traits, Allocator>{};
   res.reserve(n);
   return res;
 }

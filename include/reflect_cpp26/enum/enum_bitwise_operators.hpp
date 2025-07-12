@@ -26,7 +26,7 @@
 #include <reflect_cpp26/enum/impl/enum_operator_macros.hpp>
 #include <reflect_cpp26/utils/concepts.hpp>
 
-namespace reflect_cpp26::bitwise_operators {
+namespace reflect_cpp26::enum_bitwise_operators {
 template <enum_type E>
 REFLECT_CPP26_DEFINE_ENUM_BINARY_OPERATOR(E, &)
 template <enum_type E>
@@ -44,7 +44,7 @@ REFLECT_CPP26_DEFINE_ENUM_ASSIGNMENT_OPERATOR(E, ^)
 
 template <enum_type E>
 REFLECT_CPP26_DEFINE_ENUM_UNARY_OPERATOR(E, E, ~)
-} // namespace reflect_cpp26::bitwise_operators
+} // namespace reflect_cpp26::enum_bitwise_operators
 
 #define REFLECT_CPP26_DEFINE_ENUM_BITWISE_BINARY_OPERATORS(E) \
   REFLECT_CPP26_DEFINE_ENUM_BINARY_OPERATOR(E, &)             \

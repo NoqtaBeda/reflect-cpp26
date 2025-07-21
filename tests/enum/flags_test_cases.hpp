@@ -102,6 +102,18 @@ enum class E2 : int8_t {
   G = -1,
 };
 
+enum class E3 : uint8_t {
+  irregular = 0b0000'0001,
+  are = 0b0000'0010,
+  those = 0b0000'1100,
+  unable = 0b0000'0111,
+  to = 0b0001'0000,
+  decompose = 0b0011'0000,
+  as = 0b1110'0000,
+  disjoint = 0b1100'1100,
+  units = 0b0011'0011,
+};
+
 // -------- Special cases --------
 
 enum class empty {};

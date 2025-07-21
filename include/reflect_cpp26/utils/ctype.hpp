@@ -154,9 +154,6 @@ struct ascii_toupper_t
   }
 };
 
-constexpr auto ascii_tolower = ascii_tolower_t{};
-constexpr auto ascii_toupper = ascii_toupper_t{};
-
 struct ascii_trim_t {
   template <string_like StringT>
   static constexpr auto operator()(const StringT& str)
@@ -171,6 +168,9 @@ private:
   static constexpr auto do_trim(std::basic_string_view<CharT, Traits> str)
     -> std::basic_string_view<CharT, Traits>
   {
+    if (str.empty()) {
+      return str; // Empty check is necessary for constant evaluation
+    }
     auto head = str.begin();
     auto before_tail = str.end() - 1;
     for (; head <= before_tail && ascii_isspace(*head); ++head) {}
@@ -179,6 +179,8 @@ private:
   }
 };
 
+constexpr auto ascii_tolower = ascii_tolower_t{};
+constexpr auto ascii_toupper = ascii_toupper_t{};
 constexpr auto ascii_trim = ascii_trim_t{};
 } // namespace reflect_cpp26
 

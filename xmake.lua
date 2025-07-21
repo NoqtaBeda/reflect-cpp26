@@ -133,6 +133,7 @@ meta_test_cases = {
   "enum/test_enum_flags_contains_string",
   "enum/test_enum_flags_contains_string_ci",
   "enum/test_enum_flags_name",
+  "enum/test_enum_format",
   "enum/test_enum_hash",
   "enum/test_enum_index",
   "enum/test_enum_json_static",
@@ -161,9 +162,11 @@ meta_test_cases = {
   "validators/compound/test_size",
   "validators/leaf/test_arithmetic",
   "validators/leaf/test_boundary_options_exclusion",
+  "validators/leaf/test_contains",
   "validators/leaf/test_custom_validator",
   "validators/leaf/test_non_empty",
   "validators/leaf/test_non_null",
+  "validators/leaf/test_prefix_suffix",
   "validators/leaf/test_sorted",
 }
 

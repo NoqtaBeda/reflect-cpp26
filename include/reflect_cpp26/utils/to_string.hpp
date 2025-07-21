@@ -386,8 +386,9 @@ constexpr auto to_string(
   if (display_style) {
     return impl::to_display_string({string.data(), string.size()});
   }
-  if constexpr (std::is_same_v<
-      std::remove_cvref_t<decltype(string)>, std::string>) {
+  constexpr auto is_std_string = std::is_same_v<
+    std::remove_cvref_t<decltype(string)>, std::string>;
+  if constexpr (is_std_string) {
     return std::move(string);
   } else {
     return std::string{string.data(), string.size()};

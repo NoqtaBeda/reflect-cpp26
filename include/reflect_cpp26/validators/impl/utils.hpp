@@ -20,26 +20,20 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_VALIDATORS_HPP
-#define REFLECT_CPP26_VALIDATORS_HPP
+#ifndef REFLECT_CPP26_VALIDATORS_IMPL_UTILS_HPP
+#define REFLECT_CPP26_VALIDATORS_IMPL_UTILS_HPP
 
-// Compound
-#include <reflect_cpp26/validators/compound/for_each_test.hpp>
-#include <reflect_cpp26/validators/compound/front_back_test.hpp>
-#include <reflect_cpp26/validators/compound/min_max_element_test.hpp>
-#include <reflect_cpp26/validators/compound/size_test.hpp>
-// Leaf
-#include <reflect_cpp26/validators/leaf/arithmetic_test.hpp>
-#include <reflect_cpp26/validators/leaf/boundary_test.hpp>
-#include <reflect_cpp26/validators/leaf/contains_test.hpp>
-#include <reflect_cpp26/validators/leaf/custom_validator.hpp>
-#include <reflect_cpp26/validators/leaf/non_null_test.hpp>
-#include <reflect_cpp26/validators/leaf/options_exclusion_test.hpp>
-#include <reflect_cpp26/validators/leaf/prefix_suffix_test.hpp>
-#include <reflect_cpp26/validators/leaf/size_test.hpp>
-#include <reflect_cpp26/validators/leaf/sorted_test.hpp>
+#include <reflect_cpp26/type_operations/comparison.hpp>
+#include <reflect_cpp26/type_traits/string_like_types.hpp>
 
-#include <reflect_cpp26/validators/macros.h>
-#include <reflect_cpp26/validators/validate.hpp>
+namespace reflect_cpp26::validators::impl {
+template <class R, class T>
+concept forward_range_comparable_with = std::ranges::forward_range<R> &&
+  generic_equal_comparable_with<std::ranges::range_value_t<R>, T>;
 
-#endif // REFLECT_CPP26_VALIDATORS_HPP
+template <class R, class CharT>
+concept forward_range_of_string_like = std::ranges::forward_range<R> &&
+  is_string_like_of_v<std::ranges::range_value_t<R>, CharT>;
+} // namespace reflect_cpp26::validators::impl
+
+#endif // REFLECT_CPP26_VALIDATORS_IMPL_UTILS_HPP

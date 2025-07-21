@@ -20,13 +20,19 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_ENUM_TAGS_HPP
-#define REFLECT_CPP26_ENUM_TAGS_HPP
+#ifndef REFLECT_CPP26_UTILS_TAGS_HPP
+#define REFLECT_CPP26_UTILS_TAGS_HPP
 
 namespace reflect_cpp26 {
 struct case_insensitive_tag_t {};
+struct case_insensitive_by_ascii_tag_t {};
+struct case_insensitive_by_current_locale_tag_t {};
 
+[[deprecated]]
 constexpr auto case_insensitive = case_insensitive_tag_t{};
+constexpr auto case_insensitive_by_ascii = case_insensitive_by_ascii_tag_t{};
+constexpr auto case_insensitive_by_current_locale =
+  case_insensitive_by_current_locale_tag_t{};
 } // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_ENUM_TAGS_HPP
+#endif // REFLECT_CPP26_UTILS_TAGS_HPP

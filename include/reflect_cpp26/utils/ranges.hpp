@@ -29,6 +29,9 @@
 namespace reflect_cpp26 {
 // -------- Extension of Ranges concepts --------
 
+template <class T>
+concept non_range = !std::ranges::range<T>;
+
 #if __cpp_lib_ranges_as_const >= 202207L
 #define REFLECT_CPP26_CONST_RANGE_CONCEPTS_FOR_EACH(F) F(constant_range)
 #else
@@ -147,6 +150,8 @@ constexpr auto are_common_output_ranges_of_v =
 template <class T, class... Ranges>
 constexpr auto are_common_output_ranges_of_exactly_v =
   (common_output_range_of_exactly<Ranges, T> && ...);
+
+
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_UTILS_RANGES_HPP

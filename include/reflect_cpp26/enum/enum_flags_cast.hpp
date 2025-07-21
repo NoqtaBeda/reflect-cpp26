@@ -25,7 +25,7 @@
 
 #include <reflect_cpp26/enum/enum_cast.hpp>
 #include <reflect_cpp26/enum/enum_flags_contains.hpp>
-#include <reflect_cpp26/enum/tags.hpp>
+#include <reflect_cpp26/utils/tags.hpp>
 #include <reflect_cpp26/utils/concepts.hpp>
 
 namespace reflect_cpp26 {

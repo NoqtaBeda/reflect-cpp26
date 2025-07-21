@@ -24,10 +24,6 @@ LD_LIBRARY_PATH=<path-to-libc++> xmake run run_asm_check
 ```
 
 # TODO
-* Enum functions or types not implemented (compared to [magic_enum](https://github.com/Neargye/magic_enum)):
-  * `enum_fusion`
-  * IOStream operators
-  * `std::format` and `fmt::format`
 * Type traits
   * Recursively flattenable
   * Redesign tuple element and class data member predicates
@@ -50,11 +46,11 @@ LD_LIBRARY_PATH=<path-to-libc++> xmake run run_asm_check
     * the underlying hash function shall be redesigned for wide char types.
 
 Validators to be implemented:
-| Name | Implemented | Tested |
-| :--- | :---------: | :----: |
-| `starts_with` | | |
-| `ends_with` | | |
-| `contains` | | |
+| Name | Implemented | Tested | Notes |
+| :--- | :---------: | :----: | :---- |
+| `starts_with` | Partially | Partially | TODO: character types other than `char` |
+| `ends_with` | Partially | Partially | TODO: character types other than `char` |
+| `contains` | Partially | Partially | TODO: character types other than `char` |
 | `matches_regex` | | |
 | `substr_matches_regex` | | |
 | `has_subsequence` | | |

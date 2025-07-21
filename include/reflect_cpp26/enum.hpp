@@ -32,6 +32,7 @@
 #include <reflect_cpp26/enum/enum_flags_cast.hpp>
 #include <reflect_cpp26/enum/enum_flags_contains.hpp>
 #include <reflect_cpp26/enum/enum_flags_name.hpp>
+#include <reflect_cpp26/enum/enum_format.hpp>
 #include <reflect_cpp26/enum/enum_hash.hpp>
 #include <reflect_cpp26/enum/enum_index.hpp>
 #include <reflect_cpp26/enum/enum_json.hpp>

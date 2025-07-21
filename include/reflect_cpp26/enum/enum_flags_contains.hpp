@@ -24,7 +24,7 @@
 #define REFLECT_CPP26_ENUM_ENUM_FLAGS_CONTAINS_HPP
 
 #include <reflect_cpp26/enum/enum_contains.hpp>
-#include <reflect_cpp26/enum/tags.hpp>
+#include <reflect_cpp26/utils/tags.hpp>
 #include <reflect_cpp26/enum/impl/enum_flags.hpp>
 #include <reflect_cpp26/utils/concepts.hpp>
 #include <reflect_cpp26/utils/ctype.hpp>

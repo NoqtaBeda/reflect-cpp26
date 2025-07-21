@@ -20,26 +20,15 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_VALIDATORS_HPP
-#define REFLECT_CPP26_VALIDATORS_HPP
+#ifndef REFLECT_CPP26_ENUM_IMPL_TAGS_HPP
+#define REFLECT_CPP26_ENUM_IMPL_TAGS_HPP
 
-// Compound
-#include <reflect_cpp26/validators/compound/for_each_test.hpp>
-#include <reflect_cpp26/validators/compound/front_back_test.hpp>
-#include <reflect_cpp26/validators/compound/min_max_element_test.hpp>
-#include <reflect_cpp26/validators/compound/size_test.hpp>
-// Leaf
-#include <reflect_cpp26/validators/leaf/arithmetic_test.hpp>
-#include <reflect_cpp26/validators/leaf/boundary_test.hpp>
-#include <reflect_cpp26/validators/leaf/contains_test.hpp>
-#include <reflect_cpp26/validators/leaf/custom_validator.hpp>
-#include <reflect_cpp26/validators/leaf/non_null_test.hpp>
-#include <reflect_cpp26/validators/leaf/options_exclusion_test.hpp>
-#include <reflect_cpp26/validators/leaf/prefix_suffix_test.hpp>
-#include <reflect_cpp26/validators/leaf/size_test.hpp>
-#include <reflect_cpp26/validators/leaf/sorted_test.hpp>
+namespace reflect_cpp26::impl {
+struct with_allocated_buffer_tag_t {};
+struct without_allocated_buffer_tag_t {};
 
-#include <reflect_cpp26/validators/macros.h>
-#include <reflect_cpp26/validators/validate.hpp>
+constexpr auto with_allocated_buffer = with_allocated_buffer_tag_t{};
+constexpr auto without_allocated_buffer = without_allocated_buffer_tag_t{};
+} // namespace reflect_cpp26::impl
 
-#endif // REFLECT_CPP26_VALIDATORS_HPP
+#endif // REFLECT_CPP26_ENUM_IMPL_TAGS_HPP

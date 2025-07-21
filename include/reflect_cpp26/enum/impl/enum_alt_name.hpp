@@ -20,26 +20,29 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_VALIDATORS_HPP
-#define REFLECT_CPP26_VALIDATORS_HPP
+#ifndef REFLECT_CPP26_ENUM_IMPL_ENUM_ALT_NAME_HPP
+#define REFLECT_CPP26_ENUM_IMPL_ENUM_ALT_NAME_HPP
 
-// Compound
-#include <reflect_cpp26/validators/compound/for_each_test.hpp>
-#include <reflect_cpp26/validators/compound/front_back_test.hpp>
-#include <reflect_cpp26/validators/compound/min_max_element_test.hpp>
-#include <reflect_cpp26/validators/compound/size_test.hpp>
-// Leaf
-#include <reflect_cpp26/validators/leaf/arithmetic_test.hpp>
-#include <reflect_cpp26/validators/leaf/boundary_test.hpp>
-#include <reflect_cpp26/validators/leaf/contains_test.hpp>
-#include <reflect_cpp26/validators/leaf/custom_validator.hpp>
-#include <reflect_cpp26/validators/leaf/non_null_test.hpp>
-#include <reflect_cpp26/validators/leaf/options_exclusion_test.hpp>
-#include <reflect_cpp26/validators/leaf/prefix_suffix_test.hpp>
-#include <reflect_cpp26/validators/leaf/size_test.hpp>
-#include <reflect_cpp26/validators/leaf/sorted_test.hpp>
+#include <reflect_cpp26/enum/impl/tags.hpp>
+#include <reflect_cpp26/enum/enum_type_name.hpp>
+#include <reflect_cpp26/utils/to_string_utils.hpp>
+#include <charconv>
+#include <utility>
 
-#include <reflect_cpp26/validators/macros.h>
-#include <reflect_cpp26/validators/validate.hpp>
+namespace reflect_cpp26::impl {
+template <class Iter, class E>
+constexpr auto enum_alt_name_to(Iter iter, E value, with_allocated_buffer_tag_t)
+  -> Iter
+{
+  *iter++ = '(';
+  iter = std::ranges::copy(enum_type_name<E>(), iter).out;
+  *iter++ = ')';
 
-#endif // REFLECT_CPP26_VALIDATORS_HPP
+  std::array<char, max_decimal_digits_int64> buffer;
+  auto buffer_digits_end =
+    std::to_chars(buffer.begin(), buffer.end(), std::to_underlying(value)).ptr;
+  return std::ranges::copy(buffer.begin(), buffer_digits_end, iter).out;
+}
+} // namespace reflect_cpp26::impl
+
+#endif // REFLECT_CPP26_ENUM_IMPL_ENUM_ALT_NAME_HPP

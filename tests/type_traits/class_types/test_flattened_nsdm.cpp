@@ -21,6 +21,8 @@
  **/
 
 #include "tests/test_options.hpp"
+#include <reflect_cpp26/utils/define_static_values.hpp>
+#include <reflect_cpp26/utils/to_string.hpp>
 #include <cassert>
 
 #ifdef ENABLE_FULL_HEADER_TEST
@@ -30,6 +32,7 @@
 #endif
 
 namespace rfl = reflect_cpp26;
+using namespace std::literals;
 
 template <class T>
 void force_write_by_offset(void* base, uintptr_t offset, T value)
@@ -78,23 +81,54 @@ consteval ptrdiff_t get_bf_size(
   return bit_size_of(members[index].member);
 }
 
-struct foo_t {
-  int32_t x;
-  int32_t y;
+template <size_t N>
+consteval auto dump_member_list(
+  const std::array<rfl::flattened_data_member_info, N>& members)
+  -> std::string
+{
+  auto res = "# of members = " + rfl::to_string(N);
+  for (auto i = 0zU; i < N; i++) {
+    auto [member, actual_offset] = members[i];
+    res += "\n[" + rfl::to_string(i) + "] ";
+    res += display_string_of(type_of(member));
+    res += ' ';
+    res += display_string_of(parent_of(member));
+    res += "::"s + identifier_of(member);
+    res += ": ";
+    res += rfl::to_string(actual_offset.bytes) + " bytes + ";
+    res += rfl::to_string(actual_offset.bits) + " bits";
+  }
+  return res;
+}
 
-  void set_xy(int x, int y);
-private:
-  double _timestamp;
-};
-
-TEST(TypeTraitsClassTypes, NSDMListMonostate)
+TEST(TypeTraitsClassTypes, PublicNSDMListMonostate)
 {
   constexpr auto std_monostate_members =
     rfl::public_flattened_nsdm_v<std::monostate>;
   static_assert(std_monostate_members.size() == 0);
 }
 
-TEST(TypeTraitsClassTypes, NSDMListFoo)
+TEST(TypeTraitsClassTypes, AllNSDMListMonostate)
+{
+  constexpr auto std_monostate_members =
+    rfl::all_flattened_nsdm_v<std::monostate>;
+  static_assert(std_monostate_members.size() == 0);
+}
+
+struct foo_t {
+  int32_t x = 0;
+  int32_t y = 0;
+
+  void set_xy(int x, int y);
+
+  auto dump() const -> std::string {
+    return std::format("{},{},{}", x, y, _timestamp);
+  }
+private:
+  double _timestamp = 0.0;
+};
+
+TEST(TypeTraitsClassTypes, PublicNSDMListFoo)
 {
   constexpr auto foo_members = rfl::public_flattened_nsdm_v<foo_t>;
   static_assert(foo_members.size() == 2);
@@ -104,23 +138,42 @@ TEST(TypeTraitsClassTypes, NSDMListFoo)
   auto foo = foo_t{};
   foo.[:foo_members[0].member:] = 21;
   foo.[:foo_members[1].member:] = 42;
-  EXPECT_EQ("21,42", std::format("{},{}", foo.x, foo.y));
+  EXPECT_EQ("21,42,0", foo.dump());
+}
+
+TEST(TypeTraitsClassTypes, AllNSDMListFoo)
+{
+  constexpr auto foo_members = rfl::all_flattened_nsdm_v<foo_t>;
+  static_assert(foo_members.size() == 3);
+  static_assert(foo_members[0].actual_offset_bytes() == 0z);
+  static_assert(foo_members[1].actual_offset_bytes() == 4z);
+  static_assert(foo_members[2].actual_offset_bytes() == 8z);
+
+  auto foo = foo_t{};
+  foo.[:foo_members[0].member:] = 2;
+  foo.[:foo_members[1].member:] = 4;
+  foo.[:foo_members[2].member:] = 6.325;
+  EXPECT_EQ("2,4,6.325", foo.dump());
 }
 
 struct bar_1_t : foo_t {
-  float average_rating;
-  int32_t rating_count;
+  float average_rating = 0.0;
+  int32_t rating_count = 0.0;
 
-  auto dump() const -> std::string {
-    return std::format("average_rating = {}, rating_count = {}",
-      average_rating, rating_count);
+  auto dump() const -> std::string
+  {
+    auto foo = foo_t::dump();
+    auto bar = std::format("average_rating = {}, rating_count = {}, tag = {}",
+      average_rating, rating_count, tag);
+    return foo + "; " + bar;
   }
 protected:
-  int32_t tag;
+  int32_t tag = 0.0;
+
   void call_bar();
 };
 
-TEST(TypeTraitsClassTypes, NSDMListBar1)
+TEST(TypeTraitsClassTypes, PublicNSDMListBar1)
 {
   constexpr auto bar_1_members = rfl::public_flattened_nsdm_v<bar_1_t>;
   static_assert(bar_1_members.size() == 4);
@@ -130,21 +183,60 @@ TEST(TypeTraitsClassTypes, NSDMListBar1)
   static_assert(bar_1_members[3].actual_offset_bytes() == 20z);
 
   auto bar_1 = bar_1_t{};
+  // Inherited from foo_t
   bar_1.[:bar_1_members[0].member:] = 63;
   bar_1.[:bar_1_members[1].member:] = 84;
+  // Direct members of bar_1_t
   bar_1.[:bar_1_members[2].member:] = 4.5;
   bar_1.[:bar_1_members[3].member:] = 123;
-  EXPECT_EQ("63,84", std::format("{},{}", bar_1.x, bar_1.y));
-  EXPECT_EQ("average_rating = 4.5, rating_count = 123", bar_1.dump());
+  EXPECT_EQ("63,84,0; average_rating = 4.5, rating_count = 123, tag = 0",
+            bar_1.dump());
+}
+
+TEST(TypeTraitsClassTypes, AllNSDMListBar1)
+{
+  constexpr auto bar_1_members = rfl::all_flattened_nsdm_v<bar_1_t>;
+  static_assert(bar_1_members.size() == 6);
+  static_assert(bar_1_members[0].actual_offset_bytes() == 0z);
+  static_assert(bar_1_members[1].actual_offset_bytes() == 4z);
+  static_assert(bar_1_members[2].actual_offset_bytes() == 8z);
+  static_assert(bar_1_members[3].actual_offset_bytes() == 16z);
+  static_assert(bar_1_members[4].actual_offset_bytes() == 20z);
+  static_assert(bar_1_members[5].actual_offset_bytes() == 24z);
+
+  auto bar_1 = bar_1_t{};
+  // Inherited from foo_t
+  bar_1.[:bar_1_members[0].member:] = 6;
+  bar_1.[:bar_1_members[1].member:] = 8;
+  bar_1.[:bar_1_members[2].member:] = 10.5;
+  // Direct members of bar_1_t
+  bar_1.[:bar_1_members[3].member:] = 12.25;
+  bar_1.[:bar_1_members[4].member:] = 14;
+  bar_1.[:bar_1_members[5].member:] = 16;
+  EXPECT_EQ("6,8,10.5; average_rating = 12.25, rating_count = 14, tag = 16",
+            bar_1.dump());
 }
 
 struct bar_2_t : std::pair<int32_t, int32_t>, protected bar_1_t {
-  float first; // Shadows member 'first' of base
+  float first = 0.0; // Shadows member 'first' of base
+
+  auto dump() const -> std::string
+  {
+    constexpr auto first_from_base = &std::pair<int32_t, int32_t>::first;
+    auto res = std::format(
+      "std::pair = ({}, {})", this->*first_from_base, this->second);
+    res += "; ";
+    res += bar_1_t::dump();
+    res += "; ";
+    res += std::format(
+      "first = {}, d2 = {}", first, rfl::to_display_string(d2));
+    return res;
+  }
 protected:
-  char d2;
+  char d2 = '\0';
 };
 
-TEST(TypeTraitsClassTypes, NSDMListBar2)
+TEST(TypeTraitsClassTypes, PublicNSDMListBar2)
 {
   constexpr auto bar_2_members = rfl::public_flattened_nsdm_v<bar_2_t>;
   static_assert(bar_2_members.size() == 3);
@@ -165,25 +257,71 @@ TEST(TypeTraitsClassTypes, NSDMListBar2)
     "{},{},{}", bar_2.*first_from_base, bar_2.second, bar_2.first));
 }
 
-struct bar_3_t
-  : private std::array<int16_t, 6>
-  , std::pair<int32_t, int32_t>
+TEST(TypeTraitsClassTypes, AllNSDMListBar2)
 {
+  constexpr auto bar_2_members = rfl::all_flattened_nsdm_v<bar_2_t>;
+  static_assert(bar_2_members.size() == 10);
+
+  auto bar_2 = bar_2_t{};
+  // Inherited from std::pair<int32_t, int32_t>
+  bar_2.[:bar_2_members[0].member:] = 100;
+  bar_2.[:bar_2_members[1].member:] = 200;
+  // Inherited from bar_1_t::foo_t
+  bar_2.[:bar_2_members[2].member:] = 6;
+  bar_2.[:bar_2_members[3].member:] = 8;
+  bar_2.[:bar_2_members[4].member:] = 10.5;
+  // Inherited from bar_1_t
+  bar_2.[:bar_2_members[5].member:] = 12.25;
+  bar_2.[:bar_2_members[6].member:] = 14;
+  bar_2.[:bar_2_members[7].member:] = 16;
+  // Direct members of bar_2_t
+  bar_2.[:bar_2_members[8].member:] = 3.125;
+  bar_2.[:bar_2_members[9].member:] = 'A';
+  EXPECT_EQ("std::pair = (100, 200); 6,8,10.5; "
+            "average_rating = 12.25, rating_count = 14, tag = 16; "
+            "first = 3.125, d2 = 'A'", bar_2.dump());
+
+  bar_2 = bar_2_t{};
+  // Inherited from std::pair<int32_t, int32_t>
+  force_write_by_offset(&bar_2, get_offset(bar_2_members, 0), 400);
+  force_write_by_offset(&bar_2, get_offset(bar_2_members, 1), 800);
+  // Inherited from bar_1_t::foo_t
+  force_write_by_offset(&bar_2, get_offset(bar_2_members, 2), 12);
+  force_write_by_offset(&bar_2, get_offset(bar_2_members, 3), 24);
+  force_write_by_offset(&bar_2, get_offset(bar_2_members, 4), -1.25);
+  // Inherited from bar_1_t
+  force_write_by_offset(&bar_2, get_offset(bar_2_members, 5), -2.25f);
+  force_write_by_offset(&bar_2, get_offset(bar_2_members, 6), 36);
+  force_write_by_offset(&bar_2, get_offset(bar_2_members, 7), 48);
+  // Direct members of bar_2_t
+  force_write_by_offset(&bar_2, get_offset(bar_2_members, 8), 3.75f);
+  force_write_by_offset(&bar_2, get_offset(bar_2_members, 9), 'B');
+  EXPECT_EQ("std::pair = (400, 800); 12,24,-1.25; "
+            "average_rating = -2.25, rating_count = 36, tag = 48; "
+            "first = 3.75, d2 = 'B'", bar_2.dump());
+}
+
+struct bar_3_t : private std::array<int16_t, 6>, std::pair<int32_t, int32_t> {
 private:
-  char d3;
+  char d3 = '\0';
 public:
-  float first; // Shadows member 'first' of base
+  float first = 0.0; // Shadows member 'first' of base
 
   bar_3_t(): std::array<int16_t, 6>{}, std::pair<int32_t, int32_t>{} {}
 
-  auto dump_private_base() -> std::string {
-    return std::format("{}", *static_cast<std::array<int16_t, 6>*>(this));
+  auto dump() const -> std::string
+  {
+    return std::format(
+      "std::array = {}; std::pair = {}; d3 = {}, first = {}, d4 = {}",
+      *static_cast<const std::array<int16_t, 6>*>(this),
+      *static_cast<const std::pair<int32_t, int32_t>*>(this),
+      rfl::to_display_string(d3), first, rfl::to_display_string(d4));
   }
 protected:
-  char d4;
+  char d4 = '\0';
 };
 
-TEST(TypeTraitsClassTypes, NSDMListBar3)
+TEST(TypeTraitsClassTypes, PublicNSDMListBar3)
 {
   constexpr auto bar_3_members = rfl::public_flattened_nsdm_v<bar_3_t>;
   static_assert(bar_3_members.size() == 3);
@@ -193,16 +331,48 @@ TEST(TypeTraitsClassTypes, NSDMListBar3)
   bar_3.[:bar_3_members[1].member:] = 2000;
   bar_3.[:bar_3_members[2].member:] = -1234.5;
   auto first_from_base = &std::pair<int32_t, int32_t>::first;
-  EXPECT_EQ("1000,2000,-1234.5", std::format(
-    "{},{},{}", bar_3.*first_from_base, bar_3.second, bar_3.first));
+  EXPECT_EQ("std::array = [0, 0, 0, 0, 0, 0]; std::pair = (1000, 2000); "
+            "d3 = '\\0', first = -1234.5, d4 = '\\0'", bar_3.dump());
 
   bar_3 = bar_3_t{};
   force_write_by_offset(&bar_3, get_offset(bar_3_members, 0), 400);
   force_write_by_offset(&bar_3, get_offset(bar_3_members, 1), 800);
   force_write_by_offset(&bar_3, get_offset(bar_3_members, 2), -6.25f);
-  EXPECT_EQ("400,800,-6.25", std::format(
-    "{},{},{}", bar_3.*first_from_base, bar_3.second, bar_3.first));
-  EXPECT_EQ("[0, 0, 0, 0, 0, 0]", bar_3.dump_private_base());
+  EXPECT_EQ("std::array = [0, 0, 0, 0, 0, 0]; std::pair = (400, 800); "
+            "d3 = '\\0', first = -6.25, d4 = '\\0'", bar_3.dump());
+}
+
+TEST(TypeTraitsClassTypes, AllNSDMListBar3)
+{
+  constexpr auto bar_3_members = rfl::all_flattened_nsdm_v<bar_3_t>;
+  static_assert(bar_3_members.size() == 6);
+
+  auto bar_3 = bar_3_t{};
+  // Derived from std::array<int16_t, 6>
+  std::ranges::copy(
+    std::array{1, -1, 2, -2, 4, -4}, bar_3.[:bar_3_members[0].member:]);
+  // Derived from std::pair<int32_t, int32_t>
+  bar_3.[:bar_3_members[1].member:] = 123;
+  bar_3.[:bar_3_members[2].member:] = 456;
+  // Direct members of bar_3_t
+  bar_3.[:bar_3_members[3].member:] = 'x';
+  bar_3.[:bar_3_members[4].member:] = 1.125f;
+  bar_3.[:bar_3_members[5].member:] = 'y';
+  EXPECT_EQ("std::array = [1, -1, 2, -2, 4, -4]; std::pair = (123, 456); "
+            "d3 = 'x', first = 1.125, d4 = 'y'", bar_3.dump());
+
+  bar_3 = bar_3_t{};
+  // Derived from std::array<int16_t, 6>
+  force_write_by_offset(&bar_3, get_offset(bar_3_members, 0), int16_t{42});
+  // Derived from std::pair<int32_t, int32_t>
+  force_write_by_offset(&bar_3, get_offset(bar_3_members, 1), 111);
+  force_write_by_offset(&bar_3, get_offset(bar_3_members, 2), 222);
+  // Direct members of bar_3_t
+  force_write_by_offset(&bar_3, get_offset(bar_3_members, 3), '!');
+  force_write_by_offset(&bar_3, get_offset(bar_3_members, 4), -6.125f);
+  force_write_by_offset(&bar_3, get_offset(bar_3_members, 5), '@');
+  EXPECT_EQ("std::array = [42, 0, 0, 0, 0, 0]; std::pair = (111, 222); "
+            "d3 = '!', first = -6.125, d4 = '@'", bar_3.dump());
 }
 
 class baz_1_t : public bar_1_t, public bar_3_t {
@@ -216,12 +386,14 @@ public:
 
   auto dump() const -> std::string {
     auto res = bar_1_t::dump();
-    res += std::format(", e = {}, e_sum = {}, f = {}", e, e_sum, f);
+    res += "; ";
+    res += bar_3_t::dump();
+    res += std::format("; e = {}, e_sum = {}, f = {}", e, e_sum, f);
     return res;
   }
 };
 
-TEST(TypeTraitsClassTypes, NSDMListBaz1)
+TEST(TypeTraitsClassTypes, PublicNSDMListBaz1)
 {
   constexpr auto baz_1_members = rfl::public_flattened_nsdm_v<baz_1_t>;
   static_assert(baz_1_members.size() == 9);
@@ -239,14 +411,11 @@ TEST(TypeTraitsClassTypes, NSDMListBaz1)
   // direct members of baz_1
   baz_1.[:baz_1_members[7].member:] = {10, 20, 30, 50};
   baz_1.[:baz_1_members[8].member:] = 110;
-  EXPECT_EQ("123,456", std::format("{},{}", baz_1.x, baz_1.y));
-  EXPECT_EQ("average_rating = -1.25, rating_count = 789, "
+  EXPECT_EQ("123,456,0; average_rating = -1.25, rating_count = 789, tag = 0; "
+            "std::array = [0, 0, 0, 0, 0, 0]; std::pair = (111, 222); "
+            "d3 = '\\0', first = -3.875, d4 = '\\0'; "
             "e = [10, 20, 30, 50], e_sum = 110, f = ['a', 'b', 'c']",
             baz_1.dump());
-  auto first_from_base = &std::pair<int32_t, int32_t>::first;
-  EXPECT_EQ("111,222,-3.875", std::format(
-    "{},{},{}", baz_1.*first_from_base, baz_1.second, baz_1.first));
-  EXPECT_EQ("[0, 0, 0, 0, 0, 0]", baz_1.dump_private_base());
 
   baz_1 = baz_1_t{};
   // inherited from bar_1
@@ -262,13 +431,37 @@ TEST(TypeTraitsClassTypes, NSDMListBaz1)
   force_write_by_offset(&baz_1, get_offset(baz_1_members, 7),
     std::array<int32_t, 4>{8, 9, 10, 11});
   force_write_by_offset(&baz_1, get_offset(baz_1_members, 8), 38);
-  EXPECT_EQ("11,22", std::format("{},{}", baz_1.x, baz_1.y));
-  EXPECT_EQ("average_rating = 3.375, rating_count = 44, "
+  EXPECT_EQ("11,22,0; average_rating = 3.375, rating_count = 44, tag = 0; "
+            "std::array = [0, 0, 0, 0, 0, 0]; std::pair = (55, 66); "
+            "d3 = '\\0', first = -7.75, d4 = '\\0'; "
             "e = [8, 9, 10, 11], e_sum = 38, f = ['a', 'b', 'c']",
             baz_1.dump());
-  EXPECT_EQ("55,66,-7.75", std::format(
-    "{},{},{}", baz_1.*first_from_base, baz_1.second, baz_1.first));
-  EXPECT_EQ("[0, 0, 0, 0, 0, 0]", baz_1.dump_private_base());
+}
+
+TEST(TypeTraitsClassTypes, AllNSDMListBaz1)
+{
+  constexpr auto baz_1_members = rfl::all_flattened_nsdm_v<baz_1_t>;
+  static_assert(baz_1_members.size() == 15);
+}
+
+class baz_2_t : protected bar_1_t, private bar_3_t {
+private:
+  std::array<char, 3> f;
+public:
+  std::array<int32_t, 4> e;
+  int32_t e_sum;
+};
+
+TEST(TypeTraitsClassTypes, PublicNSDMListBaz2)
+{
+  constexpr auto baz_2_members = rfl::public_flattened_nsdm_v<baz_2_t>;
+  static_assert(baz_2_members.size() == 2);
+}
+
+TEST(TypeTraitsClassTypes, AllNSDMListBaz2)
+{
+  constexpr auto baz_2_members = rfl::all_flattened_nsdm_v<baz_2_t>;
+  static_assert(baz_2_members.size() == 15);
 }
 
 struct references_t {

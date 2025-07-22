@@ -51,9 +51,9 @@ TEST(Validators, LeafContainsIntegralSingle)
     .list = {1, 2, 3},
     .forward_list = {1, 2, 3},
   };
-  EXPECT_TRUE(rfl::validate_members(obj_ok_1));
+  EXPECT_TRUE(rfl::validate_public_members(obj_ok_1));
   auto msg = std::string{};
-  EXPECT_TRUE(rfl::validate_members_with_error_info(obj_ok_1, &msg));
+  EXPECT_TRUE(rfl::validate_public_members(obj_ok_1, &msg));
   EXPECT_EQ("", msg);
 
   auto obj_1 = foo_integral_single_t{
@@ -61,9 +61,9 @@ TEST(Validators, LeafContainsIntegralSingle)
     .list = {0},
     .forward_list = {-1, 0, 1},
   };
-  EXPECT_FALSE(rfl::validate_members(obj_1));
+  EXPECT_FALSE(rfl::validate_public_members(obj_1));
   msg.clear();
-  EXPECT_FALSE(rfl::validate_members_with_full_error_info(obj_1, &msg));
+  EXPECT_FALSE(rfl::validate_public_members_verbose(obj_1, &msg));
   EXPECT_EQ(
     "Invalid member 'deque':"
     "\n* Input range [1, 2, 3] does not contain 0"
@@ -73,9 +73,9 @@ TEST(Validators, LeafContainsIntegralSingle)
     "\n* Input range [-1, 0, 1] does not contain 2", msg);
 
   auto obj_2 = foo_integral_single_t{}; // All empty
-  EXPECT_FALSE(rfl::validate_members(obj_2));
+  EXPECT_FALSE(rfl::validate_public_members(obj_2));
   msg.clear();
-  EXPECT_FALSE(rfl::validate_members_with_full_error_info(obj_2, &msg));
+  EXPECT_FALSE(rfl::validate_public_members_verbose(obj_2, &msg));
   EXPECT_EQ(
     "Invalid member 'deque':"
     "\n* Input range is empty"
@@ -119,9 +119,9 @@ TEST(Validators, LeafContainsIntegralRange)
     .nested_forward_list = {{0, 0}, {1, 1}, {2, 2}},
     .always_passes_validation = {0},
   };
-  EXPECT_TRUE(rfl::validate_members(obj_ok_1));
+  EXPECT_TRUE(rfl::validate_public_members(obj_ok_1));
   auto msg = std::string{};
-  EXPECT_TRUE(rfl::validate_members_with_error_info(obj_ok_1, &msg));
+  EXPECT_TRUE(rfl::validate_public_members(obj_ok_1, &msg));
   EXPECT_EQ("", msg);
 
   auto obj_1 = foo_integral_range_t{
@@ -133,9 +133,9 @@ TEST(Validators, LeafContainsIntegralRange)
     .nested_forward_list = {{1}, {1}, {1, 0, 1}, {1}},
     .always_passes_validation = {-1, 0, 1},
   };
-  EXPECT_FALSE(rfl::validate_members(obj_1));
+  EXPECT_FALSE(rfl::validate_public_members(obj_1));
   msg.clear();
-  EXPECT_FALSE(rfl::validate_members_with_full_error_info(obj_1, &msg));
+  EXPECT_FALSE(rfl::validate_public_members_verbose(obj_1, &msg));
   EXPECT_EQ(
     "Invalid member 'deque':"
     "\n* Input range [1, -1, 2, -2, 3] does not contain [1, 2, 3]"
@@ -152,9 +152,9 @@ TEST(Validators, LeafContainsIntegralRange)
     "\n* Input range [[1], [1], [1, 0, 1], [1]] does not contain [1, 1]", msg);
 
   auto obj_2 = foo_integral_range_t{}; // All empty
-  EXPECT_FALSE(rfl::validate_members(obj_2));
+  EXPECT_FALSE(rfl::validate_public_members(obj_2));
   msg.clear();
-  EXPECT_FALSE(rfl::validate_members_with_full_error_info(obj_2, &msg));
+  EXPECT_FALSE(rfl::validate_public_members_verbose(obj_2, &msg));
   EXPECT_EQ(
     "Invalid member 'deque':"
     "\n* Input range is empty"
@@ -188,14 +188,14 @@ TEST(Validators, LeafContainsString1)
     .s2 = "Say 'hello'!",
     .slist = {"dog", "cat", "fox"},
   });
-  EXPECT_TRUE_STATIC(do_validate_members(obj_ok_1));
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_1));
 
   LAZY_OBJECT(obj_1, foo_string_1_t{
     .s1 = "hello",
     .s2 = "Say 'Hello'!",
     .slist = {"Dog", "Cat", "Fox"},
   });
-  EXPECT_FALSE_STATIC(do_validate_members(obj_1));
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_1));
   EXPECT_EQ_STATIC(
     "Invalid member 's1':"
     "\n* Input string \"hello\" does not contain '!'"
@@ -203,23 +203,23 @@ TEST(Validators, LeafContainsString1)
     "\n* Input string \"Say 'Hello'!\" does not contain \"hello\""
     "\nInvalid member 'slist':"
     "\n* Input range [\"Dog\", \"Cat\", \"Fox\"] does not contain \"cat\"",
-    validation_full_error_message(obj_1));
+    validate_public_nsdm_msg_verbose(obj_1));
 
   LAZY_OBJECT(obj_2, foo_string_1_t{
     .s1 = "!",
     .s2 = "hell no!",
     .slist = {"", "", ""},
   });
-  EXPECT_FALSE_STATIC(do_validate_members(obj_2));
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_2));
   EXPECT_EQ_STATIC(
     "Invalid member 's2':"
     "\n* Input string \"hell no!\" does not contain \"hello\""
     "\nInvalid member 'slist':"
     "\n* Input range [\"\", \"\", \"\"] does not contain \"cat\"",
-    validation_full_error_message(obj_2));
+    validate_public_nsdm_msg_verbose(obj_2));
 
   LAZY_OBJECT(obj_3, foo_string_1_t{}); // All empty
-  EXPECT_FALSE_STATIC(do_validate_members(obj_3));
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_3));
   EXPECT_EQ_STATIC(
     "Invalid member 's1':"
     "\n* Input string is empty"
@@ -227,7 +227,7 @@ TEST(Validators, LeafContainsString1)
     "\n* Input string is empty"
     "\nInvalid member 'slist':"
     "\n* Input range is empty",
-    validation_full_error_message(obj_3));
+    validate_public_nsdm_msg_verbose(obj_3));
 }
 
 struct foo_string_2_t {
@@ -252,7 +252,7 @@ TEST(Validators, LeafContainsString2)
     .may_fail_validation_2 = {"hello", "world", ""},
     .buffer = {std::from_range, "begin do_something; end;"sv},
   };
-  EXPECT_TRUE(rfl::validate_members(obj_ok_1));
+  EXPECT_TRUE(rfl::validate_public_members(obj_ok_1));
 
   auto obj_1 = foo_string_2_t{
     .always_passes_validation = "",
@@ -260,9 +260,9 @@ TEST(Validators, LeafContainsString2)
     .may_fail_validation_2 = {"hello", "world"},
     .buffer = {std::from_range, "begin do_something; END;"sv},
   };
-  EXPECT_FALSE(rfl::validate_members(obj_1));
+  EXPECT_FALSE(rfl::validate_public_members(obj_1));
   auto msg = std::string{};
-  EXPECT_FALSE(rfl::validate_members_with_full_error_info(obj_1, &msg));
+  EXPECT_FALSE(rfl::validate_public_members_verbose(obj_1, &msg));
   EXPECT_THAT(msg, testing::MatchesRegex(
     "Invalid member 'may_fail_validation_1':"
     "\n\\* Input string \"hello\" does not contain '!'"
@@ -280,7 +280,7 @@ TEST(Validators, LeafContainsString2)
     .buffer = {},
   };
   msg.clear();
-  EXPECT_FALSE(rfl::validate_members_with_full_error_info(obj_2, &msg));
+  EXPECT_FALSE(rfl::validate_public_members_verbose(obj_2, &msg));
   EXPECT_EQ(
     "Invalid member 'may_fail_validation_1':"
     "\n* Input string is empty"

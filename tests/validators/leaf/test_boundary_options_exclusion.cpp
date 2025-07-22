@@ -36,7 +36,7 @@
  * - Options checking: options, excludes
  */
 
-struct foo_integral_t {
+struct foo_integral_1_t {
   VALIDATOR(min, -10)
   VALIDATOR(max, 10)
   // Tests safe integer comparison:
@@ -52,27 +52,27 @@ struct foo_integral_t {
   uint32_t u;
 };
 
-TEST(Validators, LeafBoundaryOptionsExclusionIntegral)
+TEST(Validators, LeafBoundaryOptionsExclusionIntegral1)
 {
-  LAZY_OBJECT(obj_ok_1, foo_integral_t{.s = -10, .u = 11});
-  EXPECT_TRUE_STATIC(do_validate_members(obj_ok_1));
-  EXPECT_EQ_STATIC("", validation_error_message(obj_ok_1));
+  LAZY_OBJECT(obj_ok_1, foo_integral_1_t{.s = -10, .u = 11});
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_1));
+  EXPECT_EQ_STATIC("", validate_public_nsdm_msg(obj_ok_1));
 
-  LAZY_OBJECT(obj_ok_2, foo_integral_t{.s = 10, .u = 99});
-  EXPECT_TRUE_STATIC(do_validate_members(obj_ok_2));
-  EXPECT_EQ_STATIC("", validation_error_message(obj_ok_2));
+  LAZY_OBJECT(obj_ok_2, foo_integral_1_t{.s = 10, .u = 99});
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_2));
+  EXPECT_EQ_STATIC("", validate_public_nsdm_msg(obj_ok_2));
 
-  LAZY_OBJECT(obj_ok_3, foo_integral_t{.s = -1, .u = 99});
-  EXPECT_TRUE_STATIC(do_validate_members(obj_ok_3));
-  EXPECT_EQ_STATIC("", validation_error_message(obj_ok_3));
+  LAZY_OBJECT(obj_ok_3, foo_integral_1_t{.s = -1, .u = 99});
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_3));
+  EXPECT_EQ_STATIC("", validate_public_nsdm_msg(obj_ok_3));
 
-  LAZY_OBJECT(obj_1, foo_integral_t{.s = 2, .u = -1u});
-  EXPECT_FALSE_STATIC(do_validate_members(obj_1));
+  LAZY_OBJECT(obj_1, foo_integral_1_t{.s = 2, .u = -1u});
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_1));
   EXPECT_EQ_STATIC(
     "Invalid member 's': "
     "Expects value to be none of [1, 2, 4, 8, 16, 4294967295], "
     "while actual value = 2",
-    validation_error_message(obj_1));
+    validate_public_nsdm_msg(obj_1));
   EXPECT_EQ_STATIC(
     "Invalid member 's':"
     "\n* Expects value to be none of [1, 2, 4, 8, 16, 4294967295], "
@@ -81,13 +81,13 @@ TEST(Validators, LeafBoundaryOptionsExclusionIntegral)
     "\n* Expects value < 100, while actual value = 4294967295"
     "\n* Expects value to be any of [-1, 1, 10, 11, 99], "
     "while actual value = 4294967295",
-    validation_full_error_message(obj_1));
+    validate_public_nsdm_msg_verbose(obj_1));
 
-  LAZY_OBJECT(obj_2, foo_integral_t{.s = 16, .u = 10});
+  LAZY_OBJECT(obj_2, foo_integral_1_t{.s = 16, .u = 10});
   EXPECT_EQ_STATIC(
     "Invalid member 's': "
     "Expects value <= 10, while actual value = 16",
-    validation_error_message(obj_2));
+    validate_public_nsdm_msg(obj_2));
   EXPECT_EQ_STATIC(
     "Invalid member 's':"
     "\n* Expects value <= 10, while actual value = 16"
@@ -95,13 +95,13 @@ TEST(Validators, LeafBoundaryOptionsExclusionIntegral)
     "while actual value = 16"
     "\nInvalid member 'u':"
     "\n* Expects value > 10, while actual value = 10",
-    validation_full_error_message(obj_2));
+    validate_public_nsdm_msg_verbose(obj_2));
 
-  LAZY_OBJECT(obj_3, foo_integral_t{.s = -11, .u = 100});
+  LAZY_OBJECT(obj_3, foo_integral_1_t{.s = -11, .u = 100});
   EXPECT_EQ_STATIC(
     "Invalid member 's': "
     "Expects value >= -10, while actual value = -11",
-    validation_error_message(obj_3));
+    validate_public_nsdm_msg(obj_3));
   EXPECT_EQ_STATIC(
     "Invalid member 's':"
     "\n* Expects value >= -10, while actual value = -11"
@@ -109,19 +109,154 @@ TEST(Validators, LeafBoundaryOptionsExclusionIntegral)
     "\n* Expects value < 100, while actual value = 100"
     "\n* Expects value to be any of [-1, 1, 10, 11, 99], "
     "while actual value = 100",
-    validation_full_error_message(obj_3));
+    validate_public_nsdm_msg_verbose(obj_3));
 
-  LAZY_OBJECT(obj_4, foo_integral_t{.s = 5, .u = 5});
+  LAZY_OBJECT(obj_4, foo_integral_1_t{.s = 5, .u = 5});
   EXPECT_EQ_STATIC(
     "Invalid member 'u': "
     "Expects value > 10, while actual value = 5",
-    validation_error_message(obj_4));
+    validate_public_nsdm_msg(obj_4));
   EXPECT_EQ_STATIC(
     "Invalid member 'u':"
     "\n* Expects value > 10, while actual value = 5"
     "\n* Expects value to be any of [-1, 1, 10, 11, 99], "
     "while actual value = 5",
-    validation_full_error_message(obj_4));
+    validate_public_nsdm_msg_verbose(obj_4));
+}
+
+struct foo_integral_2_t {
+  VALIDATOR(in_closed_range, 0, 10)
+  int32_t s;
+
+  VALIDATOR(in_half_closed_range, -10, 10)
+  uint32_t u;
+
+  VALIDATOR(in_open_range, 0, 10)
+  uint32_t v;
+};
+
+TEST(Validators, LeafBoundaryOptionsExclusionIntegral2)
+{
+  LAZY_OBJECT(obj_ok_1, foo_integral_2_t{.s = 0, .u = 9, .v = 8});
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_1));
+  EXPECT_EQ_STATIC("", validate_public_nsdm_msg(obj_ok_1));
+
+  LAZY_OBJECT(obj_ok_2, foo_integral_2_t{.s = 10, .u = 0, .v = 1});
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_2));
+  EXPECT_EQ_STATIC("", validate_public_nsdm_msg(obj_ok_2));
+
+  LAZY_OBJECT(obj_1, foo_integral_2_t{.s = -1, .u = 10, .v = 0});
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_1));
+  EXPECT_EQ_STATIC(
+    "Invalid member 's':"
+    "\n* Expects value to fall in [0, 10], while actual value = -1"
+    "\nInvalid member 'u':"
+    "\n* Expects value to fall in [-10, 10), while actual value = 10"
+    "\nInvalid member 'v':"
+    "\n* Expects value to fall in (0, 10), while actual value = 0",
+    validate_public_nsdm_msg_verbose(obj_1));
+
+  LAZY_OBJECT(obj_2,
+    foo_integral_2_t{.s = 12, .u = static_cast<uint32_t>(-1), .v = 10});
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_2));
+  EXPECT_EQ_STATIC(
+    "Invalid member 's':"
+    "\n* Expects value to fall in [0, 10], while actual value = 12"
+    "\nInvalid member 'u':"
+    "\n* Expects value to fall in [-10, 10), while actual value = 4294967295"
+    "\nInvalid member 'v':"
+    "\n* Expects value to fall in (0, 10), while actual value = 10",
+    validate_public_nsdm_msg_verbose(obj_2));
+}
+
+struct foo_fp_1_t {
+  VALIDATOR(min, -1.0)
+  VALIDATOR(max, 1.0)
+  VALIDATOR(excludes, {-0.75, -0.5, -0.25, 0.25, 0.5, 0.75})
+  float a;
+
+  VALIDATOR(min_exclusive, -10.0)
+  VALIDATOR(max_exclusive, 10.0)
+  VALIDATOR(options, std::vector<double>{-8, -6, -4, -2, 2, 4, 6, 8, NAN})
+  float b;
+
+  VALIDATOR(in_closed_range, 0.0, 1.0)
+  double x;
+
+  VALIDATOR(in_half_closed_range, 0.0, 1.0)
+  double y;
+
+  VALIDATOR(in_open_range, 0.0, std::numeric_limits<float>::infinity())
+  double z;
+};
+
+TEST(Validators, LeafBoundaryOptionsExclusionFP1)
+{
+  LAZY_OBJECT(obj_ok_1,
+    foo_fp_1_t{.a = -1.0, .b = -8.0, .x = 1.0, .y = 0.0, .z = 0.5});
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_1));
+  EXPECT_EQ_STATIC("", validate_public_nsdm_msg(obj_ok_1));
+
+  LAZY_OBJECT(obj_ok_2,
+    foo_fp_1_t{.a = 1.0, .b = 6.0, .x = 0.0, .y = 0.5, .z = 1e300});
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_2));
+  EXPECT_EQ_STATIC("", validate_public_nsdm_msg(obj_ok_2));
+
+  LAZY_OBJECT(obj_1,
+    foo_fp_1_t{.a = 1.5, .b = -10.0, .x = 1.5, .y = 1.0, .z = 0.0});
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_1));
+  EXPECT_EQ(
+    "Invalid member 'a':"
+    "\n* Expects value <= 1, while actual value = 1.5"
+    "\nInvalid member 'b':"
+    "\n* Expects value > -10, while actual value = -10"
+    "\n* Expects value to be any of [-8, -6, -4, -2, 2, 4, 6, 8, nan], "
+    "while actual value = -10"
+    "\nInvalid member 'x':"
+    "\n* Expects value to fall in [0, 1], while actual value = 1.5"
+    "\nInvalid member 'y':"
+    "\n* Expects value to fall in [0, 1), while actual value = 1"
+    "\nInvalid member 'z':"
+    "\n* Expects value to fall in (0, inf), while actual value = 0",
+    validate_public_nsdm_msg_verbose(obj_1));
+
+  LAZY_OBJECT(obj_2,
+    foo_fp_1_t{.a = -0.75, .b = 1.5, .x = -1.5, .y = -0.5, .z = -2.5});
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_2));
+  EXPECT_EQ(
+    "Invalid member 'a':"
+    "\n* Expects value to be none of [-0.75, -0.5, -0.25, 0.25, 0.5, 0.75], "
+    "while actual value = -0.75"
+    "\nInvalid member 'b':"
+    "\n* Expects value to be any of [-8, -6, -4, -2, 2, 4, 6, 8, nan], "
+    "while actual value = 1.5"
+    "\nInvalid member 'x':"
+    "\n* Expects value to fall in [0, 1], while actual value = -1.5"
+    "\nInvalid member 'y':"
+    "\n* Expects value to fall in [0, 1), while actual value = -0.5"
+    "\nInvalid member 'z':"
+    "\n* Expects value to fall in (0, inf), while actual value = -2.5",
+    validate_public_nsdm_msg_verbose(obj_2));
+
+  LAZY_OBJECT(obj_3,
+    foo_fp_1_t{.a = NAN, .b = NAN, .x = NAN, .y = NAN, .z = NAN});
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_3));
+  EXPECT_EQ(
+    "Invalid member 'a':"
+    "\n* Expects value >= -1, while actual value = nan"
+    "\n* Expects value <= 1, while actual value = nan"
+    "\nInvalid member 'b':"
+    "\n* Expects value > -10, while actual value = nan"
+    "\n* Expects value < 10, while actual value = nan"
+    "\n* Expects value to be any of [-8, -6, -4, -2, 2, 4, 6, 8, nan], "
+    "while actual value = nan"
+    "\nInvalid member 'x':"
+    "\n* Expects value to fall in [0, 1], while actual value = nan"
+    "\nInvalid member 'y':"
+    "\n* Expects value to fall in [0, 1), while actual value = nan"
+    "\nInvalid member 'z':"
+    "\n* Expects value to fall in (0, inf), while actual value = nan",
+    validate_public_nsdm_msg_verbose(obj_3));
 }
 
 struct foo_string_t {
@@ -147,18 +282,18 @@ TEST(Validators, LeafBoundaryOptionsExclusionString)
     .std_string = "pineapple",
     .std_string_view = "pear",
     .c_style_str = "abc"});
-  EXPECT_TRUE_STATIC(do_validate_members(obj_ok_1));
-  EXPECT_EQ_STATIC("", validation_error_message(obj_ok_1));
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_1));
+  EXPECT_EQ_STATIC("", validate_public_nsdm_msg(obj_ok_1));
 
   LAZY_OBJECT(obj_1, foo_string_t{
     .std_string = "apple",
     .std_string_view = "apple",
     .c_style_str = "aaa"});
-  EXPECT_FALSE_STATIC(do_validate_members(obj_1));
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_1));
   EXPECT_EQ_STATIC(
     "Invalid member 'std_string': Expects value >= \"pineapple\", "
     "while actual value = \"apple\"",
-    validation_error_message(obj_1));
+    validate_public_nsdm_msg(obj_1));
   EXPECT_EQ_STATIC(
     "Invalid member 'std_string':"
     "\n* Expects value >= \"pineapple\", while actual value = \"apple\""
@@ -167,18 +302,18 @@ TEST(Validators, LeafBoundaryOptionsExclusionString)
     ", while actual value = \"apple\""
     "\nInvalid member 'c_style_str':"
     "\n* Expects value > \"aaa\", while actual value = \"aaa\"",
-    validation_full_error_message(obj_1));
+    validate_public_nsdm_msg_verbose(obj_1));
 
   LAZY_OBJECT(obj_2, foo_string_t{
     .std_string = "yellow",
     .std_string_view = "000",
     .c_style_str = "zzzz"});
-  EXPECT_FALSE_STATIC(do_validate_members(obj_2));
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_2));
   EXPECT_EQ_STATIC(
     "Invalid member 'std_string': Expects value to be any of "
     "[\"apple\", \"pineapple\", \"zebra\"], "
     "while actual value = \"yellow\"",
-    validation_error_message(obj_2));
+    validate_public_nsdm_msg(obj_2));
   EXPECT_EQ_STATIC(
     "Invalid member 'std_string':"
     "\n* Expects value to be any of [\"apple\", \"pineapple\", \"zebra\"], "
@@ -187,15 +322,15 @@ TEST(Validators, LeafBoundaryOptionsExclusionString)
     "\n* Expects value > \"000\", while actual value = \"000\""
     "\nInvalid member 'c_style_str':"
     "\n* Expects value < \"zzz\", while actual value = \"zzzz\"",
-    validation_full_error_message(obj_2));
+    validate_public_nsdm_msg_verbose(obj_2));
 
   // c_style_str is nullptr
   LAZY_OBJECT(obj_3, foo_string_t{});
-  EXPECT_FALSE_STATIC(do_validate_members(obj_3));
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_3));
   EXPECT_EQ_STATIC(
     "Invalid member 'std_string': Expects value >= \"pineapple\", "
     "while actual value = \"\"",
-    validation_error_message(obj_3));
+    validate_public_nsdm_msg(obj_3));
   EXPECT_EQ_STATIC(
     "Invalid member 'std_string':"
     "\n* Expects value >= \"pineapple\", while actual value = \"\""
@@ -205,7 +340,7 @@ TEST(Validators, LeafBoundaryOptionsExclusionString)
     "\n* Expects value > \"000\", while actual value = \"\""
     "\nInvalid member 'c_style_str':"
     "\n* Expects value > \"aaa\", while actual value = \"\"",
-    validation_full_error_message(obj_3));
+    validate_public_nsdm_msg_verbose(obj_3));
 }
 
 struct foo_char_t {
@@ -226,15 +361,15 @@ struct foo_char_t {
 TEST(Validators, LeafBoundaryOptionsExclusionChars)
 {
   LAZY_OBJECT(obj_ok_1, foo_char_t{.c8 = 'z', .c16 = 'U', .c32 = '1'});
-  EXPECT_TRUE_STATIC(do_validate_members(obj_ok_1));
-  EXPECT_EQ_STATIC("", validation_error_message(obj_ok_1));
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_1));
+  EXPECT_EQ_STATIC("", validate_public_nsdm_msg(obj_ok_1));
 
   LAZY_OBJECT(obj_1, foo_char_t{.c8 = 'a', .c16 = 'A', .c32 = u'好'});
-  EXPECT_FALSE_STATIC(do_validate_members(obj_1));
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_1));
   EXPECT_EQ_STATIC(
     "Invalid member 'c8': Expects value to be none of "
     "['a', 'e', 'i', 'o', 'u'], while actual value = 'a'",
-    validation_error_message(obj_1));
+    validate_public_nsdm_msg(obj_1));
   EXPECT_EQ_STATIC(
     "Invalid member 'c8':"
     "\n* Expects value to be none of ['a', 'e', 'i', 'o', 'u'], "
@@ -244,22 +379,22 @@ TEST(Validators, LeafBoundaryOptionsExclusionChars)
     "\nInvalid member 'c32':"
     "\n* Expects value to be any of ['0', '1', '2', '3', '4', '5', '6', "
     "'7', '8', '9'], while actual value = '}'",
-    validation_full_error_message(obj_1));
+    validate_public_nsdm_msg_verbose(obj_1));
 
   LAZY_OBJECT(obj_2, foo_char_t{.c8 = 'z', .c16 = 'z', .c32 = '5'});
-  EXPECT_FALSE_STATIC(do_validate_members(obj_2));
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_2));
   EXPECT_EQ_STATIC(
     "Invalid member 'c16': Expects value < 'Z', while actual value = 'z'",
-    validation_error_message(obj_2));
+    validate_public_nsdm_msg(obj_2));
   EXPECT_EQ_STATIC(
     "Invalid member 'c16':"
     "\n* Expects value < 'Z', while actual value = 'z'"
     "\n* Expects value to be any of ['A', 'E', 'I', 'O', 'U'], "
     "while actual value = 'z'",
-    validation_full_error_message(obj_2));
+    validate_public_nsdm_msg_verbose(obj_2));
 }
 
-struct foo_range_t {
+struct foo_range_1_t {
   // std::initializer_list<int>
   VALIDATOR(min, {1, 1, 1, 1})
   std::array<unsigned, 4> array_unsigned;
@@ -278,42 +413,42 @@ struct foo_range_t {
   std::deque<double> deque_double;
 };
 
-TEST(Validators, LeafBoundaryOptionsExclusionRange)
+TEST(Validators, LeafBoundaryOptionsExclusionRange1)
 {
-  auto obj_ok_1 = foo_range_t{
+  auto obj_ok_1 = foo_range_1_t{
     .array_unsigned = {1, 1, 1, 1},
     .vector_string = {"AA", "BB", "CC", "DD"},
     .deque_double = {1.25, 2.5, 3.75}
   };
-  EXPECT_TRUE(rfl::validate_members(obj_ok_1));
+  EXPECT_TRUE(rfl::validate_public_members(obj_ok_1));
   auto msg = std::string{};
-  EXPECT_TRUE(rfl::validate_members_with_error_info(obj_ok_1, &msg));
+  EXPECT_TRUE(rfl::validate_public_members(obj_ok_1, &msg));
   EXPECT_EQ("", msg);
 
-  auto obj_ok_2 = foo_range_t{
+  auto obj_ok_2 = foo_range_1_t{
     .array_unsigned = {-1u, 0, 0, 0},
     .vector_string = {"AA", "CC", "BB"},
     .deque_double = {1, 2, 3}
   };
-  EXPECT_TRUE(rfl::validate_members(obj_ok_2));
+  EXPECT_TRUE(rfl::validate_public_members(obj_ok_2));
   msg.clear();
-  EXPECT_TRUE(rfl::validate_members_with_error_info(obj_ok_2, &msg));
+  EXPECT_TRUE(rfl::validate_public_members(obj_ok_2, &msg));
   EXPECT_EQ("", msg);
 
-  auto obj_1 = foo_range_t{
+  auto obj_1 = foo_range_1_t{
     .array_unsigned = {0, 1, 2, 3},
     .vector_string = {"AA", "BB", "CC"},
     .deque_double = {1, 2}
   };
-  EXPECT_FALSE(rfl::validate_members(obj_1));
+  EXPECT_FALSE(rfl::validate_public_members(obj_1));
   msg.clear();
-  EXPECT_FALSE(rfl::validate_members_with_error_info(obj_1, &msg));
+  EXPECT_FALSE(rfl::validate_public_members(obj_1, &msg));
   EXPECT_EQ(
     "Invalid member 'array_unsigned': Expects value >= [1, 1, 1, 1], "
     "while actual value = [0, 1, 2, 3]", msg);
 
   msg.clear();
-  EXPECT_FALSE(rfl::validate_members_with_full_error_info(obj_1, &msg));
+  EXPECT_FALSE(rfl::validate_public_members_verbose(obj_1, &msg));
   EXPECT_EQ(
     "Invalid member 'array_unsigned':"
     "\n* Expects value >= [1, 1, 1, 1], while actual value = [0, 1, 2, 3]"
@@ -324,25 +459,101 @@ TEST(Validators, LeafBoundaryOptionsExclusionRange)
     "\n* Expects value to be none of [[1, 2], [3, 4, 5]], "
     "while actual value = [1, 2]", msg);
 
-  auto obj_2 = foo_range_t{
+  auto obj_2 = foo_range_1_t{
     .array_unsigned = {1, 2, 3, 4},
     .vector_string = {"AAA", "BBB", "CCC"},
     .deque_double = {1, 2, NAN}
   };
-  EXPECT_FALSE(rfl::validate_members(obj_2));
+  EXPECT_FALSE(rfl::validate_public_members(obj_2));
   msg.clear();
-  EXPECT_FALSE(rfl::validate_members_with_error_info(obj_2, &msg));
+  EXPECT_FALSE(rfl::validate_public_members(obj_2, &msg));
   EXPECT_EQ(
     "Invalid member 'vector_string': Expects value to be none of "
     "[\"AAA\", \"BBB\", \"CCC\"], while actual value = "
     "[\"AAA\", \"BBB\", \"CCC\"]", msg);
 
   msg.clear();
-  EXPECT_FALSE(rfl::validate_members_with_full_error_info(obj_2, &msg));
+  EXPECT_FALSE(rfl::validate_public_members_verbose(obj_2, &msg));
   EXPECT_EQ(
     "Invalid member 'vector_string':"
     "\n* Expects value to be none of [\"AAA\", \"BBB\", \"CCC\"], "
     "while actual value = [\"AAA\", \"BBB\", \"CCC\"]", msg);
+}
+
+struct foo_range_2_t {
+  VALIDATOR(in_closed_range, std::array{0, 0, 0}, std::array{9, 9, 9})
+  std::array<int, 3> arr;
+
+  // std::initializer_list
+  VALIDATOR(in_half_closed_range, {'a', 'b'}, {'x', 'y', 'z'})
+  std::string str;
+
+  VALIDATOR(in_open_range,
+    std::vector<int32_t>{-3, -2, -1},
+    std::vector<uint32_t>{7, 8, 9})
+  std::vector<uint64_t> vec;
+};
+
+TEST(Validators, LeafBoundaryOptionsExclusionRange2)
+{
+  LAZY_OBJECT(obj_ok_1, foo_range_2_t{
+    .arr = {1, 0, -1},
+    .str = "abc",
+    .vec = {3, 2, 1, 0},
+  });
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_1));
+
+  LAZY_OBJECT(obj_ok_2, foo_range_2_t{
+    .arr = {9, 9, 9},
+    .str = "xy",
+    .vec = {6, 7, 8, 9, 10},
+  });
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_2));
+
+  LAZY_OBJECT(obj_1, foo_range_2_t{
+    .arr = {0, -1, 1},
+    .str = "xyz",
+    .vec = {3, 2, 1},
+  });
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_1));
+  EXPECT_EQ_STATIC(
+    "Invalid member 'arr':"
+    "\n* Expects value to fall in [[0, 0, 0], [9, 9, 9]], "
+    "while actual value = [0, -1, 1]"
+    "\nInvalid member 'str':"
+    "\n* Expects value to fall in [\"ab\", \"xyz\"), "
+    "while actual value = \"xyz\"",
+    validate_public_nsdm_msg_verbose(obj_1));
+
+  LAZY_OBJECT(obj_2, foo_range_2_t{
+    .arr = {10},
+    .str = "AB",
+    .vec = {static_cast<uint64_t>(-2), static_cast<uint64_t>(-1)},
+  });
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_2));
+  EXPECT_EQ_STATIC(
+    "Invalid member 'arr':"
+    "\n* Expects value to fall in [[0, 0, 0], [9, 9, 9]], "
+    "while actual value = [10, 0, 0]"
+    "\nInvalid member 'str':"
+    "\n* Expects value to fall in [\"ab\", \"xyz\"), "
+    "while actual value = \"AB\""
+    "\nInvalid member 'vec':"
+    "\n* Expects value to fall in ([-3, -2, -1], [7, 8, 9]), "
+    "while actual value = [18446744073709551614, 18446744073709551615]",
+    validate_public_nsdm_msg_verbose(obj_2));
+
+  LAZY_OBJECT(obj_3, foo_range_2_t{
+    .arr = {0, 0, 0},
+    .str = "xylophone",
+    .vec = {std::numeric_limits<uint32_t>::max() + uint64_t{7}},
+  });
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_3));
+  EXPECT_EQ_STATIC(
+    "Invalid member 'vec':"
+    "\n* Expects value to fall in ([-3, -2, -1], [7, 8, 9]), "
+    "while actual value = [4294967302]",
+    validate_public_nsdm_msg_verbose(obj_3));
 }
 
 struct foo_tuple_t {
@@ -362,18 +573,18 @@ TEST(Validators, LeafBoundaryOptionsExclusionTuple)
   LAZY_OBJECT(obj_ok_1, foo_tuple_t{
     .tuple = {1, "ABC", {"AB", "CD", "EF"}}
   });
-  EXPECT_TRUE_STATIC(do_validate_members(obj_ok_1));
-  EXPECT_EQ_STATIC("", validation_error_message(obj_ok_1));
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_1));
+  EXPECT_EQ_STATIC("", validate_public_nsdm_msg(obj_ok_1));
 
   LAZY_OBJECT(obj_1, foo_tuple_t{
     .tuple = {-1, "XYZ", {"aa", "bb", "cc"}}
   });
-  EXPECT_FALSE_STATIC(do_validate_members(obj_1));
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_1));
   EXPECT_EQ_STATIC(
     "Invalid member 'tuple': Expects value >= "
     "{0, \"AAA\", [\"AA\", \"BB\"]}, while actual value = "
     "{-1, \"XYZ\", [\"aa\", \"bb\", \"cc\"]}",
-    validation_error_message(obj_1));
+    validate_public_nsdm_msg(obj_1));
   EXPECT_EQ_STATIC(
     "Invalid member 'tuple':"
     "\n* Expects value >= {0, \"AAA\", [\"AA\", \"BB\"]}, "
@@ -382,7 +593,7 @@ TEST(Validators, LeafBoundaryOptionsExclusionTuple)
     "[{1, \"ABC\", [\"AB\", \"CD\", \"EF\"]}, "
     "{2, \"DEF\", [\"ABC\", \"DEF\"]}], "
     "while actual value = {-1, \"XYZ\", [\"aa\", \"bb\", \"cc\"]}",
-    validation_full_error_message(obj_1));
+    validate_public_nsdm_msg_verbose(obj_1));
 }
 
 struct bar_A_t {
@@ -418,14 +629,14 @@ struct bar_tree_t : bar_A_t, bar_B_t, bar_C_t {
 TEST(Validators, LeafBoundaryOptionsExclusionInheritance1)
 {
   LAZY_OBJECT(obj_ok_1, bar_tree_t::create(6, 5, 4, 3));
-  EXPECT_TRUE_STATIC(do_validate_members(obj_ok_1));
-  EXPECT_EQ_STATIC("", validation_error_message(obj_ok_1));
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_1));
+  EXPECT_EQ_STATIC("", validate_public_nsdm_msg(obj_ok_1));
 
   LAZY_OBJECT(obj_1, bar_tree_t::create(-3, 22, -1, 1));
-  EXPECT_FALSE_STATIC(do_validate_members(obj_1));
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_1));
   EXPECT_EQ_STATIC(
     "Invalid member 'a': Expects value >= 0, while actual value = -3",
-    validation_error_message(obj_1));
+    validate_public_nsdm_msg(obj_1));
   EXPECT_EQ_STATIC(
     "Invalid member 'a':"
     "\n* Expects value >= 0, while actual value = -3"
@@ -435,7 +646,7 @@ TEST(Validators, LeafBoundaryOptionsExclusionInheritance1)
     "\n* Expects value to be any of [1, 2, 4, 8], while actual value = -1"
     "\nInvalid member 'd':"
     "\n* Expects value to be none of [1, 2, 4], while actual value = 1",
-    validation_full_error_message(obj_1));
+    validate_public_nsdm_msg_verbose(obj_1));
 }
 
 struct baz_A_t {
@@ -471,14 +682,14 @@ struct baz_tree_t : baz_B_t, baz_C_t {
 TEST(Validators, LeafBoundaryOptionsExclusionInheritance2)
 {
   LAZY_OBJECT(obj_ok_1, baz_tree_t::create(6, 5, 4, 3));
-  EXPECT_TRUE_STATIC(do_validate_members(obj_ok_1));
-  EXPECT_EQ_STATIC("", validation_error_message(obj_ok_1));
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_1));
+  EXPECT_EQ_STATIC("", validate_public_nsdm_msg(obj_ok_1));
 
   LAZY_OBJECT(obj_1, baz_tree_t::create(-3, 22, -1, 1));
-  EXPECT_FALSE_STATIC(do_validate_members(obj_1));
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_1));
   EXPECT_EQ_STATIC(
     "Invalid member 'a': Expects value >= 0, while actual value = -3",
-    validation_error_message(obj_1));
+    validate_public_nsdm_msg(obj_1));
   EXPECT_EQ_STATIC(
     "Invalid member 'a':"
     "\n* Expects value >= 0, while actual value = -3"
@@ -488,5 +699,81 @@ TEST(Validators, LeafBoundaryOptionsExclusionInheritance2)
     "\n* Expects value to be any of [1, 2, 4, 8], while actual value = -1"
     "\nInvalid member 'd':"
     "\n* Expects value to be none of [1, 2, 4], while actual value = 1",
-    validation_full_error_message(obj_1));
+    validate_public_nsdm_msg_verbose(obj_1));
+}
+
+struct foo_aliases_t {
+  VALIDATOR(ge, 0)
+  VALIDATOR(le, 10)
+  int x;
+
+  VALIDATOR(gt, 0)
+  VALIDATOR(lt, 10)
+  int y;
+
+  VALIDATOR(eq, 0)
+  VALIDATOR(ne, 1)
+  int z;
+
+  VALIDATOR(greater_equal, -1.0)
+  VALIDATOR(less_equal, 1.0)
+  double a;
+
+  VALIDATOR(greater_than, -1.0)
+  VALIDATOR(less_than, 1.0)
+  double b;
+
+  VALIDATOR(equal_to, 0.5)
+  VALIDATOR(not_equal_to, 1.5)
+  double c;
+};
+
+TEST(Validators, LeafBoundaryAliases)
+{
+  LAZY_OBJECT(obj_1, foo_aliases_t{
+    .x = 0, .y = 0, .z = 0, .a = -1.0, .b = -1.0, .c = 0.5,
+  });
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_1));
+  EXPECT_EQ(
+    "Invalid member 'y':"
+    "\n* Expects value > 0, while actual value = 0"
+    "\nInvalid member 'b':"
+    "\n* Expects value > -1, while actual value = -1",
+    validate_public_nsdm_msg_verbose(obj_1));
+
+  LAZY_OBJECT(obj_2, foo_aliases_t{
+    .x = 10, .y = 10, .z = 1, .a = 1.0, .b = 1.0, .c = 1.5,
+  });
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_2));
+  EXPECT_EQ(
+    "Invalid member 'y':"
+    "\n* Expects value < 10, while actual value = 10"
+    "\nInvalid member 'z':"
+    "\n* Expects value == 0, while actual value = 1"
+    "\n* Expects value != 1, while actual value = 1"
+    "\nInvalid member 'b':"
+    "\n* Expects value < 1, while actual value = 1"
+    "\nInvalid member 'c':"
+    "\n* Expects value == 0.5, while actual value = 1.5"
+    "\n* Expects value != 1.5, while actual value = 1.5",
+    validate_public_nsdm_msg_verbose(obj_2));
+
+  LAZY_OBJECT(obj_3, foo_aliases_t{
+    .x = -1, .y = 1, .z = -1, .a = NAN, .b = NAN, .c = NAN,
+  });
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_3));
+  EXPECT_EQ(
+    "Invalid member 'x':"
+    "\n* Expects value >= 0, while actual value = -1"
+    "\nInvalid member 'z':"
+    "\n* Expects value == 0, while actual value = -1"
+    "\nInvalid member 'a':"
+    "\n* Expects value >= -1, while actual value = nan"
+    "\n* Expects value <= 1, while actual value = nan"
+    "\nInvalid member 'b':"
+    "\n* Expects value > -1, while actual value = nan"
+    "\n* Expects value < 1, while actual value = nan"
+    "\nInvalid member 'c':"
+    "\n* Expects value == 0.5, while actual value = nan",
+    validate_public_nsdm_msg_verbose(obj_3));
 }

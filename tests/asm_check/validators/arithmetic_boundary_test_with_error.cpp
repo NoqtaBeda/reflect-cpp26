@@ -32,13 +32,13 @@ extern "C" int validate_arithmetic_values_with_error(
   char* error_msg_buffer_begin, char* error_msg_buffer_end)
 {
   if (error_msg_buffer_begin == nullptr || error_msg_buffer_end == nullptr) {
-    return rfl::validate_members(*input);
+    return rfl::validate_public_members(*input);
   }
   if (error_msg_buffer_end - error_msg_buffer_begin <= 1) {
-    return rfl::validate_members(*input);
+    return rfl::validate_public_members(*input);
   }
   auto error_msg = std::string{};
-  auto res = rfl::validate_members_with_error_info(*input, &error_msg);
+  auto res = rfl::validate_public_members(*input, &error_msg);
 
   auto error_msg_length = std::min<size_t>(
     error_msg.length(), error_msg_buffer_end - error_msg_buffer_begin - 1);

@@ -63,17 +63,17 @@ TEST(Validators, LeafCustomValidator)
     .name = "Hello",
     .vectors = {{1, 2, 3, 4}, {5, 6, 7, 8}}
   });
-  EXPECT_TRUE(do_validate_members(obj_ok_1));
-  EXPECT_EQ("", validation_error_message(obj_ok_1));
+  EXPECT_TRUE(validate_public_nsdm(obj_ok_1));
+  EXPECT_EQ("", validate_public_nsdm_msg(obj_ok_1));
 
   LAZY_OBJECT(obj_1, foo_custom_validator_t{
     .count = -1,
     .name = "Ben",
     .vectors = {}
   });
-  EXPECT_FALSE(do_validate_members(obj_1));
+  EXPECT_FALSE(validate_public_nsdm(obj_1));
   EXPECT_EQ("Invalid member 'count': Custom validator fails with value -1",
-    validation_error_message(obj_1));
+    validate_public_nsdm_msg(obj_1));
   EXPECT_EQ(
     "Invalid member 'count':"
     "\n* Custom validator fails with value -1"
@@ -81,18 +81,18 @@ TEST(Validators, LeafCustomValidator)
     "\n* Custom validator fails with value \"Ben\""
     "\nInvalid member 'vectors':"
     "\n* Custom validator fails with value []",
-    validation_full_error_message(obj_1));
+    validate_public_nsdm_msg_verbose(obj_1));
 
   LAZY_OBJECT(obj_2, foo_custom_validator_t{
     .count = 2,
     .name = "Hello",
     .vectors = {{-1, 2, 3, 4}, {5, 6, 7, 8}}
   });
-  EXPECT_FALSE(do_validate_members(obj_2));
+  EXPECT_FALSE(validate_public_nsdm(obj_2));
   EXPECT_EQ(
     "Invalid member 'vectors': Custom validator fails with value "
-    "[[-1, 2, 3, 4], [5, 6, 7, 8]]", validation_error_message(obj_2));
+    "[[-1, 2, 3, 4], [5, 6, 7, 8]]", validate_public_nsdm_msg(obj_2));
   EXPECT_EQ(
     "Invalid member 'vectors':\n* Custom validator fails with value "
-    "[[-1, 2, 3, 4], [5, 6, 7, 8]]", validation_full_error_message(obj_2));
+    "[[-1, 2, 3, 4], [5, 6, 7, 8]]", validate_public_nsdm_msg_verbose(obj_2));
 }

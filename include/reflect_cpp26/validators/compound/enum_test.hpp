@@ -20,13 +20,34 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_HPP
-#define REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_HPP
+#ifndef REFLECT_CPP26_VALIDATORS_COMPOUND_ENUM_TEST_HPP
+#define REFLECT_CPP26_VALIDATORS_COMPOUND_ENUM_TEST_HPP
 
-#include <reflect_cpp26/type_traits/class_types/flattenable.hpp>
-#include <reflect_cpp26/type_traits/class_types/has_non_public_nsdm.hpp>
-#include <reflect_cpp26/type_traits/class_types/has_virtual_inheritance.hpp>
-#include <reflect_cpp26/type_traits/class_types/member_traits.hpp>
-#include <reflect_cpp26/type_traits/class_types/structured.hpp>
+#include <reflect_cpp26/validators/impl/maker_common.hpp>
+#include <reflect_cpp26/utils/concepts.hpp>
 
-#endif // REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_HPP
+namespace reflect_cpp26::validators {
+template <class Nested>
+struct enum_underlying_validator_t : validator_tag_t {
+  Nested nested;
+
+  template <enum_type E>
+    requires (validator_of<Nested, std::underlying_type_t<E>>)
+  constexpr bool test(E input) const {
+    return nested.test(std::to_underlying(input));
+  }
+
+  template <enum_type E>
+    requires (validator_of<Nested, std::underlying_type_t<E>>)
+  constexpr auto make_error_message(E input) const -> std::string
+  {
+    return "Invalid underlying value -> " +
+      nested.make_error_message(std::to_underlying(input));
+  }
+};
+
+constexpr auto underlying =
+  impl::compound_validator_node_t<enum_underlying_validator_t>{};
+} // namespace reflect_cpp26::validators
+
+#endif // REFLECT_CPP26_VALIDATORS_COMPOUND_ENUM_TEST_HPP

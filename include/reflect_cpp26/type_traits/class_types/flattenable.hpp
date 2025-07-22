@@ -74,24 +74,24 @@ consteval auto make_flattened_nsdm_array(
   return res;
 }
 
-consteval size_t count_public_flattened_ndsm(std::meta::info T);
+consteval size_t count_flattened_nsdm(access_mode mode, std::meta::info T);
 
-template <class T>
-consteval auto walk_public_nsdm() -> std::vector<flattened_data_member_info>;
+template <access_mode Mode, class T>
+consteval auto walk_nsdm() -> std::vector<flattened_data_member_info>;
 
-template <class T>
-constexpr auto public_flattened_nsdm_count_v =
-  impl::count_public_flattened_ndsm(remove_cv(^^T));
+template <access_mode Mode, class T>
+constexpr auto flattened_nsdm_count_v =
+  impl::count_flattened_nsdm(Mode, remove_cv(^^T));
 } // namespace impl
 
 /**
- * Gets a full list of non-static data members (NSDM) with public access
+ * Gets a list of non-static data members (NSDM) with given access mode
  * of non-union class T, including:
- * (1) Direct public NSDMs of T;
- * (2) All public NSDMs inherited from public base classes of T.
+ * (1) Direct NSDMs of T;
+ * (2) All NSDMs inherited from base classes of T with given access mode.
  *
  * Define the inheritance graph of T as a DAG where each directed edge X -> Y
- * represents direct inheritance relationship (Y is a direct public base class
+ * represents direct inheritance relationship (Y is a direct base class
  * of X). Data members are traversed via post-order DFS from T so that
  * actual_offset is ascending as long as the inheritance graph is a tree
  * (i.e. no class is base of multiple classes).
@@ -99,50 +99,67 @@ constexpr auto public_flattened_nsdm_count_v =
  * Note: duplicated data members may exist in the traversed list if the
  * inheritance graph is not a tree (e.g. "diamond inheritance").
  */
+template <access_mode Mode, class_without_virtual_inheritance T>
+constexpr auto flattened_nsdm_v =
+  impl::make_flattened_nsdm_array<impl::flattened_nsdm_count_v<Mode, T>>(
+    impl::walk_nsdm<Mode, std::remove_cv_t<T>>());
+
+/**
+ * Gets a full list of non-static data members (NSDM) of non-union class T.
+ * Details see above.
+ */
+template <class_without_virtual_inheritance T>
+constexpr auto all_flattened_nsdm_v =
+  flattened_nsdm_v<access_mode::unchecked, std::remove_cv_t<T>>;
+
+/**
+ * Gets a full list of non-static data members (NSDM) with public access of
+ * non-union class T. Details see above.
+ */
 template <class_without_virtual_inheritance T>
 constexpr auto public_flattened_nsdm_v =
-  impl::make_flattened_nsdm_array<impl::public_flattened_nsdm_count_v<T>>(
-    impl::walk_public_nsdm<std::remove_cv_t<T>>());
+  flattened_nsdm_v<access_mode::unprivileged, std::remove_cv_t<T>>;
 
 namespace impl {
-consteval size_t count_public_flattened_ndsm(std::meta::info T)
+consteval size_t count_flattened_nsdm(access_mode mode, std::meta::info T)
 {
-  auto res = public_direct_nsdm_of(T).size();
-  for (auto base: public_direct_bases_of(T)) {
+  auto res = direct_nsdm_of(mode, T).size();
+  for (auto base: direct_bases_of(mode, T)) {
     if (is_virtual(base)) {
-      compile_error("Virtual inheritance is disallowed.");
+      compile_error("Virtual inheritance is not allowed.");
     }
-    res += extract<size_t>(^^public_flattened_nsdm_count_v, type_of(base));
+    auto Mode = std::meta::reflect_constant(mode);
+    res += extract<size_t>(^^flattened_nsdm_count_v, Mode, type_of(base));
   }
   return res;
 }
 
-template <class T>
-consteval auto walk_public_nsdm() -> std::vector<flattened_data_member_info>
+template <access_mode Mode, class T>
+consteval auto walk_nsdm() -> std::vector<flattened_data_member_info>
 {
   auto members = std::vector<flattened_data_member_info>{};
-  template for (constexpr auto base: public_direct_bases_v<T>) {
+  template for (constexpr auto base: direct_bases_v<Mode, T>) {
     if (is_virtual(base)) {
       compile_error("Virtual inheritance is disallowed.");
     }
     auto base_offset = offset_of(base).bytes;
 
     using B = [:type_of(base):];
-    for (auto [member, offset]: public_flattened_nsdm_v<B>) {
+    for (auto [member, offset]: flattened_nsdm_v<Mode, B>) {
       offset.bytes += base_offset;
       members.push_back({member, offset});
     }
   }
-  for (auto member: public_direct_nsdm_of(^^T)) {
+  for (auto member: direct_nsdm_of(Mode, ^^T)) {
     members.push_back({member, offset_of(member)});
   }
   return members;
 }
 
-template <class T>
+template <access_mode Mode, class T>
 consteval auto check_flattened_members()
 {
-  for (auto [member, _]: public_flattened_nsdm_v<T>) {
+  for (auto [member, _]: flattened_nsdm_v<Mode, T>) {
     auto M = std::meta::reflect_constant(member);
     if (!extract_bool(^^is_accessible_by_member_reflection_v, ^^T, M)) {
       return false;
@@ -185,8 +202,8 @@ constexpr auto is_partially_flattenable_v =
   std::is_scalar_v<T> || std::is_array_v<T>;
 
 template <class_without_virtual_inheritance T>
-constexpr auto is_partially_flattenable_v<T> =
-  impl::check_flattened_members<std::remove_cv_t<T>>();
+constexpr auto is_partially_flattenable_v<T> = impl::check_flattened_members<
+  access_mode::unprivileged, std::remove_cv_t<T>>();
 
 template <class T>
 concept partially_flattenable = is_partially_flattenable_v<T>;
@@ -259,15 +276,11 @@ consteval bool is_flattenable_aggregate(std::meta::info T)
   for (auto base: all_direct_bases_of(T)) {
     auto ok = is_public(base) && !is_virtual(base) &&
       extract_bool(^^is_flattenable_aggregate_v, type_of(base));
-    if (!ok) {
-      return false;
-    }
+    if (!ok) { return false; }
   }
   for (auto member: all_direct_bases_of(T)) {
     auto ok = is_public(member) && !is_union_type(type_of(member));
-    if (!ok) {
-      return false;
-    }
+    if (!ok) { return false; }
   }
   return true;
 }

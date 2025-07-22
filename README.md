@@ -26,9 +26,8 @@ LD_LIBRARY_PATH=<path-to-libc++> xmake run run_asm_check
 # TODO
 * Type traits
   * Recursively flattenable
-  * Redesign tuple element and class data member predicates
 * Type operations
-  * Redesign `to_aggregate`
+  * `member_named<fixed_string>`
 * Validators
   * (see the table below)
   * Recursive validation
@@ -38,7 +37,9 @@ LD_LIBRARY_PATH=<path-to-libc++> xmake run run_asm_check
 * Improvements to `constant`:
   * `map`, `filter` with index
   * `index_of`, `last_index_of`, `includes` with start index
-* utils/fixed_set
+* utils:
+  * `fixed_set`
+  * Fixed string
 * Missing UT for string-key fixed map (in utils):
   * Case-insensitive UT with `string_key_map_by_hash_binary_search_slow`;
   * Hash collision cases with every hash-related scenario;

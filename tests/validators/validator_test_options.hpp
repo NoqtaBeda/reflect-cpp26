@@ -35,24 +35,47 @@ using namespace std::literals;
   constexpr auto name = []() { return (__VA_ARGS__); }
 
 template <class LazyFn>
-constexpr bool do_validate_members(LazyFn fn) {
-  return rfl::validate_members(fn());
+constexpr bool validate_public_nsdm(LazyFn fn) {
+  return rfl::validate_public_members(fn());
 }
 
 template <class LazyFn>
-constexpr auto validation_error_message(LazyFn fn) -> std::string
+constexpr bool validate_all_nsdm(LazyFn fn) {
+  return rfl::validate_all_members(fn());
+}
+
+template <class LazyFn>
+constexpr auto validate_public_nsdm_msg(LazyFn fn) -> std::string
 {
   auto msg = std::string{};
   auto obj = fn();
-  rfl::validate_members_with_error_info(obj, &msg);
+  rfl::validate_public_members(obj, &msg);
   return msg;
 }
 
 template <class LazyFn>
-constexpr auto validation_full_error_message(LazyFn fn) -> std::string
+constexpr auto validate_all_nsdm_msg(LazyFn fn) -> std::string
 {
   auto msg = std::string{};
   auto obj = fn();
-  rfl::validate_members_with_full_error_info(obj, &msg);
+  rfl::validate_all_members(obj, &msg);
+  return msg;
+}
+
+template <class LazyFn>
+constexpr auto validate_public_nsdm_msg_verbose(LazyFn fn) -> std::string
+{
+  auto msg = std::string{};
+  auto obj = fn();
+  rfl::validate_public_members_verbose(obj, &msg);
+  return msg;
+}
+
+template <class LazyFn>
+constexpr auto validate_all_nsdm_msg_verbose(LazyFn fn) -> std::string
+{
+  auto msg = std::string{};
+  auto obj = fn();
+  rfl::validate_all_members_verbose(obj, &msg);
   return msg;
 }

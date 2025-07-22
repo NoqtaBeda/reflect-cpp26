@@ -63,33 +63,33 @@ TEST(Validators, LeafNonNull)
     .opt = 84
   };
   obj_ok_1.wptr = obj_ok_1.sptr;
-  EXPECT_TRUE(rfl::validate_members(obj_ok_1));
+  EXPECT_TRUE(rfl::validate_public_members(obj_ok_1));
   auto msg = std::string{};
-  EXPECT_TRUE(rfl::validate_members_with_error_info(obj_ok_1, &msg));
+  EXPECT_TRUE(rfl::validate_public_members(obj_ok_1, &msg));
   EXPECT_EQ("", msg);
 
   auto obj_1 = foo_non_null_t{};
-  EXPECT_FALSE(rfl::validate_members(obj_1));
+  EXPECT_FALSE(rfl::validate_public_members(obj_1));
   msg.clear();
-  EXPECT_FALSE(rfl::validate_members_with_error_info(obj_1, &msg));
+  EXPECT_FALSE(rfl::validate_public_members(obj_1, &msg));
   EXPECT_EQ(
-    "Invalid member 'str': Expects pointer to be non-null.", msg);
+    "Invalid member 'str': Expects pointer to be non-null", msg);
 
   msg.clear();
-  EXPECT_FALSE(rfl::validate_members_with_full_error_info(obj_1, &msg));
+  EXPECT_FALSE(rfl::validate_public_members_verbose(obj_1, &msg));
   EXPECT_EQ(
     "Invalid member 'str':"
-    "\n* Expects pointer to be non-null."
+    "\n* Expects pointer to be non-null"
     "\nInvalid member 'buffer':"
-    "\n* Expects pointer to be non-null."
+    "\n* Expects pointer to be non-null"
     "\nInvalid member 'sptr':"
-    "\n* Expects shared pointer to be non-null."
+    "\n* Expects shared pointer to be non-null"
     "\nInvalid member 'uptr':"
-    "\n* Expects unique pointer to be non-null."
+    "\n* Expects unique pointer to be non-null"
     "\nInvalid member 'wptr':"
-    "\n* Expects weak pointer to be non-null."
+    "\n* Expects weak pointer to be non-null"
     "\nInvalid member 'any':"
-    "\n* Expects std::any to be non-null."
+    "\n* Expects std::any to be non-null"
     "\nInvalid member 'opt':"
-    "\n* Expects std::optional to be non-null.", msg);
+    "\n* Expects std::optional to be non-null", msg);
 }

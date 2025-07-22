@@ -53,8 +53,8 @@ TEST(Validators, LeafIsSorted)
       std::vector{"bbb"s, "bbb"s},
     },
   });
-  EXPECT_TRUE_STATIC(do_validate_members(obj_ok_1));
-  EXPECT_EQ_STATIC("", validation_error_message(obj_ok_1));
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_1));
+  EXPECT_EQ_STATIC("", validate_public_nsdm_msg(obj_ok_1));
 
   LAZY_OBJECT(obj_1, foo_sorted_t{
     .v1 = {1, 2, 2, 3},
@@ -65,11 +65,11 @@ TEST(Validators, LeafIsSorted)
       std::vector{"abc"s, "def"s},
     },
   });
-  EXPECT_FALSE_STATIC(do_validate_members(obj_1));
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_1));
   EXPECT_EQ_STATIC(
     "Invalid member 'v1': Expects input range to be sorted in ascending order "
     "and unique, while actual value = [1, 2, 2, 3]",
-    validation_error_message(obj_1));
+    validate_public_nsdm_msg(obj_1));
   EXPECT_EQ_STATIC(
     "Invalid member 'v1':"
     "\n* Expects input range to be sorted in ascending order and unique, "
@@ -81,7 +81,7 @@ TEST(Validators, LeafIsSorted)
     "\n* Expects input range to be sorted in descending order and unique, "
     "while actual value = "
     "[[\"ghi\", \"jkl\"], [\"ghi\", \"jkl\"], [\"abc\", \"def\"]]",
-    validation_full_error_message(obj_1));
+    validate_public_nsdm_msg_verbose(obj_1));
 
   LAZY_OBJECT(obj_2, foo_sorted_t{
     .v1 = {1, 2, 3, 2},
@@ -92,11 +92,11 @@ TEST(Validators, LeafIsSorted)
       std::vector{"abc"s, "def"s},
     },
   });
-  EXPECT_FALSE_STATIC(do_validate_members(obj_2));
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_2));
   EXPECT_EQ_STATIC(
     "Invalid member 'v1': Expects input range to be sorted in "
     "ascending order, while actual value = [1, 2, 3, 2]",
-    validation_error_message(obj_2));
+    validate_public_nsdm_msg(obj_2));
   EXPECT_EQ_STATIC(
     "Invalid member 'v1':"
     "\n* Expects input range to be sorted in ascending order, "
@@ -115,5 +115,5 @@ TEST(Validators, LeafIsSorted)
     "\n* Expects input range to be sorted in descending order and unique, "
     "while actual value = "
     "[[\"ghi\", \"jkl\"], [\"ghi\", \"jkl\", \"mno\"], [\"abc\", \"def\"]]",
-    validation_full_error_message(obj_2));
+    validate_public_nsdm_msg_verbose(obj_2));
 }

@@ -31,6 +31,12 @@
 namespace reflect_cpp26 {
 // -------- Reflection with access control (P3547) --------
 
+enum class access_mode {
+  current,
+  unprivileged,
+  unchecked,
+};
+
 consteval auto unprivileged_context() {
   return std::meta::access_context::unprivileged();
 }
@@ -67,15 +73,42 @@ consteval auto unchecked_context() {
   consteval auto all_direct_##renamed##_of(std::meta::info a) {               \
     return std::meta::fn##_of(a, reflect_cpp26::unchecked_context());         \
   }                                                                           \
+  /* Gets all direct members of specified access mode */                      \
+  consteval auto direct_##renamed##_of(                                       \
+    access_mode mode, std::meta::info a,                                      \
+    std::meta::access_context ctx = std::meta::access_context::current())     \
+  {                                                                           \
+    if (mode == access_mode::current) {                                       \
+      return accessible_direct_##renamed##_of(a, ctx);                        \
+    } else if (mode == access_mode::unprivileged) {                           \
+      return public_direct_##renamed##_of(a);                                 \
+    } else if (mode == access_mode::unchecked) {                              \
+      return all_direct_##renamed##_of(a);                                    \
+    } else {                                                                  \
+      compile_error("Invalid access mode.");                                  \
+    }                                                                         \
+  }                                                                           \
+                                                                              \
   template <class_or_union_type T>                                            \
   constexpr auto public_direct_##renamed##_v =                                \
     std::define_static_array(public_direct_##renamed##_of(^^T));              \
                                                                               \
   template <class_or_union_type T>                                            \
   constexpr auto all_direct_##renamed##_v =                                   \
-    std::define_static_array(all_direct_##renamed##_of(^^T));
+    std::define_static_array(all_direct_##renamed##_of(^^T));                 \
+                                                                              \
+  template <access_mode Mode, class T>                                        \
+  constexpr auto direct_##renamed##_v = compile_error("Invalid mode/type.");  \
+                                                                              \
+  template <class_or_union_type T>                                            \
+  constexpr auto direct_##renamed##_v<access_mode::unprivileged, T> =         \
+    public_direct_##renamed##_v<T>;                                           \
+                                                                              \
+  template <class_or_union_type T>                                            \
+  constexpr auto direct_##renamed##_v<access_mode::unchecked, T> =            \
+    all_direct_##renamed##_v<T>;
 
-// Expanded dfinitions see above
+// Expanded definitions see above
 REFLECT_CPP26_DEFINE_QUERY_WITH_ACCESS_CONTEXT(members, members)
 REFLECT_CPP26_DEFINE_QUERY_WITH_ACCESS_CONTEXT(bases, bases)
 REFLECT_CPP26_DEFINE_QUERY_WITH_ACCESS_CONTEXT(static_data_members, sdm)

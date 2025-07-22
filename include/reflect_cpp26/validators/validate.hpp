@@ -28,14 +28,14 @@
 
 namespace reflect_cpp26 {
 /**
- * Validates all flattened public non-static data members of obj
+ * Validates all flattened non-static data members of obj with given access mode
  * (i.e. including those inherited from base classes)
  * with annotated validators of each member.
  */
-template <partially_flattenable_class T>
+template <access_mode Mode, partially_flattenable_class T>
 constexpr bool validate_members(const T& obj)
 {
-  template for (constexpr auto m: public_flattened_nsdm_v<T>) {
+  template for (constexpr auto m: flattened_nsdm_v<Mode, T>) {
     template for (constexpr auto v: validators_of_member_v<m.member>) {
       constexpr auto cur_validator = extract<v>();
       if (!cur_validator.test(obj.[:m.member:])) {
@@ -46,21 +46,30 @@ constexpr bool validate_members(const T& obj)
   return true;
 }
 
+template <partially_flattenable_class T>
+constexpr bool validate_public_members(const T& obj) {
+  return validate_members<access_mode::unprivileged>(obj);
+}
+
+template <partially_flattenable_class T>
+constexpr bool validate_all_members(const T& obj) {
+  return validate_members<access_mode::unchecked>(obj);
+}
+
 /**
- * Validates all flattened public non-static data members of obj
+ * Validates all flattened non-static data members of obj with given access mode
  * (i.e. including those inherited from base classes)
  * with annotated validators of each member.
  * Error description of the first detected validator violation
  * will be written to error_output if not nullptr.
  */
-template <partially_flattenable_class T>
-constexpr bool validate_members_with_error_info(
-  const T& obj, std::string* error_output)
+template <access_mode Mode, partially_flattenable_class T>
+constexpr bool validate_members(const T& obj, std::string* error_output)
 {
   if (error_output == nullptr) {
-    return validate_members(obj);
+    return validate_members<Mode>(obj);
   }
-  template for (constexpr auto m: public_flattened_nsdm_v<T>) {
+  template for (constexpr auto m: flattened_nsdm_v<Mode, T>) {
     template for (constexpr auto v: validators_of_member_v<m.member>) {
       constexpr auto cur_validator = extract<v>();
       if (!cur_validator.test(obj.[:m.member:])) {
@@ -77,22 +86,33 @@ constexpr bool validate_members_with_error_info(
   return true;
 }
 
+template <partially_flattenable_class T>
+constexpr bool validate_public_members(
+  const T& obj, std::string* error_output)
+{
+  return validate_members<access_mode::unprivileged>(obj, error_output);
+}
+
+template <partially_flattenable_class T>
+constexpr bool validate_all_members(const T& obj, std::string* error_output) {
+  return validate_members<access_mode::unchecked>(obj, error_output);
+}
+
 /**
- * Validates all flattened public non-static data members of obj
+ * Validates all flattened non-static data members of obj with given access mode
  * (i.e. including those inherited from base classes)
  * with annotated validators of each member.
  * Datailed error description of all detected validator violations
  * will be written to error_output if not nullptr.
  */
-template <partially_flattenable_class T>
-constexpr bool validate_members_with_full_error_info(
-  const T& obj, std::string* error_output)
+template <access_mode Mode, partially_flattenable_class T>
+constexpr bool validate_members_verbose(const T& obj, std::string* error_output)
 {
   if (error_output == nullptr) {
-    return validate_members(obj);
+    return validate_members<Mode>(obj);
   }
   auto res = true;
-  template for (constexpr auto m: public_flattened_nsdm_v<T>) {
+  template for (constexpr auto m: flattened_nsdm_v<Mode, T>) {
     auto res_cur_value = true;
 
     template for (constexpr auto v: validators_of_member_v<m.member>) {
@@ -112,10 +132,22 @@ constexpr bool validate_members_with_full_error_info(
     }
     res &= res_cur_value;
   }
-  if (!res) {
-    error_output->pop_back(); // Removes the trailing '\n'
-  }
+  if (!res) { error_output->pop_back(); }
   return res;
+}
+
+template <partially_flattenable_class T>
+constexpr bool validate_public_members_verbose(
+  const T& obj, std::string* error_output)
+{
+  return validate_members_verbose<access_mode::unprivileged>(obj, error_output);
+}
+
+template <partially_flattenable_class T>
+constexpr bool validate_all_members_verbose(
+  const T& obj, std::string* error_output)
+{
+  return validate_members_verbose<access_mode::unchecked>(obj, error_output);
 }
 } // namespace reflect_cpp26
 

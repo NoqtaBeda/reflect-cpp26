@@ -32,20 +32,20 @@
 
 struct foo_for_each_t {
   VALIDATOR(all_of >> is_non_negative)
-  VALIDATOR(any_of >> equals_to, 1)
-  VALIDATOR(none_of >> equals_to, 2)
+  VALIDATOR(any_of >> equal_to, 1)
+  VALIDATOR(none_of >> equal_to, 2)
   std::array<double, 4> v1;
 };
 
 TEST(Validators, CompoundForEachOf)
 {
   LAZY_OBJECT(obj_ok_1, foo_for_each_t{.v1 = {1, 3, 5, INFINITY}});
-  EXPECT_TRUE_STATIC(do_validate_members(obj_ok_1));
-  EXPECT_EQ_STATIC("", validation_error_message(obj_ok_1));
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_1));
+  EXPECT_EQ_STATIC("", validate_public_nsdm_msg(obj_ok_1));
 
   LAZY_OBJECT(obj_1, foo_for_each_t{.v1 = {-1, 2, -4, 8}});
-  EXPECT_FALSE_STATIC(do_validate_members(obj_1));
-  EXPECT_THAT(validation_error_message(obj_1), testing::StartsWith(
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_1));
+  EXPECT_THAT(validate_public_nsdm_msg(obj_1), testing::StartsWith(
     "Invalid member 'v1': Expects all of values meets given condition, "
     "but 2 value(s) dissatisfy actually"));
   EXPECT_EQ_STATIC(
@@ -56,5 +56,5 @@ TEST(Validators, CompoundForEachOf)
     "but 4 value(s) dissatisfy actually."
     "\n* Expects none of values meets given condition, "
     "but 1 value(s) satisfy actually.",
-    validation_full_error_message(obj_1));
+    validate_public_nsdm_msg_verbose(obj_1));
 }

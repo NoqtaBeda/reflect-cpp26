@@ -25,49 +25,41 @@
 #ifdef ENABLE_FULL_HEADER_TEST
 #include <reflect_cpp26/validators.hpp>
 #else
-#include <reflect_cpp26/validators/compound/size_test.hpp>
+#include <reflect_cpp26/validators/compound/enum_test.hpp>
 #include <reflect_cpp26/validators/leaf/boundary_test.hpp>
-#include <reflect_cpp26/validators/leaf/options_exclusion_test.hpp>
 #endif
 
-struct foo_size_t {
-  VALIDATOR(size >> equal_to, 4)
-  std::vector<int> v1;
-
-  VALIDATOR(size >> options, {1, 2, 4, 8})
-  VALIDATOR(size >> not_equal_to, 4)
-  std::vector<int> v2;
+enum class values : int {
+  minus_two = -2,
+  minus_one = -1,
+  zero = 0,
+  one = 1,
+  two = 2,
+  three = 3,
 };
 
-TEST(Validators, CompoundSize)
+struct foo_t {
+  VALIDATOR(underlying >> greater_equal, 0)
+  values v1;
+
+  VALIDATOR(underlying >> in_closed_range, -1, 1)
+  values v2;
+};
+
+TEST(Validators, CompoundEnumUnderlying)
 {
-  LAZY_OBJECT(obj_ok_1, foo_size_t{.v1 = {1, 2, 3, 4}, .v2 = {1, 2}});
+  LAZY_OBJECT(obj_ok_1, foo_t{.v1 = values::zero, .v2 = values::one});
   EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_1));
   EXPECT_EQ_STATIC("", validate_public_nsdm_msg(obj_ok_1));
 
-  LAZY_OBJECT(obj_1, foo_size_t{.v1 = {1, 2, 3}, .v2 = {1, 2, 3, 4}});
+  LAZY_OBJECT(obj_1, foo_t{.v1 = values::minus_one, .v2 = values::minus_two});
   EXPECT_FALSE_STATIC(validate_public_nsdm(obj_1));
   EXPECT_EQ_STATIC(
-    "Invalid member 'v1': Invalid size -> Expects value == 4, "
-    "while actual value = 3",
-    validate_public_nsdm_msg(obj_1));
-  EXPECT_EQ_STATIC(
     "Invalid member 'v1':"
-    "\n* Invalid size -> Expects value == 4, while actual value = 3"
+    "\n* Invalid underlying value -> Expects value >= 0, "
+    "while actual value = -1"
     "\nInvalid member 'v2':"
-    "\n* Invalid size -> Expects value != 4, while actual value = 4",
+    "\n* Invalid underlying value -> Expects value to fall in [-1, 1], "
+    "while actual value = -2",
     validate_public_nsdm_msg_verbose(obj_1));
-
-  LAZY_OBJECT(obj_2, foo_size_t{.v1 = {1, 2, 3, 4}, .v2 = {1, 2, 3, 4, 5}});
-  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_2));
-  EXPECT_EQ_STATIC(
-    "Invalid member 'v2': Invalid size -> "
-    "Expects value to be any of [1, 2, 4, 8], while actual value = 5",
-    validate_public_nsdm_msg(obj_2));
-  EXPECT_EQ_STATIC(
-    "Invalid member 'v2':"
-    "\n* Invalid size -> Expects value to be any of [1, 2, 4, 8], "
-    "while actual value = 5",
-    validate_public_nsdm_msg_verbose(obj_2));
 }
-

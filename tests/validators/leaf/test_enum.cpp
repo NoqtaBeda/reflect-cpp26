@@ -25,49 +25,51 @@
 #ifdef ENABLE_FULL_HEADER_TEST
 #include <reflect_cpp26/validators.hpp>
 #else
-#include <reflect_cpp26/validators/compound/size_test.hpp>
-#include <reflect_cpp26/validators/leaf/boundary_test.hpp>
-#include <reflect_cpp26/validators/leaf/options_exclusion_test.hpp>
+#include <reflect_cpp26/validators/leaf/enum_test.hpp>
 #endif
 
-struct foo_size_t {
-  VALIDATOR(size >> equal_to, 4)
-  std::vector<int> v1;
-
-  VALIDATOR(size >> options, {1, 2, 4, 8})
-  VALIDATOR(size >> not_equal_to, 4)
-  std::vector<int> v2;
+enum class values : int {
+  minus_two = -2,
+  minus_one = -1,
+  zero = 0,
+  one = 1,
+  two = 2,
+  three = 3,
+  four = 4,
 };
 
-TEST(Validators, CompoundSize)
+enum class flags : int {
+  zero = 0,
+  one = 1,
+  two = 2,
+  four = 4,
+  eight = 8,
+};
+
+struct foo_t {
+  VALIDATOR(enum_is_contained)
+  values v;
+
+  VALIDATOR(enum_flags_is_contained)
+  flags f;
+};
+
+TEST(Validators, LeafEnumContains)
 {
-  LAZY_OBJECT(obj_ok_1, foo_size_t{.v1 = {1, 2, 3, 4}, .v2 = {1, 2}});
+  LAZY_OBJECT(obj_ok_1, foo_t{.v = values::one, .f = static_cast<flags>(13)});
   EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_1));
   EXPECT_EQ_STATIC("", validate_public_nsdm_msg(obj_ok_1));
 
-  LAZY_OBJECT(obj_1, foo_size_t{.v1 = {1, 2, 3}, .v2 = {1, 2, 3, 4}});
+  LAZY_OBJECT(obj_1, foo_t{
+    .v = static_cast<values>(6),
+    .f = static_cast<flags>(16),
+  });
   EXPECT_FALSE_STATIC(validate_public_nsdm(obj_1));
-  EXPECT_EQ_STATIC(
-    "Invalid member 'v1': Invalid size -> Expects value == 4, "
-    "while actual value = 3",
-    validate_public_nsdm_msg(obj_1));
-  EXPECT_EQ_STATIC(
-    "Invalid member 'v1':"
-    "\n* Invalid size -> Expects value == 4, while actual value = 3"
-    "\nInvalid member 'v2':"
-    "\n* Invalid size -> Expects value != 4, while actual value = 4",
-    validate_public_nsdm_msg_verbose(obj_1));
-
-  LAZY_OBJECT(obj_2, foo_size_t{.v1 = {1, 2, 3, 4}, .v2 = {1, 2, 3, 4, 5}});
-  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_2));
-  EXPECT_EQ_STATIC(
-    "Invalid member 'v2': Invalid size -> "
-    "Expects value to be any of [1, 2, 4, 8], while actual value = 5",
-    validate_public_nsdm_msg(obj_2));
-  EXPECT_EQ_STATIC(
-    "Invalid member 'v2':"
-    "\n* Invalid size -> Expects value to be any of [1, 2, 4, 8], "
-    "while actual value = 5",
-    validate_public_nsdm_msg_verbose(obj_2));
+  EXPECT_THAT(validate_public_nsdm_msg_verbose(obj_1), testing::MatchesRegex(
+    "Invalid member 'v':"
+    "\n\\* Input enum value \\(.*values\\)6 "
+    "is not an entry defined in enum type"
+    "\nInvalid member 'f':"
+    "\n\\* Input enum value \\(.*flags\\)16 "
+    "is not disjunction of entries defined in enum type"));
 }
-

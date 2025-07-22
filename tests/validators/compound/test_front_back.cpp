@@ -59,19 +59,19 @@ TEST(Validators, CompoundFrontBack)
     .v2 = {{-1, -2, -3}, {4, 5, 6}},
     .v3 = {{1, 2}, {4, 5}}
   });
-  EXPECT_TRUE_STATIC(do_validate_members(obj_ok_1));
-  EXPECT_EQ_STATIC("", validation_error_message(obj_ok_1));
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_1));
+  EXPECT_EQ_STATIC("", validate_public_nsdm_msg(obj_ok_1));
 
   LAZY_OBJECT(obj_1, foo_front_back_t{
     .v1 = {1, 0, -1},
     .v2 = {{4, 5, 6}, {1, 2, 3}},
     .v3 = {{-1, -2}, {-3, -4}}
   });
-  EXPECT_FALSE_STATIC(do_validate_members(obj_1));
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_1));
   EXPECT_EQ_STATIC(
     "Invalid member 'v1': Invalid first value -> Expects value < 0, "
     "while actual value = 1",
-    validation_error_message(obj_1));
+    validate_public_nsdm_msg(obj_1));
   EXPECT_EQ_STATIC(
     "Invalid member 'v1':"
     "\n* Invalid first value -> Expects value < 0, while actual value = 1"
@@ -88,21 +88,21 @@ TEST(Validators, CompoundFrontBack)
     "while actual value = -3"
     "\n* Invalid last value -> Invalid last value -> Expects value != -4, "
     "while actual value = -4",
-    validation_full_error_message(obj_1));
+    validate_public_nsdm_msg_verbose(obj_1));
 
   LAZY_OBJECT(obj_2, foo_front_back_t{
     .v1 = {}, // empty
     .v2 = {{-1, -2, -3}, {4, 5, 6}}, // OK
     .v3 = {{1, 2}, {4, 5}} // OK
   });
-  EXPECT_FALSE_STATIC(do_validate_members(obj_2));
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_2));
   EXPECT_EQ_STATIC(
     "Invalid member 'v1': Can not validate first value "
     "since input range is empty.",
-    validation_error_message(obj_2));
+    validate_public_nsdm_msg(obj_2));
   EXPECT_EQ_STATIC(
     "Invalid member 'v1':"
     "\n* Can not validate first value since input range is empty."
     "\n* Can not validate last value since input range is empty.",
-    validation_full_error_message(obj_2));
+    validate_public_nsdm_msg_verbose(obj_2));
 }

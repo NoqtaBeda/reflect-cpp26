@@ -54,21 +54,21 @@ struct foo_floating_t {
 TEST(Validators, LeafArithmetic)
 {
   constexpr auto obj_ok_1 = foo_floating_t{.f32 = 1.5f, .f64 = -3.5};
-  EXPECT_TRUE_STATIC_IF_CONSTEXPR_MATH(rfl::validate_members(obj_ok_1));
+  EXPECT_TRUE_STATIC_IF_CONSTEXPR_MATH(rfl::validate_public_members(obj_ok_1));
   auto msg = std::string{};
-  EXPECT_TRUE(rfl::validate_members_with_error_info(obj_ok_1, &msg));
+  EXPECT_TRUE(rfl::validate_public_members(obj_ok_1, &msg));
   EXPECT_EQ("", msg);
 
   constexpr auto obj_2 = foo_floating_t{.f32 = -1.5f, .f64 = 1.5};
-  EXPECT_FALSE_STATIC_IF_CONSTEXPR_MATH(rfl::validate_members(obj_2));
+  EXPECT_FALSE_STATIC_IF_CONSTEXPR_MATH(rfl::validate_public_members(obj_2));
   msg.clear();
-  EXPECT_FALSE(rfl::validate_members_with_error_info(obj_2, &msg));
+  EXPECT_FALSE(rfl::validate_public_members(obj_2, &msg));
   EXPECT_EQ(
     "Invalid member 'f32': Expects value to meet the condition 'is_positive', "
     "but actual value = -1.5", msg);
 
   msg.clear();
-  EXPECT_FALSE(rfl::validate_members_with_full_error_info(obj_2, &msg));
+  EXPECT_FALSE(rfl::validate_public_members_verbose(obj_2, &msg));
   EXPECT_EQ(
     "Invalid member 'f32':"
     "\n* Expects value to meet the condition 'is_positive', "
@@ -90,9 +90,9 @@ TEST(Validators, LeafArithmetic)
     "but actual value = 1.5", msg);
 
   constexpr auto obj_3 = foo_floating_t{.f32 = 0.0f, .f64 = 0.0};
-  EXPECT_FALSE_STATIC_IF_CONSTEXPR_MATH(rfl::validate_members(obj_3));
+  EXPECT_FALSE_STATIC_IF_CONSTEXPR_MATH(rfl::validate_public_members(obj_3));
   msg.clear();
-  EXPECT_FALSE(rfl::validate_members_with_full_error_info(obj_3, &msg));
+  EXPECT_FALSE(rfl::validate_public_members_verbose(obj_3, &msg));
   EXPECT_EQ(
     "Invalid member 'f32':"
     "\n* Expects value to meet the condition 'is_positive', "
@@ -107,9 +107,9 @@ TEST(Validators, LeafArithmetic)
 
   // todo: "nan" or "nan(char_sequence)" which is implementation defined.
   constexpr auto obj_4 = foo_floating_t{.f32 = NAN, .f64 = NAN};
-  EXPECT_FALSE_STATIC_IF_CONSTEXPR_MATH(rfl::validate_members(obj_4));
+  EXPECT_FALSE_STATIC_IF_CONSTEXPR_MATH(rfl::validate_public_members(obj_4));
   msg.clear();
-  EXPECT_FALSE(rfl::validate_members_with_full_error_info(obj_4, &msg));
+  EXPECT_FALSE(rfl::validate_public_members_verbose(obj_4, &msg));
   EXPECT_EQ(
     "Invalid member 'f32':"
     "\n* Expects value to meet the condition 'is_positive', "
@@ -134,9 +134,9 @@ TEST(Validators, LeafArithmetic)
 
   // todo: "inf" or "infinity" which is implementation defined.
   constexpr auto obj_5 = foo_floating_t{.f32 = INFINITY, .f64 = -INFINITY};
-  EXPECT_FALSE_STATIC_IF_CONSTEXPR_MATH(rfl::validate_members(obj_5));
+  EXPECT_FALSE_STATIC_IF_CONSTEXPR_MATH(rfl::validate_public_members(obj_5));
   msg.clear();
-  EXPECT_FALSE(rfl::validate_members_with_full_error_info(obj_5, &msg));
+  EXPECT_FALSE(rfl::validate_public_members_verbose(obj_5, &msg));
   EXPECT_EQ(
     "Invalid member 'f32':"
     "\n* Expects value to meet the condition 'is_finite', "

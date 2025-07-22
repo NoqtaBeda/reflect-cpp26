@@ -52,9 +52,9 @@ TEST(Validators, LeafPrefixSuffixIntegralSingle)
     .list = {2, -1, 0, 1, 2, 3},
     .forward_list = {4, 3, 2, 1, 0, 5},
   };
-  EXPECT_TRUE(rfl::validate_members(obj_ok_1));
+  EXPECT_TRUE(rfl::validate_public_members(obj_ok_1));
   auto msg = std::string{};
-  EXPECT_TRUE(rfl::validate_members_with_error_info(obj_ok_1, &msg));
+  EXPECT_TRUE(rfl::validate_public_members(obj_ok_1, &msg));
   EXPECT_EQ("", msg);
 
   auto obj_1 = foo_integral_single_t{
@@ -62,9 +62,9 @@ TEST(Validators, LeafPrefixSuffixIntegralSingle)
     .list = {3, 2},
     .forward_list = {},
   };
-  EXPECT_FALSE(rfl::validate_members(obj_1));
+  EXPECT_FALSE(rfl::validate_public_members(obj_1));
   msg.clear();
-  EXPECT_FALSE(rfl::validate_members_with_full_error_info(obj_1, &msg));
+  EXPECT_FALSE(rfl::validate_public_members_verbose(obj_1, &msg));
   EXPECT_EQ(
     "Invalid member 'deque':"
     "\n* Input range [1, 0] does not start with 0"
@@ -79,9 +79,9 @@ TEST(Validators, LeafPrefixSuffixIntegralSingle)
   auto obj_2 = foo_integral_single_t{
     .forward_list = {5, 4},
   };
-  EXPECT_FALSE(rfl::validate_members(obj_2));
+  EXPECT_FALSE(rfl::validate_public_members(obj_2));
   msg.clear();
-  EXPECT_FALSE(rfl::validate_members_with_full_error_info(obj_2, &msg));
+  EXPECT_FALSE(rfl::validate_public_members_verbose(obj_2, &msg));
   EXPECT_EQ(
     "Invalid member 'deque':"
     "\n* Input range is empty"
@@ -130,9 +130,9 @@ TEST(Validators, LeafPrefixSuffixIntegralRange1)
     .nested_list = {{4, 5, 6}, {6, 5}},
     .nested_forward_list = {{1, 1}},
   };
-  EXPECT_TRUE(rfl::validate_members(obj_ok_1));
+  EXPECT_TRUE(rfl::validate_public_members(obj_ok_1));
   auto msg = std::string{};
-  EXPECT_TRUE(rfl::validate_members_with_error_info(obj_ok_1, &msg));
+  EXPECT_TRUE(rfl::validate_public_members(obj_ok_1, &msg));
   EXPECT_EQ("", msg);
 
   auto obj_1 = foo_integral_range_1_t{
@@ -143,9 +143,9 @@ TEST(Validators, LeafPrefixSuffixIntegralRange1)
     .nested_list = {{4}, {5}, {6}, {5}},
     .nested_forward_list = {},
   };
-  EXPECT_FALSE(rfl::validate_members(obj_1));
+  EXPECT_FALSE(rfl::validate_public_members(obj_1));
   msg.clear();
-  EXPECT_FALSE(rfl::validate_members_with_full_error_info(obj_1, &msg));
+  EXPECT_FALSE(rfl::validate_public_members_verbose(obj_1, &msg));
   EXPECT_EQ(
     "Invalid member 'deque':"
     "\n* Input range [1, 2, 3] does not end with [3, 2, 1]"
@@ -171,9 +171,9 @@ TEST(Validators, LeafPrefixSuffixIntegralRange1)
     .nested_list = {},
     .nested_forward_list = {{1}, {1}, {1}},
   };
-  EXPECT_FALSE(rfl::validate_members(obj_2));
+  EXPECT_FALSE(rfl::validate_public_members(obj_2));
   msg.clear();
-  EXPECT_FALSE(rfl::validate_members_with_full_error_info(obj_2, &msg));
+  EXPECT_FALSE(rfl::validate_public_members_verbose(obj_2, &msg));
   EXPECT_EQ(
     "Invalid member 'deque':"
     "\n* Input range [4, 3, 2, 1] does not start with [1, 2, 3]"
@@ -209,37 +209,37 @@ TEST(Validators, LeafPrefixSuffixIntegralRange2)
     .always_passes_validation = {},
     .may_fail_validation = {{}},
   });
-  EXPECT_TRUE_STATIC(do_validate_members(obj_ok_1));
-  EXPECT_EQ_STATIC("", validation_error_message(obj_ok_1));
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_1));
+  EXPECT_EQ_STATIC("", validate_public_nsdm_msg(obj_ok_1));
 
   LAZY_OBJECT(obj_ok_2, foo_integral_range_2_t{
     .always_passes_validation = {1, 2, 3},
     .may_fail_validation = {{}, {1, 2, 3}, {}},
   });
-  EXPECT_TRUE_STATIC(do_validate_members(obj_ok_2));
-  EXPECT_EQ_STATIC("", validation_error_message(obj_ok_2));
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_2));
+  EXPECT_EQ_STATIC("", validate_public_nsdm_msg(obj_ok_2));
 
   LAZY_OBJECT(obj_1, foo_integral_range_2_t{
     .always_passes_validation = {},
     .may_fail_validation = {{0}},
   });
-  EXPECT_FALSE_STATIC(do_validate_members(obj_1));
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_1));
   EXPECT_EQ_STATIC(
     "Invalid member 'may_fail_validation':"
     "\n* Input range [[0]] does not start with []"
     "\n* Input range [[0]] does not end with []",
-    validation_full_error_message(obj_1));
+    validate_public_nsdm_msg_verbose(obj_1));
 
   LAZY_OBJECT(obj_2, foo_integral_range_2_t{
     .always_passes_validation = {},
     .may_fail_validation = {},
   });
-  EXPECT_FALSE_STATIC(do_validate_members(obj_2));
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_2));
   EXPECT_EQ_STATIC(
     "Invalid member 'may_fail_validation':"
     "\n* Input range is empty"
     "\n* Input range is empty",
-    validation_full_error_message(obj_2));
+    validate_public_nsdm_msg_verbose(obj_2));
 }
 
 struct foo_string_1_t {
@@ -263,14 +263,14 @@ TEST(Validators, LeafPrefixSuffixString1)
     .s2 = "Hello world!",
     .slist = {"Cat", "Wolf", "Fox", "Dog"},
   });
-  EXPECT_TRUE_STATIC(do_validate_members(obj_ok_1));
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_1));
 
   LAZY_OBJECT(obj_1, foo_string_1_t{
     .s1 = "abc",
     .s2 = "Hello world",
     .slist = {"Dog", "Cat"},
   });
-  EXPECT_FALSE_STATIC(do_validate_members(obj_1));
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_1));
   EXPECT_EQ_STATIC(
     "Invalid member 's1':"
     "\n* Input string \"abc\" does not end with 'z'"
@@ -279,14 +279,14 @@ TEST(Validators, LeafPrefixSuffixString1)
     "\nInvalid member 'slist':"
     "\n* Input range [\"Dog\", \"Cat\"] does not start with \"Cat\""
     "\n* Input range [\"Dog\", \"Cat\"] does not end with \"Dog\"",
-    validation_full_error_message(obj_1));
+    validate_public_nsdm_msg_verbose(obj_1));
 
   LAZY_OBJECT(obj_2, foo_string_1_t{
     .s1 = "xyz",
     .s2 = "Holy shit!",
     .slist = {},
   });
-  EXPECT_FALSE_STATIC(do_validate_members(obj_2));
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_2));
   EXPECT_EQ_STATIC(
     "Invalid member 's1':"
     "\n* Input string \"xyz\" does not start with 'a'"
@@ -294,14 +294,14 @@ TEST(Validators, LeafPrefixSuffixString1)
     "\n* Input string \"Holy shit!\" does not start with \"Hello\""
     "\nInvalid member 'slist':"
     "\n* Input range is empty"
-    "\n* Input range is empty", validation_full_error_message(obj_2));
+    "\n* Input range is empty", validate_public_nsdm_msg_verbose(obj_2));
 
   LAZY_OBJECT(obj_3, foo_string_1_t{
     .s1 = "",
     .s2 = "",
     .slist = {"D", "o", "g", "C", "a", "t"},
   });
-  EXPECT_FALSE_STATIC(do_validate_members(obj_3));
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_3));
   EXPECT_EQ_STATIC(
     "Invalid member 's1':"
     "\n* Input string is empty"
@@ -314,7 +314,7 @@ TEST(Validators, LeafPrefixSuffixString1)
     "does not start with \"Cat\""
     "\n* Input range [\"D\", \"o\", \"g\", \"C\", \"a\", \"t\"] "
     "does not end with \"Dog\"",
-    validation_full_error_message(obj_3));
+    validate_public_nsdm_msg_verbose(obj_3));
 }
 
 struct foo_string_2_t {
@@ -342,7 +342,7 @@ TEST(Validators, LeafPrefixSuffixString2)
     .may_fail_validation_2 = {"hello", "world", ""},
     .vector_char = {'H', 'e', 'l', 'l', 'o', 'w', 'o', 'r', 'l', 'd', '!'},
   });
-  EXPECT_TRUE(do_validate_members(obj_ok_1));
+  EXPECT_TRUE(validate_public_nsdm(obj_ok_1));
 
   LAZY_OBJECT(obj_1, foo_string_2_t{
     .always_passes_validation = nullptr, // nullptr is also empty string
@@ -350,8 +350,8 @@ TEST(Validators, LeafPrefixSuffixString2)
     .may_fail_validation_2 = {"", "hello", "world"},
     .vector_char = {'H', 'e', 'l', 'l'},
   });
-  EXPECT_FALSE(do_validate_members(obj_1));
-  EXPECT_THAT(validation_full_error_message(obj_1), testing::MatchesRegex(
+  EXPECT_FALSE(validate_public_nsdm(obj_1));
+  EXPECT_THAT(validate_public_nsdm_msg_verbose(obj_1), testing::MatchesRegex(
     "Invalid member 'may_fail_validation_1':"
     "\n\\* Input string \"What the Hell is this world\" does not start with 'H'"
     "\nInvalid member 'may_fail_validation_2':"
@@ -368,8 +368,8 @@ TEST(Validators, LeafPrefixSuffixString2)
     .may_fail_validation_2 = {},
     .vector_char = {},
   });
-  EXPECT_FALSE(do_validate_members(obj_2));
-  EXPECT_THAT(validation_full_error_message(obj_2), testing::MatchesRegex(
+  EXPECT_FALSE(validate_public_nsdm(obj_2));
+  EXPECT_THAT(validate_public_nsdm_msg_verbose(obj_2), testing::MatchesRegex(
     "Invalid member 'may_fail_validation_1':"
     "\n\\* Input string is empty"
     "\n\\* Input string is empty"

@@ -80,6 +80,7 @@ consteval auto define_static_array(meta_span<T> range) {
 template <std::ranges::input_range Range>
   requires (same_as_one_of<std::ranges::range_value_t<Range>, char, char8_t>)
 consteval auto define_static_string(Range&& range)
+  /* -> meta_basic_string_view<T> */
 {
   using T = std::ranges::range_value_t<Range>;
   using ResultT = meta_basic_string_view<T>;

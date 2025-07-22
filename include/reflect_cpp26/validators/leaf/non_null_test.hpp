@@ -39,7 +39,7 @@ struct is_non_null_validator_t
 
   template <class T>
   static constexpr auto make_error_message(T*) -> std::string {
-    return "Expects pointer to be non-null.";
+    return "Expects pointer to be non-null";
   }
 
   template <class T>
@@ -49,7 +49,7 @@ struct is_non_null_validator_t
 
   template <class T>
   static auto make_error_message(const std::shared_ptr<T>&) -> std::string {
-    return "Expects shared pointer to be non-null.";
+    return "Expects shared pointer to be non-null";
   }
 
   template <class T, class D>
@@ -59,7 +59,7 @@ struct is_non_null_validator_t
 
   template <class T, class D>
   static auto make_error_message(const std::unique_ptr<T, D>&) -> std::string {
-    return "Expects unique pointer to be non-null.";
+    return "Expects unique pointer to be non-null";
   }
 
   template <class T>
@@ -69,7 +69,7 @@ struct is_non_null_validator_t
 
   template <class T>
   static auto make_error_message(const std::weak_ptr<T>&) -> std::string {
-    return "Expects weak pointer to be non-null.";
+    return "Expects weak pointer to be non-null";
   }
 
   static bool test(const std::any& a) {
@@ -77,7 +77,7 @@ struct is_non_null_validator_t
   }
 
   static auto make_error_message(const std::any&) -> std::string {
-    return "Expects std::any to be non-null.";
+    return "Expects std::any to be non-null";
   }
 
   template <class T>
@@ -88,7 +88,7 @@ struct is_non_null_validator_t
   template <class T>
   static constexpr auto make_error_message(const std::optional<T>&)
     -> std::string {
-    return "Expects std::optional to be non-null.";
+    return "Expects std::optional to be non-null";
   }
 };
 

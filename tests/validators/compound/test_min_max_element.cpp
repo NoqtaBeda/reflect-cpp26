@@ -36,7 +36,7 @@ struct foo_min_max_t {
   VALIDATOR(max_element >> min_exclusive, 0)
   std::vector<int> v1;
 
-  VALIDATOR(min_element >> size >> equals_to, 1)
+  VALIDATOR(min_element >> size >> equal_to, 1)
   VALIDATOR(max_element >> max_element >> min_exclusive, 0)
   std::vector<std::vector<int>> v2;
 };
@@ -47,18 +47,18 @@ TEST(Validators, CompoundMinMaxElement)
     .v1 = {-1, 0, 1},
     .v2 = {{0}, {1, 2}, {3, 4, 5}}
   });
-  EXPECT_TRUE_STATIC(do_validate_members(obj_ok_1));
-  EXPECT_EQ_STATIC("", validation_error_message(obj_ok_1));
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_1));
+  EXPECT_EQ_STATIC("", validate_public_nsdm_msg(obj_ok_1));
 
   LAZY_OBJECT(obj_1, foo_min_max_t{
     .v1 = {1, 2, 3},
     .v2 = {{-4, -3}, {-2, -1}}
   });
-  EXPECT_FALSE_STATIC(do_validate_members(obj_1));
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_1));
   EXPECT_EQ_STATIC(
     "Invalid member 'v1': Invalid minimum value -> Expects value <= 0, "
     "while actual value = 1",
-    validation_error_message(obj_1));
+    validate_public_nsdm_msg(obj_1));
   EXPECT_EQ_STATIC(
     "Invalid member 'v1':"
     "\n* Invalid minimum value -> Expects value <= 0, while actual value = 1"
@@ -67,14 +67,14 @@ TEST(Validators, CompoundMinMaxElement)
     "while actual value = 2"
     "\n* Invalid maximum value -> Invalid maximum value -> Expects value > 0, "
     "while actual value = -1",
-    validation_full_error_message(obj_1));
+    validate_public_nsdm_msg_verbose(obj_1));
 
   LAZY_OBJECT(obj_2, foo_min_max_t{.v1 = {}, .v2 = {{}, {}}});
-  EXPECT_FALSE_STATIC(do_validate_members(obj_2));
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_2));
   EXPECT_EQ_STATIC(
     "Invalid member 'v1': Can not validate the minimum value since "
     "input range is empty.",
-    validation_error_message(obj_2));
+    validate_public_nsdm_msg(obj_2));
   EXPECT_EQ_STATIC(
     "Invalid member 'v1':"
     "\n* Can not validate the minimum value since input range is empty."
@@ -84,5 +84,5 @@ TEST(Validators, CompoundMinMaxElement)
     "while actual value = 0"
     "\n* Invalid maximum value -> Can not validate the maximum value since "
     "input range is empty.",
-    validation_full_error_message(obj_2));
+    validate_public_nsdm_msg_verbose(obj_2));
 }

@@ -56,7 +56,7 @@ struct is_not_empty_validator_t
 
   template <std::ranges::forward_range T>
   static constexpr auto make_error_message(const T& input) -> std::string {
-    return "Expects input range to be non-empty.";
+    return "Expects input range to be non-empty";
   }
 };
 

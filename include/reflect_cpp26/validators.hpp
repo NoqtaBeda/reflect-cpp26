@@ -24,6 +24,7 @@
 #define REFLECT_CPP26_VALIDATORS_HPP
 
 // Compound
+#include <reflect_cpp26/validators/compound/enum_test.hpp>
 #include <reflect_cpp26/validators/compound/for_each_test.hpp>
 #include <reflect_cpp26/validators/compound/front_back_test.hpp>
 #include <reflect_cpp26/validators/compound/min_max_element_test.hpp>
@@ -33,6 +34,7 @@
 #include <reflect_cpp26/validators/leaf/boundary_test.hpp>
 #include <reflect_cpp26/validators/leaf/contains_test.hpp>
 #include <reflect_cpp26/validators/leaf/custom_validator.hpp>
+#include <reflect_cpp26/validators/leaf/enum_test.hpp>
 #include <reflect_cpp26/validators/leaf/non_null_test.hpp>
 #include <reflect_cpp26/validators/leaf/options_exclusion_test.hpp>
 #include <reflect_cpp26/validators/leaf/prefix_suffix_test.hpp>

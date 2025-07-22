@@ -29,5 +29,5 @@ namespace rfl = reflect_cpp26;
 __attribute__((visibility("default")))
 extern "C" int validate_arithmetic_values(const arithmetic_values_t* input)
 {
-  return rfl::validate_members(*input);
+  return rfl::validate_public_members(*input);
 }

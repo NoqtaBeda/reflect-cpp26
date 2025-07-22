@@ -105,15 +105,13 @@ meta_test_cases = {
   "type_traits/test_function_types",
   "type_traits/test_is_invocable",
   "type_traits/test_string_like_types",
-  "type_traits/test_tuple_like_elementwise",
   "type_traits/test_tuple_like_types_1",
   "type_traits/test_tuple_like_types_2",
   "type_traits/class_types/test_member_pointers",
   "type_traits/class_types/test_member_reflections",
-  "type_traits/class_types/test_flattened_accessible_nsdm",
+  "type_traits/class_types/test_flattened_nsdm",
   "type_traits/class_types/test_flattenable_types",
   "type_traits/class_types/test_structured_types",
-  "type_traits/class_types/test_class_memberwise_predicate",
   -- Enum
   "enum/impl/test_enum_flags_category",
   "enum/test_enum_bitwise_operators",
@@ -153,9 +151,10 @@ meta_test_cases = {
   "lookup/test_namespace_lookup_table_by_name",
   -- Type Operations
   "type_operations/test_comparison",
-  "type_operations/test_define_aggregate",
+  "type_operations/test_member_access",
   "type_operations/test_to_structured",
   -- Validators
+  "validators/compound/test_enum",
   "validators/compound/test_for_each",
   "validators/compound/test_front_back",
   "validators/compound/test_min_max_element",
@@ -164,10 +163,12 @@ meta_test_cases = {
   "validators/leaf/test_boundary_options_exclusion",
   "validators/leaf/test_contains",
   "validators/leaf/test_custom_validator",
+  "validators/leaf/test_enum",
   "validators/leaf/test_non_empty",
   "validators/leaf/test_non_null",
   "validators/leaf/test_prefix_suffix",
   "validators/leaf/test_sorted",
+  "validators/test_member_access_mode",
 }
 
 for i, path in ipairs(meta_test_cases) do

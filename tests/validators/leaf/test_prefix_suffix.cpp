@@ -379,3 +379,295 @@ TEST(Validators, LeafPrefixSuffixString2)
     "\n\\* Input (string|range) is empty"
     "\n\\* Input (string|range) is empty"));
 }
+
+struct foo_with_relation_tag_1_t {
+  int s1;
+  VALIDATOR(starts_with, prev_nsdm)
+  std::vector<unsigned> v1;
+
+  int s2;
+  VALIDATOR(ends_with, prev_nsdm)
+  std::vector<unsigned> v2;
+
+  VALIDATOR(starts_with, ith_nsdm<1>) // v1
+  VALIDATOR(ends_with, ith_nsdm<3>) // v2
+  std::vector<int> v_full;
+};
+
+TEST(Validators, LeafPrefixSuffixWithNSDMRelation1)
+{
+  LAZY_OBJECT(obj_ok_1, foo_with_relation_tag_1_t{
+    .s1 = 10,
+    .v1 = {10, 20, 30},
+    .s2 = 60,
+    .v2 = {40, 50, 60},
+    .v_full = {10, 20, 30, 40, 50, 60},
+  });
+  EXPECT_TRUE_STATIC(validate_all_nsdm(obj_ok_1));
+
+  LAZY_OBJECT(obj_1, foo_with_relation_tag_1_t{
+    .s1 = -1,
+    .v1 = {-1u, 2, 3},
+    .s2 = -6,
+    .v2 = {4, 5, -6u},
+    .v_full = {-1, 2, 3, 4, 5, -6},
+  });
+  EXPECT_FALSE_STATIC(validate_all_nsdm(obj_1));
+  EXPECT_EQ_STATIC(
+    "Invalid member 'v1':"
+    "\n* Input range [4294967295, 2, 3] "
+    "does not start with member 's1' which is -1"
+    "\nInvalid member 'v2':"
+    "\n* Input range [4, 5, 4294967290] "
+    "does not end with member 's2' which is -6"
+    "\nInvalid member 'v_full':"
+    "\n* Input range [-1, 2, 3, 4, 5, -6] "
+    "does not start with member 'v1' which is [4294967295, 2, 3]"
+    "\n* Input range [-1, 2, 3, 4, 5, -6] "
+    "does not end with member 'v2' which is [4, 5, 4294967290]",
+    validate_all_nsdm_msg_verbose(obj_1));
+
+  LAZY_OBJECT(obj_2, foo_with_relation_tag_1_t{
+    .s1 = -1,
+    .v1 = {},
+    .s2 = -6,
+    .v2 = {},
+    .v_full = {},
+  });
+  EXPECT_FALSE_STATIC(validate_all_nsdm(obj_2));
+  EXPECT_EQ_STATIC(
+    "Invalid member 'v1':"
+    "\n* Input range is empty"
+    "\nInvalid member 'v2':"
+    "\n* Input range is empty",
+    validate_all_nsdm_msg_verbose(obj_2));
+
+  LAZY_OBJECT(obj_3, foo_with_relation_tag_1_t{
+    .s1 = 1,
+    .v1 = {1},
+    .s2 = 6,
+    .v2 = {6},
+    .v_full = {},
+  });
+  EXPECT_FALSE_STATIC(validate_all_nsdm(obj_3));
+  EXPECT_EQ_STATIC(
+    "Invalid member 'v_full':\n* Input range is empty\n* Input range is empty",
+    validate_all_nsdm_msg_verbose(obj_3));
+
+  LAZY_OBJECT(obj_4, foo_with_relation_tag_1_t{
+    .s1 = 1,
+    .v1 = {},
+    .s2 = 6,
+    .v2 = {},
+    .v_full = {1, 6},
+  });
+  EXPECT_FALSE_STATIC(validate_all_nsdm(obj_4));
+  EXPECT_EQ_STATIC(
+    "Invalid member 'v1':"
+    "\n* Input range is empty"
+    "\nInvalid member 'v2':"
+    "\n* Input range is empty",
+    validate_all_nsdm_msg_verbose(obj_4));
+}
+
+struct foo_with_relation_tag_2_t {
+  unsigned bf1: 4;
+  unsigned bf2: 8;
+
+  VALIDATOR(starts_with, prev_ith_nsdm<2>)
+  VALIDATOR(ends_with, prev_ith_nsdm<1>)
+  std::vector<int> values;
+
+  const char* & cs1;
+  VALIDATOR(starts_with, prev_nsdm)
+  const wchar_t* & cs2;
+
+  VALIDATOR(starts_with, prev_ith_nsdm<2>)
+  VALIDATOR(ends_with, prev_ith_nsdm<1>)
+  std::vector<std::u8string> vs;
+};
+
+TEST(Validators, LeafPrefixSuffixWithNSDMRelation2)
+{
+  const char* s1 = "Hello";
+  const wchar_t* s2 = L"HelloWorld";
+  auto obj_ok_1 = foo_with_relation_tag_2_t{
+    .bf1 = 3,
+    .bf2 = 12,
+    .values = {3, 6, 9, 12},
+    .cs1 = s1,
+    .cs2 = s2,
+    .vs = {u8"Hello", u8"World", u8"HelloWorld"},
+  };
+  EXPECT_TRUE(rfl::validate_public_members(obj_ok_1));
+
+  const wchar_t* s3 = L"helloworld";
+  auto obj_1 = foo_with_relation_tag_2_t{
+    .bf1 = 3,
+    .bf2 = 12,
+    .values = {19, 28},
+    .cs1 = s1,
+    .cs2 = s3,
+    .vs = {u8"你好", u8"世界", u8"hello", u8"world"},
+  };
+  auto msg = std::string{};
+  EXPECT_FALSE(rfl::validate_public_members_verbose(obj_1, &msg));
+  EXPECT_THAT(msg, testing::MatchesRegex(
+    "Invalid member 'values':"
+    "\n\\* Input range \\[19, 28\\] "
+    "does not start with member 'bf1' which is 3"
+    "\n\\* Input range \\[19, 28\\] "
+    "does not end with member 'bf2' which is 12"
+    "\nInvalid member 'cs2':"
+    "\n\\* Input string .*does not start with member 'cs1' which is \"Hello\".*"
+    "\nInvalid member 'vs':"
+    "\n\\* Input range .*does not start with member 'cs1' which is \"Hello\".*"
+    "\n\\* Input range .*does not end with member 'cs2'.*"));
+
+  auto obj_2 = foo_with_relation_tag_2_t{
+    .bf1 = 3,
+    .bf2 = 12,
+    .values = {},
+    .cs1 = s1,
+    .cs2 = s3,
+    .vs = {},
+  };
+  msg.clear();
+  EXPECT_FALSE(rfl::validate_public_members_verbose(obj_2, &msg));
+  EXPECT_THAT(msg, testing::MatchesRegex(
+    "Invalid member 'values':"
+    "\n\\* Input range is empty"
+    "\n\\* Input range is empty"
+    "\nInvalid member 'cs2':"
+    "\n\\* Input string .*does not start with member 'cs1' which is \"Hello\""
+    "\nInvalid member 'vs':"
+    "\n\\* Input range is empty"
+    "\n\\* Input range is empty"));
+}
+
+struct foo_with_relation_tag_3_t {
+  const char* s1;
+
+  VALIDATOR(starts_with, prev_nsdm)
+  VALIDATOR(ends_with, prev_nsdm)
+  const char* s2;
+};
+
+TEST(Validators, LeafPrefixSuffixWithNSDMRelation3)
+{
+  LAZY_OBJECT(obj_ok_1, foo_with_relation_tag_3_t{
+    .s1 = "hello",
+    .s2 = "hello",
+  });
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_1));
+
+  LAZY_OBJECT(obj_ok_2, foo_with_relation_tag_3_t{
+    .s1 = "tacotaco",
+    .s2 = "tacotacotaco",
+  });
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_2));
+
+  LAZY_OBJECT(obj_ok_3, foo_with_relation_tag_3_t{
+    .s1 = "",
+    .s2 = "",
+  });
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_3));
+
+  LAZY_OBJECT(obj_ok_4, foo_with_relation_tag_3_t{
+    .s1 = nullptr,
+    .s2 = "tacotacotaco",
+  });
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_4));
+
+  LAZY_OBJECT(obj_ok_5, foo_with_relation_tag_3_t{
+    .s1 = nullptr,
+    .s2 = "",
+  });
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_5));
+
+  LAZY_OBJECT(obj_ok_6, foo_with_relation_tag_3_t{
+    .s1 = "",
+    .s2 = nullptr,
+  });
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_6));
+
+  LAZY_OBJECT(obj_1, foo_with_relation_tag_3_t{
+    .s1 = "hello",
+    .s2 = "hell no",
+  });
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_1));
+  EXPECT_EQ_STATIC(
+    "Invalid member 's2':"
+    "\n* Input string \"hell no\" does not start with "
+    "member 's1' which is \"hello\""
+    "\n* Input string \"hell no\" does not end with "
+    "member 's1' which is \"hello\"",
+    validate_public_nsdm_msg_verbose(obj_1));
+
+  LAZY_OBJECT(obj_2, foo_with_relation_tag_3_t{
+    .s1 = "hello",
+    .s2 = nullptr,
+  });
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_2));
+  EXPECT_EQ_STATIC(
+    "Invalid member 's2':\n* Input string is empty\n* Input string is empty",
+    validate_public_nsdm_msg_verbose(obj_2));
+}
+
+struct foo_with_relation_tag_4_t {
+  const char* prefix;
+  const char* suffix;
+
+  VALIDATOR(starts_with, ith_nsdm<0>)
+  VALIDATOR(ends_with, ith_nsdm<1>)
+  std::deque<char16_t> deque_chars;
+
+  VALIDATOR(starts_with, ith_nsdm<0>)
+  VALIDATOR(ends_with, ith_nsdm<1>)
+  std::deque<std::u16string> deque_strings;
+};
+
+TEST(Validators, LeafPrefixSuffixWithNSDMRelation4)
+{
+  auto obj_ok_1 = foo_with_relation_tag_4_t{
+    .prefix = "Hello",
+    .suffix = "world",
+    .deque_chars = std::u16string(u"Hello this fxxking world")
+      | std::ranges::to<std::deque>(),
+    .deque_strings = {u"Hello", u"this", u"fxxking", u"world"},
+  };
+  EXPECT_TRUE(rfl::validate_public_members(obj_ok_1));
+
+  auto obj_1 = foo_with_relation_tag_4_t{
+    .prefix = "Hello",
+    .suffix = "world",
+    .deque_chars = std::u16string(u"H w") | std::ranges::to<std::deque>(),
+    .deque_strings = {u"hello", u"this", u"fxxking", u"WORLD"},
+  };
+  auto msg = std::string{};
+  EXPECT_FALSE(rfl::validate_public_members_verbose(obj_1, &msg));
+  EXPECT_THAT(msg, testing::MatchesRegex(
+    "Invalid member 'deque_chars':"
+    "\n\\* Input range \\['H', ' ', 'w'\\] does not start with member "
+    "'prefix' which is \"Hello\""
+    "\n\\* Input range \\['H', ' ', 'w'\\] does not end with member "
+    "'suffix' which is \"world\""
+    "\nInvalid member 'deque_strings':"
+    "\n\\* Input range \\[.*\\] does not start with member "
+    "'prefix' which is \"Hello\""
+    "\n\\* Input range \\[.*\\] does not end with member "
+    "'suffix' which is \"world\""));
+
+  auto obj_2 = foo_with_relation_tag_4_t{
+    .prefix = nullptr,
+    .suffix = nullptr,
+    .deque_chars = {},
+    .deque_strings = {},
+  };
+  msg.clear();
+  EXPECT_FALSE(rfl::validate_public_members_verbose(obj_2, &msg));
+  EXPECT_EQ(
+    "Invalid member 'deque_strings':"
+    "\n* Input range is empty"
+    "\n* Input range is empty", msg);
+}

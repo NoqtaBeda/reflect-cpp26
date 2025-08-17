@@ -28,19 +28,19 @@
 #include <reflect_cpp26/validators/leaf/size_test.hpp>
 #endif
 
-struct foo_non_empty_t {
+struct foo_non_empty_1_t {
   VALIDATOR(is_not_empty)
   VALIDATOR(size_is, 3)
   std::vector<int> v1;
 };
 
-TEST(Validators, LeafNonEmpty)
+TEST(Validators, LeafNonEmpty1)
 {
-  LAZY_OBJECT(obj_ok_1, foo_non_empty_t{.v1 = {1, 2, 3}});
+  LAZY_OBJECT(obj_ok_1, foo_non_empty_1_t{.v1 = {1, 2, 3}});
   EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_1));
   EXPECT_EQ_STATIC("", validate_public_nsdm_msg(obj_ok_1));
 
-  LAZY_OBJECT(obj_1, foo_non_empty_t{});
+  LAZY_OBJECT(obj_1, foo_non_empty_1_t{});
   EXPECT_FALSE_STATIC(validate_public_nsdm(obj_1));
   EXPECT_EQ_STATIC(
     "Invalid member 'v1': Expects input range to be non-empty",
@@ -51,7 +51,7 @@ TEST(Validators, LeafNonEmpty)
     "\n* Expects size to be 3, while actual size is 0",
     validate_public_nsdm_msg_verbose(obj_1));
 
-  LAZY_OBJECT(obj_2, foo_non_empty_t{.v1 = {1, 2, 3, 4}});
+  LAZY_OBJECT(obj_2, foo_non_empty_1_t{.v1 = {1, 2, 3, 4}});
   EXPECT_FALSE_STATIC(validate_public_nsdm(obj_2));
   EXPECT_EQ_STATIC(
     "Invalid member 'v1': Expects size to be 3, while actual size is 4",
@@ -60,4 +60,47 @@ TEST(Validators, LeafNonEmpty)
     "Invalid member 'v1':"
     "\n* Expects size to be 3, while actual size is 4",
     validate_public_nsdm_msg_verbose(obj_2));
+}
+
+struct foo_non_empty_2_t {
+  VALIDATOR(size_is, next_ith_public_nsdm<2>) // foo_non_empty_2_t::d
+  std::vector<int> v1;
+
+  constexpr foo_non_empty_2_t(
+    std::initializer_list<int> v, std::array<size_t, 6> a)
+    : v1(v), a(a[0]), b(a[1]), c(a[2]), d(a[3]), e(a[4]), f(a[5]) {}
+
+private:
+  size_t a;
+public:
+  size_t b;
+protected:
+  size_t c;
+public:
+  size_t d;
+private:
+  size_t e;
+public:
+  size_t f;
+};
+
+TEST(Validators, LeafNonEmpty2)
+{
+  LAZY_OBJECT(obj_ok_1, foo_non_empty_2_t{{1, 2, 3, 4}, {1, 2, 3, 4, 5, 6}});
+  EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_1));
+  EXPECT_EQ_STATIC("", validate_public_nsdm_msg(obj_ok_1));
+
+  LAZY_OBJECT(obj_1, foo_non_empty_2_t{{1, 2}, {1, 2, 3, 4, 5, 6}});
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_1));
+  EXPECT_EQ_STATIC(
+    "Invalid member 'v1': Expects size to be member 'd' which is 4, "
+    "while actual size is 2",
+    validate_public_nsdm_msg(obj_1));
+
+  LAZY_OBJECT(obj_2, foo_non_empty_2_t{{}, {1, 2, 3, 4, 5, 6}});
+  EXPECT_FALSE_STATIC(validate_public_nsdm(obj_2));
+  EXPECT_EQ_STATIC(
+    "Invalid member 'v1': Expects size to be member 'd' which is 4, "
+    "while actual size is 0",
+    validate_public_nsdm_msg(obj_2));
 }

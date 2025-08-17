@@ -161,7 +161,7 @@ consteval auto make_enum_index_map_kv_pairs()
   auto entries = enumerators_of(^^E);
   auto entry_tuples = make_reserved_vector<entry_tuple_t>(entries.size());
   for (auto i = 0zU, n = entries.size(); i < n; i++) {
-    entry_tuples.emplace_back(i, identifier_of(entries[i]));
+    entry_tuples.emplace_back(i, std::meta::identifier_of(entries[i]));
   }
 
   using kv_pair_t = std::pair<to_int64_or_uint64_t<E>, enum_indices_t>;

@@ -27,11 +27,12 @@
 #include <reflect_cpp26/enum/enum_flags_contains.hpp>
 #include <reflect_cpp26/enum/enum_type_name.hpp>
 #include <reflect_cpp26/utils/to_string.hpp>
-#include <reflect_cpp26/validators/impl/maker_common.hpp>
+#include <reflect_cpp26/validators/impl/maker.hpp>
+#include <reflect_cpp26/validators/impl/trivial_validator.hpp>
 
 namespace reflect_cpp26::validators {
-struct enum_is_contained_t
-  : impl::validator_without_params<enum_is_contained_t>
+struct is_valid_enum_t
+  : impl::trivial_validator_without_params<is_valid_enum_t>
 {
   template <enum_type E>
   static constexpr bool test(E input) {
@@ -50,8 +51,8 @@ struct enum_is_contained_t
   }
 };
 
-struct enum_flags_is_contained_t
-  : impl::validator_without_params<enum_flags_is_contained_t>
+struct is_valid_enum_flags_t
+  : impl::trivial_validator_without_params<is_valid_enum_flags_t>
 {
   template <enum_type E>
   static constexpr bool test(E input) {
@@ -70,8 +71,8 @@ struct enum_flags_is_contained_t
   }
 };
 
-constexpr auto enum_is_contained = enum_is_contained_t{};
-constexpr auto enum_flags_is_contained = enum_flags_is_contained_t{};
+constexpr auto is_valid_enum = is_valid_enum_t{};
+constexpr auto is_valid_enum_flags = is_valid_enum_flags_t{};
 } // namespace reflect_cpp26::validators
 
 #endif // REFLECT_CPP26_VALIDATORS_LEAF_ENUM_TEST_HPP

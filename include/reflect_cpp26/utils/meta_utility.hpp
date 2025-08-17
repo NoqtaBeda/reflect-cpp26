@@ -187,6 +187,17 @@ consteval auto substitute(std::meta::info templ, Args... templ_params)
   -> std::meta::info {
   return std::meta::substitute(templ, {templ_params...});
 }
+
+// -------- Identifier helpers --------
+
+struct identifier_of_t {
+  static consteval auto operator()(
+    std::meta::info m, std::string_view alt = "") -> std::string_view
+  {
+    return has_identifier(m) ? std::meta::identifier_of(m) : alt;
+  }
+};
+constexpr auto identifier_of = identifier_of_t{};
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_UTILS_META_UTILITY_HPP

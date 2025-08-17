@@ -25,6 +25,7 @@
 
 #include <reflect_cpp26/type_traits/arithmetic_types.hpp>
 #include <reflect_cpp26/type_traits/class_types.hpp>
+#include <reflect_cpp26/type_traits/cvref.hpp>
 #include <reflect_cpp26/type_traits/function_types.hpp>
 #include <reflect_cpp26/type_traits/reduction.hpp>
 #include <reflect_cpp26/type_traits/string_like_types.hpp>

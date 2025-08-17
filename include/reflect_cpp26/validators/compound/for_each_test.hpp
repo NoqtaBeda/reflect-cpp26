@@ -23,7 +23,7 @@
 #ifndef REFLECT_CPP26_VALIDATORS_COMPOUND_FOR_EACH_TEST_HPP
 #define REFLECT_CPP26_VALIDATORS_COMPOUND_FOR_EACH_TEST_HPP
 
-#include <reflect_cpp26/validators/impl/maker_common.hpp>
+#include <reflect_cpp26/validators/impl/maker.hpp>
 #include <reflect_cpp26/utils/to_string.hpp>
 
 namespace reflect_cpp26::validators {
@@ -46,7 +46,6 @@ struct for_each_of_validator_t : validator_tag_t {
   Nested nested;
 
   template <std::ranges::forward_range InputT>
-    requires (validator_of<Nested, std::ranges::range_value_t<InputT>>)
   constexpr bool test(const InputT& input) const
   {
     return ForEachFn(input, [this](const auto& cur) {
@@ -55,7 +54,6 @@ struct for_each_of_validator_t : validator_tag_t {
   }
 
   template <std::ranges::forward_range InputT>
-    requires (validator_of<Nested, std::ranges::range_value_t<InputT>>)
   constexpr auto make_error_message(const InputT& input) const -> std::string
   {
     constexpr auto op = impl::for_each_type_notation<ForEachFn>;

@@ -20,23 +20,49 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_ENUM_ENUM_TYPE_NAME_HPP
-#define REFLECT_CPP26_ENUM_ENUM_TYPE_NAME_HPP
+#ifndef REFLECT_CPP26_TYPE_TRAITS_CVREF_HPP
+#define REFLECT_CPP26_TYPE_TRAITS_CVREF_HPP
 
 #include <reflect_cpp26/utils/concepts.hpp>
-#include <reflect_cpp26/utils/meta_utility.hpp>
+#include <reflect_cpp26/utils/config.h>
 
 namespace reflect_cpp26 {
-/**
- * Gets the enum type name (without cv-qualifiers and namespaces).
- */
-template <enum_type E>
-constexpr auto enum_type_name() -> std::string_view
+consteval auto add_cvref_like(std::meta::info dest, std::meta::info src)
 {
-  using ENoCV = std::remove_cv_t<E>;
-  return reflect_cpp26::identifier_of(
-    dealias(^^ENoCV), "(anonymous enum type)");
+  if (!is_type(dest)) {
+    compile_error("dest must be a type.");
+  }
+  if (!is_type(src)) {
+    compile_error("src must be a type.");
+  }
+  if (is_reference_type(dest)) {
+    compile_error("dest can not be a reference type.");
+  }
+
+  auto is_lref = is_lvalue_reference_type(src);
+  auto is_rref = is_rvalue_reference_type(src);
+  auto has_const = is_const(remove_reference(dest)) ||
+    is_const(remove_reference(src));
+  auto has_volatile = is_volatile(remove_reference(dest)) ||
+    is_volatile(remove_reference(src));
+
+  dest = remove_cv(dest);
+  if (has_const) {
+    dest = add_const(dest);
+  }
+  if (has_volatile) {
+    dest = add_volatile(dest);
+  }
+  if (is_lref) {
+    dest = add_lvalue_reference(dest);
+  } else if (is_rref) {
+    dest = add_rvalue_reference(dest);
+  }
+  return dest;
 }
+
+template <non_reference_type Dest, class Src>
+using add_cvref_like_t = [: add_cvref_like(^^Dest, ^^Src) :];
 } // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_ENUM_ENUM_TYPE_NAME_HPP
+#endif // REFLECT_CPP26_TYPE_TRAITS_CVREF_HPP

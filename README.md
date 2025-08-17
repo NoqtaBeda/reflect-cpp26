@@ -33,6 +33,8 @@ LD_LIBRARY_PATH=<path-to-libc++> xmake run run_asm_check
   * Recursive validation
   * String validators with case-insensitive comparison
   * Validation on invariant relation between multiple members
+    * ~~Leaf validators: done~~
+    * Compound validators: redesign is in progress
   * Non-intrusive validator annotation
 * Improvements to `constant`:
   * `map`, `filter` with index
@@ -40,6 +42,7 @@ LD_LIBRARY_PATH=<path-to-libc++> xmake run run_asm_check
 * utils:
   * `fixed_set`
   * Fixed string
+  * `to_string` for string types other than `char`
 * Missing UT for string-key fixed map (in utils):
   * Case-insensitive UT with `string_key_map_by_hash_binary_search_slow`;
   * Hash collision cases with every hash-related scenario;
@@ -49,9 +52,10 @@ LD_LIBRARY_PATH=<path-to-libc++> xmake run run_asm_check
 Validators to be implemented:
 | Name | Implemented | Tested | Notes |
 | :--- | :---------: | :----: | :---- |
-| `starts_with` | Partially | Partially | TODO: character types other than `char` |
-| `ends_with` | Partially | Partially | TODO: character types other than `char` |
-| `contains` | Partially | Partially | TODO: character types other than `char` |
+| `is_prefix_of` | | | Inverse of `starts_with` |
+| `is_suffix_of` | | | Inverse of `ends_with` |
+| `is_in` | | | Inverse of `contains` |
+| `is_subrange_of` | | | Inverse of `contains` |
 | `matches_regex` | | |
 | `substr_matches_regex` | | |
 | `has_subsequence` | | |

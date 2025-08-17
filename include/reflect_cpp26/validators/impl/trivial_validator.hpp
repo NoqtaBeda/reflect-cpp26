@@ -20,23 +20,40 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_ENUM_ENUM_TYPE_NAME_HPP
-#define REFLECT_CPP26_ENUM_ENUM_TYPE_NAME_HPP
+#include <reflect_cpp26/type_operations/member_access.hpp>
+#include <reflect_cpp26/validators/impl/maker.hpp>
 
-#include <reflect_cpp26/utils/concepts.hpp>
-#include <reflect_cpp26/utils/meta_utility.hpp>
+#ifndef REFLECT_CPP26_VALIDATORS_IMPL_TRIVIAL_VALIDATOR_HPP
+#define REFLECT_CPP26_VALIDATORS_IMPL_TRIVIAL_VALIDATOR_HPP
 
-namespace reflect_cpp26 {
-/**
- * Gets the enum type name (without cv-qualifiers and namespaces).
- */
-template <enum_type E>
-constexpr auto enum_type_name() -> std::string_view
+namespace reflect_cpp26::validators::impl {
+template <class Derived>
+struct trivial_validator : validator_tag_t {
+  template <size_t I, class T>
+  constexpr bool test_ith_nsdm(const T& obj) const
+  {
+    const auto& input = get_ith_flattened_nsdm<I>(obj);
+    return static_cast<const Derived*>(this)->test(input);
+  }
+
+  template <size_t I, class T>
+  constexpr auto make_error_message_of_ith_nsdm(const T& obj) const
+    -> std::string
+  {
+    const auto& input = get_ith_flattened_nsdm<I>(obj);
+    return static_cast<const Derived*>(this)->make_error_message(input);
+  }
+};
+
+template <class Derived>
+struct trivial_validator_without_params
+  : trivial_validator<Derived>, validator_maker_tag_t
 {
-  using ENoCV = std::remove_cv_t<E>;
-  return reflect_cpp26::identifier_of(
-    dealias(^^ENoCV), "(anonymous enum type)");
-}
-} // namespace reflect_cpp26
+  // Dummy maker
+  static constexpr auto operator()() {
+    return Derived{};
+  }
+};
+} // namespace reflect_cpp26::validators::impl
 
-#endif // REFLECT_CPP26_ENUM_ENUM_TYPE_NAME_HPP
+#endif // REFLECT_CPP26_VALIDATORS_IMPL_TRIVIAL_VALIDATOR_HPP

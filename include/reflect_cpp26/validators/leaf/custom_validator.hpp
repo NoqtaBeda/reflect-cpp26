@@ -24,11 +24,11 @@
 #define REFLECT_CPP26_VALIDATORS_LEAF_CUSTOM_VALIDATOR_HPP
 
 #include <reflect_cpp26/type_operations/to_string.hpp>
-#include <reflect_cpp26/validators/impl/maker_common.hpp>
+#include <reflect_cpp26/validators/impl/trivial_validator.hpp>
 
 namespace reflect_cpp26::validators {
 template <class Func>
-struct custom_validator_t : validator_tag_t {
+struct custom_validator_t : impl::trivial_validator<custom_validator_t<Func>> {
   Func func;
 
   template <class InputT>

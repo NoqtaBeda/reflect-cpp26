@@ -24,12 +24,12 @@
 #define REFLECT_CPP26_VALIDATORS_LEAF_SORTED_TEST_HPP
 
 #include <reflect_cpp26/type_operations/to_string.hpp>
-#include <reflect_cpp26/validators/impl/maker_common.hpp>
+#include <reflect_cpp26/validators/impl/trivial_validator.hpp>
 #include <algorithm>
 #include <ranges>
 
 namespace reflect_cpp26::validators {
-struct is_sorted_validator_t : validator_tag_t {
+struct is_sorted_validator_t : impl::trivial_validator<is_sorted_validator_t> {
   bool is_descending_order = false;
   bool checks_uniqueness = false;
 

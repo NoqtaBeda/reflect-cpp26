@@ -25,43 +25,12 @@
 
 #include <reflect_cpp26/type_operations/to_string.hpp>
 #include <reflect_cpp26/type_operations/to_structured.hpp>
-#include <reflect_cpp26/validators/impl/maker_common.hpp>
+#include <reflect_cpp26/validators/impl/maker.hpp>
 #include <reflect_cpp26/validators/impl/utils.hpp>
+#include <reflect_cpp26/validators/member_relation_tags.hpp>
 
 namespace reflect_cpp26::validators {
 namespace impl {
-template <bool IsSuffix, std::ranges::forward_range InputT, class PrefixSuffixT>
-constexpr auto make_prefix_suffix_test_error_message(
-  const InputT& input, const PrefixSuffixT& prefix_or_suffix) -> std::string
-{
-  constexpr auto input_is_string =
-    is_char_type_v<std::ranges::range_value_t<InputT>>;
-
-  if (std::ranges::empty(input)) {
-    return input_is_string ? "Input string is empty" : "Input range is empty";
-  }
-  auto res = std::string{input_is_string ? "Input string " : "Input range "};
-  if constexpr (is_generic_to_string_invocable_v<InputT>) {
-    res += generic_to_display_string(input);
-    res += ' ';
-  }
-  res += IsSuffix ? "does not end with " : "does not start with ";
-  if constexpr (is_generic_to_string_invocable_v<PrefixSuffixT>) {
-    res += generic_to_display_string(prefix_or_suffix);
-  } else {
-    res += "specified value(s)";
-  }
-  return res;
-}
-
-template <bool IsSuffix, char_type CharT, class PrefixSuffixT>
-constexpr auto make_prefix_suffix_test_error_message(
-  const CharT* input, const PrefixSuffixT& prefix_or_suffix) -> std::string
-{
-  auto sv = std::basic_string_view<CharT>(input == nullptr ? "" : input);
-  return make_prefix_suffix_test_error_message<IsSuffix>(sv, prefix_or_suffix);
-}
-
 template <class Range>
 constexpr auto last_iter(const Range& range)
 {
@@ -75,230 +44,195 @@ constexpr auto last_iter(const Range& range)
     return it;
   }
 }
+
+/**
+ * Case (1): test(input: T[], prefix_or_suffix: U)
+ * where T and U are comparable via generic_equal.
+ */
+template <bool IsSuffix, class PrefixSuffixT,
+          impl::forward_range_comparable_with<PrefixSuffixT> InputT>
+constexpr bool test_prefix_or_suffix(
+  const InputT& input, const PrefixSuffixT& prefix_or_suffix)
+{
+  if (std::ranges::empty(input)) {
+    return false;
+  }
+  if constexpr (IsSuffix) {
+    return generic_equal(*impl::last_iter(input), prefix_or_suffix);
+  } else {
+    return generic_equal(*std::ranges::begin(input), prefix_or_suffix);
+  }
+}
+
+/**
+ * Case (2): test(input: T[], prefix_or_suffix: U[])
+ * where T and U or CharU are comparable via generic_equal.
+ */
+template <bool IsSuffix, std::ranges::forward_range PrefixSuffixT,
+          generic_equal_comparable_with<PrefixSuffixT> InputT>
+constexpr bool test_prefix_or_suffix(
+  const InputT& input, const PrefixSuffixT& prefix_or_suffix)
+{
+  if constexpr (IsSuffix) {
+    return std::ranges::ends_with(input, prefix_or_suffix, generic_equal);
+  } else {
+    return std::ranges::starts_with(input, prefix_or_suffix, generic_equal);
+  }
+}
+
+/**
+ * Case (3): test(input: const T*, prefix_or_suffix: U[])
+ * where T and U are both character types.
+ */
+template <bool IsSuffix, char_type InputCharT,
+          impl::forward_range_comparable_with<InputCharT> PrefixSuffixT>
+constexpr bool test_prefix_or_suffix(
+  const InputCharT* input, const PrefixSuffixT& prefix_or_suffix)
+{
+  if (input == nullptr) {
+    return std::ranges::empty(prefix_or_suffix);
+  }
+  auto input_sv = std::basic_string_view{input};
+  return test_prefix_or_suffix<IsSuffix>(input_sv, prefix_or_suffix);
+}
+
+/**
+ * Case (4): test(input: const T*, prefix_or_suffix: const U*)
+ * where T and U are both character types.
+ */
+template <bool IsSuffix, char_type InputCharT, char_type PrefixSuffixCharT>
+constexpr bool test_prefix_or_suffix(
+  const InputCharT* input, const PrefixSuffixCharT* prefix_or_suffix)
+{
+  if (input == nullptr) {
+    return prefix_or_suffix == nullptr || *prefix_or_suffix == '\0';
+  }
+  if (prefix_or_suffix == nullptr) {
+    // prefix_or_suffix is considered as empty string, which is trivial prefix
+    // or suffix of every string (including another empty one).
+    return true;
+  }
+  return test_prefix_or_suffix<IsSuffix>(
+    std::basic_string_view{input}, std::basic_string_view{prefix_or_suffix});
+}
+
+/**
+ * Case (5): test(input: const T*, prefix_or_suffix: U)
+ * where T and U are both character types.
+ */
+template <bool IsSuffix, char_type InputCharT, char_type PrefixSuffixCharT>
+constexpr bool test_prefix_or_suffix(
+  const InputCharT* input, PrefixSuffixCharT prefix_or_suffix)
+{
+  if (input == nullptr || *input == '\0') {
+    return false;
+  }
+  if constexpr (IsSuffix) {
+    for (; input[1] != '\0'; ++input) {}
+  }
+  return *input == prefix_or_suffix;
+}
+
+/**
+ * Case (6): test(input: T[], prefix_or_suffix: const U*)
+ * where T and U are both character types.
+ */
+template <bool IsSuffix, char_type PrefixSuffixCharT,
+          impl::forward_range_comparable_with<PrefixSuffixCharT> InputT>
+constexpr bool test_prefix_or_suffix(
+  const InputT& input, const PrefixSuffixCharT* prefix_or_suffix)
+{
+  if (prefix_or_suffix == nullptr || *prefix_or_suffix == '\0') {
+    return true;
+  }
+  auto sv = std::basic_string_view{prefix_or_suffix};
+  return test_prefix_or_suffix<IsSuffix>(input, sv);
+}
+
+/**
+ * Case (7): test(input: T[][], prefix_or_suffix: const U*)
+ * where T and U are both character types.
+ */
+template <bool IsSuffix, char_type PrefixSuffixCharT,
+          impl::forward_range_comparable_with<
+            std::basic_string_view<PrefixSuffixCharT>> InputT>
+constexpr bool test_prefix_or_suffix(
+  const InputT& input, const PrefixSuffixCharT* prefix_or_suffix)
+{
+  auto sv = std::basic_string_view<PrefixSuffixCharT>{};
+  if (prefix_or_suffix != nullptr) {
+    sv = prefix_or_suffix;
+  }
+  return test_prefix_or_suffix<IsSuffix>(input, sv);
+}
 } // namespace impl
 
-template <class PrefixT>
-struct starts_with_single_t : validator_tag_t {
-  PrefixT prefix_value;
+template <bool IsSuffix, class PrefixSuffixT>
+struct starts_or_ends_with_t : validator_tag_t
+{
+  [[no_unique_address]] PrefixSuffixT prefix_or_suffix;
 
-  template <impl::forward_range_comparable_with<PrefixT> InputT>
-  constexpr bool test(const InputT& input) const
+  template <size_t I, partially_flattenable_class T>
+  constexpr bool test_ith_nsdm(const T& obj) const
   {
-    if (std::ranges::empty(input)) {
-      return false;
-    }
-    return generic_equal(*std::ranges::begin(input), prefix_value);
-  }
-
-  template <class = void>
-    requires (is_char_type_v<PrefixT>)
-  constexpr bool test(const PrefixT* str) const
-  {
-    return str != nullptr && *str == prefix_value;
-  }
-
-  template <class InputT>
-  constexpr auto make_error_message(const InputT& input) const -> std::string
-  {
-    return impl::make_prefix_suffix_test_error_message<false>(
-      input, prefix_value);
-  }
-};
-
-template <class SuffixT>
-struct ends_with_single_t : validator_tag_t {
-  SuffixT suffix_value;
-
-  template <impl::forward_range_comparable_with<SuffixT> InputT>
-  constexpr bool test(const InputT& input) const
-  {
-    if (std::ranges::empty(input)) {
-      return false;
-    }
-    return generic_equal(*impl::last_iter(input), suffix_value);
-  }
-
-  template <class = void>
-    requires (is_char_type_v<SuffixT>)
-  constexpr bool test(const SuffixT* str) const
-  {
-    if (str == nullptr || *str == '\0') {
-      return false;
-    }
-    for (; str[1] != '\0'; ++str) {}
-    return suffix_value == *str;
-  }
-
-  template <class InputT>
-  constexpr auto make_error_message(const InputT& input) const -> std::string
-  {
-    return impl::make_prefix_suffix_test_error_message<true>(
-      input, suffix_value);
-  }
-};
-
-template <class CharT>
-struct starts_with_string_t : validator_tag_t {
-  meta_basic_string_view<CharT> prefix;
-
-  template <string_like_of<CharT> InputT>
-  constexpr bool test(const InputT& input) const
-  {
-    if constexpr (std::is_pointer_v<InputT>) {
-      if (input == nullptr) { return prefix.empty(); }
-    }
-    auto input_sv = std::basic_string_view{input};
-    return input_sv.starts_with(prefix);
-  }
-
-  template <impl::forward_range_of_string_like<CharT> InputT>
-  constexpr bool test(const InputT& input) const
-  {
-    if (std::ranges::empty(input)) {
-      return false;
-    }
-    auto first_sv = std::basic_string_view{*std::ranges::begin(input)};
-    return prefix == first_sv;
-  }
-
-  template <class InputT>
-  constexpr auto make_error_message(const InputT& input) const -> std::string
-  {
-    return impl::make_prefix_suffix_test_error_message<false>(input, prefix);
-  }
-};
-
-template <class CharT>
-struct ends_with_string_t : validator_tag_t {
-  meta_basic_string_view<CharT> suffix;
-
-  template <string_like_of<CharT> InputT>
-  constexpr bool test(const InputT& input) const
-  {
-    if constexpr (std::is_pointer_v<InputT>) {
-      if (input == nullptr) { return suffix.empty(); }
-    }
-    auto input_sv = std::basic_string_view{input};
-    return input_sv.ends_with(suffix);
-  }
-
-  template <impl::forward_range_of_string_like<CharT> InputT>
-  constexpr bool test(const InputT& input) const
-  {
-    if (std::ranges::empty(input)) {
-      return false;
-    }
-    auto last_sv = std::basic_string_view{*impl::last_iter(input)};
-    return suffix == last_sv;
-  }
-
-  template <class InputT>
-  constexpr auto make_error_message(const InputT& input) const -> std::string
-  {
-    return impl::make_prefix_suffix_test_error_message<true>(input, suffix);
-  }
-};
-
-template <class PrefixT>
-struct starts_with_range_t : validator_tag_t {
-  meta_span<PrefixT> prefix;
-
-  template <impl::forward_range_comparable_with<PrefixT> InputT>
-  constexpr bool test(const InputT& input) const
-  {
-    return std::ranges::starts_with(input, prefix, generic_equal);
-  }
-
-  template <impl::forward_range_comparable_with<meta_span<PrefixT>> InputT>
-  constexpr bool test(const InputT& input) const
-  {
-    if (std::ranges::empty(input)) {
-      return false;
-    }
-    return generic_equal(*std::ranges::begin(input), prefix);
-  }
-
-  template <class InputT>
-  constexpr auto make_error_message(const InputT& input) const -> std::string
-  {
-    return impl::make_prefix_suffix_test_error_message<false>(input, prefix);
-  }
-};
-
-template <class SuffixT>
-struct ends_with_range_t : validator_tag_t {
-  meta_span<SuffixT> suffix;
-
-  template <impl::forward_range_comparable_with<SuffixT> InputT>
-  constexpr bool test(const InputT& input) const
-  {
-    return std::ranges::ends_with(input, suffix, generic_equal);
-  }
-
-  template <impl::forward_range_comparable_with<meta_span<SuffixT>> InputT>
-  constexpr bool test(const InputT& input) const
-  {
-    if (std::ranges::empty(input)) {
-      return false;
-    }
-    return generic_equal(*impl::last_iter(input), suffix);
-  }
-
-  template <class InputT>
-  constexpr auto make_error_message(const InputT& input) const -> std::string
-  {
-    return impl::make_prefix_suffix_test_error_message<true>(input, suffix);
-  }
-};
-
-struct make_starts_with_t : impl::validator_maker_tag_t {
-  template <std::ranges::forward_range R>
-  static consteval auto operator()(const R& values)
-  {
-    auto span_or_sv = to_structured(values);
-    if constexpr (is_char_type_v<std::ranges::range_value_t<R>>) {
-      return starts_with_string_t{.prefix = span_or_sv};
+    const auto& cur_value = get_ith_flattened_nsdm<I>(obj);
+    if constexpr (impl::nsdm_relation_tag_type<PrefixSuffixT>) {
+      const auto& prefix_or_suffix_value = PrefixSuffixT::template get<I>(obj);
+      return impl::test_prefix_or_suffix<IsSuffix>(
+        cur_value, prefix_or_suffix_value);
     } else {
-      return starts_with_range_t{.prefix = span_or_sv};
+      return impl::test_prefix_or_suffix<IsSuffix>(cur_value, prefix_or_suffix);
     }
+  }
+
+  template <size_t I, class T>
+  constexpr auto make_error_message_of_ith_nsdm(const T& obj) const
+    -> std::string
+  {
+    using cur_nsdm_type = std::remove_cvref_t<ith_flattened_nsdm_type_t<I, T>>;
+    constexpr auto input_is_string = is_string_like_v<cur_nsdm_type>;
+
+    const auto& cur_value = get_ith_flattened_nsdm<I>(obj);
+    auto is_empty = impl::is_empty(cur_value);
+    if (is_empty != impl::is_empty_result::non_empty) {
+      return input_is_string ? "Input string is empty" : "Input range is empty";
+    }
+    auto res = std::string{input_is_string ? "Input string " : "Input range "};
+    if constexpr (is_generic_to_string_invocable_v<cur_nsdm_type>) {
+      res += generic_to_display_string(cur_value);
+      res += ' ';
+    }
+    res += IsSuffix ? "does not end with " : "does not start with ";
+
+    if constexpr (impl::nsdm_relation_tag_type<PrefixSuffixT>) {
+      auto name = PrefixSuffixT::template get_name<T>(I);
+      impl::dump_nsdm(&res, name, PrefixSuffixT::template get<I>(obj));
+    } else {
+      constexpr auto alt = std::string_view{"specified value(s)"};
+      res += generic_to_display_string(prefix_or_suffix, alt);
+    }
+    return res;
+  }
+};
+
+template <bool IsSuffix>
+struct make_starts_or_ends_with_t : impl::validator_maker_tag_t {
+  static consteval auto operator()(const auto& values)
+  {
+    // Including the cases with relation tags
+    auto v = to_structured(values);
+    using result_type = starts_or_ends_with_t<IsSuffix, decltype(v)>;
+    return result_type{.prefix_or_suffix = v};
   }
 
   template <class T>
   static consteval auto operator()(std::initializer_list<T> il) {
     return operator()(std::span{il});
   }
-
-  template <non_range T>
-  static consteval auto operator()(const T& value) {
-    return starts_with_single_t{.prefix_value = value};
-  }
 };
 
-struct make_ends_with_t : impl::validator_maker_tag_t {
-  template <std::ranges::forward_range R>
-  static consteval auto operator()(const R& values)
-  {
-    auto span_or_sv = to_structured(values);
-    if constexpr (is_char_type_v<std::ranges::range_value_t<R>>) {
-      return ends_with_string_t{.suffix = span_or_sv};
-    } else {
-      return ends_with_range_t{.suffix = span_or_sv};
-    }
-  }
-
-  template <class T>
-  static consteval auto operator()(std::initializer_list<T> il) {
-    return operator()(std::span{il});
-  }
-
-  template <non_range T>
-  static consteval auto operator()(const T& value) {
-    return ends_with_single_t{.suffix_value = value};
-  }
-};
-
-constexpr auto starts_with = make_starts_with_t{};
-constexpr auto ends_with = make_ends_with_t{};
+constexpr auto starts_with = make_starts_or_ends_with_t<false>{};
+constexpr auto ends_with = make_starts_or_ends_with_t<true>{};
 } // namespace reflect_cpp26::validators
 
 #endif // REFLECT_CPP26_VALIDATORS_LEAF_PREFIX_SUFFIX_TEST_HPP

@@ -106,6 +106,19 @@ constexpr auto are_string_like_of_same_char_type_v = false;
 template <string_like T, string_like... Args>
 constexpr auto are_string_like_of_same_char_type_v<T, Args...> =
   are_all_same_v<char_type_t<T>, char_type_t<Args>...>;
+
+/**
+ * Whether T is a C-style string, i.e. CharT* or const CharT*.
+ * Note that volatile CharT* is disallowed.
+ */
+template <class T>
+constexpr auto is_c_style_string_v = false;
+
+template <char_type T>
+constexpr auto is_c_style_string_v<T*> = !std::is_volatile_v<T>;
+
+template <class T>
+concept c_style_string = is_c_style_string_v<T>;
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_TYPE_TRAITS_STRING_LIKE_TYPES_HPP

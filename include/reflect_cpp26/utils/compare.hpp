@@ -81,13 +81,13 @@ constexpr bool is_operator_3way_comparable_v =
     { t <=> u } -> three_way_comparison_result;
   };
 
-#define REFLECT_CPP26_UTILITY_MAKE_COMPARISON_TRAITS_TYPE(type)     \
-  template <class T, class U>                                       \
-  struct is_##type##_comparable                                     \
-    : std::bool_constant<is_##type##_comparable_v<T, U>> {};        \
-                                                                    \
-  template <class T, class U>                                       \
-  concept type##_comparable_with = is_##type##_comparable_v<T, U>;
+#define REFLECT_CPP26_UTILITY_MAKE_COMPARISON_TRAITS_TYPE(type)               \
+  template <class T, class U>                                                 \
+  struct is_##type##_comparable                                               \
+    : std::bool_constant<is_##type##_comparable_v<T, U>> {};                  \
+                                                                              \
+  template <class T, class... Us>                                             \
+  concept type##_comparable_with = (is_##type##_comparable_v<T, Us> && ...);
 
 REFLECT_CPP26_UTILITY_MAKE_COMPARISON_TRAITS_TYPE(operator_eq)
 REFLECT_CPP26_UTILITY_MAKE_COMPARISON_TRAITS_TYPE(operator_ne)

@@ -143,6 +143,14 @@ constexpr auto cmp_three_way = cmp_three_way_t{};
 template <class R>
 constexpr auto in_range = in_range_t<R>{};
 
+struct identity_t {
+  template <class T>
+  static constexpr decltype(auto) operator()(T&& value) {
+    return std::forward<T>(value);
+  }
+};
+constexpr auto identity = identity_t{};
+
 struct to_underlying_t {
   template <enum_type E>
   static constexpr auto operator()(E e) {

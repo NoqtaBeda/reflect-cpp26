@@ -26,11 +26,8 @@
 #if __cplusplus
 #define REFLECT_CPP26_VALIDATOR(field, ...)         \
   [[ =[] {                                          \
-    constexpr auto maker = []() {                   \
-      using namespace ::reflect_cpp26::validators;  \
-      return field;                                 \
-    }();                                            \
-    return maker(__VA_ARGS__);                      \
+    using namespace ::reflect_cpp26::validators;    \
+    return field(__VA_ARGS__);                      \
   }() ]]
 #else
 #define REFLECT_CPP26_VALIDATOR(...) // No-op

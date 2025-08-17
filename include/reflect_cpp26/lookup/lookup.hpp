@@ -115,7 +115,7 @@ consteval auto lookup_type_members_by_name(
 {
   auto res = std::vector<std::meta::info>{};
   impl::lookup::lookup_type_members(res, T, [&pred](std::meta::info m) {
-    return has_identifier(m) && pred(identifier_of(m));
+    return has_identifier(m) && pred(std::meta::identifier_of(m));
   });
   return res;
 }
@@ -131,7 +131,7 @@ consteval auto lookup_namespace_members_by_name(
   auto res = std::vector<std::meta::info>{};
   impl::lookup::lookup_namespace_members(res, ns,
     [&pred](std::meta::info m) {
-      return has_identifier(m) && pred(identifier_of(m));
+      return has_identifier(m) && pred(std::meta::identifier_of(m));
     });
   return res;
 }

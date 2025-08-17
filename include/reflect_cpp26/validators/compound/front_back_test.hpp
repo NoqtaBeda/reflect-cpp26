@@ -23,7 +23,7 @@
 #ifndef REFLECT_CPP26_VALIDATORS_COMPOUND_FRONT_BACK_TEST_HPP
 #define REFLECT_CPP26_VALIDATORS_COMPOUND_FRONT_BACK_TEST_HPP
 
-#include <reflect_cpp26/validators/impl/maker_common.hpp>
+#include <reflect_cpp26/validators/impl/maker.hpp>
 #include <ranges>
 
 namespace reflect_cpp26::validators {
@@ -32,7 +32,6 @@ struct front_validator_t : validator_tag_t {
   Nested nested;
 
   template <std::ranges::forward_range InputT>
-    requires (validator_of<Nested, std::ranges::range_value_t<InputT>>)
   constexpr bool test(const InputT& input) const
   {
     if (std::ranges::empty(input)) {
@@ -42,7 +41,6 @@ struct front_validator_t : validator_tag_t {
   }
 
   template <std::ranges::forward_range InputT>
-    requires (validator_of<Nested, std::ranges::range_value_t<InputT>>)
   constexpr auto make_error_message(const InputT& input) const -> std::string
   {
     if (std::ranges::empty(input)) {
@@ -58,7 +56,6 @@ struct back_validator_t : validator_tag_t {
   Nested nested;
 
   template <std::ranges::bidirectional_range InputT>
-    requires (validator_of<Nested, std::ranges::range_value_t<InputT>>)
   constexpr bool test(const InputT& input) const
   {
     if (std::ranges::empty(input)) {
@@ -68,7 +65,6 @@ struct back_validator_t : validator_tag_t {
   }
 
   template <std::ranges::bidirectional_range InputT>
-    requires (validator_of<Nested, std::ranges::range_value_t<InputT>>)
   constexpr auto make_error_message(const InputT& input) const -> std::string
   {
     if (std::ranges::empty(input)) {

@@ -99,17 +99,17 @@ REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(union)
 template <class T>
 concept class_or_union_type = std::is_class_v<T> || std::is_union_v<T>;
 
-template <class T>
-concept non_empty_class_type = std::is_class_v<T> && !std::is_empty_v<T>;
+#define REFLECT_CPP26_DEFINE_CONCEPT_WITH_CVREF(ns, concept_name) \
+  template <class T>                                              \
+  concept concept_name##_or_ref =                                 \
+    ns::concept_name<std::remove_reference_t<T>>;                 \
+                                                                  \
+  template <class T>                                              \
+  concept concept_name##_or_cvref =                               \
+    ns::concept_name<std::remove_cvref_t<T>>;
 
-#define REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(category) \
-  template <class T>                                                    \
-  concept category##_type_or_with_ref =                                 \
-    category##_type<std::remove_reference_t<T>>;                        \
-                                                                        \
-  template <class T>                                                    \
-  concept category##_type_or_with_cvref =                               \
-    category##_type<std::remove_cvref_t<T>>;
+#define REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(category)   \
+  REFLECT_CPP26_DEFINE_CONCEPT_WITH_CVREF(reflect_cpp26, category##_type)
 
 REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(abstract)
 REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(aggregate)
@@ -136,7 +136,8 @@ REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(union)
 REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(
   unique_object_representations)
 REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(class_or_union)
-REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(non_empty_class)
+
+#undef REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_UTILS_CONCEPTS_HPP

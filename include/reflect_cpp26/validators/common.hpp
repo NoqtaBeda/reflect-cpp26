@@ -36,13 +36,6 @@ constexpr auto is_validator_v = std::derived_from<T, validator_tag_t>;
 template <class T>
 concept validator = is_validator_v<T>;
 
-template <class T, class InputT>
-concept validator_of = is_validator_v<T> &&
-  requires (const T& validator, const InputT& input) {
-    { validator.test(input) } -> std::same_as<bool>;
-    { validator.make_error_message(input) } -> std::same_as<std::string>;
-  };
-
 namespace impl {
 consteval auto get_validators_list(std::meta::info member)
 {

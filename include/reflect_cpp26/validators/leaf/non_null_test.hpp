@@ -23,14 +23,14 @@
 #ifndef REFLECT_CPP26_VALIDATORS_LEAF_NON_NULL_TEST_HPP
 #define REFLECT_CPP26_VALIDATORS_LEAF_NON_NULL_TEST_HPP
 
-#include <reflect_cpp26/validators/impl/maker_common.hpp>
+#include <reflect_cpp26/validators/impl/trivial_validator.hpp>
 #include <any>
 #include <memory>
 #include <optional>
 
 namespace reflect_cpp26::validators {
 struct is_non_null_validator_t
-  : impl::validator_without_params<is_non_null_validator_t>
+  : impl::trivial_validator_without_params<is_non_null_validator_t>
 {
   template <class T>
   static constexpr bool test(T* ptr) {

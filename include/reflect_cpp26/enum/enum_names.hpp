@@ -35,7 +35,7 @@ constexpr auto enum_names()
   auto res = std::array<std::string_view, enum_count_v<E>>{};
   auto index = 0zU;
   for (auto e: enum_meta_entries_v<E, Order>) {
-    res[index++] = std::define_static_string(identifier_of(e));
+    res[index++] = std::define_static_string(std::meta::identifier_of(e));
   }
   return res;
 }
@@ -46,7 +46,7 @@ constexpr auto enum_ic_names()
   auto res = std::array<std::string_view, enum_count_v<E>>{};
   auto index = 0zU;
   for (auto e: enum_meta_entries_v<E, Order>) {
-    auto s = ascii_tolower(identifier_of(e));
+    auto s = ascii_tolower(std::meta::identifier_of(e));
     res[index++] = std::define_static_string(s);
   }
   return res;

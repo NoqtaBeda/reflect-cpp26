@@ -40,11 +40,56 @@ concept same_as_one_of = is_same_as_one_of_v<T, Args...>;
 template <class T, class... Args>
 concept same_as_none_of = !is_same_as_one_of_v<T, Args...>;
 
+template <class T, class... Args>
+constexpr bool is_same_as_one_of_without_cv_v =
+  (std::is_same_v<std::remove_cv_t<T>, std::remove_cv_t<Args>> || ...);
+
+template <class T, class... Args>
+concept same_as_one_of_without_cv = is_same_as_one_of_without_cv_v<T, Args...>;
+
+template <class T, class... Args>
+concept same_as_none_of_without_cv =
+  !is_same_as_one_of_without_cv_v<T, Args...>;
+
+template <class T, class... Args>
+constexpr bool is_same_as_one_of_without_cvref_v =
+  (std::is_same_v<std::remove_cvref_t<T>, std::remove_cvref_t<Args>> || ...);
+
+template <class T, class... Args>
+concept same_as_one_of_without_cvref =
+  is_same_as_one_of_without_cvref_v<T, Args...>;
+
+template <class T, class... Args>
+concept same_as_none_of_without_cvref =
+  !is_same_as_one_of_without_cvref_v<T, Args...>;
+
 /**
  * Whether T and Args... are all the exactly same.
  */
 template <class T, class... Args>
 constexpr bool are_all_same_v = (std::is_same_v<T, Args> && ...);
+
+template <class T, class U>
+concept same_as = std::is_same_v<T, U>;
+
+template <class T, class U>
+concept same_as_without_cv =
+  std::is_same_v<std::remove_cv_t<T>, std::remove_cv_t<U>>;
+
+template <class T, class U>
+concept same_as_without_cvref =
+  std::is_same_v<std::remove_cvref_t<T>, std::remove_cvref_t<U>>;
+
+template <class T, class U>
+concept not_same_as = !std::is_same_v<T, U>;
+
+template <class T, class U>
+concept not_same_as_without_cv =
+  !std::is_same_v<std::remove_cv_t<T>, std::remove_cv_t<U>>;
+
+template <class T, class U>
+concept not_same_as_without_cvref =
+  !std::is_same_v<std::remove_cvref_t<T>, std::remove_cvref_t<U>>;
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_TYPE_TRAITS_TYPE_COMPARISON_HPP

@@ -47,14 +47,14 @@ enum class flags : int {
 };
 
 struct foo_t {
-  VALIDATOR(enum_is_contained)
+  VALIDATOR(is_valid_enum)
   values v;
 
-  VALIDATOR(enum_flags_is_contained)
+  VALIDATOR(is_valid_enum_flags)
   flags f;
 };
 
-TEST(Validators, LeafEnumContains)
+TEST(Validators, LeafEnumIsValid)
 {
   LAZY_OBJECT(obj_ok_1, foo_t{.v = values::one, .f = static_cast<flags>(13)});
   EXPECT_TRUE_STATIC(validate_public_nsdm(obj_ok_1));

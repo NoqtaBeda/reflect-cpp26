@@ -38,9 +38,8 @@ constexpr bool validate_members(const T& obj)
   template for (constexpr auto m: flattened_nsdm_v<Mode, T>) {
     template for (constexpr auto v: validators_of_member_v<m.member>) {
       constexpr auto cur_validator = extract<v>();
-      if (!cur_validator.test(obj.[:m.member:])) {
-        return false;
-      }
+      auto test_res = cur_validator.template test_ith_nsdm<m.index>(obj);
+      if (!test_res) { return false; }
     }
   }
   return true;
@@ -72,13 +71,14 @@ constexpr bool validate_members(const T& obj, std::string* error_output)
   template for (constexpr auto m: flattened_nsdm_v<Mode, T>) {
     template for (constexpr auto v: validators_of_member_v<m.member>) {
       constexpr auto cur_validator = extract<v>();
-      if (!cur_validator.test(obj.[:m.member:])) {
-        if (error_output != nullptr) {
-          *error_output += "Invalid member '";
-          *error_output += identifier_of(m.member);
-          *error_output += "': ";
-          *error_output += cur_validator.make_error_message(obj.[:m.member:]);
-        }
+      auto test_res = cur_validator.template test_ith_nsdm<m.index>(obj);
+      if (!test_res) {
+        *error_output += "Invalid member '";
+        *error_output +=
+          reflect_cpp26::identifier_of(m.member, "(anonymous data member)");
+        *error_output += "': ";
+        *error_output +=
+          cur_validator.template make_error_message_of_ith_nsdm<m.index>(obj);
         return false;
       }
     }
@@ -117,18 +117,20 @@ constexpr bool validate_members_verbose(const T& obj, std::string* error_output)
 
     template for (constexpr auto v: validators_of_member_v<m.member>) {
       constexpr auto cur_validator = extract<v>();
-      auto cur_res = cur_validator.test(obj.[:m.member:]);
-      if (!cur_res) {
+      auto test_res = cur_validator.template test_ith_nsdm<m.index>(obj);
+      if (!test_res) {
         if (res_cur_value) {
           *error_output += "Invalid member '";
-          *error_output += std::meta::identifier_of(m.member);
+          *error_output +=
+            reflect_cpp26::identifier_of(m.member, "(anonymous data member)");
           *error_output += "':\n";
         }
         *error_output += "* ";
-        *error_output += cur_validator.make_error_message(obj.[:m.member:]);
+        *error_output +=
+          cur_validator.template make_error_message_of_ith_nsdm<m.index>(obj);
         *error_output += '\n';
       }
-      res_cur_value &= cur_res;
+      res_cur_value &= test_res;
     }
     res &= res_cur_value;
   }

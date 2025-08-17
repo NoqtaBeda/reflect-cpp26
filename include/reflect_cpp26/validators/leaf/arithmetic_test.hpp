@@ -25,7 +25,7 @@
 
 #include <reflect_cpp26/utils/concepts.hpp>
 #include <reflect_cpp26/utils/to_string.hpp>
-#include <reflect_cpp26/validators/impl/maker_common.hpp>
+#include <reflect_cpp26/validators/impl/trivial_validator.hpp>
 #include <cmath>
 
 namespace reflect_cpp26::validators {
@@ -54,7 +54,7 @@ constexpr auto is_finite(T value)
 
 #define REFLECT_CPP26_DEFINE_ARITHMETIC_RANGE_VALIDATOR_T(name, cond)     \
   struct name##_validator_t                                               \
-      : impl::validator_without_params<name##_validator_t> {              \
+      : impl::trivial_validator_without_params<name##_validator_t> {      \
     template <arithmetic_type InputT>                                     \
     constexpr bool test(InputT input) const { return (cond); }            \
                                                                           \

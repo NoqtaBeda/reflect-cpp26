@@ -42,7 +42,7 @@ constexpr auto byte_to_hex_table_v =
   "c0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedf"
   "e0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff";
 
-constexpr auto to_string(char8_t value, bool quoted = false) -> std::string
+constexpr auto to_string_impl(char8_t value, bool quoted = false) -> std::string
 {
   if (ascii_isprint(value)) {
     if (quoted) {
@@ -70,11 +70,12 @@ constexpr auto to_string(char8_t value, bool quoted = false) -> std::string
 }
 
 template <std::endian Endian>
-constexpr auto to_string(char16_t value, bool quoted = false) -> std::string
+constexpr auto to_string_impl(char16_t value, bool quoted = false)
+  -> std::string
 {
   static_assert(sizeof(char16_t) == 2, "Unsupported char16_t");
   if (in_range<char8_t>(value)) {
-    return to_string(static_cast<char8_t>(value), quoted);
+    return to_string_impl(static_cast<char8_t>(value), quoted);
   }
   auto bytes = std::bit_cast<std::array<uint8_t, 2>>(value);
   auto res = std::string{quoted ? "'\\u****'" : "\\u****"};
@@ -97,11 +98,12 @@ constexpr auto to_string(char16_t value, bool quoted = false) -> std::string
 }
 
 template <std::endian Endian>
-constexpr auto to_string(char32_t value, bool quoted = false) -> std::string
+constexpr auto to_string_impl(char32_t value, bool quoted = false)
+  -> std::string
 {
   static_assert(sizeof(char32_t) == 4, "Unsupported char32_t");
   if (in_range<char16_t>(value)) {
-    return to_string<Endian>(static_cast<char16_t>(value), quoted);
+    return to_string_impl<Endian>(static_cast<char16_t>(value), quoted);
   }
   auto bytes = std::bit_cast<std::array<uint8_t, 4>>(value);
   auto res = std::string{quoted ? "'\\U********'" : "\\U********"};
@@ -132,28 +134,83 @@ constexpr auto to_string(char32_t value, bool quoted = false) -> std::string
 }
 
 template <class CharT>
-constexpr auto char_to_string_dispatch(CharT value, bool quoted) -> std::string
+constexpr auto char_to_string_impl_dispatch(CharT value, bool quoted)
+  -> std::string
 {
   if constexpr (sizeof(CharT) == 1) {
-    return to_string(static_cast<char8_t>(value), quoted);
+    return to_string_impl(static_cast<char8_t>(value), quoted);
   } else if constexpr (sizeof(CharT) == 2) {
-    return to_string<std::endian::native>(static_cast<char16_t>(value), quoted);
+    return to_string_impl<std::endian::native>(
+      static_cast<char16_t>(value), quoted);
   } else {
     static_assert(sizeof(CharT) == 4, "Unknown char type.");
-    return to_string<std::endian::native>(static_cast<char32_t>(value), quoted);
+    return to_string_impl<std::endian::native>(
+      static_cast<char32_t>(value), quoted);
   }
 }
 
-template <class... Args>
-constexpr bool try_to_chars(std::string* dest, Args... args)
+constexpr auto write_display_string(
+  const char* input_cur, const char* input_end,
+  char* buffer_cur, const char* buffer_end) -> std::pair<const char*, char*>
 {
-  auto [ptr, ec] = std::to_chars(
-    dest->data(), dest->data() + dest->size(), args...);
-  if (std::errc{} == ec) {
-    dest->resize(ptr - dest->data());
-    return true;
+  constexpr auto n_xdigits_per_byte = 2;
+  // spc: special control
+  constexpr char spc_chars[] =
+    {'\0', '\t', '\n', '\v', '\f', '\r', '"', '\\'};
+  constexpr char spc_chars_display[] =
+    { '0',  't',  'n',  'v',  'f',  'r', '"', '\\'};
+
+  for (; input_cur < input_end && buffer_cur < buffer_end; ++input_cur) {
+    // (1) Special control characters (see above)
+    auto spc_pos = std::ranges::find(spc_chars, *input_cur);
+    if (std::end(spc_chars) != spc_pos) {
+      if (buffer_end - buffer_cur < 2) {
+        break; // 2 : length of "\0" or "\t" etc.
+      }
+      *buffer_cur++ = '\\';
+      *buffer_cur++ = spc_chars_display[spc_pos - spc_chars];
+      continue;
+    }
+    // (2) Printable characters (including whitespace ' ')
+    if (ascii_isprint(*input_cur)) {
+      *buffer_cur++ = *input_cur;
+      continue;
+    }
+    // (3) Other non-printable characters
+    if (buffer_end - buffer_cur < 4) {
+      break; // 4 : length of "\xAB", where AB represents two hex digits
+    }
+    buffer_cur = std::copy_n("\\x", 2, buffer_cur);
+    buffer_cur = std::copy_n(
+      byte_to_hex_table_v + (uint8_t)(*input_cur) * n_xdigits_per_byte,
+      n_xdigits_per_byte, buffer_cur);
   }
-  return false;
+  return std::pair{input_cur, buffer_cur};
+}
+
+constexpr auto to_display_string_impl(std::string_view string) -> std::string
+{
+  if (string.empty()) {
+    return "\"\"";
+  }
+  auto res = std::string{"\""};
+  auto temp = std::string{};
+  const auto* input_cur = string.data();
+  const auto* input_end = input_cur + string.size();
+
+  constexpr auto extra_reserved_size = 16zU;
+  for (; input_cur != input_end; ) {
+    temp.resize_and_overwrite(string.size() + extra_reserved_size,
+      [&input_cur, input_end](char* buffer_cur, size_t buffer_length) {
+        const auto* buffer_begin = buffer_cur;
+        std::tie(input_cur, buffer_cur) = write_display_string(
+          input_cur, input_end, buffer_cur, buffer_cur + buffer_length);
+        return buffer_cur - buffer_begin;
+      });
+    res += temp;
+  }
+  res.push_back('"');
+  return res;
 }
 } // namespace impl
 
@@ -173,7 +230,7 @@ constexpr auto to_display_string(bool value) -> std::string {
  */
 template <char_type CharT>
 constexpr auto to_string(CharT value, bool quoted = false) -> std::string {
-  return impl::char_to_string_dispatch(value, quoted);
+  return impl::char_to_string_impl_dispatch(value, quoted);
 }
 
 template <char_type CharT>
@@ -274,72 +331,6 @@ constexpr auto to_display_string(FloatT value) -> std::string {
   return to_string(value);
 }
 
-namespace impl {
-constexpr auto write_display_string(
-  const char* input_cur, const char* input_end,
-  char* buffer_cur, const char* buffer_end) -> std::pair<const char*, char*>
-{
-  constexpr auto n_xdigits_per_byte = 2;
-  // spc: special control
-  constexpr char spc_chars[] =
-    {'\0', '\t', '\n', '\v', '\f', '\r', '"', '\\'};
-  constexpr char spc_chars_display[] =
-    { '0',  't',  'n',  'v',  'f',  'r', '"', '\\'};
-
-  for (; input_cur < input_end && buffer_cur < buffer_end; ++input_cur) {
-    // (1) Special control characters (see above)
-    auto spc_pos = std::ranges::find(spc_chars, *input_cur);
-    if (std::end(spc_chars) != spc_pos) {
-      if (buffer_end - buffer_cur < 2) {
-        break; // 2 : length of "\0" or "\t" etc.
-      }
-      *buffer_cur++ = '\\';
-      *buffer_cur++ = spc_chars_display[spc_pos - spc_chars];
-      continue;
-    }
-    // (2) Printable characters (including whitespace ' ')
-    if (ascii_isprint(*input_cur)) {
-      *buffer_cur++ = *input_cur;
-      continue;
-    }
-    // (3) Other non-printable characters
-    if (buffer_end - buffer_cur < 4) {
-      break; // 4 : length of "\xAB", where AB represents two hex digits
-    }
-    buffer_cur = std::copy_n("\\x", 2, buffer_cur);
-    buffer_cur = std::copy_n(
-      byte_to_hex_table_v + (uint8_t)(*input_cur) * n_xdigits_per_byte,
-      n_xdigits_per_byte, buffer_cur);
-  }
-  return std::pair{input_cur, buffer_cur};
-}
-
-constexpr auto to_display_string(std::string_view string) -> std::string
-{
-  if (string.empty()) {
-    return "\"\"";
-  }
-  auto res = std::string{"\""};
-  auto temp = std::string{};
-  const auto* input_cur = string.data();
-  const auto* input_end = input_cur + string.size();
-
-  constexpr auto extra_reserved_size = 16zU;
-  for (; input_cur != input_end; ) {
-    temp.resize_and_overwrite(string.size() + extra_reserved_size,
-      [&input_cur, input_end](char* buffer_cur, size_t buffer_length) {
-        const auto* buffer_begin = buffer_cur;
-        std::tie(input_cur, buffer_cur) = write_display_string(
-          input_cur, input_end, buffer_cur, buffer_cur + buffer_length);
-        return buffer_cur - buffer_begin;
-      });
-    res += temp;
-  }
-  res.push_back('"');
-  return res;
-}
-} // namespace impl
-
 /**
  * to_string(const char*)
  */
@@ -349,7 +340,9 @@ constexpr auto to_string(const char* string, bool display_style = false)
   if (string == nullptr) {
     return display_style ? "\"\"" : "";
   }
-  return display_style ? impl::to_display_string(string) : std::string{string};
+  return display_style
+    ? impl::to_display_string_impl(string)
+    : std::string{string};
 }
 
 constexpr auto to_display_string(const char* string) -> std::string {
@@ -365,7 +358,7 @@ constexpr auto to_string(
   bool display_style = false) -> std::string
 {
   auto sv = std::string_view{string.data(), string.size()};
-  return display_style ? impl::to_display_string(sv) : std::string{sv};
+  return display_style ? impl::to_display_string_impl(sv) : std::string{sv};
 }
 
 template <class Traits, class Alloc>
@@ -384,7 +377,7 @@ constexpr auto to_string(
   -> std::string
 {
   if (display_style) {
-    return impl::to_display_string({string.data(), string.size()});
+    return impl::to_display_string_impl({string.data(), string.size()});
   }
   constexpr auto is_std_string = std::is_same_v<
     std::remove_cvref_t<decltype(string)>, std::string>;
@@ -411,7 +404,7 @@ constexpr auto to_string(
   -> std::string
 {
   auto sv = std::string_view{string.data(), string.size()};
-  return display_style ? impl::to_display_string(sv) : std::string{sv};
+  return display_style ? impl::to_display_string_impl(sv) : std::string{sv};
 }
 
 template <class Traits>
@@ -424,16 +417,26 @@ constexpr auto to_display_string(
 /**
  * to_string(meta_string_view)
  */
-constexpr auto to_string(meta_string_view string, bool display_style = false)
-  -> std::string
+constexpr auto to_string(
+  meta_string_view string, bool display_style = false) -> std::string
 {
   auto sv = std::string_view{string.data(), string.size()};
-  return display_style ? impl::to_display_string(sv) : std::string{sv};
+  return display_style ? impl::to_display_string_impl(sv) : std::string{sv};
 }
 
-constexpr auto to_display_string(meta_string_view string) -> std::string {
+constexpr auto to_display_string(meta_string_view string)
+  -> std::string {
   return to_string(string, true);
 }
+
+/*
+ * to_string(T*) is disabled in case of ambiguity with C-style arrays.
+ */
+template <not_same_as_without_cv<char> T>
+auto to_string(T* ptr) -> std::string = delete;
+
+template <not_same_as_without_cv<char> T>
+auto to_display_string(T* ptr) -> std::string = delete;
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_UTILS_TO_STRING_HPP

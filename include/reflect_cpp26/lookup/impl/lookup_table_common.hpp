@@ -246,7 +246,7 @@ consteval auto invoke_filter_fn(
   } else {
     static_assert(std::is_invocable_v<FilterFn, std::string_view>);
     if (has_identifier(member)) {
-      return filter_fn(identifier_of(member));
+      return filter_fn(std::meta::identifier_of(member));
     }
     return std::nullopt;
   }

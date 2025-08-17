@@ -98,7 +98,7 @@ struct bar_t : public foo_t {
   VALIDATOR(in_closed_range, 0, 42)
   int a;
 
-  bar_t(int x, std::initializer_list<int> y, int z, int a, int b)
+  constexpr bar_t(int x, std::initializer_list<int> y, int z, int a, int b)
     : foo_t(x, y, z), a(a), b(b) {}
 
 private:
@@ -175,7 +175,7 @@ struct baz_t : protected foo_t {
   VALIDATOR(in_closed_range, 0, 42)
   int a;
 
-  baz_t(int x, std::initializer_list<int> y, int z, int a, int b)
+  constexpr baz_t(int x, std::initializer_list<int> y, int z, int a, int b)
     : foo_t(x, y, z), a(a), b(b) {}
 
 private:

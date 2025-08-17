@@ -23,11 +23,11 @@
 #ifndef REFLECT_CPP26_VALIDATORS_COMPOUND_SIZE_TEST_HPP
 #define REFLECT_CPP26_VALIDATORS_COMPOUND_SIZE_TEST_HPP
 
-#include <reflect_cpp26/validators/impl/maker_common.hpp>
+#include <reflect_cpp26/validators/impl/maker.hpp>
 #include <ranges>
 
 namespace reflect_cpp26::validators {
-template <validator_of<size_t> Nested>
+template <class Nested>
 struct size_validator_t : validator_tag_t {
   Nested nested;
 

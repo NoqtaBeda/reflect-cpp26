@@ -24,30 +24,62 @@
 #define REFLECT_CPP26_VALIDATORS_LEAF_SIZE_TEST_HPP
 
 #include <reflect_cpp26/utils/to_string.hpp>
-#include <reflect_cpp26/validators/impl/maker_common.hpp>
+#include <reflect_cpp26/validators/impl/trivial_validator.hpp>
+#include <reflect_cpp26/validators/member_relation_tags.hpp>
 #include <ranges>
 
 namespace reflect_cpp26::validators {
+template <class ExpectedSize>
 struct size_is_validator_t : validator_tag_t {
-  size_t expected_size;
+  [[maybe_unused]] ExpectedSize expected_size;
 
-  // O(1) for sized range, O(n) otherwise.
+private:
   template <std::ranges::forward_range InputT>
-  constexpr bool test(const InputT& input) const {
-    return std::ranges::distance(input) == expected_size;
+  static constexpr bool test(const InputT& input, size_t expected_size)
+  {
+    auto actual_size = std::ranges::distance(input);
+    return actual_size == expected_size;
   }
 
-  template <std::ranges::forward_range InputT>
-  constexpr auto make_error_message(const InputT& input) const -> std::string
+public:
+  // O(1) for sized range, O(n) otherwise.
+  template <size_t I, partially_flattenable_class T>
+  constexpr bool test_ith_nsdm(const T& obj) const
   {
-    auto size = std::ranges::distance(input);
-    return std::string{"Expects size to be "} + to_string(expected_size)
-      + ", while actual size is " + to_string(size);
+    const auto& cur_range = get_ith_flattened_nsdm<I>(obj);
+    if constexpr (impl::nsdm_relation_tag_type<ExpectedSize>) {
+      auto expected_size_value = ExpectedSize::template get<I>(obj);
+      return test(cur_range, expected_size_value);
+    } else {
+      return test(cur_range, expected_size);
+    }
+  }
+
+  template <size_t I, class T>
+  constexpr auto make_error_message_of_ith_nsdm(const T& obj) const
+    -> std::string
+  {
+    const auto& cur_range = get_ith_flattened_nsdm<I>(obj);
+    auto actual_size = std::ranges::distance(cur_range);
+
+    auto res = std::string{"Expects size to be "};
+    if constexpr (impl::nsdm_relation_tag_type<ExpectedSize>) {
+      auto expected_size_value = ExpectedSize::template get<I>(obj);
+      res += "member '";
+      res += ExpectedSize::template get_name<T>(I);
+      res += "' which is ";
+      res += to_string(expected_size_value);
+    } else {
+      res += to_string(expected_size);
+    }
+    res += ", while actual size is ";
+    res += to_string(actual_size);
+    return res;
   }
 };
 
 struct is_not_empty_validator_t
-  : impl::validator_without_params<is_not_empty_validator_t>
+  : impl::trivial_validator_without_params<is_not_empty_validator_t>
 {
   template <std::ranges::forward_range T>
   static constexpr bool test(const T& input) {
@@ -63,6 +95,10 @@ struct is_not_empty_validator_t
 struct make_size_is_t : impl::validator_maker_tag_t {
   static consteval auto operator()(size_t n) {
     return size_is_validator_t{.expected_size = n};
+  }
+
+  static consteval auto operator()(impl::nsdm_relation_tag_type auto tag) {
+    return size_is_validator_t{.expected_size = tag};
   }
 };
 

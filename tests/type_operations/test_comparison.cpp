@@ -39,90 +39,91 @@ template <class FloatingT>
 constexpr auto nan_v = std::numeric_limits<FloatingT>::quiet_NaN();
 
 template <class T, class U>
-constexpr auto check_equality(const T& expected, const U& actual) -> bool
+constexpr bool check_equality(const T& expected, const U& actual)
 {
   static_assert(std::is_same_v<T, U>, "Type mismatch.");
-  if consteval {
-    if (expected != actual) {
-      rfl::compile_error("Value mismatch.");
-    }
-    return true;
-  } else {
-    return expected == actual;
-  }
+  return expected == actual;
 }
 
 template <class T, class U>
-constexpr auto check_inequality(const T& unexpected, const U& actual) -> bool
+constexpr bool check_inequality(const T& unexpected, const U& actual)
 {
   static_assert(std::is_same_v<T, U>, "Type mismatch.");
-  if consteval {
-    if (unexpected == actual) {
-      rfl::compile_error("Unexpected value.");
-    }
-    return true;
-  } else {
-    return unexpected != actual;
-  }
+  return unexpected != actual;
 }
 
-// Arithmetic types
-// Between unsigned & character types
-static_assert(rfl::generic_equal(48u, u8'0'));
-static_assert(! rfl::generic_not_equal(48u, u8'0'));
-static_assert(check_equality(
-  std::strong_ordering::equal,
-  rfl::generic_compare_three_way(48u, u8'0')));
-static_assert(! rfl::generic_equal(40u, u8'0'));
-static_assert(rfl::generic_not_equal(40u, u8'0'));
-static_assert(check_equality(
-  std::strong_ordering::less,
-  rfl::generic_compare_three_way(40u, u8'0')));
-// Between signed & unsigned
-static_assert(rfl::generic_equal(2, 2u));
-static_assert(! rfl::generic_not_equal(2, 2u));
-static_assert(check_equality(
-  std::strong_ordering::equal,
-  rfl::generic_compare_three_way(2, 2u)));
-static_assert(! rfl::generic_equal(-1, 4294967295u));
-static_assert(rfl::generic_not_equal(-1, 4294967295u));
-static_assert(check_equality(
-  std::strong_ordering::less,
-  rfl::generic_compare_three_way(-1, 4294967295u)));
-// Between integral & floating point
-static_assert(rfl::generic_equal(2.0, 2));
-static_assert(! rfl::generic_not_equal(2.0, 2));
-static_assert(check_equality(
-  std::partial_ordering::equivalent,
-  rfl::generic_compare_three_way(2.0, 2)));
-static_assert(! rfl::generic_equal(3, 2.5));
-static_assert(rfl::generic_not_equal(3, 2.5));
-static_assert(check_equality(
-  std::partial_ordering::greater,
-  rfl::generic_compare_three_way(3, 2.5)));
-// Between floating points
-static_assert(rfl::generic_equal(1.5, 1.5f));
-static_assert(! rfl::generic_not_equal(1.5, 1.5f));
-static_assert(check_equality(
-  std::partial_ordering::equivalent,
-  rfl::generic_compare_three_way(1.5, 1.5f)));
-static_assert(! rfl::generic_equal(nan_v<double>, nan_v<double>));
-static_assert(rfl::generic_not_equal(nan_v<double>, nan_v<double>));
-static_assert(check_equality(
-  std::partial_ordering::unordered,
-  rfl::generic_compare_three_way(nan_v<double>, nan_v<double>)));
+TEST(TypeOperationsComparison, Arithmetic)
+{
+  // Between integer & character types
+  static_assert(rfl::generic_equal(48u, u8'0'));
+  static_assert(! rfl::generic_not_equal(48u, u8'0'));
+  static_assert(check_equality(
+    std::strong_ordering::equal,
+    rfl::generic_compare_three_way(48u, u8'0')));
 
-// Pointers
-constexpr auto int_value_1 = 1234;
-constexpr auto int_value_2 = 5678;
-static_assert(! rfl::generic_equal(&int_value_1, &int_value_2));
-static_assert(rfl::generic_not_equal(&int_value_1, &int_value_2));
-static_assert(! rfl::generic_equal(scanf, printf));
-static_assert(rfl::generic_not_equal(scanf, printf));
-static_assert(rfl::generic_equal(scanf, std::scanf));
-static_assert(! rfl::generic_not_equal(scanf, std::scanf));
+  static_assert(! rfl::generic_equal(40, u'0'));
+  static_assert(rfl::generic_not_equal(40, u'0'));
+  static_assert(check_equality(
+    std::strong_ordering::less,
+    rfl::generic_compare_three_way(40, u'0')));
 
-TEST(TypeOperationsComparison, Pointers) {
+  // Between signed & unsigned
+  static_assert(rfl::generic_equal(2, 2u));
+  static_assert(! rfl::generic_not_equal(2, 2u));
+  static_assert(check_equality(
+    std::strong_ordering::equal,
+    rfl::generic_compare_three_way(2, 2u)));
+
+  static_assert(! rfl::generic_equal(-1, 4294967295u));
+  static_assert(rfl::generic_not_equal(-1, 4294967295u));
+  static_assert(check_equality(
+    std::strong_ordering::less,
+    rfl::generic_compare_three_way(-1, 4294967295u)));
+
+  // Between integral & floating point
+  // Note that comparison result with FP types is std::partial_ordering.
+  static_assert(rfl::generic_equal(2.0, 2));
+  static_assert(! rfl::generic_not_equal(2.0, 2));
+  static_assert(check_equality(
+    std::partial_ordering::equivalent,
+    rfl::generic_compare_three_way(2.0, 2)));
+
+  static_assert(! rfl::generic_equal(3, 2.5));
+  static_assert(rfl::generic_not_equal(3, 2.5));
+  static_assert(check_equality(
+    std::partial_ordering::greater,
+    rfl::generic_compare_three_way(3, 2.5)));
+
+  // Between floating points
+  static_assert(rfl::generic_equal(1.5, 1.5f));
+  static_assert(! rfl::generic_not_equal(1.5, 1.5f));
+  static_assert(check_equality(
+    std::partial_ordering::equivalent,
+    rfl::generic_compare_three_way(1.5, 1.5f)));
+
+  static_assert(! rfl::generic_equal(nan_v<double>, nan_v<double>));
+  static_assert(rfl::generic_not_equal(nan_v<double>, nan_v<double>));
+  static_assert(check_equality(
+    std::partial_ordering::unordered,
+    rfl::generic_compare_three_way(nan_v<double>, nan_v<double>)));
+}
+
+TEST(TypeOperationsComparison, Pointers)
+{
+  // Compile-time comparison
+  constexpr auto int_value_1 = 1234;
+  constexpr auto int_value_2 = 5678;
+  static_assert(! rfl::generic_equal(&int_value_1, &int_value_2));
+  static_assert(rfl::generic_not_equal(&int_value_1, &int_value_2));
+
+  static_assert(! rfl::generic_equal(scanf, printf));
+  static_assert(rfl::generic_not_equal(scanf, printf));
+
+  static_assert(rfl::generic_equal(scanf, std::scanf));
+  static_assert(! rfl::generic_not_equal(scanf, std::scanf));
+
+  // Runtime comparison:
+  // int* vs. int*
   int arr[4] = {0, 1, 2, 3};
   EXPECT_TRUE(rfl::generic_equal(arr + 1, arr + 1));
   EXPECT_FALSE(rfl::generic_not_equal(arr + 1, arr + 1));
@@ -131,6 +132,9 @@ TEST(TypeOperationsComparison, Pointers) {
   EXPECT_EQ(std::strong_ordering::less,
             rfl::generic_compare_three_way(arr + 1, arr + 3));
 
+  // const char* vs. const char*: Compared by address.
+  // Same behavior as (str1 < str2).
+  // Note: such behavior is allowed yet discouraged due to semantic confusion.
   const char* str1 = "Hello\0Hello";
   const char* str2 = str1 + 6;
   EXPECT_FALSE(rfl::generic_equal(str1, str2));
@@ -139,6 +143,8 @@ TEST(TypeOperationsComparison, Pointers) {
     std::strong_ordering::less,
     rfl::generic_compare_three_way(str1, str2)));
 
+  // std::string_view vs. const char*: Compared by contents.
+  // Same behavior as std::string_view::operator<(const char*)
   EXPECT_TRUE(rfl::generic_equal(std::string_view{str1}, str2));
   EXPECT_FALSE(rfl::generic_not_equal(std::string_view{str1}, str2));
   EXPECT_TRUE(check_equality(
@@ -154,151 +160,180 @@ struct foo_t {
   void foo(int);
   void bar(int);
 };
-static_assert(rfl::generic_equal(&foo_t::x, &foo_t::x));
-static_assert(! rfl::generic_not_equal(&foo_t::x, &foo_t::x));
-static_assert(! rfl::generic_equal(&foo_t::x, &foo_t::y));
-static_assert(rfl::generic_not_equal(&foo_t::x, &foo_t::y));
-static_assert(! rfl::generic_equal(&foo_t::foo, &foo_t::bar));
-static_assert(rfl::generic_not_equal(&foo_t::foo, &foo_t::bar));
-// Member pointers are not 3-way comparable.
-static_assert(! rfl::is_less_comparable_v<
-  int foo_t::*, int foo_t::*>);
-static_assert(! rfl::is_generic_three_way_comparable_v<
-  int foo_t::*, int foo_t::*>);
-static_assert(! rfl::less_comparable_with<
-  void (foo_t::*)(int), void (foo_t::*)(int)>);
-static_assert(! rfl::generic_three_way_comparable_with<
-  void (foo_t::*)(int), void (foo_t::*)(int)>);
 
-// Enum types
-static_assert(! rfl::generic_equal(
-  std::errc{}, std::errc::connection_reset));
-static_assert(rfl::generic_not_equal(
-  std::errc{}, std::errc::connection_reset));
-static_assert(! rfl::is_greater_comparable_v<std::errc, int>);
-static_assert(! rfl::is_generic_equal_comparable_v<std::errc, int>);
-static_assert(! rfl::greater_comparable_with<
-  std::errc, std::chars_format>);
-static_assert(! rfl::generic_equal_comparable_with<
-  std::errc, std::chars_format>);
+TEST(TypeOperationsComparison, PointerToMembers)
+{
+  static_assert(rfl::generic_equal(&foo_t::x, &foo_t::x));
+  static_assert(! rfl::generic_not_equal(&foo_t::x, &foo_t::x));
 
-// Both are std::initializer_list
-// Between character types
-static_assert(rfl::generic_equal({'a', 'b', 'c'}, {L'a', L'b', L'c'}));
-static_assert(! rfl::generic_not_equal({'a', 'b', 'c'}, {L'a', L'b', L'c'}));
-static_assert(check_equality(
-  std::strong_ordering::equal,
-  rfl::generic_compare_three_way({'a', 'b', 'c'}, {L'a', L'b', L'c'})));
-// Between signed & unsigned integral
-static_assert(rfl::generic_equal({1, 2, 3}, {1u, 2u, 3u}));
-static_assert(! rfl::generic_not_equal({1, 2, 3}, {1u, 2u, 3u}));
-static_assert(check_equality(
-  std::strong_ordering::equal,
-  rfl::generic_compare_three_way({1, 2, 3}, {1u, 2u, 3u})));
-static_assert(! rfl::generic_equal(
-  {-1, -2, -3}, {4294967295u, 4294967294u, 4294967293u}));
-static_assert(rfl::generic_not_equal(
-  {-1, -2, -3}, {4294967295u, 4294967294u, 4294967293u}));
-static_assert(check_equality(
-  std::strong_ordering::less,
-  rfl::generic_compare_three_way(
-    {-1, -2, -3}, {4294967295u, 4294967294u, 4294967293u})));
-// Between integral & floating point
-static_assert(rfl::generic_equal({1, 2, 3}, {1.0, 2.0, 3.0}));
-static_assert(! rfl::generic_not_equal({1, 2, 3}, {1.0, 2.0, 3.0}));
-static_assert(check_equality(
-  std::partial_ordering::equivalent,
-  rfl::generic_compare_three_way({1, 2, 3}, {1.0, 2.0, 3.0})));
-// Between floating points
-static_assert(rfl::generic_equal({1.0f, 2.0f, 3.0f}, {1.0, 2.0, 3.0}));
-static_assert(! rfl::generic_not_equal({1.0f, 2.0f, 3.0f}, {1.0, 2.0, 3.0}));
-static_assert(check_equality(
-  std::partial_ordering::equivalent,
-  rfl::generic_compare_three_way({1.0f, 2.0f, 3.0f}, {1.0, 2.0, 3.0})));
-// Range comparison
-// (1) Different value
-static_assert(! rfl::generic_equal({4, 5, 7}, {4, 5, 6}));
-static_assert(rfl::generic_not_equal({4, 5, 7}, {4, 5, 6}));
-static_assert(check_equality(
-  std::strong_ordering::greater,
-  rfl::generic_compare_three_way({4, 5, 7}, {4, 5, 6})));
-// (2) Different size
-static_assert(! rfl::generic_equal({4, 5, 6}, {4, 5, 6, 7}));
-static_assert(rfl::generic_not_equal({4, 5, 6}, {4, 5, 6, 7}));
-static_assert(check_equality(
-  std::strong_ordering::less,
-  rfl::generic_compare_three_way({4, 5, 6}, {4, 5, 6, 7})));
-// (3) Partial ordering
-static_assert(! rfl::generic_equal(
-  {4.0, 5.0, nan_v<double>}, {4.0, 5.0, nan_v<double>}));
-static_assert(rfl::generic_not_equal(
-  {4.0, 5.0, nan_v<double>}, {4.0, 5.0, nan_v<double>}));
-static_assert(check_equality(
-  std::partial_ordering::unordered,
-  rfl::generic_compare_three_way(
-    {4.0, 5.0, nan_v<double>}, {4.0, 5.0, nan_v<double>})));
+  static_assert(! rfl::generic_equal(&foo_t::x, &foo_t::y));
+  static_assert(rfl::generic_not_equal(&foo_t::x, &foo_t::y));
 
-// One is std::initializer_list
-// Between character types
-static_assert(rfl::generic_equal(
-  std::vector{'a', 'b', 'c'}, {L'a', L'b', L'c'}));
-static_assert(! rfl::generic_not_equal(
-  std::vector{'a', 'b', 'c'}, {L'a', L'b', L'c'}));
-static_assert(check_equality(
-  std::strong_ordering::equal,
-  rfl::generic_compare_three_way(
-    std::vector{'a', 'b', 'c'}, {L'a', L'b', L'c'})));
-// Between signed & unsigned integral
-static_assert(rfl::generic_equal({1, 2, 3}, std::vector{1u, 2u, 3u}));
-static_assert(! rfl::generic_not_equal({1, 2, 3}, std::vector{1u, 2u, 3u}));
-static_assert(check_equality(
-  std::strong_ordering::equal,
-  rfl::generic_compare_three_way({1, 2, 3}, std::vector{1u, 2u, 3u})));
-static_assert(! rfl::generic_equal(
-  std::vector{-1, -2, -3}, {4294967295u, 4294967294u, 4294967293u}));
-static_assert(rfl::generic_not_equal(
-  std::vector{-1, -2, -3}, {4294967295u, 4294967294u, 4294967293u}));
-static_assert(check_equality(
-  std::strong_ordering::less,
-  rfl::generic_compare_three_way(
-    std::vector{-1, -2, -3}, {4294967295u, 4294967294u, 4294967293u})));
-// Between integral & floating point
-static_assert(rfl::generic_equal({1, 2, 3}, std::vector{1.0, 2.0, 3.0}));
-static_assert(! rfl::generic_not_equal({1, 2, 3}, std::vector{1.0, 2.0, 3.0}));
-static_assert(check_equality(
-  std::partial_ordering::equivalent,
-  rfl::generic_compare_three_way({1, 2, 3}, std::vector{1.0, 2.0, 3.0})));
-// Between floating points
-static_assert(rfl::generic_equal(
-  std::vector{1.0f, 2.0f, 3.0f}, {1.0, 2.0, 3.0}));
-static_assert(! rfl::generic_not_equal(
-  std::vector{1.0f, 2.0f, 3.0f}, {1.0, 2.0, 3.0}));
-static_assert(check_equality(
-  std::partial_ordering::equivalent,
-  rfl::generic_compare_three_way(
-    std::vector{1.0f, 2.0f, 3.0f}, {1.0, 2.0, 3.0})));
-// Range comparison
-// (1) Different value
-static_assert(! rfl::generic_equal({4, 5, 7}, std::vector{4, 5, 6}));
-static_assert(rfl::generic_not_equal({4, 5, 7}, std::vector{4, 5, 6}));
-static_assert(check_equality(
-  std::strong_ordering::greater,
-  rfl::generic_compare_three_way({4, 5, 7}, std::vector{4, 5, 6})));
-// (2) Different size
-static_assert(! rfl::generic_equal(std::vector{4, 5, 6}, {4, 5, 6, 7}));
-static_assert(rfl::generic_not_equal(std::vector{4, 5, 6}, {4, 5, 6, 7}));
-static_assert(check_equality(
-  std::strong_ordering::less,
-  rfl::generic_compare_three_way(std::vector{4, 5, 6}, {4, 5, 6, 7})));
-// (3) Partial ordering
-static_assert(! rfl::generic_equal(
-  {4.0, 5.0, nan_v<double>}, std::vector{4.0, 5.0, nan_v<double>}));
-static_assert(rfl::generic_not_equal(
-  {4.0, 5.0, nan_v<double>}, std::vector{4.0, 5.0, nan_v<double>}));
-static_assert(check_equality(
-  std::partial_ordering::unordered,
-  rfl::generic_compare_three_way(
-    {4.0, 5.0, nan_v<double>}, std::vector{4.0, 5.0, nan_v<double>})));
+  static_assert(! rfl::generic_equal(&foo_t::foo, &foo_t::bar));
+  static_assert(rfl::generic_not_equal(&foo_t::foo, &foo_t::bar));
+
+  // Member pointers are not 3-way comparable.
+  static_assert(! rfl::is_less_comparable_v<
+    int foo_t::*, int foo_t::*>);
+  static_assert(! rfl::is_generic_three_way_comparable_v<
+    int foo_t::*, int foo_t::*>);
+  static_assert(! rfl::less_comparable_with<
+    void (foo_t::*)(int), void (foo_t::*)(int)>);
+  static_assert(! rfl::generic_three_way_comparable_with<
+    void (foo_t::*)(int), void (foo_t::*)(int)>);
+}
+
+TEST(TypeOperationsComparison, EnumTypes)
+{
+  static_assert(! rfl::generic_equal(
+    std::errc{}, std::errc::connection_reset));
+  static_assert(rfl::generic_not_equal(
+    std::errc{}, std::errc::connection_reset));
+
+  static_assert(! rfl::is_greater_comparable_v<std::errc, int>);
+  static_assert(! rfl::is_generic_equal_comparable_v<std::errc, int>);
+  static_assert(! rfl::greater_comparable_with<
+    std::errc, std::chars_format>);
+  static_assert(! rfl::generic_equal_comparable_with<
+    std::errc, std::chars_format>);
+}
+
+TEST(TypeOperationsComparison, BothAreInitializerLists)
+{
+  // Between character types
+  static_assert(rfl::generic_equal({'a', 'b', 'c'}, {L'a', L'b', L'c'}));
+  static_assert(! rfl::generic_not_equal({'a', 'b', 'c'}, {L'a', L'b', L'c'}));
+  static_assert(check_equality(
+    std::strong_ordering::equal,
+    rfl::generic_compare_three_way({'a', 'b', 'c'}, {L'a', L'b', L'c'})));
+
+  // Between signed & unsigned integral
+  static_assert(rfl::generic_equal({1, 2, 3}, {1u, 2u, 3u}));
+  static_assert(! rfl::generic_not_equal({1, 2, 3}, {1u, 2u, 3u}));
+  static_assert(check_equality(
+    std::strong_ordering::equal,
+    rfl::generic_compare_three_way({1, 2, 3}, {1u, 2u, 3u})));
+
+  static_assert(! rfl::generic_equal(
+    {-1, -2, -3}, {4294967295u, 4294967294u, 4294967293u}));
+  static_assert(rfl::generic_not_equal(
+    {-1, -2, -3}, {4294967295u, 4294967294u, 4294967293u}));
+  static_assert(check_equality(
+    std::strong_ordering::less,
+    rfl::generic_compare_three_way(
+      {-1, -2, -3}, {4294967295u, 4294967294u, 4294967293u})));
+
+  // Between integral & floating point
+  // Note: comparison result is std::partial_ordering
+  static_assert(rfl::generic_equal({1, 2, 3}, {1.0, 2.0, 3.0}));
+  static_assert(! rfl::generic_not_equal({1, 2, 3}, {1.0, 2.0, 3.0}));
+  static_assert(check_equality(
+    std::partial_ordering::equivalent,
+    rfl::generic_compare_three_way({1, 2, 3}, {1.0, 2.0, 3.0})));
+
+  // Between floating points
+  static_assert(rfl::generic_equal({1.0f, 2.0f, 3.0f}, {1.0, 2.0, 3.0}));
+  static_assert(! rfl::generic_not_equal({1.0f, 2.0f, 3.0f}, {1.0, 2.0, 3.0}));
+  static_assert(check_equality(
+    std::partial_ordering::equivalent,
+    rfl::generic_compare_three_way({1.0f, 2.0f, 3.0f}, {1.0, 2.0, 3.0})));
+
+  // Range comparison
+  // (1) Different value
+  static_assert(! rfl::generic_equal({4, 5, 7}, {4, 5, 6}));
+  static_assert(rfl::generic_not_equal({4, 5, 7}, {4, 5, 6}));
+  static_assert(check_equality(
+    std::strong_ordering::greater,
+    rfl::generic_compare_three_way({4, 5, 7}, {4, 5, 6})));
+
+  // (2) Different size
+  static_assert(! rfl::generic_equal({4, 5, 6}, {4, 5, 6, 7}));
+  static_assert(rfl::generic_not_equal({4, 5, 6}, {4, 5, 6, 7}));
+  static_assert(check_equality(
+    std::strong_ordering::less,
+    rfl::generic_compare_three_way({4, 5, 6}, {4, 5, 6, 7})));
+
+  // (3) Partial ordering
+  static_assert(! rfl::generic_equal(
+    {4.0, 5.0, nan_v<double>}, {4.0, 5.0, nan_v<double>}));
+  static_assert(rfl::generic_not_equal(
+    {4.0, 5.0, nan_v<double>}, {4.0, 5.0, nan_v<double>}));
+  static_assert(check_equality(
+    std::partial_ordering::unordered,
+    rfl::generic_compare_three_way(
+      {4.0, 5.0, nan_v<double>}, {4.0, 5.0, nan_v<double>})));
+}
+
+TEST(TypeOperationsComparison, OneIsInitializerList1)
+{
+  // Between character types
+  static_assert(rfl::generic_equal(
+    std::vector{'a', 'b', 'c'}, {L'a', L'b', L'c'}));
+  static_assert(! rfl::generic_not_equal(
+    std::vector{'a', 'b', 'c'}, {L'a', L'b', L'c'}));
+  static_assert(check_equality(
+    std::strong_ordering::equal,
+    rfl::generic_compare_three_way(
+      std::vector{'a', 'b', 'c'}, {L'a', L'b', L'c'})));
+
+  // Between signed & unsigned integral
+  static_assert(rfl::generic_equal({1, 2, 3}, std::vector{1u, 2u, 3u}));
+  static_assert(! rfl::generic_not_equal({1, 2, 3}, std::vector{1u, 2u, 3u}));
+  static_assert(check_equality(
+    std::strong_ordering::equal,
+    rfl::generic_compare_three_way({1, 2, 3}, std::vector{1u, 2u, 3u})));
+
+  static_assert(! rfl::generic_equal(
+    std::vector{-1, -2, -3}, {4294967295u, 4294967294u, 4294967293u}));
+  static_assert(rfl::generic_not_equal(
+    std::vector{-1, -2, -3}, {4294967295u, 4294967294u, 4294967293u}));
+  static_assert(check_equality(
+    std::strong_ordering::less,
+    rfl::generic_compare_three_way(
+      std::vector{-1, -2, -3}, {4294967295u, 4294967294u, 4294967293u})));
+
+  // Between integral & floating point
+  static_assert(rfl::generic_equal({1, 2, 3}, std::vector{1.0, 2.0, 3.0}));
+  static_assert(! rfl::generic_not_equal({1, 2}, std::vector{1.0, 2.0}));
+  static_assert(check_equality(
+    std::partial_ordering::equivalent,
+    rfl::generic_compare_three_way({1, 2, 3}, std::vector{1.0, 2.0, 3.0})));
+
+  // Between floating points
+  static_assert(rfl::generic_equal(
+    std::vector{1.0f, 2.0f, 3.0f}, {1.0, 2.0, 3.0}));
+  static_assert(! rfl::generic_not_equal(
+    std::vector{1.0f, 2.0f, 3.0f}, {1.0, 2.0, 3.0}));
+  static_assert(check_equality(
+    std::partial_ordering::equivalent,
+    rfl::generic_compare_three_way(
+      std::vector{1.0f, 2.0f, 3.0f}, {1.0, 2.0, 3.0})));
+
+  // Range comparison
+  // (1) Different value
+  static_assert(! rfl::generic_equal({4, 5, 7}, std::vector{4, 5, 6}));
+  static_assert(rfl::generic_not_equal({4, 5, 7}, std::vector{4, 5, 6}));
+  static_assert(check_equality(
+    std::strong_ordering::greater,
+    rfl::generic_compare_three_way({4, 5, 7}, std::vector{4, 5, 6})));
+
+  // (2) Different size
+  static_assert(! rfl::generic_equal(std::vector{4, 5, 6}, {4, 5, 6, 7}));
+  static_assert(rfl::generic_not_equal(std::vector{4, 5, 6}, {4, 5, 6, 7}));
+  static_assert(check_equality(
+    std::strong_ordering::less,
+    rfl::generic_compare_three_way(std::vector{4, 5, 6}, {4, 5, 6, 7})));
+
+  // (3) Partial ordering
+  static_assert(! rfl::generic_equal(
+    {4.0, 5.0, nan_v<double>}, std::vector{4.0, 5.0, nan_v<double>}));
+  static_assert(rfl::generic_not_equal(
+    {4.0, 5.0, nan_v<double>}, std::vector{4.0, 5.0, nan_v<double>}));
+  static_assert(check_equality(
+    std::partial_ordering::unordered,
+    rfl::generic_compare_three_way(
+      {4.0, 5.0, nan_v<double>}, std::vector{4.0, 5.0, nan_v<double>})));
+}
 
 // std::initializer_list participating in overload resolution
 // of comparison operators.
@@ -318,69 +353,69 @@ struct bar_t {
     return x <=> data(il)[0];
   }
 };
-static_assert(rfl::generic_equal(bar_t{1, 2}, {1, 2}));
-static_assert(! rfl::generic_not_equal(bar_t{1, 2}, {1, 2}));
-static_assert(check_equality(
-  std::weak_ordering::equivalent,
-  rfl::generic_compare_three_way(bar_t{1, 2}, {1, 2})));
-static_assert(! rfl::generic_equal({1, 2}, bar_t{1, -2}));
-static_assert(rfl::generic_not_equal({1, 2}, bar_t{1, -2}));
-static_assert(check_equality(
-  std::weak_ordering::equivalent,
-  rfl::generic_compare_three_way({1, -2}, bar_t{1, 2})));
-static_assert(rfl::generic_equal(
-  {bar_t{1, 2}, bar_t{3, 4}}, {bar_t{1, 2}, bar_t{3, 4}}));
-static_assert(! rfl::generic_not_equal(
-  {bar_t{1, 2}, bar_t{3, 4}}, {bar_t{1, 2}, bar_t{3, 4}}));
 
-static_assert(! rfl::is_generic_equal_comparable_v<
-  std::initializer_list<bar_t>, std::initializer_list<int>>);
-static_assert(rfl::is_generic_not_equal_comparable_v<
-  bar_t, std::initializer_list<int>>);
-static_assert(! rfl::is_generic_three_way_comparable_v<
-  std::initializer_list<int>, std::initializer_list<bar_t>>);
-static_assert(rfl::is_generic_three_way_comparable_v<
-  std::initializer_list<int>, bar_t>);
-static_assert(! rfl::is_generic_three_way_comparable_v<bar_t, bar_t>);
-static_assert(! rfl::is_generic_three_way_comparable_v<
-  std::initializer_list<bar_t>, std::initializer_list<bar_t>>);
+TEST(TypeOperationsComparison, OneIsInitializerList2)
+{
+  static_assert(rfl::generic_equal(bar_t{1, 2}, {1, 2}));
+  static_assert(! rfl::generic_not_equal(bar_t{1, 2}, {1, 2}));
+  static_assert(check_equality(
+    std::weak_ordering::equivalent,
+    rfl::generic_compare_three_way(bar_t{1, 2}, {1, 2})));
 
-// C-style arrays
-constexpr char char_array_1[] = "HelloWorld";
-constexpr char char_array_2[] = "Hello";
-constexpr char char_array_3[] = "World";
-constexpr char char_array_4[] = "HelloWorld";
-constexpr const char* c_str_ptr = "HelloWorld";
-// Array with same contents
-static_assert(rfl::generic_equal(char_array_1, char_array_4));
-static_assert(! rfl::generic_not_equal(char_array_1, char_array_4));
-static_assert(check_equality(
-  std::strong_ordering::equal,
-  rfl::generic_compare_three_way(char_array_1, char_array_4)));
-// Array with different contents
-static_assert(! rfl::generic_equal(char_array_1, char_array_2));
-static_assert(rfl::generic_not_equal(char_array_1, char_array_2));
-static_assert(check_equality(
-  std::strong_ordering::greater,
-  rfl::generic_compare_three_way(char_array_1, char_array_2)));
-static_assert(! rfl::generic_equal(char_array_2, char_array_3));
-static_assert(rfl::generic_not_equal(char_array_2, char_array_3));
-static_assert(check_equality(
-  std::strong_ordering::less,
-  rfl::generic_compare_three_way(char_array_2, char_array_3)));
+  static_assert(! rfl::generic_equal({1, 2}, bar_t{1, -2}));
+  static_assert(rfl::generic_not_equal({1, 2}, bar_t{1, -2}));
+  static_assert(check_equality(
+    std::weak_ordering::equivalent,
+    rfl::generic_compare_three_way({1, -2}, bar_t{1, 2})));
 
-// Both are arrays: range comparison
-static_assert(rfl::is_generic_equal_comparable_v<char[6], char[6]>);
-static_assert(rfl::is_generic_not_equal_comparable_v<char[6], char[7]>);
-static_assert(rfl::is_generic_three_way_comparable_v<char[6], char[8]>);
-// Array vs. pointer: comparison is disabled to prevent ambiguity
-static_assert(! rfl::is_generic_equal_comparable_v<
-  char[6], const char*>);
-static_assert(! rfl::is_generic_not_equal_comparable_v<
-  const char*, char[6]>);
-static_assert(! rfl::is_generic_three_way_comparable_v<
-  char[6], const char*>);
-// Array vs. implicitly converted pointer: disabled as well.
+  static_assert(rfl::generic_equal(
+    {bar_t{1, 2}, bar_t{3, 4}}, {bar_t{1, 2}, bar_t{3, 4}}));
+  static_assert(! rfl::generic_not_equal(
+    {bar_t{1, 2}, bar_t{3, 4}}, {bar_t{1, 2}, bar_t{3, 4}}));
+
+  static_assert(! rfl::is_generic_equal_comparable_v<
+    std::initializer_list<bar_t>, std::initializer_list<int>>);
+  static_assert(rfl::is_generic_not_equal_comparable_v<
+    bar_t, std::initializer_list<int>>);
+  static_assert(! rfl::is_generic_three_way_comparable_v<
+    std::initializer_list<int>, std::initializer_list<bar_t>>);
+  static_assert(rfl::is_generic_three_way_comparable_v<
+    std::initializer_list<int>, bar_t>);
+  static_assert(! rfl::is_generic_three_way_comparable_v<bar_t, bar_t>);
+  static_assert(! rfl::is_generic_three_way_comparable_v<
+    std::initializer_list<bar_t>, std::initializer_list<bar_t>>);
+}
+
+TEST(TypeOperationsComparison, Arrays1)
+{
+  // C-style arrays
+  constexpr char char_array_1[] = "HelloWorld";
+  constexpr char char_array_2[] = "Hello";
+  constexpr char char_array_3[] = "World";
+  constexpr char char_array_4[] = "HelloWorld";
+  constexpr const char* c_str_ptr = "HelloWorld";
+
+  // Array with same contents
+  static_assert(rfl::generic_equal(char_array_1, char_array_4));
+  static_assert(! rfl::generic_not_equal(char_array_1, char_array_4));
+  static_assert(check_equality(
+    std::strong_ordering::equal,
+    rfl::generic_compare_three_way(char_array_1, char_array_4)));
+
+  // Array with different contents
+  static_assert(! rfl::generic_equal(char_array_1, char_array_2));
+  static_assert(rfl::generic_not_equal(char_array_1, char_array_2));
+  static_assert(check_equality(
+    std::strong_ordering::greater,
+    rfl::generic_compare_three_way(char_array_1, char_array_2)));
+
+  static_assert(! rfl::generic_equal(char_array_2, char_array_3));
+  static_assert(rfl::generic_not_equal(char_array_2, char_array_3));
+  static_assert(check_equality(
+    std::strong_ordering::less,
+    rfl::generic_compare_three_way(char_array_2, char_array_3)));
+}
+
 struct convertible_to_ptr_t {
   int data[4];
   constexpr operator int*() {
@@ -390,14 +425,45 @@ struct convertible_to_ptr_t {
     return data;
   }
 };
-static_assert(! rfl::is_generic_equal_comparable_v<
-  char[6], convertible_to_ptr_t>);
-static_assert(! rfl::generic_not_equal_comparable_with<
-  convertible_to_ptr_t, char[6]>);
-static_assert(! rfl::is_generic_three_way_comparable_v<
-  char[6], convertible_to_ptr_t>);
 
-TEST(TypeOperationsComparison, Arrays) {
+TEST(TypeOperationsComparison, Arrays2)
+{
+  // Both are arrays: range comparison
+  static_assert(rfl::is_generic_equal_comparable_v<int[6], unsigned[6]>);
+  static_assert(rfl::is_generic_not_equal_comparable_v<int*[6], const int*[7]>);
+  // Integer vs character memberwise comparison is OK.
+  static_assert(rfl::is_generic_three_way_comparable_v<int[6], wchar_t[8]>);
+  // Not comparable since the elements can not be compared
+  static_assert(! rfl::is_generic_not_equal_comparable_v<
+    int*[6], const int64_t*[7]>);
+
+  // Array vs. pointer (including C-style strings):
+  // comparison is disabled to prevent ambiguity
+  static_assert(! rfl::is_generic_equal_comparable_v<
+    int8_t[6], const int8_t*>);
+  static_assert(! rfl::is_generic_not_equal_comparable_v<
+    const int8_t*, int8_t[6]>);
+  static_assert(! rfl::is_generic_three_way_comparable_v<
+    int8_t[6], const int8_t*>);
+
+  static_assert(! rfl::is_generic_equal_comparable_v<
+    char[6], const char*>);
+  static_assert(! rfl::is_generic_not_equal_comparable_v<
+    const char*, char[6]>);
+  static_assert(! rfl::is_generic_three_way_comparable_v<
+    char[6], const char*>);
+
+  // Array vs. implicitly converted pointer: disabled as well.
+  static_assert(! rfl::is_generic_equal_comparable_v<
+    char[6], convertible_to_ptr_t>);
+  static_assert(! rfl::generic_not_equal_comparable_with<
+    convertible_to_ptr_t, char[6]>);
+  static_assert(! rfl::is_generic_three_way_comparable_v<
+    char[6], convertible_to_ptr_t>);
+}
+
+TEST(TypeOperationsComparison, Arrays3)
+{
   unsigned arr_u[4] = {0, 1, 2, 4294967295u};
   int arr_i[4] = {0, 1, 2, -1};
   EXPECT_FALSE(rfl::generic_equal(arr_u, arr_i));
@@ -432,39 +498,202 @@ TEST(TypeOperationsComparison, Arrays) {
     with_decay(rfl::generic_compare_three_way, str1, str2)));
 }
 
-// Tuple-like
-constexpr auto constant_1 = rfl::constant<1, 2, 3>{};
-constexpr auto constant_2 = rfl::constant<1, 2.0, 3u>{};
-constexpr auto constant_3 = rfl::constant<1, 2, 4294967299>{}; // 2 ** 32 + 3
-constexpr auto constant_4 = rfl::constant<1, 2, 3, 4>{};
-static_assert(rfl::generic_equal(constant_1, constant_2));
-static_assert(! rfl::generic_not_equal(constant_1, constant_2));
-static_assert(check_equality(
-  std::partial_ordering::equivalent,
-  rfl::generic_compare_three_way(constant_1, constant_2)));
-static_assert(! rfl::generic_equal(constant_1, constant_3));
-static_assert(rfl::generic_not_equal(constant_1, constant_3));
-static_assert(check_equality(
-  std::strong_ordering::less,
-  rfl::generic_compare_three_way(constant_1, constant_3)));
-// Tuple-like with different sizes are not comparable
-static_assert(rfl::generic_equal_comparable_with<
-  decltype(constant_1), decltype(constant_2)>);
-static_assert(! rfl::is_generic_equal_comparable_v<
-  decltype(constant_1), decltype(constant_4)>);
-static_assert(! rfl::generic_not_equal_comparable_with<
-  decltype(constant_1), decltype(constant_4)>);
-static_assert(! rfl::is_generic_three_way_comparable<
-  decltype(constant_1), decltype(constant_4)>::value);
+TEST(TypeOperationsComparison, Arrays4)
+{
+  // Nested C-style arrays
+  int arr_1[2][3][4];
+  int arr_2[2][3][4];
+  std::fill_n(reinterpret_cast<int*>(arr_1), 24, 123);
+  std::fill_n(reinterpret_cast<int*>(arr_2), 24, 123);
 
-constexpr auto std_tuple_1 = std::tuple{1.0, 2, 3u};
-static_assert(rfl::generic_equal(constant_1, std_tuple_1));
-static_assert(! rfl::generic_not_equal(constant_1, std_tuple_1));
-static_assert(check_equality(
-  std::partial_ordering::equivalent,
-  rfl::generic_compare_three_way(constant_1, std_tuple_1)));
+  EXPECT_TRUE(rfl::generic_equal(arr_1, arr_2));
+  EXPECT_FALSE(rfl::generic_not_equal(arr_1, arr_2));
+  EXPECT_TRUE(check_equality(
+    std::strong_ordering::equal,
+    rfl::generic_compare_three_way(arr_1, arr_2)));
 
-// Nested ranges
+  arr_2[1][1][1] += 100;
+  EXPECT_FALSE(rfl::generic_equal(arr_1, arr_2));
+  EXPECT_TRUE(rfl::generic_not_equal(arr_1, arr_2));
+  EXPECT_TRUE(check_equality(
+    std::strong_ordering::less,
+    rfl::generic_compare_three_way(arr_1, arr_2)));
+
+  // Mixture of C-style array and C++ stardard library containers
+  std::array<double, 4> arr_3[2][3];
+  std::vector<double> arr_4[3][2];
+  std::fill_n(reinterpret_cast<double*>(arr_3), 24, 1.25);
+  std::fill_n(reinterpret_cast<std::vector<double>*>(arr_4),
+              4, std::vector(4zU, 1.25));
+  // Note: arr_3 and arr_4 are always unequal due to different shape.
+  EXPECT_FALSE(rfl::generic_equal(arr_3, arr_4));
+  EXPECT_TRUE(rfl::generic_not_equal(arr_3, arr_4));
+  // Let x = The first element of arr_3 which is std::array<double, 4>[3]
+  //     y = The first element of arr_4 which is std::vector<double>[2]
+  //     x[0] is equal to y[0], x1 is equal to y[1]. Then x is greater than y
+  //     due to different size.
+  EXPECT_TRUE(check_equality(
+    std::partial_ordering::greater,
+    rfl::generic_compare_three_way(arr_3, arr_4)));
+
+  arr_4[1][1][1] += 1.25;
+  EXPECT_FALSE(rfl::generic_equal(arr_3, arr_4));
+  EXPECT_TRUE(rfl::generic_not_equal(arr_3, arr_4));
+  // Change in arr_4[1] makes no effect since arr_3[0] > arr_4[0] (see above)
+  EXPECT_TRUE(check_equality(
+    std::partial_ordering::greater,
+    rfl::generic_compare_three_way(arr_3, arr_4)));
+
+  arr_4[0][1].push_back(2.5);
+  EXPECT_FALSE(rfl::generic_equal(arr_3, arr_4));
+  EXPECT_TRUE(rfl::generic_not_equal(arr_3, arr_4));
+  // Now x[1] < y[1] due to different size
+  EXPECT_TRUE(check_equality(
+    std::partial_ordering::less,
+    rfl::generic_compare_three_way(arr_3, arr_4)));
+
+  arr_4[0][1][2] = nan_v<double>;
+  EXPECT_FALSE(rfl::generic_equal(arr_3, arr_4));
+  EXPECT_TRUE(rfl::generic_not_equal(arr_3, arr_4));
+  // Now x[1] <=> y[1] are unordered due to NaN
+  EXPECT_TRUE(check_equality(
+    std::partial_ordering::unordered,
+    rfl::generic_compare_three_way(arr_3, arr_4)));
+}
+
+TEST(TypeOperationsComparison, Strings1)
+{
+  auto s1 = std::string{"Hello World"};
+  auto s2 = u"Peace Be Upon Him";
+  // Comparison between std::basic_string<CharT> and const CharU*
+  // as if const CharU* is converted to std::basic_string_view<CharU>.
+  EXPECT_FALSE(rfl::generic_equal(s1, s2));
+  EXPECT_TRUE(rfl::generic_not_equal(s1, s2));
+  EXPECT_TRUE(check_equality(
+    std::strong_ordering::less,
+    rfl::generic_compare_three_way(s1, s2)));
+
+  auto s3 = std::wstring_view{L"Hello World"};
+  // Between std::basic_string<CharT> and std::basic_string_view<CharU>
+  // as range memberwise comparison
+  EXPECT_TRUE(rfl::generic_equal(s1, s3));
+  EXPECT_FALSE(rfl::generic_not_equal(s1, s3));
+  EXPECT_TRUE(check_equality(
+    std::strong_ordering::equal,
+    rfl::generic_compare_three_way(s1, s3)));
+
+  auto s4 = std::u16string{u"Peace Be Upon Him"};
+  auto s5 = s4.data();
+  // Comparison between const CharT* and CharT*
+  // Note: comparison by address which is semantically error-prone.
+  EXPECT_FALSE(rfl::generic_equal(s2, s5));
+  EXPECT_TRUE(rfl::generic_not_equal(s2, s5));
+
+  // Comparison between CharT* and CharU* is disabled,
+  // analogous to C and C++ syntax rule.
+  static_assert(! rfl::generic_equal_comparable_with<char*, wchar_t*>);
+  static_assert(! rfl::generic_three_way_comparable_with<
+    const char8_t*, const char16_t*>);
+
+  // Comparison between CharT* and CharT[] is disabled
+  // due to semantic ambiguity.
+  static_assert(! rfl::generic_not_equal_comparable_with<
+    const char*, char[16]>);
+
+  // volatile CharT* is not considered C-style string.
+  static_assert(rfl::generic_equal_comparable_with<
+    const char16_t*, std::u16string_view>);
+  static_assert(! rfl::generic_equal_comparable_with<
+    volatile char16_t*, std::u16string_view>);
+}
+
+TEST(TypeOperationsComparison, Strings2)
+{
+  auto s1 = std::u16string{u"你好，世界"};
+  auto s2 = static_cast<const char16_t*>(nullptr);
+  // (const CharT*) nullptr is condidered as empty string.
+  EXPECT_FALSE(rfl::generic_equal(s1, s2));
+  EXPECT_TRUE(rfl::generic_not_equal(s1, s2));
+  EXPECT_TRUE(check_equality(
+    std::strong_ordering::greater,
+    rfl::generic_compare_three_way(s1, s2)));
+
+  auto s3 = std::u16string_view{}; // Empty as well
+  EXPECT_TRUE(rfl::generic_equal(s2, s3));
+  EXPECT_FALSE(rfl::generic_not_equal(s2, s3));
+  EXPECT_TRUE(check_equality(
+    std::strong_ordering::equal,
+    rfl::generic_compare_three_way(s2, s3)));
+
+  // Comparison by pointer: nullptr == nullptr
+  auto s4 = static_cast<const char16_t*>(nullptr);
+  EXPECT_TRUE(rfl::generic_equal(s2, s4));
+  EXPECT_FALSE(rfl::generic_not_equal(s2, s4));
+  EXPECT_TRUE(check_equality(
+    std::strong_ordering::equal,
+    rfl::generic_compare_three_way(s2, s4)));
+
+  // Nested comparison in ranges
+  auto a1 = std::array<std::u8string, 3>{u8"ni ai wo", u8"", u8"wo ai ni"};
+  const char* a2[] = {"ni ai wo", nullptr, "wo ai ni"};
+  EXPECT_TRUE(rfl::generic_equal(a1, a2));
+  EXPECT_FALSE(rfl::generic_not_equal(a1, a2));
+  EXPECT_TRUE(check_equality(
+    std::strong_ordering::equal,
+    rfl::generic_compare_three_way(a1, a2)));
+
+  a2[2] = nullptr;
+  EXPECT_FALSE(rfl::generic_equal(a1, a2));
+  EXPECT_TRUE(rfl::generic_not_equal(a1, a2));
+  EXPECT_TRUE(check_equality(
+    std::strong_ordering::greater,
+    rfl::generic_compare_three_way(a1, a2)));
+
+  a1[2] = u8"";
+  EXPECT_TRUE(rfl::generic_equal(a1, a2));
+  EXPECT_FALSE(rfl::generic_not_equal(a1, a2));
+  EXPECT_TRUE(check_equality(
+    std::strong_ordering::equal,
+    rfl::generic_compare_three_way(a1, a2)));
+}
+
+TEST(TypeOperationsComparison, TupleLike)
+{
+  constexpr auto constant_1 = rfl::constant<1, 2, 3>{};
+  constexpr auto constant_2 = rfl::constant<1, 2.0, 3u>{};
+  constexpr auto constant_3 = rfl::constant<1, 2, 4294967299>{}; // 2 ** 32 + 3
+  constexpr auto constant_4 = rfl::constant<1, 2, 3, 4>{};
+
+  static_assert(rfl::generic_equal(constant_1, constant_2));
+  static_assert(! rfl::generic_not_equal(constant_1, constant_2));
+  static_assert(check_equality(
+    std::partial_ordering::equivalent,
+    rfl::generic_compare_three_way(constant_1, constant_2)));
+
+  static_assert(! rfl::generic_equal(constant_1, constant_3));
+  static_assert(rfl::generic_not_equal(constant_1, constant_3));
+  static_assert(check_equality(
+    std::strong_ordering::less,
+    rfl::generic_compare_three_way(constant_1, constant_3)));
+
+  // Tuple-like with different sizes are not comparable
+  static_assert(rfl::generic_equal_comparable_with<
+    decltype(constant_1), decltype(constant_2)>);
+  static_assert(! rfl::is_generic_equal_comparable_v<
+    decltype(constant_1), decltype(constant_4)>);
+  static_assert(! rfl::generic_not_equal_comparable_with<
+    decltype(constant_1), decltype(constant_4)>);
+  static_assert(! rfl::is_generic_three_way_comparable<
+    decltype(constant_1), decltype(constant_4)>::value);
+
+  constexpr auto std_tuple_1 = std::tuple{1.0, 2, 3u};
+  static_assert(rfl::generic_equal(constant_1, std_tuple_1));
+  static_assert(! rfl::generic_not_equal(constant_1, std_tuple_1));
+  static_assert(check_equality(
+    std::partial_ordering::equivalent,
+    rfl::generic_compare_three_way(constant_1, std_tuple_1)));
+}
+
 TEST(TypeOperationsComparison, NestedRanges)
 {
   auto vec_list = std::vector{

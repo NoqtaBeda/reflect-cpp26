@@ -201,7 +201,7 @@ TEST(ClassLookupTableByName, CustomFilter)
       if (!has_identifier(member)) {
         return std::nullopt;
       }
-      return std::string{identifier_of(member).substr(1)};
+      return std::string{std::meta::identifier_of(member).substr(1)};
     });
   static_assert(std::is_same_v<
     const int32_t foo_3_t::*, decltype(table_nv)::value_type>);
@@ -465,7 +465,7 @@ TEST(ClassLookupTableByName, AccessContext1)
 
 struct with_templates_simple_t {
   template <class T>
-  static constexpr size_t identifier_size = identifier_of(^^T).length();
+  static constexpr size_t identifier_size = rfl::identifier_of(^^T).length();
 
   static constexpr size_t count_first = 42;
   static constexpr size_t count_second = 84;
@@ -626,7 +626,7 @@ TEST(ClassLookupTableByName, WithSpecialMembers)
         return std::nullopt;
       }
       if (has_identifier(member)) {
-        return std::string{identifier_of(member)};
+        return std::string{std::meta::identifier_of(member)};
       }
       if (is_operator_function(member)
           && operator_of(member) == std::meta::op_equals) {

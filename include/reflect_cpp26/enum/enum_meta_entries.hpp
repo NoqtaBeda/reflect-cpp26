@@ -95,7 +95,7 @@ consteval auto make_enum_meta_entries_sorted_by_name()
     auto iv_pairs = std::array<iv_pair_t, N>{};
     auto index = 0zU;
     template for (constexpr auto e: orig_order) {
-      iv_pairs[index] = {index, identifier_of(e)};
+      iv_pairs[index] = {index, std::meta::identifier_of(e)};
       index += 1;
     }
     std::ranges::sort(iv_pairs, {}, &iv_pair_t::second);

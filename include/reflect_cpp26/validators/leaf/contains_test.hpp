@@ -25,159 +25,100 @@
 
 #include <reflect_cpp26/type_operations/to_string.hpp>
 #include <reflect_cpp26/type_operations/to_structured.hpp>
-#include <reflect_cpp26/validators/impl/maker_common.hpp>
+#include <reflect_cpp26/validators/impl/maker.hpp>
 #include <reflect_cpp26/validators/impl/utils.hpp>
+#include <reflect_cpp26/validators/member_relation_tags.hpp>
 
 namespace reflect_cpp26::validators {
 namespace impl {
-template <std::ranges::forward_range InputT, class SubT>
-constexpr auto make_contains_test_error_message(
-  const InputT& input, const SubT& sub) -> std::string
+/**
+ * Case (1): test(input: T[], element: U)
+ * where T and U are comparable via generic_equal.
+ */
+template <class ElementT, impl::forward_range_comparable_with<ElementT> InputT>
+constexpr bool test_contains(const InputT& input, const ElementT& element)
 {
-  constexpr auto input_is_string =
-    is_char_type_v<std::ranges::range_value_t<InputT>>;
-
-  if (std::ranges::empty(input)) {
-    return input_is_string ? "Input string is empty" : "Input range is empty";
-  }
-  auto res = std::string{input_is_string ? "Input string " : "Input range "};
-  if constexpr (is_generic_to_string_invocable_v<InputT>) {
-    res += generic_to_display_string(input);
-    res += ' ';
-  }
-  res += "does not contain ";
-  if constexpr (is_generic_to_string_invocable_v<SubT>) {
-    res += generic_to_display_string(sub);
-  } else {
-    res += "specified value(s)";
-  }
-  return res;
+  auto pos = std::ranges::find_if(input, [&element](const auto& e) {
+    return generic_equal(e, element);
+  });
+  return pos != std::ranges::end(input);
 }
 
-template <char_type CharT, class SubT>
-constexpr auto make_contains_test_error_message(
-  const CharT* input, const SubT& sub) -> std::string
+/**
+ * Case (2): test(input: T[], subrange: U[])
+ * where T and U are comparable via generic_equal.
+ */
+template <std::ranges::forward_range SubrangeT,
+          generic_equal_comparable_with<SubrangeT> InputT>
+constexpr bool test_contains(const InputT& input, const SubrangeT& subrange)
 {
-  auto sv = std::basic_string_view{input == nullptr ? "" : input};
-  return make_contains_test_error_message(sv, sub);
+  return std::ranges::contains_subrange(input, subrange, generic_equal);
+}
+
+template <class InputT, class SubT>
+constexpr bool test_contains_dispatch(const InputT& input, const SubT& sub)
+{
+  return test_contains(impl::to_string_view_or_identity(input),
+                       impl::to_string_view_or_identity(sub));
 }
 } // namespace impl
 
-template <class T>
-struct contains_single_t : validator_tag_t {
-  T value;
+template <class SubT>
+struct contains_t : validator_tag_t {
+  [[no_unique_address]] SubT sub;
 
-  template <impl::forward_range_comparable_with<T> InputT>
-  constexpr bool test(const InputT& input) const
+  template <size_t I, partially_flattenable_class T>
+  constexpr bool test_ith_nsdm(const T& obj) const
   {
-    if (std::ranges::empty(input)) {
-      return false;
+    const auto& cur_value = get_ith_flattened_nsdm<I>(obj);
+    if constexpr (impl::nsdm_relation_tag_type<SubT>) {
+      const auto& sub_value = SubT::template get<I>(obj);
+      return impl::test_contains_dispatch(cur_value, sub_value);
+    } else {
+      return impl::test_contains_dispatch(cur_value, sub);
     }
-    auto pos = std::ranges::find_if(input, [this](const auto& elem) {
-      return generic_equal(elem, value);
-    });
-    return pos != std::ranges::end(input);
   }
 
-  template <class = void>
-    requires (is_char_type_v<T>)
-  constexpr bool test(const T* input) const
+  template <size_t I, class T>
+  constexpr auto make_error_message_of_ith_nsdm(const T& obj) const
+    -> std::string
   {
-    if (input == nullptr) {
-      return false;
+    using cur_nsdm_type = std::remove_cvref_t<ith_flattened_nsdm_type_t<I, T>>;
+    constexpr auto input_is_string = is_string_like_v<cur_nsdm_type>;
+
+    const auto& cur_value = get_ith_flattened_nsdm<I>(obj);
+    auto is_empty = impl::is_empty(cur_value);
+    if (is_empty != impl::is_empty_result::non_empty) {
+      return input_is_string ? "Input string is empty" : "Input range is empty";
     }
-    auto sv = std::basic_string_view<T>{input};
-    return sv.contains(value);
-  }
-
-  template <class InputT>
-  constexpr auto make_error_message(const InputT& input) const -> std::string
-  {
-    return impl::make_contains_test_error_message(input, value);
-  }
-};
-
-template <class CharT>
-struct contains_string_t : validator_tag_t {
-  meta_basic_string_view<CharT> substring;
-
-  template <string_like_of<CharT> InputT>
-  constexpr bool test(const InputT& input) const
-  {
-    if constexpr (std::is_pointer_v<InputT>) {
-      if (input == nullptr) { return substring.empty(); }
+    auto res = std::string{input_is_string ? "Input string " : "Input range "};
+    if constexpr (is_generic_to_string_invocable_v<cur_nsdm_type>) {
+      res += generic_to_display_string(cur_value);
+      res += ' ';
     }
-    auto input_sv = std::basic_string_view{input};
-    return input_sv.contains(substring);
-  }
+    res += "does not contain ";
 
-  template <impl::forward_range_of_string_like<CharT> InputT>
-  constexpr bool test(const InputT& input) const
-  {
-    if (std::ranges::empty(input)) {
-      return false;
+    if constexpr (impl::nsdm_relation_tag_type<SubT>) {
+      auto name = SubT::template get_name<T>(I);
+      impl::dump_nsdm(&res, name, SubT::template get<I>(obj));
+    } else {
+      res += generic_to_display_string(sub, "specified value(s)");
     }
-    return std::ranges::contains(input, substring, [](const auto& s) {
-      return std::basic_string_view{s};
-    });
-  }
-
-  template <class InputT>
-  constexpr auto make_error_message(const InputT& input) const -> std::string
-  {
-    return impl::make_contains_test_error_message(input, substring);
-  }
-};
-
-template <class T>
-struct contains_range_t : validator_tag_t {
-  meta_span<T> subrange;
-
-  template <impl::forward_range_comparable_with<T> InputT>
-  constexpr bool test(const InputT& input) const
-  {
-    return std::ranges::contains_subrange(input, subrange, generic_equal);
-  }
-
-  template <impl::forward_range_comparable_with<meta_span<T>> InputT>
-  constexpr bool test(const InputT& input) const
-  {
-    if (std::ranges::empty(input)) {
-      return false;
-    }
-    auto pos = std::ranges::find_if(input, [this](const auto& elem) {
-      return generic_equal(elem, subrange);
-    });
-    return pos != std::ranges::end(input);
-  }
-
-  template <class InputT>
-  constexpr auto make_error_message(const InputT& input) const -> std::string
-  {
-    return impl::make_contains_test_error_message(input, subrange);
+    return res;
   }
 };
 
 struct make_contains_t : impl::validator_maker_tag_t {
-  template <std::ranges::forward_range R>
-  static consteval auto operator()(const R& values)
+  template <class T>
+  static consteval auto operator()(const T& sub)
   {
-    auto span_or_sv = to_structured(values);
-    if constexpr (is_char_type_v<std::ranges::range_value_t<R>>) {
-      return contains_string_t{.substring = span_or_sv};
-    } else {
-      return contains_range_t{.subrange = span_or_sv};
-    }
+    // Including the cases with relation tags
+    return contains_t{.sub = to_structured(sub)};
   }
 
   template <class T>
   static consteval auto operator()(std::initializer_list<T> il) {
     return operator()(std::span{il});
-  }
-
-  template <non_range T>
-  static consteval auto operator()(const T& value) {
-    return contains_single_t{.value = value};
   }
 };
 

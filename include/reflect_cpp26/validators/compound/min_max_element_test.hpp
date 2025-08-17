@@ -23,7 +23,7 @@
 #ifndef REFLECT_CPP26_VALIDATORS_COMPOUND_MIN_MAX_ELEMENT_TEST_HPP
 #define REFLECT_CPP26_VALIDATORS_COMPOUND_MIN_MAX_ELEMENT_TEST_HPP
 
-#include <reflect_cpp26/validators/impl/maker_common.hpp>
+#include <reflect_cpp26/validators/impl/maker.hpp>
 #include <ranges>
 
 namespace reflect_cpp26::validators {
@@ -43,7 +43,6 @@ struct min_or_max_element_validator_t : validator_tag_t {
   Nested nested;
 
   template <std::ranges::forward_range InputT>
-    requires (validator_of<Nested, std::ranges::range_value_t<InputT>>)
   constexpr bool test(const InputT& input) const
   {
     if (std::ranges::empty(input)) {
@@ -54,7 +53,6 @@ struct min_or_max_element_validator_t : validator_tag_t {
   }
 
   template <std::ranges::forward_range InputT>
-    requires (validator_of<Nested, std::ranges::range_value_t<InputT>>)
   constexpr auto make_error_message(const InputT& input) const -> std::string
   {
     constexpr auto op = impl::min_max_type_notation<MinOrMaxElementFn>;

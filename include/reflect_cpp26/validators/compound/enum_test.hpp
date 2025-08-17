@@ -23,7 +23,7 @@
 #ifndef REFLECT_CPP26_VALIDATORS_COMPOUND_ENUM_TEST_HPP
 #define REFLECT_CPP26_VALIDATORS_COMPOUND_ENUM_TEST_HPP
 
-#include <reflect_cpp26/validators/impl/maker_common.hpp>
+#include <reflect_cpp26/validators/impl/maker.hpp>
 #include <reflect_cpp26/utils/concepts.hpp>
 
 namespace reflect_cpp26::validators {
@@ -32,13 +32,11 @@ struct enum_underlying_validator_t : validator_tag_t {
   Nested nested;
 
   template <enum_type E>
-    requires (validator_of<Nested, std::underlying_type_t<E>>)
   constexpr bool test(E input) const {
     return nested.test(std::to_underlying(input));
   }
 
   template <enum_type E>
-    requires (validator_of<Nested, std::underlying_type_t<E>>)
   constexpr auto make_error_message(E input) const -> std::string
   {
     return "Invalid underlying value -> " +

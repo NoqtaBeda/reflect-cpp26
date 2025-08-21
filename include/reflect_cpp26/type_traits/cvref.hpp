@@ -27,6 +27,12 @@
 #include <reflect_cpp26/utils/config.h>
 
 namespace reflect_cpp26 {
+/**
+ * Adds cv-qualifiers and references of src to dest.
+ * Example: if src is volatile T&&, dest is U, then the result is volatile U&&.
+ * Both dest and src must be reflection of types and dest shall not be a
+ * reference type.
+ */
 consteval auto add_cvref_like(std::meta::info dest, std::meta::info src)
 {
   if (!is_type(dest)) {
@@ -61,6 +67,10 @@ consteval auto add_cvref_like(std::meta::info dest, std::meta::info src)
   return dest;
 }
 
+/**
+ * Adds cv-qualifiers and references of src to dest.
+ * See add_cvref_like() above for details.
+ */
 template <non_reference_type Dest, class Src>
 using add_cvref_like_t = [: add_cvref_like(^^Dest, ^^Src) :];
 } // namespace reflect_cpp26

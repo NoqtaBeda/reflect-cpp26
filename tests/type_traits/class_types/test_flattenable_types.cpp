@@ -335,7 +335,8 @@ struct baz_C_t : baz_A_t, baz_B_t {
 // Class types: With non-public inheritance
 static_assert(rfl::is_partially_flattenable_v<baz_A_t>);
 static_assert(rfl::is_partially_flattenable_v<baz_B_t>);
-static_assert(rfl::is_partially_flattenable_v<baz_C_t>);
+// Not partially flattenable due to ambiguous base class my_pair
+static_assert(NOT rfl::is_partially_flattenable_v<baz_C_t>);
 
 static_assert(NOT rfl::is_flattenable_v<baz_A_t>);
 static_assert(NOT rfl::is_flattenable_v<baz_B_t>);

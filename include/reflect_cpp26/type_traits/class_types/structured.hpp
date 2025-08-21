@@ -48,6 +48,9 @@ template <class T>
 constexpr bool is_structured_type_v =
   impl::is_structured_type(^^std::remove_cv_t<T>);
 
+/**
+ * Tests whether T is a structured type.
+ */
 template <class T>
 concept structured_type = is_structured_type_v<T>;
 

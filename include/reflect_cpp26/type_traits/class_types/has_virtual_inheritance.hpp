@@ -43,10 +43,7 @@ consteval bool has_virtual_inheritance(std::meta::info T);
  * scalar types, references, arrays, unions, etc.
  */
 template <class T>
-constexpr auto has_virtual_inheritance_v = false;
-
-template <class_type T>
-constexpr auto has_virtual_inheritance_v<T> =
+constexpr auto has_virtual_inheritance_v =
   impl::has_virtual_inheritance(^^std::remove_cv_t<T>);
 
 template <class T>
@@ -60,9 +57,12 @@ concept class_without_virtual_inheritance =
 namespace impl {
 consteval bool has_virtual_inheritance(std::meta::info T)
 {
+  if (!is_class_type(T)) {
+    return false;
+  }
   auto check_fn = [](std::meta::info base) {
-    return is_virtual(base)
-      || extract_bool(^^has_virtual_inheritance_v, type_of(base));
+    if (is_virtual(base)) { return true; }
+    return extract_bool(^^has_virtual_inheritance_v, type_of(base));
   };
   return std::ranges::any_of(all_direct_bases_of(T), check_fn);
 }

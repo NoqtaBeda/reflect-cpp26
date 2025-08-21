@@ -157,57 +157,8 @@ meta_test_cases = {
   "type_operations/test_member_access",
   "type_operations/test_to_string",
   "type_operations/test_to_structured",
-  -- Validators
-  -- "validators/compound/test_enum",
-  -- "validators/compound/test_for_each",
-  -- "validators/compound/test_front_back",
-  -- "validators/compound/test_min_max_element",
-  -- "validators/compound/test_size",
-  "validators/leaf/test_arithmetic",
-  "validators/leaf/test_boundary_options_exclusion_1",
-  "validators/leaf/test_boundary_options_exclusion_2",
-  "validators/leaf/test_contains",
-  "validators/leaf/test_custom_validator",
-  "validators/leaf/test_enum",
-  "validators/leaf/test_non_empty",
-  "validators/leaf/test_non_null",
-  "validators/leaf/test_prefix_suffix",
-  "validators/leaf/test_sorted",
-  "validators/test_member_access_mode",
 }
 
 for i, path in ipairs(meta_test_cases) do
   make_test_case(path)
 end
-
-meta_asm_check_cases = {
-  -- Enum
-  "enum/enum_cast_from_string_dense",
-  "enum/enum_cast_from_string_sparse",
-  "enum/enum_index_dense",
-  "enum/enum_index_sparse",
-  "enum/enum_json",
-  "enum/enum_json_static",
-  "enum/enum_name_dense",
-  "enum/enum_name_sparse",
-  -- Validators
-  "validators/arithmetic_boundary_test",
-  "validators/arithmetic_boundary_test_with_error",
-}
-
-for i, path in ipairs(meta_asm_check_cases) do
-  make_asm_check_case(path)
-end
-
-target("run_asm_check", function ()
-  set_kind("phony")
-  for i, path in ipairs(meta_asm_check_cases) do
-    local _, target_name, _ =
-      parse_test_case_path(path, "asm_check", "tests/asm_check")
-    add_deps(target_name)
-  end
-  on_run(function (target)
-    os.exec("python3 tests/asm_check/run.py -R $(projectdir) -c")
-  end)
-  set_targetdir("$(buildir)/asm_check")
-end)

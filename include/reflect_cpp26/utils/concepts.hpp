@@ -25,13 +25,18 @@
 
 #include <type_traits>
 
-namespace reflect_cpp26 {
-#define REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_P(category, prefix)  \
-  template <class T>                                                    \
-  concept category##_type = std::prefix##_##category##_v<T>;            \
+// Reused by multiple headers in reflect_cpp26
+#define REFLECT_CPP26_DEFINE_CONCEPT_WITH_CVREF(concept_name)               \
+  template <class T>                                                        \
+  concept concept_name##_or_ref = concept_name<std::remove_reference_t<T>>; \
+                                                                            \
+  template <class T>                                                        \
+  concept concept_name##_or_cvref = concept_name<std::remove_cvref_t<T>>;
 
+namespace reflect_cpp26 {
 #define REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(category)  \
-  REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_P(category, is)
+  template <class T>                                          \
+  concept category##_type = std::is_##category##_v<T>;
 
 REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(abstract)
 REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(aggregate)
@@ -59,14 +64,10 @@ REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(scalar)
 REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(scoped_enum)
 REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(unbounded_array)
 REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(union)
-REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_P(unique_object_representations, has)
-
-#define REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG_P(category, p1, neg) \
-  template <class T>                                                        \
-  concept neg##_##category##_type = !std::p1##_##category##_v<T>;
 
 #define REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(category)  \
-  REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG_P(category, is, non)
+  template <class T>                                              \
+  concept non_##category##_type = !std::is_##category##_v<T>;
 
 // Some std traits are removed due to ambiguity concerns.
 // e.g. Does 'non_bounded_array' refer to an array type that is not bounded,
@@ -92,24 +93,13 @@ REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(scalar)
 REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(union)
 
 #undef REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT
-#undef REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_P
 #undef REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG
-#undef REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG_P
 
 template <class T>
 concept class_or_union_type = std::is_class_v<T> || std::is_union_v<T>;
 
-#define REFLECT_CPP26_DEFINE_CONCEPT_WITH_CVREF(ns, concept_name) \
-  template <class T>                                              \
-  concept concept_name##_or_ref =                                 \
-    ns::concept_name<std::remove_reference_t<T>>;                 \
-                                                                  \
-  template <class T>                                              \
-  concept concept_name##_or_cvref =                               \
-    ns::concept_name<std::remove_cvref_t<T>>;
-
-#define REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(category)   \
-  REFLECT_CPP26_DEFINE_CONCEPT_WITH_CVREF(reflect_cpp26, category##_type)
+#define REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(category) \
+  REFLECT_CPP26_DEFINE_CONCEPT_WITH_CVREF(category##_type)
 
 REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(abstract)
 REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(aggregate)
@@ -133,8 +123,6 @@ REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(scalar)
 REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(scoped_enum)
 REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(unbounded_array)
 REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(union)
-REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(
-  unique_object_representations)
 REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(class_or_union)
 
 #undef REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF

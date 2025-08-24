@@ -683,8 +683,8 @@ TEST(TypeOperationsComparison, TupleLike)
     decltype(constant_1), decltype(constant_4)>);
   static_assert(! rfl::generic_not_equal_comparable_with<
     decltype(constant_1), decltype(constant_4)>);
-  static_assert(! rfl::is_generic_three_way_comparable<
-    decltype(constant_1), decltype(constant_4)>::value);
+  static_assert(! rfl::is_generic_three_way_comparable_v<
+    decltype(constant_1), decltype(constant_4)>);
 
   constexpr auto std_tuple_1 = std::tuple{1.0, 2, 3u};
   static_assert(rfl::generic_equal(constant_1, std_tuple_1));

@@ -44,8 +44,8 @@ struct meta_tuple {
   underlying_type values;
 
 private:
-  static constexpr auto get_nth_field(size_t n) {
-    return all_direct_nsdm_v<underlying_type>[n];
+  static constexpr auto get_nth_field(size_t n) -> std::meta::info {
+    return all_direct_nonstatic_data_members_v<underlying_type>[n];
   }
 
 public:
@@ -57,12 +57,12 @@ public:
   template <tuple_like_of<Args...> TupleLike>
   constexpr auto& operator=(TupleLike&& tuple)
   {
-    constexpr auto members = all_direct_nsdm_of(^^underlying_type);
-    REFLECT_CPP26_EXPAND(members).for_each(
-      [this, &tuple](auto index, auto member) {
-        values.[:member:] =
-          get_ith_element<index>(std::forward<TupleLike>(tuple));
-      });
+    constexpr auto members = REFLECT_CPP26_EXPAND(
+      all_direct_nonstatic_data_members_of(^^underlying_type));
+    members.for_each([this, &tuple](auto index, auto member) {
+      values.[:member:] =
+        get_ith_element<index>(std::forward<TupleLike>(tuple));
+    });
     return *this;
   }
 

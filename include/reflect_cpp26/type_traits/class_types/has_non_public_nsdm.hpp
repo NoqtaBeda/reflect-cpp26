@@ -42,16 +42,16 @@ consteval bool is_class_type_with_non_public_nsdm(std::meta::info T);
  * scalar types, references, arrays, unions, etc.
  */
 template <class T>
-constexpr auto has_non_public_nsdm_v =
+constexpr auto has_non_public_nonstatic_data_members_v =
   impl::is_class_type_with_non_public_nsdm(^^std::remove_cv_t<T>);
 
 template <class T>
-concept class_with_non_public_nsdm =
-  std::is_class_v<T> && has_non_public_nsdm_v<T>;
+concept class_with_non_public_nonstatic_data_members =
+  std::is_class_v<T> && has_non_public_nonstatic_data_members_v<T>;
 
 template <class T>
-concept class_without_non_public_nsdm =
-  std::is_class_v<T> && !has_non_public_nsdm_v<T>;
+concept class_without_non_public_nonstatic_data_members =
+  std::is_class_v<T> && !has_non_public_nonstatic_data_members_v<T>;
 
 namespace impl {
 consteval bool is_class_type_with_non_public_nsdm(std::meta::info T)
@@ -59,13 +59,16 @@ consteval bool is_class_type_with_non_public_nsdm(std::meta::info T)
   if (!is_class_type(T)) {
     return false;
   }
-  if (!std::ranges::all_of(all_direct_nsdm_of(T), std::meta::is_public)) {
+  auto has_direct_non_public_nsdm = !std::ranges::all_of(
+    all_direct_nonstatic_data_members_of(T), std::meta::is_public);
+  if (has_direct_non_public_nsdm) {
     return true;
   }
   return std::ranges::any_of(all_direct_bases_of(T),
     [](std::meta::info base) {
       if (is_public(base)) {
-        return extract_bool(^^has_non_public_nsdm_v, type_of(base));
+        return extract_bool(
+          ^^has_non_public_nonstatic_data_members_v, type_of(base));
       }
       return !is_empty_type(type_of(base));
     });

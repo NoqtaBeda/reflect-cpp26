@@ -72,13 +72,16 @@ consteval bool is_structured_class_type(std::meta::info T)
         && extract_bool(^^is_structured_type_v, type_of(base));
     });
   return bases_are_structured && std::ranges::all_of(
-    all_direct_nsdm_of(T), is_structured_nsdm);
+    all_direct_nonstatic_data_members_of(T), is_structured_nsdm);
 }
 
 consteval bool is_structured_union_type(std::meta::info T)
 {
-  return is_trivially_destructible_type(T) &&
-    std::ranges::any_of(all_direct_nsdm_of(T), is_structured_nsdm);
+  if (!is_trivially_destructible_type(T)) {
+    return false;
+  }
+  return std::ranges::any_of(
+    all_direct_nonstatic_data_members_of(T), is_structured_nsdm);
 }
 
 consteval bool is_structured_type(std::meta::info T)

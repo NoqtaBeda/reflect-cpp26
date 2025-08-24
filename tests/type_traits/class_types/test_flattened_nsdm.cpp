@@ -45,7 +45,7 @@ template <rfl::access_mode Mode, class T>
 constexpr auto extract_indices() -> std::vector<size_t>
 {
   constexpr auto indices = std::define_static_array(
-    rfl::flattened_nsdm_v<Mode, T>
+    rfl::flattened_nonstatic_data_members_v<Mode, T>
       | std::views::transform(&rfl::flattened_data_member_info::index));
   return std::vector{std::from_range, indices};
 }
@@ -54,7 +54,7 @@ template <rfl::access_mode Mode, class T>
 constexpr auto extract_public_indices() -> std::vector<size_t>
 {
   constexpr auto indices = std::define_static_array(
-    rfl::flattened_nsdm_v<Mode, T>
+    rfl::flattened_nonstatic_data_members_v<Mode, T>
       | std::views::transform(&rfl::flattened_data_member_info::public_index));
   return std::vector{std::from_range, indices};
 }
@@ -129,14 +129,14 @@ consteval auto dump_member_list(
 TEST(TypeTraitsClassTypes, PublicNSDMListMonostate)
 {
   constexpr auto std_monostate_members =
-    rfl::public_flattened_nsdm_v<std::monostate>;
+    rfl::public_flattened_nonstatic_data_members_v<std::monostate>;
   static_assert(std_monostate_members.size() == 0);
 }
 
 TEST(TypeTraitsClassTypes, AllNSDMListMonostate)
 {
   constexpr auto std_monostate_members =
-    rfl::all_flattened_nsdm_v<std::monostate>;
+    rfl::all_flattened_nonstatic_data_members_v<std::monostate>;
   static_assert(std_monostate_members.size() == 0);
 }
 
@@ -155,7 +155,8 @@ private:
 
 TEST(TypeTraitsClassTypes, PublicNSDMListFoo)
 {
-  constexpr auto foo_members = rfl::public_flattened_nsdm_v<foo_t>;
+  constexpr auto foo_members =
+    rfl::public_flattened_nonstatic_data_members_v<foo_t>;
   static_assert(foo_members.size() == 2);
   static_assert(foo_members[0].actual_offset_bytes() == 0z);
   static_assert(foo_members[1].actual_offset_bytes() == 4z);
@@ -173,7 +174,8 @@ TEST(TypeTraitsClassTypes, PublicNSDMListFoo)
 
 TEST(TypeTraitsClassTypes, AllNSDMListFoo)
 {
-  constexpr auto foo_members = rfl::all_flattened_nsdm_v<foo_t>;
+  constexpr auto foo_members =
+    rfl::all_flattened_nonstatic_data_members_v<foo_t>;
   static_assert(foo_members.size() == 3);
   static_assert(foo_members[0].actual_offset_bytes() == 0z);
   static_assert(foo_members[1].actual_offset_bytes() == 4z);
@@ -210,7 +212,8 @@ protected:
 
 TEST(TypeTraitsClassTypes, PublicNSDMListBar1)
 {
-  constexpr auto bar_1_members = rfl::public_flattened_nsdm_v<bar_1_t>;
+  constexpr auto bar_1_members =
+    rfl::public_flattened_nonstatic_data_members_v<bar_1_t>;
   static_assert(bar_1_members.size() == 4);
   static_assert(bar_1_members[0].actual_offset_bytes() == 0z);
   static_assert(bar_1_members[1].actual_offset_bytes() == 4z);
@@ -235,7 +238,8 @@ TEST(TypeTraitsClassTypes, PublicNSDMListBar1)
 
 TEST(TypeTraitsClassTypes, AllNSDMListBar1)
 {
-  constexpr auto bar_1_members = rfl::all_flattened_nsdm_v<bar_1_t>;
+  constexpr auto bar_1_members =
+    rfl::all_flattened_nonstatic_data_members_v<bar_1_t>;
   static_assert(bar_1_members.size() == 6);
   static_assert(bar_1_members[0].actual_offset_bytes() == 0z);
   static_assert(bar_1_members[1].actual_offset_bytes() == 4z);
@@ -283,7 +287,8 @@ protected:
 
 TEST(TypeTraitsClassTypes, PublicNSDMListBar2)
 {
-  constexpr auto bar_2_members = rfl::public_flattened_nsdm_v<bar_2_t>;
+  constexpr auto bar_2_members =
+    rfl::public_flattened_nonstatic_data_members_v<bar_2_t>;
   static_assert(bar_2_members.size() == 3);
 
   EXPECT_EQ_STATIC(std::vector({0zU, 1zU, 8zU}),
@@ -309,7 +314,8 @@ TEST(TypeTraitsClassTypes, PublicNSDMListBar2)
 
 TEST(TypeTraitsClassTypes, AllNSDMListBar2)
 {
-  constexpr auto bar_2_members = rfl::all_flattened_nsdm_v<bar_2_t>;
+  constexpr auto bar_2_members =
+    rfl::all_flattened_nonstatic_data_members_v<bar_2_t>;
   static_assert(bar_2_members.size() == 10);
 
   EXPECT_EQ_STATIC(make_index_sequence(10),
@@ -384,7 +390,8 @@ protected:
 
 TEST(TypeTraitsClassTypes, PublicNSDMListBar3)
 {
-  constexpr auto bar_3_members = rfl::public_flattened_nsdm_v<bar_3_t>;
+  constexpr auto bar_3_members =
+    rfl::public_flattened_nonstatic_data_members_v<bar_3_t>;
   static_assert(bar_3_members.size() == 3);
 
   EXPECT_EQ_STATIC(std::vector({1zU, 2zU, 4zU}),
@@ -410,7 +417,8 @@ TEST(TypeTraitsClassTypes, PublicNSDMListBar3)
 
 TEST(TypeTraitsClassTypes, AllNSDMListBar3)
 {
-  constexpr auto bar_3_members = rfl::all_flattened_nsdm_v<bar_3_t>;
+  constexpr auto bar_3_members =
+    rfl::all_flattened_nonstatic_data_members_v<bar_3_t>;
   static_assert(bar_3_members.size() == 6);
 
   EXPECT_EQ_STATIC(make_index_sequence(6),
@@ -471,7 +479,8 @@ public:
 
 TEST(TypeTraitsClassTypes, PublicNSDMListBaz1)
 {
-  constexpr auto baz_1_members = rfl::public_flattened_nsdm_v<baz_1_t>;
+  constexpr auto baz_1_members =
+    rfl::public_flattened_nonstatic_data_members_v<baz_1_t>;
   static_assert(baz_1_members.size() == 9);
 
   EXPECT_EQ_STATIC(
@@ -528,7 +537,8 @@ TEST(TypeTraitsClassTypes, PublicNSDMListBaz1)
 
 TEST(TypeTraitsClassTypes, AllNSDMListBaz1)
 {
-  constexpr auto baz_1_members = rfl::all_flattened_nsdm_v<baz_1_t>;
+  constexpr auto baz_1_members =
+    rfl::all_flattened_nonstatic_data_members_v<baz_1_t>;
   static_assert(baz_1_members.size() == 15);
 
   EXPECT_EQ_STATIC(make_index_sequence(15),
@@ -555,7 +565,8 @@ public:
 
 TEST(TypeTraitsClassTypes, PublicNSDMListBaz2)
 {
-  constexpr auto baz_2_members = rfl::public_flattened_nsdm_v<baz_2_t>;
+  constexpr auto baz_2_members =
+    rfl::public_flattened_nonstatic_data_members_v<baz_2_t>;
   static_assert(baz_2_members.size() == 2);
 
   EXPECT_EQ_STATIC(std::vector({13zU, 14zU}), // Direct members of baz_2_t
@@ -566,7 +577,8 @@ TEST(TypeTraitsClassTypes, PublicNSDMListBaz2)
 
 TEST(TypeTraitsClassTypes, AllNSDMListBaz2)
 {
-  constexpr auto baz_2_members = rfl::all_flattened_nsdm_v<baz_2_t>;
+  constexpr auto baz_2_members =
+    rfl::all_flattened_nonstatic_data_members_v<baz_2_t>;
   static_assert(baz_2_members.size() == 15);
 
   EXPECT_EQ_STATIC(make_index_sequence(15),
@@ -594,7 +606,8 @@ struct references_t {
 // to target value by the C++ compiler.
 TEST(TypeTraitsClassTypes, NSDMListReferences)
 {
-  constexpr auto ref_members = rfl::public_flattened_nsdm_v<references_t>;
+  constexpr auto ref_members =
+    rfl::public_flattened_nonstatic_data_members_v<references_t>;
   static_assert(ref_members.size() == 4);
   static_assert(ref_members[0].actual_offset_bytes() == 0 * sizeof(void*));
   static_assert(ref_members[1].actual_offset_bytes() == 1 * sizeof(void*));
@@ -654,7 +667,8 @@ struct bit_fields_B_t : bit_fields_A_t {
 
 TEST(TypeTraitsClassTypes, NSDMListBitFields)
 {
-  constexpr auto members = rfl::public_flattened_nsdm_v<bit_fields_B_t>;
+  constexpr auto members =
+    rfl::public_flattened_nonstatic_data_members_v<bit_fields_B_t>;
   static_assert(members.size() == 8);
 
   EXPECT_EQ_STATIC(make_index_sequence(8),
@@ -759,7 +773,7 @@ struct D : B, C {
 
 TEST(TypeTraitsClassTypes, NSDMListPolymorphic)
 {
-  constexpr auto members = rfl::public_flattened_nsdm_v<D>;
+  constexpr auto members = rfl::public_flattened_nonstatic_data_members_v<D>;
   static_assert(members.size() == 11);
 
   EXPECT_EQ_STATIC(make_index_sequence(11),

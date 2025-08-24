@@ -27,14 +27,20 @@
 #include <reflect_cpp26/utils/to_string.hpp>
 
 namespace reflect_cpp26 {
+/**
+ * Gets the display string of type T.
+ */
 template <class T>
 constexpr auto type_name_of() -> std::string_view {
   return std::meta::display_string_of(^^T);
 }
 
+/**
+ * Gets the display string of type of given argument without cvref qualifiers.
+ */
 template <class T>
 constexpr auto type_name_of(const T&) -> std::string_view {
-  return type_name_of<T>();
+  return type_name_of<std::remove_cv_t<T>>();
 }
 
 namespace impl {
@@ -60,14 +66,23 @@ constexpr auto type_description_v =
   reflect_cpp26::define_static_string(make_type_description<T>());
 } // namespace impl
 
+/**
+ * Gets the detailed display string of type T, including:
+ * (1) Type name;
+ * (2) Where the type is defined, as format "(defined in $file:$line)".
+ */
 template <class T>
 constexpr auto type_description_of() -> std::string_view {
   return impl::type_description_v<T>;
 }
 
+/**
+ * Gets the detailed display string of type of given argument without cvref
+ * qualifiers. Details same as above.
+ */
 template <class T>
 constexpr auto type_description_of(const T&) -> std::string_view {
-  return type_description_of<T>();
+  return type_description_of<std::remove_cv_t<T>>();
 }
 } // namespace reflect_cpp26
 

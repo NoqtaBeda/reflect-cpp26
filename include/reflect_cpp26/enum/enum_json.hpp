@@ -26,7 +26,7 @@
 #include <reflect_cpp26/enum/enum_entries.hpp>
 #include <reflect_cpp26/utils/concepts.hpp>
 #include <reflect_cpp26/utils/define_static_values.hpp>
-#include <reflect_cpp26/utils/to_string_utils.hpp>
+#include <reflect_cpp26/utils/string_utils.hpp>
 #include <charconv>
 #include <string>
 

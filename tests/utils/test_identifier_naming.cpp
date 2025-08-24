@@ -108,12 +108,20 @@ TEST(UtilsIdentifierNaming, ToSnakeCase)
     rfl::to_snake_case("IsIEEE754Float", rfl::non_alpha_as_upper));
 
   EXPECT_EQ_STATIC("num_args_", rfl::to_snake_case("numArgs_"));
+  EXPECT_EQ_STATIC("num_args____", rfl::to_snake_case("numArgs_-_-"));
   EXPECT_EQ_STATIC("_noreturn", rfl::to_snake_case("_Noreturn"));
   EXPECT_EQ_STATIC("__no_return", rfl::to_snake_case("__NoReturn"));
   EXPECT_EQ_STATIC("__x__y__", rfl::to_snake_case("__X__Y__"));
   EXPECT_EQ_STATIC("___ab_c__d_ef___", rfl::to_snake_case("___AbC__DEf___"));
   // When you forget to remove the "--" prefix:
   EXPECT_EQ_STATIC("__num_processes", rfl::to_snake_case("--num-processes"));
+
+  // Delimiters only
+  EXPECT_EQ_STATIC("_", rfl::to_snake_case("_"));
+  EXPECT_EQ_STATIC("_", rfl::to_snake_case("-"));
+  EXPECT_EQ_STATIC("____", rfl::to_snake_case("____"));
+  EXPECT_EQ_STATIC("____", rfl::to_snake_case("----"));
+  EXPECT_EQ_STATIC("________", rfl::to_snake_case("_--__--_"));
 
   // Invalid identifiers
   TEST_INVALID_IDENTIFIERS(to_snake_case);
@@ -197,6 +205,13 @@ TEST(UtilsIdentifierNaming, ToAllCapsSnakeCase)
   EXPECT_EQ_STATIC("__NUM_PROCESSES",
     rfl::to_all_caps_snake_case("--num-processes"));
 
+  // Delimiters only
+  EXPECT_EQ_STATIC("_", rfl::to_all_caps_snake_case("_"));
+  EXPECT_EQ_STATIC("_", rfl::to_all_caps_snake_case("-"));
+  EXPECT_EQ_STATIC("____", rfl::to_all_caps_snake_case("____"));
+  EXPECT_EQ_STATIC("____", rfl::to_all_caps_snake_case("----"));
+  EXPECT_EQ_STATIC("________", rfl::to_all_caps_snake_case("_--__--_"));
+
   // Invalid identifiers
   TEST_INVALID_IDENTIFIERS(to_all_caps_snake_case);
 }
@@ -270,6 +285,13 @@ TEST(UtilsIdentifierNaming, ToKebabCase)
   EXPECT_EQ_STATIC("---ab-c--d-ef---", rfl::to_kebab_case("___AbC__DEf___"));
   // When you forget to remove the "--" prefix:
   EXPECT_EQ_STATIC("--num-processes", rfl::to_kebab_case("--num-processes"));
+
+  // Delimiters only
+  EXPECT_EQ_STATIC("-", rfl::to_kebab_case("_"));
+  EXPECT_EQ_STATIC("-", rfl::to_kebab_case("-"));
+  EXPECT_EQ_STATIC("----", rfl::to_kebab_case("____"));
+  EXPECT_EQ_STATIC("----", rfl::to_kebab_case("----"));
+  EXPECT_EQ_STATIC("--------", rfl::to_kebab_case("_--__--_"));
 
   // Invalid identifiers
   TEST_INVALID_IDENTIFIERS(to_kebab_case);
@@ -352,6 +374,13 @@ TEST(UtilsIdentifierNaming, ToAllCapsKebabCase)
   // When you forget to remove the "--" prefix:
   EXPECT_EQ_STATIC("--NUM-PROCESSES",
     rfl::to_all_caps_kebab_case("--num-processes"));
+
+  // Delimiters only
+  EXPECT_EQ_STATIC("-", rfl::to_all_caps_kebab_case("_"));
+  EXPECT_EQ_STATIC("-", rfl::to_all_caps_kebab_case("-"));
+  EXPECT_EQ_STATIC("----", rfl::to_all_caps_kebab_case("____"));
+  EXPECT_EQ_STATIC("----", rfl::to_all_caps_kebab_case("----"));
+  EXPECT_EQ_STATIC("--------", rfl::to_all_caps_kebab_case("_--__--_"));
 
   // Invalid identifiers
   TEST_INVALID_IDENTIFIERS(to_all_caps_kebab_case);
@@ -436,6 +465,13 @@ TEST(UtilsIdentifierNaming, ToLowerCamelCase)
   EXPECT_EQ_STATIC("__numProcesses",
     rfl::to_lower_camel_case("--num-processes"));
 
+  // Delimiters only
+  EXPECT_EQ_STATIC("_", rfl::to_lower_camel_case("_"));
+  EXPECT_EQ_STATIC("_", rfl::to_lower_camel_case("-"));
+  EXPECT_EQ_STATIC("____", rfl::to_lower_camel_case("____"));
+  EXPECT_EQ_STATIC("____", rfl::to_lower_camel_case("----"));
+  EXPECT_EQ_STATIC("________", rfl::to_lower_camel_case("_--__--_"));
+
   // Invalid identifiers
   TEST_INVALID_IDENTIFIERS(to_lower_camel_case);
 }
@@ -518,6 +554,13 @@ TEST(UtilsIdentifierNaming, ToUpperCamelCase)
   // When you forget to remove the "--" prefix:
   EXPECT_EQ_STATIC("__NumProcesses",
     rfl::to_upper_camel_case("--num-processes"));
+
+  // Delimiters only
+  EXPECT_EQ_STATIC("_", rfl::to_upper_camel_case("_"));
+  EXPECT_EQ_STATIC("_", rfl::to_upper_camel_case("-"));
+  EXPECT_EQ_STATIC("____", rfl::to_upper_camel_case("____"));
+  EXPECT_EQ_STATIC("____", rfl::to_upper_camel_case("----"));
+  EXPECT_EQ_STATIC("________", rfl::to_upper_camel_case("_--__--_"));
 
   // Invalid identifiers
   TEST_INVALID_IDENTIFIERS(to_upper_camel_case);
@@ -606,6 +649,13 @@ TEST(UtilsIdentifierNaming, ToLowerCamelSnakeCase)
   EXPECT_EQ_STATIC("__num_Processes",
     rfl::to_lower_camel_snake_case("--num-processes"));
 
+  // Delimiters only
+  EXPECT_EQ_STATIC("_", rfl::to_lower_camel_snake_case("_"));
+  EXPECT_EQ_STATIC("_", rfl::to_lower_camel_snake_case("-"));
+  EXPECT_EQ_STATIC("____", rfl::to_lower_camel_snake_case("____"));
+  EXPECT_EQ_STATIC("____", rfl::to_lower_camel_snake_case("----"));
+  EXPECT_EQ_STATIC("________", rfl::to_lower_camel_snake_case("_--__--_"));
+
   // Invalid identifiers
   TEST_INVALID_IDENTIFIERS(to_lower_camel_snake_case);
 }
@@ -693,6 +743,13 @@ TEST(UtilsIdentifierNaming, ToUpperCamelSnakeCase)
   EXPECT_EQ_STATIC("__Num_Processes",
     rfl::to_upper_camel_snake_case("--num-processes"));
 
+  // Delimiters only
+  EXPECT_EQ_STATIC("_", rfl::to_upper_camel_snake_case("_"));
+  EXPECT_EQ_STATIC("_", rfl::to_upper_camel_snake_case("-"));
+  EXPECT_EQ_STATIC("____", rfl::to_upper_camel_snake_case("____"));
+  EXPECT_EQ_STATIC("____", rfl::to_upper_camel_snake_case("----"));
+  EXPECT_EQ_STATIC("________", rfl::to_upper_camel_snake_case("_--__--_"));
+
   // Invalid identifiers
   TEST_INVALID_IDENTIFIERS(to_upper_camel_snake_case);
 }
@@ -779,6 +836,13 @@ TEST(UtilsIdentifierNaming, ToHttpHeaderCase)
   // When you forget to remove the "--" prefix:
   EXPECT_EQ_STATIC("--Num-Processes",
     rfl::to_http_header_case("--num-processes"));
+
+  // Delimiters only
+  EXPECT_EQ_STATIC("-", rfl::to_http_header_case("_"));
+  EXPECT_EQ_STATIC("-", rfl::to_http_header_case("-"));
+  EXPECT_EQ_STATIC("----", rfl::to_http_header_case("____"));
+  EXPECT_EQ_STATIC("----", rfl::to_http_header_case("----"));
+  EXPECT_EQ_STATIC("--------", rfl::to_http_header_case("_--__--_"));
 
   // Invalid identifiers
   TEST_INVALID_IDENTIFIERS(to_http_header_case);

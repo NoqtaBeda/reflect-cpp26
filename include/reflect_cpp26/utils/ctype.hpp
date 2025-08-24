@@ -27,10 +27,14 @@
 // (1) C++ stdlib; (2) utils/config.h; (3) Other root headers
 #include <reflect_cpp26/type_traits/arithmetic_types.hpp>
 #include <reflect_cpp26/type_traits/string_like_types.hpp>
+#include <reflect_cpp26/utils/string_utils.hpp>
 #include <cstdint>
 #include <functional>
 
 namespace reflect_cpp26 {
+/**
+ * Whether c can represent an ASCII character, i.e. c falls in range [0, 127].
+ */
 struct is_ascii_char_t {
   static constexpr bool operator()(non_bool_integral auto c) {
     return c >= 0 && c <= 127;
@@ -38,6 +42,9 @@ struct is_ascii_char_t {
 };
 constexpr auto is_ascii_char = is_ascii_char_t{};
 
+/**
+ * Whether str is an ASCII string, i.e. each character of str falls in [0, 127].
+ */
 struct is_ascii_string_t {
   static constexpr bool operator()(const string_like auto& str)
   {
@@ -81,7 +88,7 @@ constexpr uint8_t ctype_flag_table[128] = {
 };
 
 template <class Comp, uint8_t Mask>
-struct ascii_ctype_predicate_common_t {
+struct ascii_ctype_predicate_t {
   static constexpr auto comp = Comp{};
 
   static constexpr bool operator()(non_bool_integral auto c) {
@@ -90,76 +97,108 @@ struct ascii_ctype_predicate_common_t {
 };
 } // namespace impl
 
-/**
- * Constexpr, locale-independent alternative to std::isalnum etc. in <cctype>.
- */
-#define REFLECT_CPP26_CTYPE_PREDICATE_FOR_EACH(F)         \
-  F(isalnum,  std::not_equal_to, impl::ctype_alnum_mask)  \
-  F(isalpha,  std::not_equal_to, impl::ctype_alpha_mask)  \
-  F(islower,  std::not_equal_to, impl::ctype_lower_mask)  \
-  F(isupper,  std::not_equal_to, impl::ctype_upper_mask)  \
-  F(isdigit,  std::not_equal_to, impl::ctype_digit_mask)  \
-  F(isxdigit, std::not_equal_to, impl::ctype_xdigit_mask) \
-  F(isblank,  std::not_equal_to, impl::ctype_blank_mask)  \
-  F(iscntrl,  std::equal_to,     impl::ctype_print_mask)  \
-  F(isgraph,  std::not_equal_to, impl::ctype_graph_mask)  \
-  F(isspace,  std::not_equal_to, impl::ctype_space_mask)  \
-  F(isprint,  std::not_equal_to, impl::ctype_print_mask)  \
-  F(ispunct,  std::not_equal_to, impl::ctype_punct_mask)
-
-#define REFLECT_CPP26_DEFINE_CTYPE_PREDICATE(func, Comp, Mask)      \
-  struct ascii_##func##_t                                           \
-    : impl::ascii_ctype_predicate_common_t<Comp<uint8_t>, Mask> {}; \
+#define REFLECT_CPP26_CTYPE_PREDICATE(func, Comp, Mask)                 \
+  struct ascii_##func##_t                                               \
+    : impl::ascii_ctype_predicate_t<std::Comp<uint8_t>, impl::Mask> {}; \
   constexpr auto ascii_##func = ascii_##func##_t{};
 
-REFLECT_CPP26_CTYPE_PREDICATE_FOR_EACH(REFLECT_CPP26_DEFINE_CTYPE_PREDICATE)
-#undef REFLECT_CPP26_DEFINE_CTYPE_PREDICATE
-#undef REFLECT_CPP26_CTYPE_PREDICATE_FOR_EACH
+/**
+ * Constexpr, locale-independent alternative to std::isalnum etc. in <cctype>.
+ * Always returns false if inpue value can not represent an ASCII character,
+ * i.e. does not fall in range [0, 127].
+ */
+REFLECT_CPP26_CTYPE_PREDICATE(isalnum,  not_equal_to, ctype_alnum_mask)
+REFLECT_CPP26_CTYPE_PREDICATE(isalpha,  not_equal_to, ctype_alpha_mask)
+REFLECT_CPP26_CTYPE_PREDICATE(islower,  not_equal_to, ctype_lower_mask)
+REFLECT_CPP26_CTYPE_PREDICATE(isupper,  not_equal_to, ctype_upper_mask)
+REFLECT_CPP26_CTYPE_PREDICATE(isdigit,  not_equal_to, ctype_digit_mask)
+REFLECT_CPP26_CTYPE_PREDICATE(isxdigit, not_equal_to, ctype_xdigit_mask)
+REFLECT_CPP26_CTYPE_PREDICATE(isblank,  not_equal_to, ctype_blank_mask)
+REFLECT_CPP26_CTYPE_PREDICATE(iscntrl,  equal_to,     ctype_print_mask)
+REFLECT_CPP26_CTYPE_PREDICATE(isgraph,  not_equal_to, ctype_graph_mask)
+REFLECT_CPP26_CTYPE_PREDICATE(isspace,  not_equal_to, ctype_space_mask)
+REFLECT_CPP26_CTYPE_PREDICATE(isprint,  not_equal_to, ctype_print_mask)
+REFLECT_CPP26_CTYPE_PREDICATE(ispunct,  not_equal_to, ctype_punct_mask)
+#undef REFLECT_CPP26_CTYPE_PREDICATE
 
 namespace impl {
 template <class Derived>
-struct ascii_ctype_conversion_common_t {
+struct ascii_ctype_conversion_interface_t {
+  /**
+   * ascii_tolower(const StringLike& str) -> std::basic_string
+   * ascii_toupper(const StringLike& str) -> std::basic_string
+   * Converts input string to lower/upper case. Non-letter characters and all
+   * non-ASCII characters (i.e. out of range [0, 127]) are kept unchanged.
+   */
   template <string_like StringT>
   static constexpr auto operator()(const StringT& str)
     /* -> std::basic_string<CharT> */
   {
     using CharT = char_type_t<StringT>;
+    auto sv = make_string_view(str);
     auto res = std::basic_string<CharT>{};
-    res.resize_and_overwrite(str.length(), [&str](CharT* buffer, size_t n) {
-      for (auto c: str) { *buffer++ = Derived::convert_char(c); }
+    res.resize_and_overwrite(sv.length(), [sv](CharT* buffer, size_t n) {
+      for (auto c: sv) {
+        *buffer++ = Derived::convert_char(c);
+      }
       return n;
     });
     return res;
   }
 
+  /**
+   * ascii_tolower(CharType c) -> CharType
+   * ascii_toupper(CharType c) -> CharType
+   * Converts input character to lower/upper case. Non-letter characters and all
+   * non-ASCII characters (i.e. out of range [0, 127]) are kept unchanged.
+   */
   static constexpr auto operator()(char_type auto c) {
     return Derived::convert_char(c);
   }
 };
 } // namespace impl
 
+/**
+ * ascii_tolower(const StringLike& str) -> std::basic_string
+ * ascii_tolower(CharType c) -> CharType
+ * See above.
+ */
 struct ascii_tolower_t
-  : impl::ascii_ctype_conversion_common_t<ascii_tolower_t>
+  : impl::ascii_ctype_conversion_interface_t<ascii_tolower_t>
 {
-  static constexpr auto convert_char(non_bool_integral auto c) {
-    return ascii_isupper(c) ? c + 'a' - 'A' : c;
+  template <char_type CharT>
+  static constexpr auto convert_char(CharT c) {
+    return static_cast<CharT>(ascii_isupper(c) ? c + 'a' - 'A' : c);
   }
 };
+constexpr auto ascii_tolower = ascii_tolower_t{};
 
+/**
+ * ascii_toupper(const StringLike& str) -> std::basic_string
+ * ascii_toupper(CharType c) -> CharType
+ * See above.
+ */
 struct ascii_toupper_t
-  : impl::ascii_ctype_conversion_common_t<ascii_toupper_t>
+  : impl::ascii_ctype_conversion_interface_t<ascii_toupper_t>
 {
-  static constexpr auto convert_char(non_bool_integral auto c) {
-    return ascii_islower(c) ? c + 'A' - 'a' : c;
+  template <char_type CharT>
+  static constexpr auto convert_char(CharT c) {
+    return static_cast<CharT>(ascii_islower(c) ? c + 'A' - 'a' : c);
   }
 };
+constexpr auto ascii_toupper = ascii_toupper_t{};
 
+/**
+ * ascii_trim(const StringLike& str) -> std::basic_string_view
+ * Removes the maximal leading and trailing substrings of ASCII space characters
+ * (' ', '\f', '\n', '\r', '\t', '\v').
+ */
 struct ascii_trim_t {
   template <string_like StringT>
   static constexpr auto operator()(const StringT& str)
     /* -> std::basic_string_view */
   {
-    auto sv = std::basic_string_view{str};
+    auto sv = make_string_view(str);
     return do_trim(sv);
   }
 
@@ -178,9 +217,6 @@ private:
     return {head, before_tail + 1};
   }
 };
-
-constexpr auto ascii_tolower = ascii_tolower_t{};
-constexpr auto ascii_toupper = ascii_toupper_t{};
 constexpr auto ascii_trim = ascii_trim_t{};
 } // namespace reflect_cpp26
 

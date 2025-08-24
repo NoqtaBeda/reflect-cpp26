@@ -338,9 +338,9 @@ constexpr auto is_generic_three_way_comparable_v =
     generic_compare_three_way(u, t);
   };
 
-REFLECT_CPP26_UTILITY_MAKE_COMPARISON_TRAITS_TYPE(generic_equal)
-REFLECT_CPP26_UTILITY_MAKE_COMPARISON_TRAITS_TYPE(generic_not_equal)
-REFLECT_CPP26_UTILITY_MAKE_COMPARISON_TRAITS_TYPE(generic_three_way)
+REFLECT_CPP26_COMPARISON_CONCEPT(generic_equal)
+REFLECT_CPP26_COMPARISON_CONCEPT(generic_not_equal)
+REFLECT_CPP26_COMPARISON_CONCEPT(generic_three_way)
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_TYPE_OPERATIONS_COMPARISON_HPP

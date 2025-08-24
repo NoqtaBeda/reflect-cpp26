@@ -36,6 +36,12 @@ namespace reflect_cpp26 {
     return static_cast<add_cvref_like_t<M, T>>(obj.[: m :]);        \
   }
 
+#define REFLECT_CPP26_NSDM_COUNT(prefix, T)                         \
+  prefix##_nonstatic_data_members_v<std::remove_cvref_t<T>>.size()
+
+#define REFLECT_CPP26_ITH_NSDM(prefix, T, I)                        \
+  prefix##_nonstatic_data_members_v<std::remove_cvref_t<T>>[I]
+
 /**
  * Gets the i-th direct non-static data member of class or union type T.
  * (1) If the member is bit-field whose underlying type is M, then the result
@@ -46,10 +52,10 @@ namespace reflect_cpp26 {
  *     add_cvref_like_t<M, T>.
  */
 template <size_t I, class_or_union_type_or_cvref T>
-  requires (I < all_direct_nsdm_v<std::remove_cvref_t<T>>.size())
-constexpr decltype(auto) get_ith_direct_nsdm(T&& obj)
+  requires (I < REFLECT_CPP26_NSDM_COUNT(all_direct, T))
+constexpr decltype(auto) get_ith_direct_nonstatic_data_member(T&& obj)
 {
-  constexpr auto cur_nsdm = all_direct_nsdm_v<std::remove_cvref_t<T>>[I];
+  constexpr auto cur_nsdm = REFLECT_CPP26_ITH_NSDM(all_direct, T, I);
   REFLECT_CPP26_FORWARD_AND_RETURN_MEMBER(T, cur_nsdm);
 }
 
@@ -59,10 +65,10 @@ constexpr decltype(auto) get_ith_direct_nsdm(T&& obj)
  * Details same as above.
  */
 template <size_t I, class_or_union_type_or_cvref T>
-  requires (I < public_direct_nsdm_v<std::remove_cvref_t<T>>.size())
-constexpr decltype(auto) get_ith_public_direct_nsdm(T&& obj)
+  requires (I < REFLECT_CPP26_NSDM_COUNT(public_direct, T))
+constexpr decltype(auto) get_ith_public_direct_nonstatic_data_member(T&& obj)
 {
-  constexpr auto cur_nsdm = public_direct_nsdm_v<std::remove_cvref_t<T>>[I];
+  constexpr auto cur_nsdm = REFLECT_CPP26_ITH_NSDM(public_direct, T, I);
   REFLECT_CPP26_FORWARD_AND_RETURN_MEMBER(T, cur_nsdm);
 }
 
@@ -71,11 +77,10 @@ constexpr decltype(auto) get_ith_public_direct_nsdm(T&& obj)
  * Details same as above.
  */
 template <size_t I, partially_flattenable_class_or_cvref T>
-  requires (I < all_flattened_nsdm_v<std::remove_cvref_t<T>>.size())
-constexpr decltype(auto) get_ith_flattened_nsdm(T&& obj)
+  requires (I < REFLECT_CPP26_NSDM_COUNT(all_flattened, T))
+constexpr decltype(auto) get_ith_flattened_nonstatic_data_member(T&& obj)
 {
-  constexpr auto cur_nsdm =
-    all_flattened_nsdm_v<std::remove_cvref_t<T>>[I].member;
+  constexpr auto cur_nsdm = REFLECT_CPP26_ITH_NSDM(all_flattened, T, I).member;
   REFLECT_CPP26_FORWARD_AND_RETURN_MEMBER(T, cur_nsdm);
 }
 
@@ -85,180 +90,90 @@ constexpr decltype(auto) get_ith_flattened_nsdm(T&& obj)
  * Details same as above.
  */
 template <size_t I, partially_flattenable_class_or_cvref T>
-  requires (I < public_flattened_nsdm_v<std::remove_cvref_t<T>>.size())
-constexpr decltype(auto) get_ith_public_flattened_nsdm(T&& obj)
+  requires (I < REFLECT_CPP26_NSDM_COUNT(public_flattened, T))
+constexpr decltype(auto) get_ith_public_flattened_nonstatic_data_member(T&& obj)
 {
   constexpr auto cur_nsdm =
-    public_flattened_nsdm_v<std::remove_cvref_t<T>>[I].member;
+    REFLECT_CPP26_ITH_NSDM(public_flattened, T, I).member;
   REFLECT_CPP26_FORWARD_AND_RETURN_MEMBER(T, cur_nsdm);
 }
 
-#define REFLECT_CPP26_FIRST_LAST_NSDM(fn, front_back, all_public)       \
-  template <class_or_union_type_or_cvref T>                             \
-    requires (!std::is_empty_v<std::remove_cvref_t<T>>)                 \
-  constexpr decltype(auto) fn(T&& obj)                                  \
-  {                                                                     \
-    constexpr auto cur_nsdm =                                           \
-      all_public##_direct_nsdm_v<std::remove_cvref_t<T>>.front_back();  \
-    REFLECT_CPP26_FORWARD_AND_RETURN_MEMBER(T, cur_nsdm);               \
+#define REFLECT_CPP26_FIRST_LAST_NSDM(fn, front_back, all_public)           \
+  template <class_or_union_type_or_cvref T>                                 \
+    requires (!std::is_empty_v<std::remove_cvref_t<T>>)                     \
+  constexpr decltype(auto) get_##fn##_direct_nonstatic_data_member(T&& obj) \
+  {                                                                         \
+    using D = std::remove_cvref_t<T>;                                       \
+    constexpr auto cur_nsdm =                                               \
+      all_public##_direct_nonstatic_data_members_v<D>.front_back();         \
+    REFLECT_CPP26_FORWARD_AND_RETURN_MEMBER(T, cur_nsdm);                   \
   }
 
 /**
- * get_first_direct_nsdm<T>(T&& obj):
- * Equivalent to get_ith_direct_nsdm<0>(obj).
+ * get_first_direct_nonstatic_data_member<T>(T&& obj)
+ * Equivalent to get_ith_direct_nonstatic_data_member<0>(obj).
  */
-REFLECT_CPP26_FIRST_LAST_NSDM(get_first_direct_nsdm, front, all)
+REFLECT_CPP26_FIRST_LAST_NSDM(first, front, all)
 /**
- * get_last_direct_nsdm<T>(T&& obj):
- * Equivalent to get_ith_direct_nsdm<N-1>(obj) where N is the number of direct
- * non-static data members defined in std::remove_cvref_t<T>.
+ * get_last_direct_nonstatic_data_member<T>(T&& obj)
+ * Equivalent to get_ith_direct_nonstatic_data_member<N-1>(obj) where N is the
+ * number of direct non-static data members defined in std::remove_cvref_t<T>.
  */
-REFLECT_CPP26_FIRST_LAST_NSDM(get_last_direct_nsdm, back, all)
+REFLECT_CPP26_FIRST_LAST_NSDM(last, back, all)
 /*
- * get_first_public_direct_nsdm<T>(T&& obj)
- * Equivalent to get_ith_public_direct_nsdm<0>(obj).
+ * get_first_public_direct_nonstatic_data_member<T>(T&& obj)
+ * Equivalent to get_ith_public_direct_nonstatic_data_member<0>(obj).
  */
-REFLECT_CPP26_FIRST_LAST_NSDM(get_first_public_direct_nsdm, front, public)
+REFLECT_CPP26_FIRST_LAST_NSDM(first_public, front, public)
 /**
- * get_last_public_direct_nsdm<T>(T&& obj)
- * Equivalent to get_ith_public_direct_nsdm<Np-1>(obj) where Np is the number of
- * direct non-static data members with public access in std::remove_cvref_t<T>.
- */
-REFLECT_CPP26_FIRST_LAST_NSDM(get_last_public_direct_nsdm, back, public)
-#undef REFLECT_CPP26_FIRST_LAST_NSDM
-
-#define REFLECT_CPP26_FIRST_LAST_NSDM(fn, front_back, all_public) \
-  template <partially_flattenable_class_or_cvref T>               \
-    requires (!std::is_empty_v<std::remove_cvref_t<T>>)           \
-  constexpr decltype(auto) fn(T&& obj)                            \
-  {                                                               \
-    constexpr auto cur_nsdm =                                     \
-      all_public##_flattened_nsdm_v<std::remove_cvref_t<T>>       \
-        .front_back().member;                                     \
-    REFLECT_CPP26_FORWARD_AND_RETURN_MEMBER(T, cur_nsdm);         \
-  }
-
-/**
- * get_first_flattened_nsdm<T>(T&& obj):
- * Equivalent to get_ith_flattened_nsdm<0>(obj).
- */
-REFLECT_CPP26_FIRST_LAST_NSDM(get_first_flattened_nsdm, front, all)
-/**
- * get_last_flattened_nsdm<T>(T&& obj):
- * Equivalent to get_ith_flattened_nsdm<N-1>(obj) where N is the number of
- * flattened non-static data members defined in or inherited by
+ * get_last_public_direct_nonstatic_data_member<T>(T&& obj)
+ * Equivalent to get_ith_public_direct_nonstatic_data_member<Np-1>(obj) where Np
+ * is the number of direct non-static data members with public access in
  * std::remove_cvref_t<T>.
  */
-REFLECT_CPP26_FIRST_LAST_NSDM(get_last_flattened_nsdm, back, all)
+REFLECT_CPP26_FIRST_LAST_NSDM(last_public, back, public)
+#undef REFLECT_CPP26_FIRST_LAST_NSDM
+
+#define REFLECT_CPP26_FIRST_LAST_NSDM(fn, front_back, all_public)              \
+  template <partially_flattenable_class_or_cvref T>                            \
+    requires (!std::is_empty_v<std::remove_cvref_t<T>>)                        \
+  constexpr decltype(auto) get_##fn##_flattened_nonstatic_data_member(T&& obj) \
+  {                                                                            \
+    using D = std::remove_cvref_t<T>;                                          \
+    constexpr auto cur_nsdm =                                                  \
+      all_public##_flattened_nonstatic_data_members_v<D>.front_back().member;  \
+    REFLECT_CPP26_FORWARD_AND_RETURN_MEMBER(T, cur_nsdm);                      \
+  }
+
 /**
- * get_first_public_flattened_nsdm<T>(T&& obj):
- * Equivalent to get_ith_public_flattened_nsdm<0>(obj).
+ * get_first_flattened_nonstatic_data_member<T>(T&& obj):
+ * Equivalent to get_ith_flattened_nonstatic_data_member<0>(obj).
  */
-REFLECT_CPP26_FIRST_LAST_NSDM(get_first_public_flattened_nsdm, front, public)
+REFLECT_CPP26_FIRST_LAST_NSDM(first, front, all)
 /**
- * get_last_public_flattened_nsdm<T>(T&& obj):
- * Equivalent to get_ith_public_flattened_nsdm<Np-1>(obj) where Np is the number
- * of flattened non-static data members with public access defined in or
- * inherited by std::remove_cvref_t<T>.
+ * get_last_flattened_nonstatic_data_member<T>(T&& obj):
+ * Equivalent to get_ith_flattened_nonstatic_data_member<N-1>(obj) where N is
+ * the number of flattened non-static data members defined in or inherited by
+ * std::remove_cvref_t<T>.
  */
-REFLECT_CPP26_FIRST_LAST_NSDM(get_last_public_flattened_nsdm, back, public)
+REFLECT_CPP26_FIRST_LAST_NSDM(last, back, all)
+/**
+ * get_first_public_flattened_nonstatic_data_member<T>(T&& obj):
+ * Equivalent to get_ith_public_flattened_nonstatic_data_member<0>(obj).
+ */
+REFLECT_CPP26_FIRST_LAST_NSDM(first_public, front, public)
+/**
+ * get_last_public_flattened_nonstatic_data_member<T>(T&& obj):
+ * Equivalent to get_ith_public_flattened_nonstatic_data_member<Np-1>(obj) where
+ * Np is the number of flattened non-static data members with public access
+ * defined in or inherited by std::remove_cvref_t<T>.
+ */
+REFLECT_CPP26_FIRST_LAST_NSDM(last_public, back, public)
+
 #undef REFLECT_CPP26_FIRST_LAST_NSDM
 #undef REFLECT_CPP26_FORWARD_AND_RETURN_MEMBER
-
-namespace impl {
-template <class T, std::meta::info ArrV>
-constexpr auto make_direct_nsdm_name_array()
-  /* std::array<std::string_view, N> */
-{
-  constexpr auto members = extract<substitute(ArrV, ^^T)>();
-  constexpr auto N = members.size();
-  auto res = std::array<std::string_view, N>{};
-  for (auto i = 0zU; i < N; i++) {
-    res[i] = reflect_cpp26::identifier_of(members[i]);
-  }
-  return res;
-}
-
-template <class T, std::meta::info ArrV>
-constexpr auto make_flattened_nsdm_name_array()
-  /* std::array<std::string_view, N> */
-{
-  constexpr auto members = extract<substitute(ArrV, ^^T)>();
-  constexpr auto N = members.size();
-  auto res = std::array<std::string_view, N>{};
-  for (auto i = 0zU; i < N; i++) {
-    res[i] = reflect_cpp26::identifier_of(members[i].member);
-  }
-  return res;
-}
-
-template <class_or_union_type T>
-constexpr auto all_direct_nsdm_names_v =
-  impl::make_direct_nsdm_name_array<
-    std::remove_cv_t<T>, ^^all_direct_nsdm_v>();
-
-template <class_or_union_type T>
-constexpr auto public_direct_nsdm_names_v =
-  impl::make_direct_nsdm_name_array<
-    std::remove_cv_t<T>, ^^public_direct_nsdm_v>();
-
-template <partially_flattenable_class T>
-constexpr auto all_flattened_nsdm_names_v =
-  impl::make_flattened_nsdm_name_array<
-    std::remove_cv_t<T>, ^^all_flattened_nsdm_v>();
-
-template <partially_flattenable_class T>
-constexpr auto public_flattened_nsdm_names_v =
-  impl::make_flattened_nsdm_name_array<
-    std::remove_cv_t<T>, ^^public_flattened_nsdm_v>();
-} // namespace impl
-
-#define REFLECT_CPP26_NSDM_NAME(concept_type, fn_name, arr_v)     \
-  template <concept_type T>                                       \
-  constexpr auto fn_name(size_t i, std::string_view alt = "")     \
-    -> std::string_view                                           \
-  {                                                               \
-    constexpr const auto& arr = impl::arr_v<std::remove_cv_t<T>>; \
-    if (i >= arr.size()) {                                        \
-      return "<out-of-range>";                                    \
-    }                                                             \
-    return arr[i].empty() ? alt : arr[i];                         \
-  }
-
-/**
- * ith_direct_nsdm_name<T>(size_t i, std::string_view alt = ""):
- * Gets the name of i-th direct non-static data member of class or union T,
- * or alt if the member is anonymous.
- */
-REFLECT_CPP26_NSDM_NAME(class_or_union_type,
-                        ith_direct_nsdm_name,
-                        all_direct_nsdm_names_v)
-/**
- * ith_public_direct_nsdm_name<T>(size_t i, std::string_view alt = ""):
- * Gets the name of i-th direct non-static data member with public access of
- * class or union T, or alt if the member is anonymous.
- */
-REFLECT_CPP26_NSDM_NAME(class_or_union_type,
-                        ith_public_direct_nsdm_name,
-                        public_direct_nsdm_names_v)
-/**
- * ith_flattened_nsdm_name<T>(size_t i, std::string_view alt = ""):
- * Gets the name of i-th flattened non-static data member of class T, or alt
- * if the member is anonymous.
- */
-REFLECT_CPP26_NSDM_NAME(partially_flattenable_class,
-                        ith_flattened_nsdm_name,
-                        all_flattened_nsdm_names_v)
-/**
- * ith_public_flattened_nsdm_name<T>(size_t i, std::string_view alt = ""):
- * Gets the name of i-th flattened non-static data member with public access of
- * class T, or alt if the member is anonymous.
- */
-REFLECT_CPP26_NSDM_NAME(partially_flattenable_class,
-                        ith_public_flattened_nsdm_name,
-                        public_flattened_nsdm_names_v)
-
-#undef REFLECT_CPP26_NSDM_NAME
+#undef REFLECT_CPP26_NSDM_COUNT
+#undef REFLECT_CPP26_ITH_NSDM
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_TYPE_OPERATIONS_MEMBER_ACCESS_HPP

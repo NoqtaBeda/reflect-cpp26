@@ -61,7 +61,8 @@ static_assert(std::is_same_v<volatile int &&, demo1_with_rvalue_ref>);
 
 // (3) Similar to (2). Note that the rvalue reference qualifier in resulted
 //     type 'volatile int&&' is produced by C++ decltype(()) syntax.
-//     Expected evaluation result of rfl::ith_*_nsdm_type_t<1, volatile demo_t>
+//     Expected evaluation result of
+//     rfl::ith_*_nonstatic_data_member_type_t<1, volatile demo_t>
 //     is 'volatile int' without rvalue-ref qualifier.
 using demo1_without_ref = decltype((std::declval<volatile demo_t>().bar));
 static_assert(std::is_same_v<volatile int &&, demo1_without_ref>);
@@ -98,28 +99,30 @@ public:
 TEST(TypeTraitsClassTypes, MemberAccessFooPublic)
 {
   static_assert(std::is_same_v<
-    rfl::ith_public_direct_nsdm_type_t<0, foo_t>, int>);
+    rfl::ith_public_direct_nonstatic_data_member_type_t<0, foo_t>, int>);
   // const foo_t** plus const and lvalue-ref qualifiers,
   // analogous to qualifiers of const foo_t&
   static_assert(std::is_same_v<
-    rfl::ith_public_direct_nsdm_type_t<1, const foo_t&>, const foo_t** const&>);
+    rfl::ith_public_direct_nonstatic_data_member_type_t<1, const foo_t&>,
+    const foo_t** const&>);
 }
 
 TEST(TypeTraitsClassTypes, MemberAccessFooAll)
 {
   static_assert(std::is_same_v<
-    rfl::ith_direct_nsdm_type_t<0, foo_t>, int>);
+    rfl::ith_direct_nonstatic_data_member_type_t<0, foo_t>, int>);
   // int plus lvalue-ref qualifier, analogous to foo_t&
   static_assert(std::is_same_v<
-    rfl::ith_direct_nsdm_type_t<1, foo_t&>, int&>);
+    rfl::ith_direct_nonstatic_data_member_type_t<1, foo_t&>, int&>);
   // const foo_t* plus const and lvalue-ref qualifiers,
   // analogous to const foo_t&
   static_assert(std::is_same_v<
-    rfl::ith_flattened_nsdm_type_t<2, const foo_t&>, const foo_t* const &>);
+    rfl::ith_flattened_nonstatic_data_member_type_t<2, const foo_t&>,
+    const foo_t* const &>);
   // const foo_t** plus volatile and rvalue-ref qualifiers,
   // analogous to qualifiers of volatile foo_t&&
   static_assert(std::is_same_v<
-    rfl::ith_flattened_nsdm_type_t<3, volatile foo_t&&>,
+    rfl::ith_flattened_nonstatic_data_member_type_t<3, volatile foo_t&&>,
     const foo_t** volatile&&>);
 }
 
@@ -144,75 +147,84 @@ private:
 TEST(TypeTraitsClassTypes, MemberAccessBarPublic)
 {
   static_assert(std::is_same_v<
-    rfl::ith_public_direct_nsdm_type_t<0, bar_t>, volatile double>);
+    rfl::ith_public_direct_nonstatic_data_member_type_t<0, bar_t>,
+    volatile double>);
   // const unsigned (underlying of bit-field 'label') plus volatile qualifier,
   // analogous to volatile bar_t
   static_assert(std::is_same_v<
-    rfl::ith_public_direct_nsdm_type_t<1, volatile bar_t>,
+    rfl::ith_public_direct_nonstatic_data_member_type_t<1, volatile bar_t>,
     const volatile unsigned>);
   // const foo_t& (of reference 'associated_1') keeps unchanged regardless of
   // qualifiers of foo_t
   static_assert(std::is_same_v<
-    rfl::ith_public_direct_nsdm_type_t<2, bar_t&>, const foo_t&>);
+    rfl::ith_public_direct_nonstatic_data_member_type_t<2, bar_t&>,
+    const foo_t&>);
 
   // Inherited
   static_assert(std::is_same_v<
-    rfl::ith_public_flattened_nsdm_type_t<0, const bar_t>, const int>);
+    rfl::ith_public_flattened_nonstatic_data_member_type_t<0, const bar_t>,
+    const int>);
   static_assert(std::is_same_v<
-    rfl::ith_public_flattened_nsdm_type_t<1, volatile bar_t>,
+    rfl::ith_public_flattened_nonstatic_data_member_type_t<1, volatile bar_t>,
     const foo_t** volatile>);
   // Direct
   static_assert(std::is_same_v<
-    rfl::ith_public_flattened_nsdm_type_t<2, const bar_t&>,
+    rfl::ith_public_flattened_nonstatic_data_member_type_t<2, const bar_t&>,
     const volatile double&>);
   static_assert(std::is_same_v<
-    rfl::ith_public_flattened_nsdm_type_t<3, const bar_t&>,
+    rfl::ith_public_flattened_nonstatic_data_member_type_t<3, const bar_t&>,
     const unsigned&>);
   static_assert(std::is_same_v<
-    rfl::ith_public_flattened_nsdm_type_t<4, volatile bar_t&&>, const foo_t&>);
+    rfl::ith_public_flattened_nonstatic_data_member_type_t<4, volatile bar_t&&>,
+    const foo_t&>);
 };
 
 TEST(TypeTraitsClassTypes, MemberAccessBarAll)
 {
   static_assert(std::is_same_v<
-    rfl::ith_direct_nsdm_type_t<0, bar_t>, volatile double>);
+    rfl::ith_direct_nonstatic_data_member_type_t<0, bar_t>, volatile double>);
   static_assert(std::is_same_v<
-    rfl::ith_direct_nsdm_type_t<1, bar_t>, unsigned>);
+    rfl::ith_direct_nonstatic_data_member_type_t<1, bar_t>, unsigned>);
   static_assert(std::is_same_v<
-    rfl::ith_direct_nsdm_type_t<2, bar_t>, volatile int>);
+    rfl::ith_direct_nonstatic_data_member_type_t<2, bar_t>, volatile int>);
   static_assert(std::is_same_v<
-    rfl::ith_direct_nsdm_type_t<3, bar_t>, const unsigned>);
+    rfl::ith_direct_nonstatic_data_member_type_t<3, bar_t>, const unsigned>);
   static_assert(std::is_same_v<
-    rfl::ith_direct_nsdm_type_t<4, bar_t>, const foo_t&>);
+    rfl::ith_direct_nonstatic_data_member_type_t<4, bar_t>, const foo_t&>);
   static_assert(std::is_same_v<
-    rfl::ith_direct_nsdm_type_t<5, bar_t>, volatile foo_t&&>);
+    rfl::ith_direct_nonstatic_data_member_type_t<5, bar_t>, volatile foo_t&&>);
 
   static_assert(std::is_same_v<
-    rfl::ith_flattened_nsdm_type_t<0, const bar_t&>, const int&>);
+    rfl::ith_flattened_nonstatic_data_member_type_t<0, const bar_t&>,
+    const int&>);
   static_assert(std::is_same_v<
-    rfl::ith_flattened_nsdm_type_t<1, const bar_t&&>, const int&&>);
+    rfl::ith_flattened_nonstatic_data_member_type_t<1, const bar_t&&>,
+    const int&&>);
   static_assert(std::is_same_v<
-    rfl::ith_flattened_nsdm_type_t<2, volatile bar_t&>,
+    rfl::ith_flattened_nonstatic_data_member_type_t<2, volatile bar_t&>,
     const foo_t* volatile&>);
   static_assert(std::is_same_v<
-    rfl::ith_flattened_nsdm_type_t<3, volatile bar_t&&>,
+    rfl::ith_flattened_nonstatic_data_member_type_t<3, volatile bar_t&&>,
     const foo_t** volatile&&>);
   static_assert(std::is_same_v<
-    rfl::ith_flattened_nsdm_type_t<4, const bar_t&>, const volatile double&>);
+    rfl::ith_flattened_nonstatic_data_member_type_t<4, const bar_t&>,
+    const volatile double&>);
   static_assert(std::is_same_v<
-    rfl::ith_flattened_nsdm_type_t<5, bar_t&>, unsigned&>);
+    rfl::ith_flattened_nonstatic_data_member_type_t<5, bar_t&>, unsigned&>);
   // Bit-field demo case (1) with bar_t::done_flag whose underlying type is
   // volatile int: volatile int + const & -> const volatile int &
   static_assert(std::is_same_v<
-    rfl::ith_flattened_nsdm_type_t<6, const bar_t&>,
+    rfl::ith_flattened_nonstatic_data_member_type_t<6, const bar_t&>,
     const volatile int&>);
   // Bit-field demo case (2) with bar_t::label whose underlying type is
   // const unsigned: const int + volatile && -> const volatile unsigned &&
   static_assert(std::is_same_v<
-    rfl::ith_flattened_nsdm_type_t<7, volatile bar_t&&>,
+    rfl::ith_flattened_nonstatic_data_member_type_t<7, volatile bar_t&&>,
     const volatile unsigned&&>);
   static_assert(std::is_same_v<
-    rfl::ith_flattened_nsdm_type_t<8, volatile bar_t&&>, const foo_t&>);
+    rfl::ith_flattened_nonstatic_data_member_type_t<8, volatile bar_t&&>,
+    const foo_t&>);
   static_assert(std::is_same_v<
-    rfl::ith_flattened_nsdm_type_t<9, const bar_t&>, volatile foo_t&&>);
+    rfl::ith_flattened_nonstatic_data_member_type_t<9, const bar_t&>,
+    volatile foo_t&&>);
 }

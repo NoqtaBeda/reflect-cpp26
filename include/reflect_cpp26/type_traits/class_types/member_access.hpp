@@ -54,16 +54,16 @@ consteval auto convert_nsdm_type_like(
        bit-field members), gets add_cvref_like_t<M, T>.
  */
 template <size_t I, class_or_union_type_or_cvref T>
-using ith_direct_nsdm_type_t =
-  REFLECT_CPP26_ITH_DIRECT_NSDM_EXPR(all_direct_nsdm_v);
+using ith_direct_nonstatic_data_member_type_t =
+  REFLECT_CPP26_ITH_DIRECT_NSDM_EXPR(all_direct_nonstatic_data_members_v);
 
 /**
  * Gets the type of i-th direct public non-static data member of type T by
  * definition order. Details same as above.
  */
 template <size_t I, class_or_union_type_or_cvref T>
-using ith_public_direct_nsdm_type_t =
-  REFLECT_CPP26_ITH_DIRECT_NSDM_EXPR(public_direct_nsdm_v);
+using ith_public_direct_nonstatic_data_member_type_t =
+  REFLECT_CPP26_ITH_DIRECT_NSDM_EXPR(public_direct_nonstatic_data_members_v);
 
 /**
  * Gets the type of i-th flattened non-static data member (including private
@@ -71,16 +71,17 @@ using ith_public_direct_nsdm_type_t =
  * flattenable.hpp.
  */
 template <size_t I, partially_flattenable_or_cvref T>
-using ith_flattened_nsdm_type_t =
-  REFLECT_CPP26_ITH_FLATTENED_NSDM_EXPR(all_flattened_nsdm_v);
+using ith_flattened_nonstatic_data_member_type_t =
+  REFLECT_CPP26_ITH_FLATTENED_NSDM_EXPR(all_flattened_nonstatic_data_members_v);
 
 /**
  * Gets the type of i-th public flattened non-static data member of type T by
  * definition order. Details see above and flattenable.hpp.
  */
 template <size_t I, partially_flattenable_or_cvref T>
-using ith_public_flattened_nsdm_type_t =
-  REFLECT_CPP26_ITH_FLATTENED_NSDM_EXPR(public_flattened_nsdm_v);
+using ith_public_flattened_nonstatic_data_member_type_t =
+  REFLECT_CPP26_ITH_FLATTENED_NSDM_EXPR(
+    public_flattened_nonstatic_data_members_v);
 
 #undef REFLECT_CPP26_ITH_DIRECT_NSDM_EXPR
 #undef REFLECT_CPP26_ITH_FLATTENED_NSDM_EXPR

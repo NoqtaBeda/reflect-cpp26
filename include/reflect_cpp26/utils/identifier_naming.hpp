@@ -32,15 +32,15 @@
 namespace reflect_cpp26 {
 enum class identifier_naming_rule {
   no_change,
-  snake_case,
-  all_caps_snake_case,
-  kebab_case,
-  all_caps_kebab_case,
-  lower_camel_case,
-  upper_camel_case,
-  lower_camel_snake_case,
-  upper_camel_snake_case,
-  http_header_case,
+  snake_case,             // snake_case
+  all_caps_snake_case,    // ALL_CAPS_SNAKE_CASE
+  kebab_case,             // kebab-case
+  all_caps_kebab_case,    // ALL-CAPS-KABAB-CASE
+  lower_camel_case,       // lowerCamelCase
+  upper_camel_case,       // UpperCamelCase
+  lower_camel_snake_case, // lower_Camel_Snake_Case
+  upper_camel_snake_case, // Upper_Camel_Snake_Case
+  http_header_case,       // Http-Header-Case
 };
 
 struct non_alpha_as_lower_tag_t {};
@@ -88,8 +88,8 @@ constexpr bool is_identifier_delimiter_char(char c) {
 }
 
 template <class Visitor>
-constexpr void visit_identifier_segments_inner_nal(
-  std::string_view input, Visitor&& visitor)
+constexpr void visit_identifier_segments_inner(
+  std::string_view input, non_alpha_as_lower_tag_t, Visitor&& visitor)
 {
   auto state = identifier_parsing_state_nal::init;
   auto head = 0zU;
@@ -103,7 +103,7 @@ constexpr void visit_identifier_segments_inner_nal(
         break;
       case identifier_parsing_state_nal::lower_or_digit:
         if (ascii_isupper(input[tail])) {
-          visitor(input.substr(head, tail - head));
+          visitor.visit_non_empty_word(input.substr(head, tail - head));
           state = identifier_parsing_state_nal::first_upper;
           head = tail;
         }
@@ -115,23 +115,23 @@ constexpr void visit_identifier_segments_inner_nal(
         break;
       case identifier_parsing_state_nal::subsequent_upper:
         if (!ascii_isupper(input[tail])) {
-          visitor(input.substr(head, tail - head - 1));
+          visitor.visit_non_empty_word(input.substr(head, tail - head - 1));
           state = identifier_parsing_state_nal::lower_or_digit;
           head = tail - 1;
         }
         break;
       default:
-        REFLECT_CPP26_UNREACHABLE("Unexpected state.");
+        break; // Unreachable
     }
   }
   if (head < tail) {
-    visitor(input.substr(head));
+    visitor.visit_non_empty_word(input.substr(head));
   }
 }
 
 template <class Visitor>
-constexpr void visit_identifier_segments_inner_nau(
-  std::string_view input, Visitor&& visitor)
+constexpr void visit_identifier_segments_inner(
+  std::string_view input, non_alpha_as_upper_tag_t, Visitor&& visitor)
 {
   auto state = identifier_parsing_state_nau::init;
   auto head = 0zU;
@@ -145,7 +145,7 @@ constexpr void visit_identifier_segments_inner_nau(
         break;
       case identifier_parsing_state_nau::lower:
         if (!ascii_islower(input[tail])) {
-          visitor(input.substr(head, tail - head));
+          visitor.visit_non_empty_word(input.substr(head, tail - head));
           state = identifier_parsing_state_nau::first_upper_or_digit;
           head = tail;
         }
@@ -157,32 +157,18 @@ constexpr void visit_identifier_segments_inner_nau(
         break;
       case identifier_parsing_state_nau::subsequent_upper_or_digit:
         if (ascii_islower(input[tail])) {
-          visitor(input.substr(head, tail - head - 1));
+          visitor.visit_non_empty_word(input.substr(head, tail - head - 1));
           state = identifier_parsing_state_nau::lower;
           head = tail - 1;
         }
         break;
       default:
-        REFLECT_CPP26_UNREACHABLE("Unexpected state.");
+        break; // Unreachable
     }
   }
   if (head < tail) {
-    visitor(input.substr(head));
+    visitor.visit_non_empty_word(input.substr(head));
   }
-}
-
-template <class Visitor>
-constexpr void visit_identifier_segments_inner(
-  std::string_view input, non_alpha_as_lower_tag_t, Visitor&& visitor)
-{
-  visit_identifier_segments_inner_nal(input, std::forward<Visitor>(visitor));
-}
-
-template <class Visitor>
-constexpr void visit_identifier_segments_inner(
-  std::string_view input, non_alpha_as_upper_tag_t, Visitor&& visitor)
-{
-  visit_identifier_segments_inner_nau(input, std::forward<Visitor>(visitor));
 }
 
 template <class Tag, class Visitor>
@@ -211,35 +197,56 @@ constexpr bool visit_identifier_segments(
       }
     }
     if (head == tail) {
-      visitor(std::string_view{}); // Empty segment
+      visitor.visit_empty_word();
       continue;
     }
     auto segment = input.substr(head, tail - head);
     visit_identifier_segments_inner(segment, tag, visitor);
   }
   if (head == len) {
-    visitor(std::string_view{}); // Trailing empty segment
+    visitor.visit_trailing_empty_word();
   }
   return true;
 }
 
-constexpr auto make_snake_case_segment(
-  std::string_view segment, char* buffer, bool& first_is_lower) -> char*
+constexpr auto make_snake_case_word(
+  std::string_view non_empty_word, char* buffer, bool* first_is_lower) -> char*
 {
-  if (segment.empty()) {
-    return buffer;
-  }
-  if (first_is_lower) {
-    *buffer++ = ascii_tolower(segment.front());
-    first_is_lower = false;
+  if (*first_is_lower) {
+    *buffer++ = ascii_tolower(non_empty_word.front());
+    *first_is_lower = false;
   } else {
-    *buffer++ = ascii_toupper(segment.front());
+    *buffer++ = ascii_toupper(non_empty_word.front());
   }
-  for (auto i = 1zU, n = segment.length(); i < n; i++) {
-    *buffer++ = ascii_tolower(segment[i]);
+  for (auto i = 1zU, n = non_empty_word.length(); i < n; i++) {
+    *buffer++ = ascii_tolower(non_empty_word[i]);
   }
   return buffer;
 }
+
+template <auto TransformFn>
+struct snake_or_kebab_case_word_visitor_t {
+  char* buffer;
+  char delimiter;
+  bool is_first = true;
+
+  constexpr void visit_empty_word() {
+    *buffer++ = delimiter;
+  }
+
+  constexpr void visit_trailing_empty_word() {
+    if (!is_first) {
+      *buffer++ = delimiter;
+    }
+  }
+
+  constexpr void visit_non_empty_word(std::string_view word)
+  {
+    is_first ? (void)(is_first = false)
+             : (void)(*buffer++ = delimiter);
+    buffer = std::ranges::transform(word, buffer, TransformFn).out;
+  }
+};
 
 template <auto TransformFn, class Tag>
 constexpr auto to_snake_or_kebab_case_impl(
@@ -247,19 +254,39 @@ constexpr auto to_snake_or_kebab_case_impl(
 {
   auto res = std::string{};
   auto is_valid_identifier = true;
-  res.resize_and_overwrite(identifier.size() * 2, [&](char* buffer, size_t) {
-    const char* buffer_head = buffer;
-    auto is_first = true;
-    is_valid_identifier &= visit_identifier_segments(identifier, tag,
-      [&](std::string_view seg) {
-        is_first ? (void)(is_first = false)
-                 : (void)(*buffer++ = delimiter);
-        buffer = std::ranges::transform(seg, buffer, TransformFn).out;
-      });
-    return buffer - buffer_head;
+  auto reserved_size = identifier.size() * 2;
+  res.resize_and_overwrite(reserved_size, [&](char* buffer_head, size_t) {
+    auto visitor = snake_or_kebab_case_word_visitor_t<TransformFn>{
+      .buffer = buffer_head,
+      .delimiter = delimiter,
+    };
+    is_valid_identifier = visit_identifier_segments(identifier, tag, visitor);
+    return visitor.buffer - buffer_head;
   });
   return is_valid_identifier ? res : invalid_identifier_str;
 }
+
+struct camel_case_word_visitor_t {
+  static constexpr auto delimiter = '_';
+  char* buffer;
+  bool first_is_lower; // Whether the first word is all-lower case.
+  bool is_first = true;
+
+  constexpr void visit_empty_word() {
+    *buffer++ = delimiter;
+  }
+
+  constexpr void visit_trailing_empty_word() {
+    if (!is_first) {
+      *buffer++ = delimiter;
+    }
+  }
+
+  constexpr void visit_non_empty_word(std::string_view word) {
+    buffer = make_snake_case_word(word, buffer, &first_is_lower);
+    is_first = false;
+  }
+};
 
 template <class Tag>
 constexpr auto to_camel_case_impl(
@@ -267,20 +294,40 @@ constexpr auto to_camel_case_impl(
 {
   auto res = std::string{};
   auto is_valid_identifier = true;
-  res.resize_and_overwrite(identifier.size(), [&](char* buffer, size_t) {
-    const char* buffer_head = buffer;
-    is_valid_identifier &= visit_identifier_segments(identifier, tag,
-      [&](std::string_view seg) {
-        if (!seg.empty()) {
-          buffer = make_snake_case_segment(seg, buffer, first_is_lower);
-          return;
-        }
-        *buffer++ = '_'; // Keeps leading and trailing delimiters
-      });
-    return buffer - buffer_head;
+  res.resize_and_overwrite(identifier.size(), [&](char* buffer_head, size_t) {
+    auto visitor = camel_case_word_visitor_t{
+      .buffer = buffer_head,
+      .first_is_lower = first_is_lower,
+    };
+    is_valid_identifier = visit_identifier_segments(identifier, tag, visitor);
+    return visitor.buffer - buffer_head;
   });
   return is_valid_identifier ? res : invalid_identifier_str;
 }
+
+struct camel_snake_case_word_visitor_t {
+  char* buffer;
+  char delimiter;
+  bool first_is_lower;
+  bool is_first = true;
+
+  constexpr void visit_empty_word() {
+    *buffer++ = delimiter;
+  }
+
+  constexpr void visit_trailing_empty_word() {
+    if (!is_first) {
+      *buffer++ = delimiter;
+    }
+  }
+
+  constexpr void visit_non_empty_word(std::string_view word)
+  {
+    is_first ? (void)(is_first = false)
+             : (void)(*buffer++ = delimiter);
+    buffer = make_snake_case_word(word, buffer, &first_is_lower);
+  }
+};
 
 template <class Tag>
 constexpr auto to_camel_snake_or_kebab_case_impl(
@@ -289,16 +336,15 @@ constexpr auto to_camel_snake_or_kebab_case_impl(
 {
   auto res = std::string{};
   auto is_valid_identifier = true;
-  res.resize_and_overwrite(identifier.size() * 2, [&](char* buffer, size_t) {
-    const char* buffer_head = buffer;
-    auto is_first = true;
-    is_valid_identifier &= visit_identifier_segments(identifier, tag,
-      [&](std::string_view seg) {
-        is_first ? (void)(is_first = false)
-                 : (void)(*buffer++ = delimiter);
-        buffer = make_snake_case_segment(seg, buffer, first_is_lower);
-      });
-    return buffer - buffer_head;
+  auto reserved_size = identifier.size() * 2;
+  res.resize_and_overwrite(reserved_size, [&](char* buffer_head, size_t) {
+    auto visitor = camel_snake_case_word_visitor_t{
+      .buffer = buffer_head,
+      .delimiter = delimiter,
+      .first_is_lower = first_is_lower,
+    };
+    is_valid_identifier = visit_identifier_segments(identifier, tag, visitor);
+    return visitor.buffer - buffer_head;
   });
   return is_valid_identifier ? res : invalid_identifier_str;
 }
@@ -323,9 +369,73 @@ constexpr auto to_camel_snake_or_kebab_case_impl(
     return to_##name##_case(identifier, non_alpha_as_lower);            \
   }
 
+/**
+ * (a) to_snake_case(std::string_view) -> std::string
+ * (b) to_snake_case(std::string_view, non_alpha_as_lower_tag_t) -> std::string
+ * (c) to_snake_case(std::string_view, non_alpha_as_upper_tag_t) -> std::string
+ *
+ * Transforms input identifier to snake_case.
+ * Input identifier is valid only if:
+ * (1) it contains ASCII characters '0-9', 'A-Z', 'a-z', '-', '_' and '$' only;
+ * (2) the leading character is not digit.
+ * Conversion is as the following steps:
+ * (1) Split input identifier as word segments;
+ * (2) Convert each segment to all-lower case;
+ * (3) Concatenate converted segments with '_'.
+ * Word segmentation, step (1) above, is done by the following steps:
+ * (1.1) Split input identifier by '-' or '_';
+ * (1.2) For each segment obtained from step (1.1), split again into words.
+ * Example:
+ * input: "exampleInput_ParseJSONDocument_TestCase1"
+ * After step (1.1): ["exampleInput", "ParseJSONDocument", "TestCase1"]
+ * After step (1.2): [
+ *   ["example", "Input"],
+ *   ["Parse", "JSON", "Document"], // For consecutive N+1 upper-case letters,
+ *                                  // the first N form a single word, then the
+ *                                  // last one leads the next word.
+ *   ["Test", "Case1"]
+ *     or ["Test", "Case", "1"] // For overloads (a,b), non-alpha characters
+ *                                 (digits and '$') are equivalent to small-case
+ *                                 letters during segmentation.
+ *                                 For overloads (c), non-alpha characters are
+ *                                 equivalent to upper-case letters.
+ * ]
+ */
 REFLECT_CPP26_TO_SNAKE_OR_KEBAB_CASE(snake, ascii_tolower, '_')
+/**
+ * (a) to_all_caps_snake_case(std::string_view) -> std::string
+ * (b) to_all_caps_snake_case(std::string_view, non_alpha_as_lower_tag_t)
+ *       -> std::string
+ * (c) to_all_caps_snake_case(std::string_view, non_alpha_as_upper_tag_t)
+ *       -> std::string
+ *
+ * Transforms input identifier to ALL_CAPS_SNAKE_CASE.
+ * Conversion steps (unmentioned are same as above):
+ * (2) Convert each segment to all-upper case.
+ */
 REFLECT_CPP26_TO_SNAKE_OR_KEBAB_CASE(all_caps_snake, ascii_toupper, '_')
+/**
+ * (a) to_kebab_case(std::string_view) -> std::string
+ * (b) to_kebab_case(std::string_view, non_alpha_as_lower_tag_t) -> std::string
+ * (c) to_kebab_case(std::string_view, non_alpha_as_upper_tag_t) -> std::string
+ *
+ * Transforms input identifier to kebab-case (words concatenated by hyphens).
+ * Conversion steps (unmentioned are same as above):
+ * (3) Concatenate converted segments with '-'.
+ */
 REFLECT_CPP26_TO_SNAKE_OR_KEBAB_CASE(kebab, ascii_tolower, '-')
+/**
+ * (a) to_all_caps_kebab_case(std::string_view) -> std::string
+ * (b) to_all_caps_kebab_case(std::string_view, non_alpha_as_lower_tag_t)
+ *       -> std::string
+ * (c) to_all_caps_kebab_case(std::string_view, non_alpha_as_upper_tag_t)
+ *       -> std::string
+ *
+ * Transforms input identifier to ALL-CAPS-KEBAB-CASE.
+ * Conversion steps (unmentioned are same as above):
+ * (2) Convert each segment to all-upper case;
+ * (3) Concatenate converted segments with '-'.
+ */
 REFLECT_CPP26_TO_SNAKE_OR_KEBAB_CASE(all_caps_kebab, ascii_toupper, '-')
 
 #undef REFLECT_CPP26_TO_SNAKE_OR_KEBAB_CASE
@@ -347,7 +457,32 @@ REFLECT_CPP26_TO_SNAKE_OR_KEBAB_CASE(all_caps_kebab, ascii_toupper, '-')
     return to_##name##_case(identifier, non_alpha_as_lower);            \
   }
 
+/**
+ * (a) to_lower_camel_case(std::string_view) -> std::string
+ * (b) to_lower_camel_case(std::string_view, non_alpha_as_lower_tag_t)
+ *       -> std::string
+ * (c) to_lower_camel_case(std::string_view, non_alpha_as_upper_tag_t)
+ *       -> std::string
+ *
+ * Transforms input identifier to lowerCamelCase.
+ * Conversion steps (unmentioned are same as above):
+ * (2.1) Convert the first segment to all-lower case;
+ * (2.2) Convert the rest segments to leading upper-case + rest lower-case;
+ * (3) Concatenate converted segments.
+ */
 REFLECT_CPP26_TO_CAMEL_CASE(lower_camel, true)
+/**
+ * (a) to_upper_camel_case(std::string_view) -> std::string
+ * (b) to_upper_camel_case(std::string_view, non_alpha_as_lower_tag_t)
+ *       -> std::string
+ * (c) to_upper_camel_case(std::string_view, non_alpha_as_upper_tag_t)
+ *       -> std::string
+ *
+ * Transforms input identifier to UpperCamelCase.
+ * Conversion steps (unmentioned are same as above):
+ * (2) Convert segments to leading upper-case + rest lower-case;
+ * (3) Concatenate converted segments.
+ */
 REFLECT_CPP26_TO_CAMEL_CASE(upper_camel, false)
 
 #undef REFLECT_CPP26_TO_CAMEL_CASE
@@ -371,12 +506,50 @@ REFLECT_CPP26_TO_CAMEL_CASE(upper_camel, false)
     return to_##name##_case(identifier, non_alpha_as_lower);                  \
   }
 
+/**
+ * (a) to_lower_camel_snake_case(std::string_view) -> std::string
+ * (b) to_lower_camel_snake_case(std::string_view, non_alpha_as_lower_tag_t)
+ *       -> std::string
+ * (c) to_lower_camel_snake_case(std::string_view, non_alpha_as_upper_tag_t)
+ *       -> std::string
+ *
+ * Transforms input identifier to lower_Camel_Snake_Case.
+ * Conversion steps (unmentioned are same as above):
+ * (2.1) Convert the first segment to all-lower case;
+ * (2.2) Convert the rest segments to leading upper-case + rest lower-case;
+ */
 REFLECT_CPP26_TO_SNAKE_CAMEL_OR_KEBAB_CASE(lower_camel_snake, '_', true)
+/**
+ * (a) to_upper_camel_snake_case(std::string_view) -> std::string
+ * (b) to_upper_camel_snake_case(std::string_view, non_alpha_as_lower_tag_t)
+ *       -> std::string
+ * (c) to_upper_camel_snake_case(std::string_view, non_alpha_as_upper_tag_t)
+ *       -> std::string
+ *
+ * Transforms input identifier to Upper_Camel_Snake_Case.
+ * Conversion steps (unmentioned are same as above):
+ * (2) Convert segments to leading upper-case + rest lower-case;
+ */
 REFLECT_CPP26_TO_SNAKE_CAMEL_OR_KEBAB_CASE(upper_camel_snake, '_', false)
+/**
+ * (a) to_http_header_case(std::string_view) -> std::string
+ * (b) to_http_header_case(std::string_view, non_alpha_as_lower_tag_t)
+ *       -> std::string
+ * (c) to_http_header_case(std::string_view, non_alpha_as_upper_tag_t)
+ *       -> std::string
+ *
+ * Transforms input identifier to Http-Header-Case.
+ * Conversion steps (unmentioned are same as above):
+ * (2) Convert segments to leading upper-case + rest lower-case;
+ * (3) Concatenate converted segments with '-'.
+ */
 REFLECT_CPP26_TO_SNAKE_CAMEL_OR_KEBAB_CASE(http_header, '-', false)
 
 #undef REFLECT_CPP26_TO_SNAKE_CAMEL_OR_KEBAB_CASE
 
+/**
+ * Transforms input identifier to specified style.
+ */
 constexpr auto convert_identifier(
   std::string_view identifier, identifier_naming_rule to_rule) -> std::string
 {

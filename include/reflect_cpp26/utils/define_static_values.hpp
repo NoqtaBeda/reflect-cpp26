@@ -33,25 +33,8 @@
 
 namespace reflect_cpp26 {
 namespace impl {
-template <auto V>
-using meta_string_view_type_t = meta_basic_string_view<
-  std::ranges::range_value_t<decltype(V)>>;
-
-template <auto V>
-constexpr auto array_to_string_view_v =
-  meta_string_view_type_t<V>::from_array(V);
-
-template <size_t N, class T, class Range>
-consteval auto define_static_string_impl(Range& range)
-  -> meta_basic_string_view<T>
-{
-  auto arr = std::array<T, N + 1>{};
-  std::ranges::copy(range, arr.begin());
-  arr.back() = '\0';
-  auto sv = extract<meta_basic_string_view<T>>(
-    substitute(^^array_to_string_view_v, { std::meta::reflect_constant(arr) }));
-  return sv;
-}
+template <class T, auto... Vs>
+inline constexpr T fixed_array_impl[sizeof...(Vs)] = {Vs...};
 } // namespace impl
 
 /**
@@ -71,6 +54,36 @@ consteval auto define_static_array(meta_span<T> range) {
   return range;
 }
 
+/**
+ * Alternative to C++26 std::meta::reflect_constant_string with the following
+ * differences:
+ * (1) Extends to all character types, instead of char and char8_t only which
+ *     are supported by C++ standard;
+ * (2) Forced check to ensure that no content follows the terminator character
+ *     '\0' (if exists) to prevent unexpected behavior.
+ */
+template <std::ranges::input_range Range>
+  requires (char_type<std::ranges::range_value_t<Range>>)
+consteval auto reflect_constant_string(Range&& range) -> std::meta::info
+{
+  using CharT = std::ranges::range_value_t<Range>;
+  auto args = std::vector{^^CharT};
+  auto null_found = false;
+
+  for (auto c: range) {
+    if (null_found) {
+      compile_error("Characters after '\\0' are disallowed.");
+    }
+    if (c == '\0') {
+      null_found = true;
+    }
+    args.push_back(std::meta::reflect_constant(c));
+  }
+  if (!null_found) {
+    args.push_back(std::meta::reflect_constant(static_cast<CharT>('\0')));
+  }
+  return substitute(^^impl::fixed_array_impl, args);
+}
 
 /**
  * Alternative to C++26 std::meta::define_static_string.
@@ -78,54 +91,24 @@ consteval auto define_static_array(meta_span<T> range) {
  * i.e. *end() == '\0'.
  */
 template <std::ranges::input_range Range>
-  requires (same_as_one_of<std::ranges::range_value_t<Range>, char, char8_t>)
+  requires (char_type<std::ranges::range_value_t<Range>>)
 consteval auto define_static_string(Range&& range)
-  /* -> meta_basic_string_view<T> */
+  /* -> meta_basic_string_view<CharT> */
 {
-  using T = std::ranges::range_value_t<Range>;
-  using ResultT = meta_basic_string_view<T>;
-
-  if constexpr (requires { is_string_literal(range); }) {
-    if (is_string_literal(range)) {
-      auto p = std::define_static_string(std::basic_string_view{range});
-      return meta_basic_string_view<T>::from_literal(p);
-    }
-  } else if constexpr (std::ranges::contiguous_range<Range>) {
-    const auto* head = std::ranges::data(range);
-    const auto* tail = head + std::ranges::size(range);
-    auto p = std::define_static_string(std::basic_string_view{head, tail});
-    return meta_basic_string_view<T>::from_literal(p);
-  } else {
-    auto str = std::string(std::from_range, range);
-    return reflect_cpp26::define_static_string(str);
-  }
-}
-
-template <std::ranges::input_range Range>
-  requires (same_as_one_of<
-    std::ranges::range_value_t<Range>, wchar_t, char16_t, char32_t>)
-consteval auto define_static_string(Range&& range)
-  /* -> meta_basic_string_view<T> */
-{
-  using T = std::ranges::range_value_t<Range>;
-  using ResultT = meta_basic_string_view<T>;
-
-  using ImplFnSignature = ResultT(*)(Range&);
-  auto N = std::meta::reflect_constant(std::ranges::distance(range));
-  auto impl_fn = extract<ImplFnSignature>(
-    substitute(^^impl::define_static_string_impl, {N, ^^T, ^^Range}));
-  return impl_fn(range);
+  using CharT = std::ranges::range_value_t<Range>;
+  auto arr_refl = reflect_constant_string(std::forward<Range>(range));
+  return meta_basic_string_view<CharT>::from_literal(
+    extract<const CharT*>(arr_refl));
 }
 
 // Specialization to prevent repeated meta-definition.
 template <class T>
-consteval auto define_static_string(
-  meta_basic_string_view<T> range) -> meta_basic_string_view<T>
+consteval auto define_static_string(meta_basic_string_view<T> range)
+  -> meta_basic_string_view<T>
 {
   // Makes sure the resulted range is null-terminated
   if (*range.end() != '\0') {
-    auto sv = static_cast<std::basic_string_view<T>>(range);
-    return reflect_cpp26::define_static_string(sv);
+    compile_error("Malformed meta_string_view: expects null-terminated.");
   }
   return range;
 }

@@ -25,7 +25,7 @@
 
 #include <reflect_cpp26/enum/impl/tags.hpp>
 #include <reflect_cpp26/enum/enum_type_name.hpp>
-#include <reflect_cpp26/utils/to_string_utils.hpp>
+#include <reflect_cpp26/utils/string_utils.hpp>
 #include <charconv>
 #include <utility>
 

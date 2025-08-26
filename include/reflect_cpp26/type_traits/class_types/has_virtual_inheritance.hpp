@@ -46,10 +46,18 @@ template <class T>
 constexpr auto has_virtual_inheritance_v =
   impl::has_virtual_inheritance(^^std::remove_cv_t<T>);
 
+/**
+ * Whether T is a class type with virtual inheritance, recursively.
+ * Details see above.
+ */
 template <class T>
 concept class_with_virtual_inheritance =
   std::is_class_v<T> && has_virtual_inheritance_v<T>;
 
+/**
+ * Whether T is a class type without virtual inheritance, recursively.
+ * Details see above.
+ */
 template <class T>
 concept class_without_virtual_inheritance =
   std::is_class_v<T> && !has_virtual_inheritance_v<T>;

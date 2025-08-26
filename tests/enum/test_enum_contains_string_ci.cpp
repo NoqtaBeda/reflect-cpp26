@@ -33,7 +33,7 @@ namespace rfl = reflect_cpp26;
 
 template <class E>
 constexpr bool enum_contains_ci(std::string_view str) {
-  return rfl::enum_contains<E>(str, rfl::case_insensitive);
+  return rfl::enum_contains<E>(rfl::case_insensitive_by_ascii, str);
 }
 
 template <class E>

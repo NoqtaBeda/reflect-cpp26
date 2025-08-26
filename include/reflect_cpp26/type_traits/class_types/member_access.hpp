@@ -23,7 +23,7 @@
 #ifndef REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_MEMBER_ACCESS_HPP
 #define REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_MEMBER_ACCESS_HPP
 
-#include <reflect_cpp26/type_traits/class_types/flattenable.hpp>
+#include <reflect_cpp26/type_traits/class_types/flattened_nsdm.hpp>
 #include <reflect_cpp26/type_traits/cvref.hpp>
 
 namespace reflect_cpp26 {
@@ -39,10 +39,10 @@ consteval auto convert_nsdm_type_like(
 }
 } // namespace impl
 
-#define REFLECT_CPP26_ITH_DIRECT_NSDM_EXPR(arr) \
+#define REFLECT_CPP26_ITH_DIRECT_NSDM(arr) \
   [: impl::convert_nsdm_type_like(arr<std::remove_cvref_t<T>>[I], ^^T) :]
 
-#define REFLECT_CPP26_ITH_FLATTENED_NSDM_EXPR(arr) \
+#define REFLECT_CPP26_ITH_FLATTENED_NSDM(arr) \
   [: impl::convert_nsdm_type_like(arr<std::remove_cvref_t<T>>[I].member, ^^T) :]
 
 /**
@@ -53,38 +53,41 @@ consteval auto convert_nsdm_type_like(
  * (2) Otherwise, Let M be the member type (including the underlying type for
        bit-field members), gets add_cvref_like_t<M, T>.
  */
-template <size_t I, class_or_union_type_or_cvref T>
+template <size_t I, class T>
+  requires (class_or_union_type<std::remove_cvref_t<T>>)
 using ith_direct_nonstatic_data_member_type_t =
-  REFLECT_CPP26_ITH_DIRECT_NSDM_EXPR(all_direct_nonstatic_data_members_v);
+  REFLECT_CPP26_ITH_DIRECT_NSDM(all_direct_nonstatic_data_members_v);
 
 /**
  * Gets the type of i-th direct public non-static data member of type T by
  * definition order. Details same as above.
  */
-template <size_t I, class_or_union_type_or_cvref T>
+template <size_t I, class T>
+  requires (class_or_union_type<std::remove_cvref_t<T>>)
 using ith_public_direct_nonstatic_data_member_type_t =
-  REFLECT_CPP26_ITH_DIRECT_NSDM_EXPR(public_direct_nonstatic_data_members_v);
+  REFLECT_CPP26_ITH_DIRECT_NSDM(public_direct_nonstatic_data_members_v);
 
 /**
  * Gets the type of i-th flattened non-static data member (including private
  * and protected ones) of type T by definition order. Details see above and
- * flattenable.hpp.
+ * flattened_nsdm.hpp.
  */
-template <size_t I, partially_flattenable_or_cvref T>
+template <size_t I, class T>
+  requires (partially_flattenable_class<std::remove_cvref_t<T>>)
 using ith_flattened_nonstatic_data_member_type_t =
-  REFLECT_CPP26_ITH_FLATTENED_NSDM_EXPR(all_flattened_nonstatic_data_members_v);
+  REFLECT_CPP26_ITH_FLATTENED_NSDM(all_flattened_nonstatic_data_members_v);
 
 /**
  * Gets the type of i-th public flattened non-static data member of type T by
- * definition order. Details see above and flattenable.hpp.
+ * definition order. Details see above and flattened_nsdm.hpp.
  */
-template <size_t I, partially_flattenable_or_cvref T>
+template <size_t I, class T>
+  requires (partially_flattenable_class<std::remove_cvref_t<T>>)
 using ith_public_flattened_nonstatic_data_member_type_t =
-  REFLECT_CPP26_ITH_FLATTENED_NSDM_EXPR(
-    public_flattened_nonstatic_data_members_v);
+  REFLECT_CPP26_ITH_FLATTENED_NSDM(public_flattened_nonstatic_data_members_v);
 
-#undef REFLECT_CPP26_ITH_DIRECT_NSDM_EXPR
-#undef REFLECT_CPP26_ITH_FLATTENED_NSDM_EXPR
+#undef REFLECT_CPP26_ITH_DIRECT_NSDM
+#undef REFLECT_CPP26_ITH_FLATTENED_NSDM
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_MEMBER_ACCESS_HPP

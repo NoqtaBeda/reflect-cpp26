@@ -26,6 +26,10 @@
 #include <reflect_cpp26/enum/impl/enum_operator_macros.hpp>
 #include <reflect_cpp26/utils/concepts.hpp>
 
+/**
+ * Supports comparison operators (operator <=>, ==) for any enum type by
+ * using namespace reflect_cpp26::enum_comparison_operators.
+ */
 namespace reflect_cpp26::enum_comparison_operators {
 template <enum_type E>
 REFLECT_CPP26_DEFINE_ENUM_BINARY_OPERATOR_R(E, std::strong_ordering, <=>)
@@ -34,6 +38,10 @@ template <enum_type E>
 REFLECT_CPP26_DEFINE_ENUM_BINARY_OPERATOR_R(E, bool, ==)
 } // namespace reflect_cpp26::enum_comparison_operators
 
+/**
+ * Defines free functions of comparison operators for enum type E
+ * (operator <=>, ==).
+ */
 #define REFLECT_CPP26_DEFINE_ENUM_COMPARISON_OPERATORS(E)                   \
   REFLECT_CPP26_DEFINE_ENUM_BINARY_OPERATOR_R(E, std::strong_ordering, <=>) \
   REFLECT_CPP26_DEFINE_ENUM_BINARY_OPERATOR_R(E, bool, ==)

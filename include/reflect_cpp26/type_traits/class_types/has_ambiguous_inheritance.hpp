@@ -63,7 +63,7 @@ consteval auto has_ambiguous_base(std::meta::info T)
  * non-virtual and non-empty base class B is inherited more than once,
  * either directly or indirectly.
  * Note:
- * (1) Non-class types are evaluated to false by nature;
+ * (1) Non-class types (including references) are evaluated to false by nature;
  * (2) Empty base classes (typically tag types in practice) are ignored as
  *     they make no effect on member layout.
  */
@@ -72,17 +72,10 @@ constexpr auto has_ambiguous_inheritance_v =
   impl::has_ambiguous_base(^^std::remove_cv_t<T>);
 
 /**
- * Whether T is a class type with ambiguous non-empty base class.
- */
-template <class T>
-concept class_with_ambiguous_inheritance_v =
-  std::is_class_v<T> && has_ambiguous_inheritance_v<T>;
-
-/**
  * Whether T is a class type without ambiguous non-empty base class.
  */
 template <class T>
-concept class_without_ambiguous_inheritance_v =
+concept class_without_ambiguous_inheritance =
   std::is_class_v<T> && !has_ambiguous_inheritance_v<T>;
 } // namespace reflect_cpp26
 

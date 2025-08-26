@@ -95,7 +95,10 @@ constexpr bool enum_flags_contains_ci_impl(std::string_view str, Delim delim)
 {
   for (auto token: std::views::split(str, delim)) {
     auto trimmed = ascii_trim(token);
-    if (!trimmed.empty() && !enum_contains<E>(trimmed, case_insensitive)) {
+    if (trimmed.empty()) {
+      continue;
+    }
+    if (!enum_contains<E>(case_insensitive_by_ascii, trimmed)) {
       return false;
     }
   }
@@ -103,6 +106,9 @@ constexpr bool enum_flags_contains_ci_impl(std::string_view str, Delim delim)
 }
 } // namespace impl
 
+/**
+ * Whether value can be decomposed as disjunction of enum entries in E.
+ */
 template <enum_type E>
 constexpr bool enum_flags_contains(E flags)
 {
@@ -110,6 +116,9 @@ constexpr bool enum_flags_contains(E flags)
   return impl::enum_flags_contains_impl<E>(u);
 }
 
+/**
+ * Whether value can be decomposed as disjunction of enum entries in E.
+ */
 template <enum_type E>
 constexpr bool enum_flags_contains(std::integral auto flags)
 {
@@ -117,28 +126,49 @@ constexpr bool enum_flags_contains(std::integral auto flags)
   return impl::enum_flags_contains_impl<std::remove_cv_t<E>>(u);
 }
 
+/**
+ * Whether the input string can be decomposed as enum entry names split by
+ * given delimiter.
+ *
+ * Input segments are trimmed such that leading and trailing ASCII space
+ * characters (' ', '\n', '\t', etc.) are removed. Example:
+ *   str = "first | second | third\n", delim = '|', then
+ *   segments = ["first", "second", "third"].
+ */
 template <enum_type E>
 constexpr bool enum_flags_contains(std::string_view str, char delim = '|')
 {
   return impl::enum_flags_contains_impl<std::remove_cv_t<E>>(str, delim);
 }
 
+/**
+ * Whether the input string can be decomposed as enum entry names split by
+ * given delimiter.
+ */
 template <enum_type E>
 constexpr bool enum_flags_contains(std::string_view str, std::string_view delim)
 {
   return impl::enum_flags_contains_impl<std::remove_cv_t<E>>(str, delim);
 }
 
+/**
+ * Whether the input string can be decomposed as enum entry names split by
+ * given delimiter. ASCII case-insensitive string comparison is applied.
+ */
 template <enum_type E>
 constexpr bool enum_flags_contains(
-  std::string_view str, case_insensitive_tag_t, char delim = '|')
+  case_insensitive_by_ascii_tag_t, std::string_view str, char delim = '|')
 {
   return impl::enum_flags_contains_ci_impl<std::remove_cv_t<E>>(str, delim);
 }
 
+/**
+ * Whether the input string can be decomposed as enum entry names split by
+ * given delimiter. ASCII case-insensitive string comparison is applied.
+ */
 template <enum_type E>
 constexpr bool enum_flags_contains(
-  std::string_view str, case_insensitive_tag_t, std::string_view delim)
+  case_insensitive_by_ascii_tag_t, std::string_view str, std::string_view delim)
 {
   return impl::enum_flags_contains_ci_impl<std::remove_cv_t<E>>(str, delim);
 }

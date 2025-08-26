@@ -42,7 +42,7 @@ constexpr auto enum_flags_cast_impl(std::string_view str, Delim delim)
     }
     auto opt = [trimmed] constexpr {
       if constexpr (CaseInsensitive) {
-        return enum_cast<E>(trimmed, case_insensitive);
+        return enum_cast<E>(case_insensitive_by_ascii, trimmed);
       } else {
         return enum_cast<E>(trimmed);
       }
@@ -54,8 +54,17 @@ constexpr auto enum_flags_cast_impl(std::string_view str, Delim delim)
   }
   return static_cast<E>(underlying);
 }
-}
+} // namespace impl
 
+/**
+ * Returns the enum flag value if input str can be decomposed as enum entry
+ * names split by given delimiter, or std::nullopt otherwise.
+ *
+ * Input segments are trimmed such that leading and trailing ASCII space
+ * characters (' ', '\n', '\t', etc.) are removed. Example:
+ *   str = "first | second | third\n", delim = '|', then
+ *   segments = ["first", "second", "third"].
+ */
 template <enum_type E>
 constexpr auto enum_flags_cast(std::string_view str, char delim = '|')
   -> std::optional<std::remove_cv_t<E>>
@@ -63,6 +72,10 @@ constexpr auto enum_flags_cast(std::string_view str, char delim = '|')
   return impl::enum_flags_cast_impl<false, std::remove_cv_t<E>>(str, delim);
 }
 
+/**
+ * Returns the enum flag value if input str can be decomposed as enum entry
+ * names split by given delimiter, or std::nullopt otherwise.
+ */
 template <enum_type E>
 constexpr auto enum_flags_cast(std::string_view str, std::string_view delim)
   -> std::optional<std::remove_cv_t<E>>
@@ -70,22 +83,36 @@ constexpr auto enum_flags_cast(std::string_view str, std::string_view delim)
   return impl::enum_flags_cast_impl<false, std::remove_cv_t<E>>(str, delim);
 }
 
+/**
+ * Returns the enum flag value if input str can be decomposed as enum entry
+ * names split by given delimiter, or std::nullopt otherwise. ASCII
+ * case-insensitive string comparison is applied.
+ */
 template <enum_type E>
 constexpr auto enum_flags_cast(
-  std::string_view str, case_insensitive_tag_t, char delim = '|')
+  case_insensitive_by_ascii_tag_t, std::string_view str, char delim = '|')
   -> std::optional<std::remove_cv_t<E>>
 {
   return impl::enum_flags_cast_impl<true, std::remove_cv_t<E>>(str, delim);
 }
 
+/**
+ * Returns the enum flag value if input str can be decomposed as enum entry
+ * names split by given delimiter, or std::nullopt otherwise. ASCII
+ * case-insensitive string comparison is applied.
+ */
 template <enum_type E>
 constexpr auto enum_flags_cast(
-  std::string_view str, case_insensitive_tag_t, std::string_view delim)
+  case_insensitive_by_ascii_tag_t, std::string_view str, std::string_view delim)
   -> std::optional<std::remove_cv_t<E>>
 {
   return impl::enum_flags_cast_impl<true, std::remove_cv_t<E>>(str, delim);
 }
 
+/**
+ * Casts value to E if value can be decomposed as disjunction of enum entries
+ * in E, or returns std::nullopt otherwise.
+ */
 template <enum_type E, std::integral I>
 constexpr auto enum_flags_cast(I value) -> std::optional<std::remove_cv_t<E>>
 {

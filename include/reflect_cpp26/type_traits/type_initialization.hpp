@@ -28,10 +28,7 @@ namespace reflect_cpp26 {
  * Whether T is value-initializable, i.e. T{} is valid expression.
  */
 template <class T>
-constexpr auto is_value_initializable_v = requires { T{}; };
-
-template <class T>
-concept value_initializable = is_value_initializable_v<T>;
+concept value_initializable = requires { T{}; };
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_TYPE_TRAITS_TYPE_INITIALIZATION_HPP

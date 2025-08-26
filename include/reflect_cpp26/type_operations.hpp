@@ -25,6 +25,7 @@
 
 #include <reflect_cpp26/type_operations/comparison.hpp>
 #include <reflect_cpp26/type_operations/member_access.hpp>
+#include <reflect_cpp26/type_operations/member_name_access.hpp>
 #include <reflect_cpp26/type_operations/to_string.hpp>
 #include <reflect_cpp26/type_operations/to_structured.hpp>
 

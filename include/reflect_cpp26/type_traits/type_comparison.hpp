@@ -29,45 +29,51 @@
 
 namespace reflect_cpp26 {
 /**
- * Whether T is exactly the same with one of Args.
+ * Whether T is exactly the same as one of Args.
  */
 template <class T, class... Args>
-constexpr bool is_same_as_one_of_v = (std::is_same_v<T, Args> || ...);
+concept same_as_one_of = (std::is_same_v<T, Args> || ...);
 
+/**
+ * Whether T is exactly the same as neither of Args.
+ */
 template <class T, class... Args>
-concept same_as_one_of = is_same_as_one_of_v<T, Args...>;
+concept same_as_none_of = !same_as_one_of<T, Args...>;
 
+/**
+ * Whether T is the same as one of Args after removing cv-qualifiers.
+ */
 template <class T, class... Args>
-concept same_as_none_of = !is_same_as_one_of_v<T, Args...>;
-
-template <class T, class... Args>
-constexpr bool is_same_as_one_of_without_cv_v =
+concept same_as_one_of_without_cv =
   (std::is_same_v<std::remove_cv_t<T>, std::remove_cv_t<Args>> || ...);
 
+/**
+ * Whether T is the same as neither of Args after removing cv-qualifiers.
+ */
 template <class T, class... Args>
-concept same_as_one_of_without_cv = is_same_as_one_of_without_cv_v<T, Args...>;
+concept same_as_none_of_without_cv = !same_as_one_of_without_cv<T, Args...>;
 
-template <class T, class... Args>
-concept same_as_none_of_without_cv =
-  !is_same_as_one_of_without_cv_v<T, Args...>;
-
-template <class T, class... Args>
-constexpr bool is_same_as_one_of_without_cvref_v =
-  (std::is_same_v<std::remove_cvref_t<T>, std::remove_cvref_t<Args>> || ...);
-
+/**
+ * Whether T is the same as one of Args after removing cvref-qualifiers.
+ */
 template <class T, class... Args>
 concept same_as_one_of_without_cvref =
-  is_same_as_one_of_without_cvref_v<T, Args...>;
+  (std::is_same_v<std::remove_cvref_t<T>, std::remove_cvref_t<Args>> || ...);
 
+/**
+ * Whether T is the same as neither of Args after removing cvref-qualifiers.
+ */
 template <class T, class... Args>
 concept same_as_none_of_without_cvref =
-  !is_same_as_one_of_without_cvref_v<T, Args...>;
+  !same_as_one_of_without_cvref<T, Args...>;
 
 /**
  * Whether T and Args... are all the exactly same.
  */
 template <class T, class... Args>
 constexpr bool are_all_same_v = (std::is_same_v<T, Args> && ...);
+
+// -------- Extension of std::same_as --------
 
 template <class T, class U>
 concept same_as = std::is_same_v<T, U>;

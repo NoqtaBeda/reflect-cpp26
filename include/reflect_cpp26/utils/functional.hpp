@@ -292,8 +292,9 @@ REFLECT_CPP26_COMPARISON_CONCEPT(compare_three_way)
 
 template <size_t I>
 struct get_ith_element_t {
-  template <tuple_like T>
-    requires (I < std::tuple_size_v<std::remove_cvref_t<T>>)
+  template <class T>
+    requires (tuple_like<std::remove_cvref_t<T>> &&
+              I < std::tuple_size_v<std::remove_cvref_t<T>>)
   static constexpr decltype(auto) operator()(T&& tuple)
   {
     constexpr auto has_free_get =

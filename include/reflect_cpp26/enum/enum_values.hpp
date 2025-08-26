@@ -43,7 +43,7 @@ consteval auto make_enum_values(std::span<const std::meta::info> entries)
 }
 
 template <class E, enum_entry_order Order>
-constexpr auto enum_values_v =
+constexpr auto enum_values_array_v =
   make_enum_values<E>(enum_meta_entries_v<E, Order>);
 } // namespace impl
 
@@ -51,21 +51,8 @@ constexpr auto enum_values_v =
  * Gets the list of enum values.
  */
 template <class E, enum_entry_order Order = enum_entry_order::original>
-constexpr auto enum_values() -> std::span<const std::remove_cv_t<E>>
-{
-  const auto& values = impl::enum_values_v<std::remove_cv_t<E>, Order>;
-  return {values.begin(), values.end()};
-}
-
-/**
- * Gets the i-th enum value.
- */
-template <enum_type E, enum_entry_order Order = enum_entry_order::original>
-constexpr auto enum_value(size_t index) -> std::remove_cv_t<E>
-{
-  constexpr auto values = enum_values<E, Order>();
-  return values[index];
-}
+constexpr auto enum_values_v =
+  std::span{impl::enum_values_array_v<std::remove_cv_t<E>, Order>};
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_ENUM_ENUM_VALUES_HPP

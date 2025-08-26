@@ -29,17 +29,17 @@
 
 namespace reflect_cpp26 {
 namespace impl {
-template <class T, template <class...> class Template>
+template <class T, template <class...> class Templ>
 struct is_template_instance_of : std::false_type {};
 
-template <template <class...> class Template, class... Args>
-struct is_template_instance_of<Template<Args...>, Template> : std::true_type {};
+template <template <class...> class Templ, class... Args>
+struct is_template_instance_of<Templ<Args...>, Templ> : std::true_type {};
 
-template <class T, template <auto...> class Template>
+template <class T, template <auto...> class Templ>
 struct is_nontype_template_instance_of : std::false_type {};
 
-template <template <auto...> class Template, auto... Args>
-struct is_nontype_template_instance_of<Template<Args...>, Template>
+template <template <auto...> class Templ, auto... Args>
+struct is_nontype_template_instance_of<Templ<Args...>, Templ>
   : std::true_type {};
 } // namespace impl
 
@@ -49,16 +49,13 @@ struct is_nontype_template_instance_of<Template<Args...>, Template>
  * (e.g. std::array<T, N>) are not supported,
  * in which case std::meta::template_of() can be used instead.
  *
- * Example: static_assert(is_template_instance_of_v<
+ * Example: static_assert(template_instance_of<
  *   std::vector<int, MyAllocator<int>>,
  *   std::vector>)
  */
-template <class T, template <class...> class Template>
-constexpr bool is_template_instance_of_v =
-  impl::is_template_instance_of<std::remove_cvref_t<T>, Template>::value;
-
-template <class T, template <class...> class Template>
-concept template_instance_of = is_template_instance_of_v<T, Template>;
+template <class T, template <class...> class Templ>
+concept template_instance_of =
+  impl::is_template_instance_of<std::remove_cvref_t<T>, Templ>::value;
 
 /**
  * Whether std::remove_cvref_t<T> is a template instance of given
@@ -67,18 +64,13 @@ concept template_instance_of = is_template_instance_of_v<T, Template>;
  * (e.g. std::array<T, N>) are not supported,
  * in which case std::meta::template_of() can be used instead.
  *
- * Example: static_assert(is_nontype_template_instance_of_v<
+ * Example: static_assert(nontype_template_instance_of<
  *   std::ratio<2, 5>,
  *   std::ratio)
  */
-template <class T, template <auto...> class Template>
-constexpr bool is_nontype_template_instance_of_v =
-  impl::is_nontype_template_instance_of<
-    std::remove_cvref_t<T>, Template>::value;
-
-template <class T, template <auto...> class Template>
+template <class T, template <auto...> class Templ>
 concept nontype_template_instance_of =
-  is_nontype_template_instance_of_v<T, Template>;
+  impl::is_nontype_template_instance_of<std::remove_cvref_t<T>, Templ>::value;
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_TYPE_TRAITS_TEMPLATE_INSTANCE_HPP

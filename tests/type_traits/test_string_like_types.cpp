@@ -67,143 +67,143 @@ struct ci_char_traits : public std::char_traits<char> {
 // -------- string_like --------
 
 // String and string view
-static_assert(rfl::is_string_like_v<std::string>);
-static_assert(rfl::is_string_like_v<std::wstring_view>);
-static_assert(rfl::is_string_like_v<rfl::meta_u8string_view>);
+static_assert(rfl::string_like<std::string>);
+static_assert(rfl::string_like<std::wstring_view>);
+static_assert(rfl::string_like<rfl::meta_u8string_view>);
 // Character array
-static_assert(rfl::is_string_like_v<char16_t*>);
-static_assert(rfl::is_string_like_v<char32_t[]>);
-static_assert(rfl::is_string_like_v<char32_t[32]>);
+static_assert(rfl::string_like<char16_t*>);
+static_assert(rfl::string_like<char32_t[]>);
+static_assert(rfl::string_like<char32_t[32]>);
 
 // With cvref qualifiers
-static_assert(rfl::is_string_like_v<const std::string>);
-static_assert(rfl::is_string_like_v<const std::wstring_view &>);
-static_assert(rfl::is_string_like_v<const rfl::meta_u8string_view &&>);
+static_assert(rfl::string_like<const std::string>);
+static_assert(NOT rfl::string_like<const std::wstring_view &>);
+static_assert(NOT rfl::string_like<const rfl::meta_u8string_view &&>);
 // Volatile values are not allowed
 // as volatile CharT* -> const CharT* is disallowed.
-static_assert(NOT rfl::is_string_like_v<volatile std::wstring_view>);
-static_assert(NOT rfl::is_string_like_v<volatile rfl::meta_u8string_view &>);
+static_assert(NOT rfl::string_like<volatile std::wstring_view>);
+static_assert(NOT rfl::string_like<volatile rfl::meta_u8string_view>);
 // Pointer
-static_assert(rfl::is_string_like_v<const char16_t* const>);
-static_assert(rfl::is_string_like_v<const char16_t* const &>);
-static_assert(rfl::is_string_like_v<char16_t* volatile>);
-static_assert(rfl::is_string_like_v<char16_t* volatile &&>);
+static_assert(rfl::string_like<const char16_t* const>);
+static_assert(NOT rfl::string_like<const char16_t* const &>);
+static_assert(rfl::string_like<char16_t* volatile>);
+static_assert(NOT rfl::string_like<char16_t* volatile &&>);
 // volatile CharT* -> const CharT* is disallowed.
-static_assert(NOT rfl::is_string_like_v<volatile char16_t*>);
+static_assert(NOT rfl::string_like<volatile char16_t*>);
 // Array
-static_assert(rfl::is_string_like_v<const char32_t[]>);
-static_assert(rfl::is_string_like_v<const char32_t[32]>);
-static_assert(rfl::is_string_like_v<char32_t (&)[]>);
-static_assert(rfl::is_string_like_v<char32_t (&)[32]>);
-static_assert(NOT rfl::is_string_like_v<const volatile char[]>);
-static_assert(NOT rfl::is_string_like_v<const volatile char[32]>);
-static_assert(NOT rfl::is_string_like_v<const volatile char (&)[]>);
-static_assert(NOT rfl::is_string_like_v<const volatile char (&)[32]>);
+static_assert(rfl::string_like<const char32_t[]>);
+static_assert(rfl::string_like<const char32_t[32]>);
+static_assert(NOT rfl::string_like<char32_t (&)[]>);
+static_assert(NOT rfl::string_like<char32_t (&)[32]>);
+static_assert(NOT rfl::string_like<const volatile char[]>);
+static_assert(NOT rfl::string_like<const volatile char[32]>);
+static_assert(NOT rfl::string_like<const volatile char (&)[]>);
+static_assert(NOT rfl::string_like<const volatile char (&)[32]>);
 
 // Contiguous ranges
-static_assert(rfl::is_string_like_v<std::vector<char>>);
-static_assert(rfl::is_string_like_v<std::array<wchar_t, 32>>);
-static_assert(rfl::is_string_like_v<std::basic_string<char, ci_char_traits>>);
-static_assert(rfl::is_string_like_v<
+static_assert(rfl::string_like<std::vector<char>>);
+static_assert(rfl::string_like<std::array<wchar_t, 32>>);
+static_assert(rfl::string_like<std::basic_string<char, ci_char_traits>>);
+static_assert(rfl::string_like<
   std::basic_string_view<char, ci_char_traits>>);
-static_assert(rfl::is_string_like_v<
+static_assert(rfl::string_like<
   std::ranges::subrange<const char16_t*, const char16_t*>>);
 
 // Other types
-static_assert(NOT rfl::is_string_like_v<int>);
-static_assert(NOT rfl::is_string_like_v<char>);
-static_assert(NOT rfl::is_string_like_v<int[]>);
-static_assert(NOT rfl::is_string_like_v<int[32]>);
-static_assert(NOT rfl::is_string_like_v<std::array<const char*, 2>>);
-static_assert(NOT rfl::is_string_like_v<std::pair<const char*, const char*>>);
+static_assert(NOT rfl::string_like<int>);
+static_assert(NOT rfl::string_like<char>);
+static_assert(NOT rfl::string_like<int[]>);
+static_assert(NOT rfl::string_like<int[32]>);
+static_assert(NOT rfl::string_like<std::array<const char*, 2>>);
+static_assert(NOT rfl::string_like<std::pair<const char*, const char*>>);
 
 // -------- string_like_of --------
 
-static_assert(rfl::is_string_like_of_v<std::string, char>);
-static_assert(rfl::is_string_like_of_v<std::wstring_view, wchar_t>);
-static_assert(rfl::is_string_like_of_v<rfl::meta_u8string_view, char8_t>);
-static_assert(NOT rfl::is_string_like_of_v<std::string, char16_t>);
-static_assert(NOT rfl::is_string_like_of_v<std::wstring_view, char32_t>);
-static_assert(NOT rfl::is_string_like_of_v<rfl::meta_u8string_view, char16_t>);
+static_assert(rfl::string_like_of<std::string, char>);
+static_assert(rfl::string_like_of<std::wstring_view, wchar_t>);
+static_assert(rfl::string_like_of<rfl::meta_u8string_view, char8_t>);
+static_assert(NOT rfl::string_like_of<std::string, char16_t>);
+static_assert(NOT rfl::string_like_of<std::wstring_view, char32_t>);
+static_assert(NOT rfl::string_like_of<rfl::meta_u8string_view, char16_t>);
 
-static_assert(rfl::is_string_like_of_v<char16_t*, char16_t>);
-static_assert(rfl::is_string_like_of_v<char32_t[], char32_t>);
-static_assert(rfl::is_string_like_of_v<char32_t[32], char32_t>);
-static_assert(NOT rfl::is_string_like_of_v<char16_t*, char>);
-static_assert(NOT rfl::is_string_like_of_v<char32_t[], char>);
-static_assert(NOT rfl::is_string_like_of_v<char32_t[32], wchar_t>);
+static_assert(rfl::string_like_of<char16_t*, char16_t>);
+static_assert(rfl::string_like_of<char32_t[], char32_t>);
+static_assert(rfl::string_like_of<char32_t[32], char32_t>);
+static_assert(NOT rfl::string_like_of<char16_t*, char>);
+static_assert(NOT rfl::string_like_of<char32_t[], char>);
+static_assert(NOT rfl::string_like_of<char32_t[32], wchar_t>);
 
-static_assert(rfl::is_string_like_of_v<const std::string, char>);
-static_assert(rfl::is_string_like_of_v<const std::wstring_view &, wchar_t>);
-static_assert(NOT rfl::is_string_like_of_v<volatile std::string_view, char>);
-static_assert(NOT rfl::is_string_like_of_v<const std::string, char8_t>);
-static_assert(NOT rfl::is_string_like_of_v<const std::wstring_view &, char8_t>);
-static_assert(NOT rfl::is_string_like_of_v<volatile std::string_view, char8_t>);
+static_assert(rfl::string_like_of<const std::string, char>);
+static_assert(rfl::string_like_of<const std::wstring_view, wchar_t>);
+static_assert(NOT rfl::string_like_of<volatile std::string_view, char>);
+static_assert(NOT rfl::string_like_of<const std::string, char8_t>);
+static_assert(NOT rfl::string_like_of<const std::wstring_view &, char8_t>);
+static_assert(NOT rfl::string_like_of<volatile std::string_view, char8_t>);
 
-static_assert(rfl::is_string_like_of_v<const char16_t* const, char16_t>);
-static_assert(rfl::is_string_like_of_v<const char16_t* const &, char16_t>);
-static_assert(rfl::is_string_like_of_v<char16_t* volatile, char16_t>);
-static_assert(rfl::is_string_like_of_v<char16_t* volatile &&, char16_t>);
-static_assert(NOT rfl::is_string_like_of_v<const char16_t* const, wchar_t>);
-static_assert(NOT rfl::is_string_like_of_v<const char16_t* const &, char8_t>);
-static_assert(NOT rfl::is_string_like_of_v<char16_t* volatile, char32_t>);
-static_assert(NOT rfl::is_string_like_of_v<char16_t* volatile &&, char>);
+static_assert(rfl::string_like_of<const char16_t* const, char16_t>);
+static_assert(NOT rfl::string_like_of<const char16_t* const &, char16_t>);
+static_assert(rfl::string_like_of<char16_t* volatile, char16_t>);
+static_assert(NOT rfl::string_like_of<char16_t* volatile &&, char16_t>);
+static_assert(NOT rfl::string_like_of<const char16_t* const, wchar_t>);
+static_assert(NOT rfl::string_like_of<const char16_t* const &, char8_t>);
+static_assert(NOT rfl::string_like_of<char16_t* volatile, char32_t>);
+static_assert(NOT rfl::string_like_of<char16_t* volatile &&, char>);
 
-static_assert(NOT rfl::is_string_like_of_v<volatile char16_t*, char16_t>);
-static_assert(NOT rfl::is_string_like_of_v<volatile char16_t*, char32_t>);
+static_assert(NOT rfl::string_like_of<volatile char16_t*, char16_t>);
+static_assert(NOT rfl::string_like_of<volatile char16_t*, char32_t>);
 
-static_assert(rfl::is_string_like_of_v<const char32_t[], char32_t>);
-static_assert(rfl::is_string_like_of_v<const char32_t[32], char32_t>);
-static_assert(rfl::is_string_like_of_v<char32_t (&)[], char32_t>);
-static_assert(rfl::is_string_like_of_v<char32_t (&)[32], char32_t>);
-static_assert(NOT rfl::is_string_like_of_v<const volatile char[], char>);
-static_assert(NOT rfl::is_string_like_of_v<const volatile char[32], char>);
-static_assert(NOT rfl::is_string_like_of_v<const volatile char (&)[], char>);
-static_assert(NOT rfl::is_string_like_of_v<const volatile char (&)[32], char>);
-static_assert(NOT rfl::is_string_like_of_v<const char32_t[], char>);
-static_assert(NOT rfl::is_string_like_of_v<const char32_t[32], char8_t>);
-static_assert(NOT rfl::is_string_like_of_v<char32_t (&)[], char>);
-static_assert(NOT rfl::is_string_like_of_v<char32_t (&)[32], char16_t>);
-static_assert(NOT rfl::is_string_like_of_v<const volatile char[], char8_t>);
-static_assert(NOT rfl::is_string_like_of_v<const volatile char (&)[], char8_t>);
+static_assert(rfl::string_like_of<const char32_t[], char32_t>);
+static_assert(rfl::string_like_of<const char32_t[32], char32_t>);
+static_assert(NOT rfl::string_like_of<char32_t (&)[], char32_t>);
+static_assert(NOT rfl::string_like_of<char32_t (&)[32], char32_t>);
+static_assert(NOT rfl::string_like_of<const volatile char[], char>);
+static_assert(NOT rfl::string_like_of<const volatile char[32], char>);
+static_assert(NOT rfl::string_like_of<const volatile char (&)[], char>);
+static_assert(NOT rfl::string_like_of<const volatile char (&)[32], char>);
+static_assert(NOT rfl::string_like_of<const char32_t[], char>);
+static_assert(NOT rfl::string_like_of<const char32_t[32], char8_t>);
+static_assert(NOT rfl::string_like_of<char32_t (&)[], char>);
+static_assert(NOT rfl::string_like_of<char32_t (&)[32], char16_t>);
+static_assert(NOT rfl::string_like_of<const volatile char[], char8_t>);
+static_assert(NOT rfl::string_like_of<const volatile char (&)[], char8_t>);
 
 // Contiguous ranges
-static_assert(rfl::is_string_like_of_v<std::vector<char>, char>);
-static_assert(rfl::is_string_like_of_v<std::array<wchar_t, 32>, wchar_t>);
-static_assert(rfl::is_string_like_of_v<
+static_assert(rfl::string_like_of<std::vector<char>, char>);
+static_assert(rfl::string_like_of<std::array<wchar_t, 32>, wchar_t>);
+static_assert(rfl::string_like_of<
   std::basic_string<char, ci_char_traits>, char>);
-static_assert(rfl::is_string_like_of_v<
+static_assert(rfl::string_like_of<
   std::basic_string_view<char, ci_char_traits>, char>);
-static_assert(rfl::is_string_like_of_v<
+static_assert(rfl::string_like_of<
   std::ranges::subrange<const char16_t*, const char16_t*>, char16_t>);
 
-static_assert(NOT rfl::is_string_like_of_v<int, wchar_t>);
-static_assert(NOT rfl::is_string_like_of_v<char, char>);
-static_assert(NOT rfl::is_string_like_of_v<std::vector<char>, char8_t>);
-static_assert(NOT rfl::is_string_like_of_v<std::array<wchar_t, 32>, char16_t>);
-static_assert(NOT rfl::is_string_like_of_v<int[], char>);
-static_assert(NOT rfl::is_string_like_of_v<int[32], char8_t>);
-static_assert(NOT rfl::is_string_like_of_v<std::array<const char*, 2>, char>);
+static_assert(NOT rfl::string_like_of<int, wchar_t>);
+static_assert(NOT rfl::string_like_of<char, char>);
+static_assert(NOT rfl::string_like_of<std::vector<char>, char8_t>);
+static_assert(NOT rfl::string_like_of<std::array<wchar_t, 32>, char16_t>);
+static_assert(NOT rfl::string_like_of<int[], char>);
+static_assert(NOT rfl::string_like_of<int[32], char8_t>);
+static_assert(NOT rfl::string_like_of<std::array<const char*, 2>, char>);
 
 // -------- are_string_like_of_same_type_v
 
 static_assert(rfl::are_string_like_of_same_char_type_v<
   std::string, std::string_view>);
 static_assert(rfl::are_string_like_of_same_char_type_v<
-  const std::wstring&, const std::wstring_view&, rfl::meta_wstring_view>);
+  const std::wstring, const std::wstring_view, rfl::meta_wstring_view>);
 static_assert(rfl::are_string_like_of_same_char_type_v<
-  std::u8string&&, const std::u8string_view&&, char8_t[32]>);
+  std::u8string, const std::u8string_view, char8_t[32]>);
 static_assert(rfl::are_string_like_of_same_char_type_v<
-  std::u16string, char16_t (&)[32], const char16_t* volatile>);
+  std::u16string, char16_t[32], const char16_t* volatile>);
 
 static_assert(NOT rfl::are_string_like_of_same_char_type_v<
   std::string, std::wstring_view>);
 static_assert(NOT rfl::are_string_like_of_same_char_type_v<
-  const std::string&, const std::string_view&, rfl::meta_u8string_view>);
+  const std::string, const std::string_view&, rfl::meta_u8string_view>);
 static_assert(NOT rfl::are_string_like_of_same_char_type_v<
-  std::u8string&&, char[32]>);
+  std::u8string, char[32]>);
 static_assert(NOT rfl::are_string_like_of_same_char_type_v<
-  std::u32string, char16_t (&)[32], const char16_t* volatile>);
+  std::u32string, char16_t[32], const char16_t* volatile>);
 
 static_assert(NOT rfl::are_string_like_of_same_char_type_v<
   char[], wchar_t[], char8_t[], char16_t[], char32_t[]>);

@@ -45,10 +45,10 @@ template <class T>
 constexpr auto has_non_public_nonstatic_data_members_v =
   impl::is_class_type_with_non_public_nsdm(^^std::remove_cv_t<T>);
 
-template <class T>
-concept class_with_non_public_nonstatic_data_members =
-  std::is_class_v<T> && has_non_public_nonstatic_data_members_v<T>;
-
+/**
+ * Whether T is a class type without non-static data members of non-public
+ * access. Details see above.
+ */
 template <class T>
 concept class_without_non_public_nonstatic_data_members =
   std::is_class_v<T> && !has_non_public_nonstatic_data_members_v<T>;

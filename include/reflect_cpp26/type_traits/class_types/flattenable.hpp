@@ -26,136 +26,11 @@
 #include <reflect_cpp26/type_traits/class_types/has_ambiguous_inheritance.hpp>
 #include <reflect_cpp26/type_traits/class_types/has_non_public_nsdm.hpp>
 #include <reflect_cpp26/type_traits/class_types/has_virtual_inheritance.hpp>
-#include <reflect_cpp26/type_traits/class_types/member_traits.hpp>
 #include <reflect_cpp26/utils/meta_utility.hpp>
 
 namespace reflect_cpp26 {
-struct flattened_data_member_info {
-  /**
-   * Index of current non-static data member in
-   * all_flattened_nonstatic_data_members_v<T>.
-   */
-  size_t index;
-  /**
-   * If current member is public in T, then public_index = index of current
-   * non-static data member in public_flattened_nonstatic_data_members_v<T>.
-   * Otherwise, public_index = npos;
-   */
-  size_t public_index;
-  /**
-   * Reflection to a public non-static data member of T,
-   * either defined by T directly or inherited from some base class.
-   */
-  std::meta::info member;
-  /**
-   * Actual offset of member relative to T.
-   */
-  std::meta::member_offset actual_offset;
-
-  consteval bool is_public() const {
-    return public_index != npos;
-  }
-
-  consteval size_t actual_offset_bits() const {
-    return actual_offset.bytes * CHAR_BIT + actual_offset.bits;
-  }
-
-  consteval size_t actual_offset_bytes() const
-  {
-    if (actual_offset.bits != 0) {
-      compile_error("Can not get offset bytes of bit-fields.");
-    }
-    return actual_offset.bytes;
-  }
-
-  consteval size_t alignment() const {
-    return alignment_of(member);
-  }
-
-  consteval auto type() const -> std::meta::info {
-    return type_of(member);
-  }
-
-  consteval bool has_identifier() const {
-    return std::meta::has_identifier(member);
-  }
-
-  // Returns alt if the member is anonymous
-  consteval auto identifier(std::string_view alt = "") const
-    -> std::string_view {
-    return reflect_cpp26::identifier_of(member, alt);
-  }
-
-  // Which class current member is defined directly in.
-  consteval auto direct_parent() const -> std::meta::info {
-    return parent_of(member);
-  }
-
-  consteval auto offset_in_parent() const -> std::meta::member_offset {
-    return offset_of(member);
-  }
-
-  consteval size_t offset_bits_in_parent() const
-  {
-    auto offset = offset_in_parent();
-    return offset.bytes * CHAR_BIT + offset.bits;
-  }
-
-  consteval size_t offset_bytes_in_parent() const
-  {
-    auto offset = offset_in_parent();
-    if (offset.bits != 0) {
-      compile_error("Can not get offset bytes of bit-fields.");
-    }
-    return offset.bytes;
-  }
-};
-
 namespace impl {
-consteval size_t count_flattened_nsdm(access_mode mode, std::meta::info T);
-
-template <access_mode Mode, class T>
-constexpr auto flattened_nsdm_count_v = count_flattened_nsdm(Mode, ^^T);
-
-template <class T>
-consteval auto walk_all_nsdm() -> std::vector<flattened_data_member_info>;
-
-template <class T>
-consteval auto walk_public_nsdm() -> std::vector<flattened_data_member_info>;
-
 consteval bool is_flattenable_aggregate(std::meta::info T);
-
-// Note: Manual conversion from compile-time std::vector to std::array is
-// required since define_static_array() is unavailable with compile error:
-// "pointer into an object of consteval-only type is not a constant expression
-// unless it also has consteval-only type"
-template <size_t N>
-consteval auto make_flattened_nsdm_array(
-  const std::vector<flattened_data_member_info>& input) /* -> std::array */
-{
-  if (input.size() != N) {
-    compile_error("Implementation error: size mismatch.");
-  }
-  auto res = std::array<flattened_data_member_info, N>{};
-  std::ranges::copy(input, res.begin());
-  return res;
-}
-
-template <class T>
-consteval auto make_all_flattened_nsdm_array()
-  /* -> std::array<flattened_data_member_info, N> */
-{
-  constexpr auto N = impl::flattened_nsdm_count_v<access_mode::unchecked, T>;
-  return impl::make_flattened_nsdm_array<N>(impl::walk_all_nsdm<T>());
-}
-
-template <class T>
-consteval auto make_public_flattened_nsdm_array()
-  /* -> std::array<flattened_data_member_info, N> */
-{
-  constexpr auto N = impl::flattened_nsdm_count_v<access_mode::unprivileged, T>;
-  return impl::make_flattened_nsdm_array<N>(impl::walk_public_nsdm<T>());
-}
 } // namespace impl
 
 /**
@@ -177,7 +52,7 @@ consteval auto make_public_flattened_nsdm_array()
  *   b.[: get<2>(specs).member :] = &some_int;  // B::x
  */
 template <class T>
-constexpr auto is_partially_flattenable_class_v =
+concept partially_flattenable_class =
   std::is_class_v<T> &&
   ! has_virtual_inheritance_v<T> &&
   ! has_ambiguous_inheritance_v<T>;
@@ -194,204 +69,54 @@ constexpr auto is_partially_flattenable_class_v =
  * 3. T is a partially flattenable class type (see above).
  */
 template <class T>
-constexpr auto is_partially_flattenable_v =
+concept partially_flattenable =
   std::is_scalar_v<T> ||
   std::is_array_v<T> ||
-  is_partially_flattenable_class_v<T>;
+  partially_flattenable_class<T>;
 
+/**
+ * Whether T is a flattenable class type, i.e. partially flattenable class type
+ * that satisfies all the additional constraints below:
+ *   (1) No private or protected direct non-static data members;
+ *   (2) No private or protected direct base classes that are not empty;
+ *   (3) Every direct base class is a flattenable type, recursively.
+ */
 template <class T>
-concept partially_flattenable_class = is_partially_flattenable_class_v<T>;
-
-template <class T>
-concept partially_flattenable = is_partially_flattenable_v<T>;
-
-REFLECT_CPP26_DEFINE_CONCEPT_WITH_CVREF(partially_flattenable)
-REFLECT_CPP26_DEFINE_CONCEPT_WITH_CVREF(partially_flattenable_class)
-
-/**
- * Gets a full list of non-static data members of non-union
- * class T, including:
- * (1) Direct non-static data members of T;
- * (2) All flattened non-static data members inherited from base classes of T,
- *     recursively.
- * Members are sorted in ascending order by offset in T.
- */
-template <partially_flattenable_class T>
-constexpr auto all_flattened_nonstatic_data_members_v =
-  impl::make_all_flattened_nsdm_array<std::remove_cv_t<T>>();
-
-/**
- * Gets a full list of non-static data members with public access of non-union
- * class T (i.e. each member in the list can be accessed globally via class T).
- * Details same as above.
- */
-template <partially_flattenable_class T>
-constexpr auto public_flattened_nonstatic_data_members_v =
-  impl::make_public_flattened_nsdm_array<std::remove_cv_t<T>>();
-
-/**
- * Gets a full list of non-static data members with given access mode of
- * non-union class T. Details same as above.
- */
-template <access_mode Mode, partially_flattenable_class T>
-constexpr auto flattened_nonstatic_data_members_v = []() consteval {
-  if constexpr (Mode == access_mode::unprivileged) {
-    return public_flattened_nonstatic_data_members_v<T>;
-  } else if constexpr (Mode == access_mode::unchecked) {
-    return all_flattened_nonstatic_data_members_v<T>;
-  } else {
-    static_assert(false, "Invalid access mode.");
-  }
-}();
+concept flattenable_class =
+  partially_flattenable_class<T> && !has_non_public_nonstatic_data_members_v<T>;
 
 /**
  * Whether T is a flattenable type.
  * Type T is flattenable if either condition below is satisfied:
  * 1. T is a scalar type;
  * 2. T is an array type (bounded U[N] or unbounded U[]);
- * 3. T is a partially flattenable class type that satisfies all the
- *    additional constraints below:
- *   (1) No private or protected direct non-static data members;
- *   (2) No private or protected direct base classes that are not empty;
- *   (3) Every direct base class is a flattenable type, recursively.
+ * 3. T is a flattenable class type (see above).
  */
 template <class T>
-constexpr auto is_flattenable_v = std::is_scalar_v<T> || std::is_array_v<T>;
+concept flattenable =
+  std::is_scalar_v<T> || std::is_array_v<T> || flattenable_class<T>;
 
-template <partially_flattenable_class T>
-constexpr auto is_flattenable_v<T> =
-  ! has_non_public_nonstatic_data_members_v<T>;
-
+/**
+ * Whether T is a flattenable aggregate type, i.e. flattenable class type that
+ * satisfies all the additional constraints below:
+ *   (1) T is an aggregate;
+ *   (2) Every direct base class is a flattenable aggregate, recursively.
+ */
 template <class T>
-concept flattenable = is_flattenable_v<T>;
-
-template <class T>
-concept flattenable_class = is_flattenable_v<T> && std::is_class_v<T>;
-
-REFLECT_CPP26_DEFINE_CONCEPT_WITH_CVREF(flattenable)
-REFLECT_CPP26_DEFINE_CONCEPT_WITH_CVREF(flattenable_class)
+concept flattenable_aggregate_class =
+  flattenable_class<T> && impl::is_flattenable_aggregate(remove_cv(^^T));
 
 /**
  * Whether T is a flattenable aggregate type.
  * Type T is a flattenable aggregate if either condition below is satisfied:
  * 1. T is an array type (bounded U[N] or unbounded U[]);
- * 2. T is a class type that satisfies all the additional constraints below:
- *   (1) T is an aggregate;
- *   (2) T has no virtual member functions;
- *   (3) Every direct base class is a flattenable aggregate, recursively.
+ * 2. T is a flattenable aggregate class type (see above).
  */
 template <class T>
-constexpr auto is_flattenable_aggregate_v = std::is_array_v<T>;
-
-template <class T>
-  requires (std::is_class_v<T> && std::is_aggregate_v<T>)
-constexpr auto is_flattenable_aggregate_v<T> =
-  is_flattenable_v<T> && impl::is_flattenable_aggregate(remove_cv(^^T));
-
-template <class T>
-concept flattenable_aggregate = is_flattenable_aggregate_v<T>;
-
-template <class T>
-concept flattenable_aggregate_class =
-  is_flattenable_aggregate_v<T> && std::is_class_v<T>;
-
-REFLECT_CPP26_DEFINE_CONCEPT_WITH_CVREF(flattenable_aggregate)
-REFLECT_CPP26_DEFINE_CONCEPT_WITH_CVREF(flattenable_aggregate_class)
+concept flattenable_aggregate =
+  std::is_array_v<T> || flattenable_aggregate_class<T>;
 
 namespace impl {
-consteval size_t count_flattened_nsdm(access_mode mode, std::meta::info T)
-{
-  auto res = direct_nonstatic_data_members_of(mode, T).size();
-  for (auto base: direct_bases_of(mode, T)) {
-    if (is_virtual(base)) {
-      compile_error("Virtual inheritance is not allowed.");
-    }
-    auto Mode = std::meta::reflect_constant(mode);
-    res += extract<size_t>(^^flattened_nsdm_count_v, Mode, type_of(base));
-  }
-  return res;
-}
-
-template <class T>
-consteval auto walk_all_nsdm() -> std::vector<flattened_data_member_info>
-{
-  auto members = std::vector<flattened_data_member_info>{};
-  auto public_count = 0zU;
-
-  auto append_member = [&members, &public_count](
-    bool is_public, std::meta::info member, std::meta::member_offset offset) {
-      members.push_back({
-        .index = size(members),
-        .public_index = is_public ? public_count++ : npos,
-        .member = member,
-        .actual_offset = offset,
-      });
-    };
-  template for (constexpr auto base: all_direct_bases_v<T>) {
-    using B = [: type_of(base) :];
-    if (is_virtual(base)) {
-      compile_error("Virtual inheritance is disallowed.");
-    }
-    auto base_offset_bytes = offset_of(base).bytes;
-
-    for (const auto& cur: all_flattened_nonstatic_data_members_v<B>) {
-      auto is_public = std::meta::is_public(base) && cur.public_index != npos;
-      auto actual_offset = std::meta::member_offset{
-        .bytes = cur.actual_offset.bytes + base_offset_bytes,
-        .bits = cur.actual_offset.bits,
-      };
-      append_member(is_public, cur.member, actual_offset);
-    }
-  }
-  for (auto member: all_direct_nonstatic_data_members_of(^^T)) {
-    append_member(is_public(member), member, offset_of(member));
-  }
-  return members;
-}
-
-template <class T>
-consteval auto walk_public_nsdm() -> std::vector<flattened_data_member_info>
-{
-  auto members = std::vector<flattened_data_member_info>{};
-  auto all_count = 0zU;
-
-  auto append_member = [&members](
-    size_t index, std::meta::info member, std::meta::member_offset offset) {
-      members.push_back({
-        .index = index,
-        .public_index = size(members),
-        .member = member,
-        .actual_offset = offset,
-      });
-    };
-  template for (constexpr auto base: all_direct_bases_v<T>) {
-    using B = [: type_of(base) :];
-    if (is_virtual(base)) {
-      compile_error("Virtual inheritance is disallowed.");
-    }
-    if constexpr (is_public(base)) {
-      auto base_offset_bytes = offset_of(base).bytes;
-      for (const auto& cur: public_flattened_nonstatic_data_members_v<B>) {
-        auto actual_offset = std::meta::member_offset{
-          .bytes = cur.actual_offset.bytes + base_offset_bytes,
-          .bits = cur.actual_offset.bits,
-        };
-        append_member(all_count + cur.index, cur.member, actual_offset);
-      }
-    }
-    all_count += flattened_nsdm_count_v<access_mode::unchecked, B>;
-  }
-
-  auto direct_members = all_direct_nonstatic_data_members_of(^^T);
-  for (auto i = 0zU, n = size(direct_members); i < n; i++) {
-    auto cur = direct_members[i];
-    if (is_public(cur)) {
-      append_member(all_count + i, cur, offset_of(cur));
-    }
-  }
-  return members;
-}
-
 consteval bool is_flattenable_aggregate(std::meta::info T)
 {
   if (!is_class_type(T)) {
@@ -402,11 +127,11 @@ consteval bool is_flattenable_aggregate(std::meta::info T)
   }
   for (auto base: all_direct_bases_of(T)) {
     auto ok = is_public(base) && !is_virtual(base) &&
-      extract_bool(^^is_flattenable_aggregate_v, type_of(base));
+      extract_bool(^^flattenable_aggregate, type_of(base));
     if (!ok) { return false; }
   }
-  for (auto member: all_direct_bases_of(T)) {
-    auto ok = is_public(member) && !is_union_type(type_of(member));
+  for (auto member: all_direct_nonstatic_data_members_of(T)) {
+    auto ok = is_public(member);
     if (!ok) { return false; }
   }
   return true;

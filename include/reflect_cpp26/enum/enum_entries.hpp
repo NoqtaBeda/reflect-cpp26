@@ -38,8 +38,8 @@ template <class E, enum_entry_order Order>
 consteval auto make_enum_entries() /* -> std::array<enum_entry_t<E>, N> */
 {
   auto entries = std::array<enum_entry_t<E>, enum_count_v<E>>{};
-  auto values = enum_values<E, Order>();
-  auto names = enum_names<E, Order>();
+  auto values = enum_values_v<E, Order>;
+  auto names = enum_names_v<E, Order>;
   for (auto i = 0zU; i < enum_count_v<E>; i++) {
     entries[i].first = values[i];
     entries[i].second = names[i];
@@ -48,27 +48,15 @@ consteval auto make_enum_entries() /* -> std::array<enum_entry_t<E>, N> */
 }
 
 template <class E, enum_entry_order Order>
-constexpr auto enum_entries_v = make_enum_entries<E, Order>();
+constexpr auto enum_entries_array_v = make_enum_entries<E, Order>();
 } // namespace impl
 
 /**
  * Gets the list of (value, name) pairs.
  */
 template <enum_type E, enum_entry_order Order = enum_entry_order::original>
-constexpr auto enum_entries() -> std::span<const enum_entry_t<E>>
-{
-  return impl::enum_entries_v<std::remove_cv_t<E>, Order>;
-}
-
-/**
- * Gets the i-th (value, name) pair.
- */
-template <enum_type E, enum_entry_order Order = enum_entry_order::original>
-constexpr auto enum_entry(size_t index) -> enum_entry_t<E>
-{
-  constexpr auto entries = enum_entries<E, Order>();
-  return entries[index];
-}
+constexpr auto enum_entries_v =
+  std::span{impl::enum_entries_array_v<std::remove_cv_t<E>, Order>};
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_ENUM_ENUM_ENTRIES_HPP

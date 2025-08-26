@@ -28,7 +28,7 @@
 #ifdef ENABLE_FULL_HEADER_TEST
 #include <reflect_cpp26/type_traits.hpp>
 #else
-#include <reflect_cpp26/type_traits/class_types/flattenable.hpp>
+#include <reflect_cpp26/type_traits/class_types/flattened_nsdm.hpp>
 #endif
 
 namespace rfl = reflect_cpp26;

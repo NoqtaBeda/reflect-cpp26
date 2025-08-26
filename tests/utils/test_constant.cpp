@@ -57,9 +57,9 @@ TEST(UtilsConstant, Reduce)
 
   // (2) Static initial value
   constexpr auto c2_reducer_2 = [](auto dest, auto x) {
-    static_assert(rfl::is_nontype_template_instance_of_v<
+    static_assert(rfl::nontype_template_instance_of<
       decltype(dest), rfl::constant>);
-    static_assert(rfl::is_nontype_template_instance_of_v<
+    static_assert(rfl::nontype_template_instance_of<
       decltype(x), rfl::constant>);
     static_assert(std::is_same_v<decltype(dest.value), const unsigned>);
     static_assert(std::is_same_v<decltype(x.value), const unsigned>);
@@ -71,7 +71,7 @@ TEST(UtilsConstant, Reduce)
 
   // (3) Dynamic initial value
   constexpr auto c2_reducer_3 = [](auto dest, auto x) {
-    static_assert(rfl::is_nontype_template_instance_of_v<
+    static_assert(rfl::nontype_template_instance_of<
       decltype(x), rfl::constant>);
     static_assert(std::is_same_v<decltype(x.value), const unsigned>);
     static_assert(std::is_same_v<decltype(dest), unsigned>);
@@ -118,7 +118,7 @@ TEST(UtilsConstant, Map)
 
   // (2) No implicit conversion
   constexpr auto c2_mapper_2 = [](auto x) {
-    static_assert(rfl::is_nontype_template_instance_of_v<
+    static_assert(rfl::nontype_template_instance_of<
       decltype(x), rfl::constant>);
     static_assert(std::is_same_v<decltype(x.value), const unsigned>);
     return x / 4.0;
@@ -155,7 +155,7 @@ TEST(UtilsConstant, Filter)
 
   // (2) Static predicate without implicit conversion
   constexpr auto c3_filter_2 = [](auto x) {
-    static_assert(rfl::is_nontype_template_instance_of_v<
+    static_assert(rfl::nontype_template_instance_of<
       decltype(x), rfl::constant>);
     static_assert(std::is_same_v<decltype(x.value), const unsigned>);
     return x % 2 == 0;
@@ -169,7 +169,7 @@ TEST(UtilsConstant, Filter)
   //    1, 2, 3, 5,  8, 1, 2,  3,  5,  8
   // => 1, 3, 5, 8, 12, 6, 8, 10, 13, 17
   EXPECT_THAT(c3.filter([&index](auto x) {
-    static_assert(rfl::is_nontype_template_instance_of_v<
+    static_assert(rfl::nontype_template_instance_of<
       decltype(x), rfl::constant>);
     static_assert(std::is_same_v<decltype(x.value), const unsigned>);
     return ((index++) + x) % 3 != 0;
@@ -215,7 +215,7 @@ TEST(UtilsConstant, Predicates)
   auto c1 = rfl::constant<2u, 3u, 7u>{};
   auto value = 42u;
   auto predicate_1 = [&value](auto x) {
-    static_assert(rfl::is_nontype_template_instance_of_v<
+    static_assert(rfl::nontype_template_instance_of<
       decltype(x), rfl::constant>);
     return value % x == 0;
   };
@@ -225,7 +225,7 @@ TEST(UtilsConstant, Predicates)
 
   value = 26u;
   auto predicate_2 = [&value](auto index, auto x) {
-    static_assert(rfl::is_nontype_template_instance_of_v<
+    static_assert(rfl::nontype_template_instance_of<
       decltype(index), rfl::constant>);
     return (value + index) % x == 0;
   };

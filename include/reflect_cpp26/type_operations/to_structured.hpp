@@ -25,7 +25,6 @@
 
 #include <reflect_cpp26/type_traits/arithmetic_types.hpp>
 #include <reflect_cpp26/type_traits/class_types.hpp>
-#include <reflect_cpp26/type_traits/function_types.hpp>
 #include <reflect_cpp26/type_traits/tuple_like_types.hpp>
 #include <reflect_cpp26/utils/define_static_values.hpp>
 #include <reflect_cpp26/utils/meta_tuple.hpp>
@@ -39,7 +38,7 @@ template <class InputRange>
 consteval auto range_to_structured(const InputRange& range)
 {
   using ValueT = std::ranges::range_value_t<InputRange>;
-  if constexpr (is_char_type_v<ValueT>) {
+  if constexpr (char_type<ValueT>) {
     return reflect_cpp26::define_static_string(range);
   } else {
     auto converted = range | std::views::transform([](const auto& elem) {
@@ -73,7 +72,7 @@ template <class Pointer>
 consteval auto pointer_to_structured(Pointer ptr)
 {
   using T = std::remove_pointer_t<Pointer>;
-  if constexpr (is_char_type_v<T>) {
+  if constexpr (char_type<T>) {
     auto tail = std::ranges::find(ptr, std::unreachable_sentinel, '\0');
     return reflect_cpp26::define_static_string(
       std::basic_string_view{ptr, tail});
@@ -88,7 +87,7 @@ consteval auto pointer_to_structured(std::nullptr_t) {
 } // namespace impl
 
 /**
- * Converts T to structured type.
+ * Converts value to compile-time static constant with structured storage type.
  * Conversion rule:
  * (1) If T is range whose value type is V, then result is:
  *     (a) meta_basic_string_view<V> if V is character type
@@ -105,14 +104,14 @@ consteval auto to_structured(const T& value)
 {
   if constexpr (std::ranges::input_range<T>) {
     return impl::range_to_structured(value);
-  } else if constexpr (is_tuple_like_v<T>) {
+  } else if constexpr (tuple_like<T>) {
     return impl::tuple_like_to_structured(value);
   } else if constexpr (std::is_pointer_v<T> || std::is_null_pointer_v<T>) {
     return impl::pointer_to_structured(value);
   } else if constexpr (std::is_function_v<T>) {
-    return static_cast<to_function_pointer_t<T>>(value);
+    return static_cast<std::add_pointer_t<T>>(value);
   } else {
-    static_assert(is_structured_type_v<T>, "T is not structured type.");
+    static_assert(structured_type<T>, "T is not structured type.");
     return value;
   }
 }

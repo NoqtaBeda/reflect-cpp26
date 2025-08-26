@@ -28,8 +28,15 @@ namespace rfl = reflect_cpp26;
 
 constexpr int constant_int = 42;
 
+/**
+ * Enables std::tuple_size and std::tuple_elements by:
+ * (1) Include <reflect_cpp26/utils/type_tuple.hpp>;
+ * (2) using tuple_elements = reflect_cpp26::type_tuple<...>.
+ */
 template <rfl::tuple_like T>
 struct tuple_wrapper {
+  // => reflect_cpp26::type_tuple<Es...>
+  // where Es... are tuple element types of T.
   using tuple_elements = rfl::tuple_elements_t<T>;
   T underlying;
 

@@ -33,7 +33,7 @@ namespace impl {
 template <class R, class E, class Func>
 constexpr auto enum_switch_is_invocable_r() -> bool
 {
-  template for (constexpr auto entry: enum_meta_entries<E>()) {
+  template for (constexpr auto entry: enum_meta_entries_v<E>) {
     constexpr auto ev = extract<E>(entry);
     if (!std::is_invocable_r_v<R, Func, constant<ev>>) {
       return false;
@@ -43,14 +43,13 @@ constexpr auto enum_switch_is_invocable_r() -> bool
 }
 
 template <class R, class E, class Func>
-constexpr auto enum_switch_is_invocable_r_v =
-  enum_switch_is_invocable_r<R, E, Func>();
+concept enum_switch_invocable_r = enum_switch_is_invocable_r<R, E, Func>();
 
 template <class E, class Func>
 constexpr auto enum_switch_invoke_result() -> std::meta::info
 {
   auto results = make_reserved_vector<std::meta::info>(enum_count_v<E>);
-  template for (constexpr auto entry: enum_meta_entries<E>()) {
+  template for (constexpr auto entry: enum_meta_entries_v<E>) {
     constexpr auto ev = extract<E>(entry);
     results.push_back(^^std::invoke_result_t<Func, constant<ev>>);
   }
@@ -63,7 +62,7 @@ using enum_switch_invoke_result_t = [: enum_switch_invoke_result<E, Func>() :];
 template <class E, class Func>
 constexpr auto enum_switch_void(Func&& func, E value) -> void
 {
-  template for (constexpr auto entry: enum_meta_entries<E>()) {
+  template for (constexpr auto entry: enum_meta_entries_v<E>) {
     constexpr auto ev = extract<E>(entry);
     if (ev == value) {
       func(constant<ev>());
@@ -76,7 +75,7 @@ template <class T, class E, class Func>
 constexpr auto enum_switch_optional(Func&& func, E value) -> std::optional<T>
 {
   auto res = std::optional<T>{};
-  template for (constexpr auto entry: enum_meta_entries<E>()) {
+  template for (constexpr auto entry: enum_meta_entries_v<E>) {
     constexpr auto ev = extract<E>(entry);
     if (ev == value) {
       res = func(constant<ev>());
@@ -86,10 +85,10 @@ constexpr auto enum_switch_optional(Func&& func, E value) -> std::optional<T>
   return res;
 }
 
-template <class T, class E, class Func>
-constexpr auto enum_switch_value(Func&& func, E value, T init) -> T
+template <class R, class T, class E, class Func>
+constexpr auto enum_switch_value(Func&& func, E value, T&& init) -> R
 {
-  template for (constexpr auto entry: enum_meta_entries<E>()) {
+  template for (constexpr auto entry: enum_meta_entries_v<E>) {
     constexpr auto ev = extract<E>(entry);
     if (ev == value) {
       return func(constant<ev>());
@@ -110,7 +109,7 @@ constexpr auto enum_switch_value(Func&& func, E value, T init) -> T
  *   return std::nullopt; // Or no-op if T is void
  */
 template <non_reference_type T = void, enum_type E, class Func>
-  requires (impl::enum_switch_is_invocable_r_v<T, E, Func>)
+  requires (impl::enum_switch_invocable_r<T, E, Func>)
 constexpr auto enum_switch(Func&& func, E value)
 {
   if constexpr (std::is_same_v<T, void>) {
@@ -128,10 +127,10 @@ constexpr auto enum_switch(Func&& func, E value)
  *   return func(constant<E::value2>{}) as decay(T);
  * ...
  * default:
- *   return init;
+ *   return default_value;
  */
 template <class T, enum_type E, class Func>
-  requires (impl::enum_switch_is_invocable_r_v<std::decay_t<T>, E, Func>)
+  requires (impl::enum_switch_invocable_r<std::decay_t<T>, E, Func>)
 constexpr auto enum_switch(Func&& func, E value, T&& default_value)
 {
   return impl::enum_switch_value<std::decay_t<T>>(
@@ -146,11 +145,11 @@ constexpr auto enum_switch(Func&& func, E value, T&& default_value)
  *   return func(constant<E::value2>{}) as ResultT;
  * ...
  * default:
- *   return init as ResultT;
- * ResultT is common type of init and func(constant<E::valueN>{})...
+ *   return default_value as ResultT;
+ * ResultT is common type of default_value and func(constant<E::valueN>{})...
  */
 template <class T, enum_type E, class Func>
-  requires (impl::enum_switch_is_invocable_r_v<void, E, Func>)
+  requires (impl::enum_switch_invocable_r<void, E, Func>)
 constexpr auto enum_switch_to_common(Func&& func, E value, T&& default_value)
 {
   using ResultT = std::common_type_t<

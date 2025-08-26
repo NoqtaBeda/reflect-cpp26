@@ -21,6 +21,8 @@
  **/
 
 #include "tests/test_options.hpp"
+#include <reflect_cpp26/enum/enum_bitwise_operators.hpp>
+#include <system_error>
 
 #ifdef ENABLE_FULL_HEADER_TEST
 #include <reflect_cpp26/type_operations.hpp>
@@ -79,4 +81,46 @@ TEST(TypeOperationsToString, StringRange)
     rfl::generic_to_display_string(foo.std_arr));
   EXPECT_EQ("[\"foo\", \"bar\", \"i love you\", \"n\\nt\\t\"]",
     rfl::generic_to_display_string(foo.c_arr));
+}
+
+enum foo_flags_unscoped {
+  foo_flag_one = 1,
+  foo_flag_two = 2,
+  foo_flag_four = 4,
+  foo_flag_eight = 8,
+};
+
+enum class foo_flags_scoped {
+  one = 1,
+  two = 2,
+  four = 4,
+  eight = 8,
+};
+REFLECT_CPP26_DEFINE_ENUM_BITWISE_OPERATORS(foo_flags_scoped)
+
+TEST(TypeOperationsToString, EnumAndEnumRange)
+{
+  constexpr auto errc_array = std::array{
+    std::errc::address_family_not_supported,
+    std::errc::bad_address,
+    std::errc::connection_aborted,
+    std::errc::destination_address_required,
+  };
+  EXPECT_EQ_STATIC(
+    "[address_family_not_supported, "
+    "bad_address, "
+    "connection_aborted, "
+    "destination_address_required]",
+    rfl::generic_to_string(errc_array));
+
+  constexpr auto U =  static_cast<foo_flags_unscoped>(
+    foo_flag_one | foo_flag_four | foo_flag_eight);
+  // The compiler and the library can not know whether an arbitrary unscoped
+  // enum type is semantically an eum flags type.
+  EXPECT_EQ_STATIC("(foo_flags_unscoped)13",
+    rfl::generic_to_display_string(U));
+
+  using enum foo_flags_scoped;
+  EXPECT_EQ_STATIC("eight|four|one",
+    rfl::generic_to_display_string(one | four | eight));
 }

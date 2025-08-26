@@ -24,20 +24,15 @@
 #define REFLECT_CPP26_ENUM_ENUM_FLAGS_NAME_HPP
 
 #include <reflect_cpp26/enum/impl/enum_flags.hpp>
-#include <reflect_cpp26/enum/impl/tags.hpp>
 #include <reflect_cpp26/utils/concepts.hpp>
 #include <functional>
 
 namespace reflect_cpp26 {
 template <class Iter>
 struct enum_flags_name_to_result {
-  bool done;
+  std::errc ec;
   Iter out;
 };
-
-template <class F, class Iter, class Sentinel>
-concept enum_flags_name_alt_invocable =
-  std::is_invocable_r_v<enum_flags_name_to_result<Iter>, F, Iter, Sentinel>;
 
 namespace impl {
 constexpr size_t delim_length(char) {
@@ -50,8 +45,7 @@ constexpr size_t delim_length(std::string_view delim) {
 
 template <class Iter, class Sentinel>
 constexpr bool do_copy_enum_flags_segment(
-  Iter& iter, Sentinel sentinel, std::string_view seg,
-  without_allocated_buffer_tag_t)
+  Iter& iter, Sentinel sentinel, std::string_view seg)
 {
   if constexpr (std::sized_sentinel_for<Sentinel, Iter>) {
     if (sentinel - iter < seg.length()) {
@@ -65,13 +59,13 @@ constexpr bool do_copy_enum_flags_segment(
     for (; iter != sentinel && seg_iter != seg_end; ++iter, ++seg_iter) {
       *iter = *seg_iter;
     }
-    return seg_iter == seg_end; // Whether copy finishes
+    return (seg_iter == seg_end);
   }
 }
 
 template <class Iter, class Sentinel>
 constexpr bool do_copy_enum_flags_segment(
-  Iter& iter, Sentinel sentinel, char delim, without_allocated_buffer_tag_t)
+  Iter& iter, Sentinel sentinel, char delim)
 {
   if (iter == sentinel) {
     return false;
@@ -80,111 +74,97 @@ constexpr bool do_copy_enum_flags_segment(
   return true;
 }
 
-template <class Iter, class Sentinel>
+template <class Iter>
 constexpr bool do_copy_enum_flags_segment(
-  Iter& iter, Sentinel, std::string_view seg, with_allocated_buffer_tag_t)
+  Iter& iter, std::unreachable_sentinel_t, std::string_view seg)
 {
   iter = std::ranges::copy(seg, iter).out;
   return true;
 }
 
-template <class Iter, class Sentinel>
+template <class Iter>
 constexpr bool do_copy_enum_flags_segment(
-  Iter& iter, Sentinel, char delim, with_allocated_buffer_tag_t)
+  Iter& iter, std::unreachable_sentinel_t, char delim)
 {
   *iter++ = delim;
   return true;
 }
 
-template <class Iter, class Sentinel, class E, class Delim, class Alt,
-          class Tag>
+template <class Iter, class Sentinel, class E, class Delim, class Alt>
 constexpr auto regular_enum_flags_name_to_impl(
-  Iter iter, Sentinel sentinel, E flags, Delim delim, Alt alt, Tag tag)
+  Iter iter, Sentinel sentinel, E flags, Delim delim, Alt alt)
   -> enum_flags_name_to_result<Iter>
 {
-  auto make_alt = [](Iter iter, Sentinel sentinel, const Alt& alt)
-      -> enum_flags_name_to_result<Iter> {
-    if constexpr (std::is_invocable_v<Alt, Iter, Sentinel>) {
-      return std::invoke(alt, iter, sentinel);
-    } else {
-      auto done = do_copy_enum_flags_segment(iter, sentinel, alt, Tag{});
-      return {.done = done, .out = iter};
-    }
-  };
-
   constexpr auto decomp = enum_flags_decomposer_v<E>;
   auto remaining = zero_extend<uint64_t>(std::to_underlying(flags));
   if (remaining == 0) {
-    return {.done = true, .out = iter}; // Nothing to copy from ""
+    return {.ec = std::errc{}, .out = iter}; // Nothing to copy from ""
   }
   if ((remaining & decomp.full_set) != remaining) {
-    return make_alt(iter, sentinel, alt);
+    auto ec = do_copy_enum_flags_segment(iter, sentinel, alt)
+      ? std::errc::invalid_argument // alt string output successfully
+      : std::errc::value_too_large; // No enough space for alt
+    return {.ec = ec, .out = iter};
   }
+
   // First pass checks whether flags can be decomposed
   template for (constexpr auto e: decomp.units) {
     if constexpr (e.popcount != 1) {
       auto intersection = remaining & e.underlying;
       if (intersection != e.underlying && intersection != 0) {
-        return make_alt(iter, sentinel, alt);
+        auto ec = do_copy_enum_flags_segment(iter, sentinel, alt)
+          ? std::errc::invalid_argument // alt string output successfully
+          : std::errc::value_too_large; // No enough space for alt
+        return {.ec = ec, .out = iter};
       }
     }
   }
   // Second pass generates the flags string
   auto is_first = true;
-  auto do_copy_name = [&is_first, &iter, sentinel, delim](auto name) {
-    constexpr auto tag = Tag{};
-    if (!is_first && !do_copy_enum_flags_segment(iter, sentinel, delim, tag)) {
-      return false;
-    }
-    is_first = false;
-    return do_copy_enum_flags_segment(iter, sentinel, name, tag);
-  };
   template for (constexpr auto e: decomp.units) {
-    if constexpr (e.popcount != 1) {
-      auto intersection = remaining & e.underlying;
-      if (intersection == e.underlying && !do_copy_name(e.name)) {
-        return {.done = false, .out = iter};
+    if ((remaining & e.underlying) != 0) {
+      if (!is_first && !do_copy_enum_flags_segment(iter, sentinel, delim)) {
+        return {.ec = std::errc::value_too_large, .out = iter};
       }
-    } else if ((remaining & e.underlying) != 0 && !do_copy_name(e.name)) {
-      return {.done = false, .out = iter};
+      is_first = false;
+      if (!do_copy_enum_flags_segment(iter, sentinel, e.name)) {
+        return {.ec = std::errc::value_too_large, .out = iter};
+      }
     }
   }
-  return {.done = true, .out = iter};
+  return {.ec = std::errc{}, .out = iter}; // OK
 }
 
-template <class Iter, class Sentinel, class E, class Delim, class Alt,
-          class Tag>
+template <class Iter, class Sentinel, class E, class Delim, class Alt>
 constexpr auto irregular_enum_flags_name_to_impl(
-  Iter iter, Sentinel sentinel, E flags, Delim delim, Alt alt, Tag tag)
+  Iter iter, Sentinel sentinel, E flags, Delim delim, Alt alt)
   -> enum_flags_name_to_result<Iter>
 {
-  auto make_alt = [](Iter iter, Sentinel sentinel, const Alt& alt)
-      -> enum_flags_name_to_result<Iter> {
-    if constexpr (std::is_invocable_v<Alt, Iter, Sentinel>) {
-      return std::invoke(alt, iter, sentinel);
-    } else {
-      auto done = do_copy_enum_flags_segment(iter, sentinel, alt, Tag{});
-      return {.done = done, .out = iter};
-    }
-  };
-
   constexpr auto decomp = enum_flags_decomposer_v<E>;
   auto underlying = zero_extend<uint64_t>(std::to_underlying(flags));
   if (underlying == 0) {
-    return {.done = true, .out = iter}; // Nothing to copy from ""
+    return {.ec = std::errc{}, .out = iter}; // Nothing to copy from ""
   }
   if ((underlying & decomp.full_set) != underlying) {
-    return make_alt(iter, sentinel, alt);
+    auto ec = do_copy_enum_flags_segment(iter, sentinel, alt)
+      ? std::errc::invalid_argument // alt string output successfully
+      : std::errc::value_too_large; // No enough space for alt
+    return {.ec = ec, .out = iter};
   }
-  auto covered = uint64_t{0};
+
   // First passchecks whether flags can be decomposed properly
+  auto covered = uint64_t{0};
   for (auto i = 0zU, n = decomp.units.size(); i < n; i++) {
     auto u = decomp.units[i].underlying;
     if ((underlying & u) == u && (covered |= u) == underlying) { break; }
   }
   if (covered != underlying) {
-    return make_alt(iter, sentinel, alt);
+    auto ec = do_copy_enum_flags_segment(iter, sentinel, alt)
+      ? std::errc::invalid_argument // alt string output successfully
+      : std::errc::value_too_large; // No enough space for alt
+    return {.ec = ec, .out = iter};
   }
+
   // Second pass generates the flags string
   auto vis = std::array<uint8_t, decomp.units.size()>{};
   covered = 0;
@@ -192,14 +172,12 @@ constexpr auto irregular_enum_flags_name_to_impl(
     auto u = decomp.units[i].underlying;
     if (vis[i] || (underlying & u) != u) { continue; }
 
-    if (covered != 0) {
-      if (!do_copy_enum_flags_segment(iter, sentinel, delim, tag)) {
-        return {.done = false, .out = iter};
-      }
+    if (covered != 0 && !do_copy_enum_flags_segment(iter, sentinel, delim)) {
+      return {.ec = std::errc::value_too_large, .out = iter};
     }
     auto cur_name = decomp.units[i].name;
-    if (!do_copy_enum_flags_segment(iter, sentinel, cur_name, tag)) {
-      return {.done = false, .out = iter};
+    if (!do_copy_enum_flags_segment(iter, sentinel, cur_name)) {
+      return {.ec = std::errc::value_too_large, .out = iter};
     }
     if ((covered |= u) == underlying) { break; }
     auto j_end = decomp.heads[i + 1];
@@ -207,7 +185,7 @@ constexpr auto irregular_enum_flags_name_to_impl(
       vis[decomp.subset_indices[j]] = true;
     }
   }
-  return {.done = true, .out = iter};
+  return {.ec = std::errc{}, .out = iter};
 }
 
 template <class Iter, class Sentinel, class E, class Delim, class Alt>
@@ -215,24 +193,20 @@ constexpr auto enum_flags_name_to_impl(
   Iter iter, Sentinel sentinel, E flags, Delim delim, Alt alt)
   -> enum_flags_name_to_result<Iter>
 {
-  using tag_type = std::conditional_t<
-    std::is_same_v<Sentinel, std::unreachable_sentinel_t>,
-    with_allocated_buffer_tag_t,
-    without_allocated_buffer_tag_t>;
-
   if constexpr (enum_flags_is_empty_v<E>) {
     if (std::to_underlying(flags) == 0) {
-      return {.done = true, .out = iter}; // Nothing to copy from ""
+      return {.ec = std::errc{}, .out = iter}; // Nothing to copy from ""
     }
-    auto done = do_copy_enum_flags_segment(
-      iter, sentinel, std::move(alt), tag_type{});
-    return {.done = done, .out = iter};
+    auto ec = do_copy_enum_flags_segment(iter, sentinel, std::move(alt))
+      ? std::errc::invalid_argument // alt string output successfully
+      : std::errc::value_too_large; // No enough space for alt
+    return {.ec = ec, .out = iter};
   } else if constexpr (enum_flags_is_regular_v<E>) {
     return regular_enum_flags_name_to_impl(
-      iter, sentinel, flags, delim, std::move(alt), tag_type{});
+      iter, sentinel, flags, delim, std::move(alt));
   } else {
     return irregular_enum_flags_name_to_impl(
-      iter, sentinel, flags, delim, std::move(alt), tag_type{});
+      iter, sentinel, flags, delim, std::move(alt));
   }
 }
 
@@ -249,15 +223,15 @@ constexpr auto enum_flags_name_impl(E flags, Delim delim, std::string_view alt)
       decomp.sum_name_length + delim_length(delim) * decomp.units.size();
     if constexpr (enum_flags_is_regular_v<E>) {
       res.resize_and_overwrite(reserved_size, [&](char* buffer, size_t) {
-        return regular_enum_flags_name_to_impl(
-          buffer, std::unreachable_sentinel, flags, delim, alt,
-          with_allocated_buffer).out - buffer;
+        auto tail = regular_enum_flags_name_to_impl(
+          buffer, std::unreachable_sentinel, flags, delim, alt).out;
+        return tail - buffer;
       });
     } else {
       res.resize_and_overwrite(reserved_size, [&](char* buffer, size_t) {
-        return irregular_enum_flags_name_to_impl(
-          buffer, std::unreachable_sentinel, flags, delim, alt,
-          with_allocated_buffer).out - buffer;
+        auto tail = irregular_enum_flags_name_to_impl(
+          buffer, std::unreachable_sentinel, flags, delim, alt).out;
+        return tail - buffer;
       });
     }
     return res;
@@ -265,6 +239,11 @@ constexpr auto enum_flags_name_impl(E flags, Delim delim, std::string_view alt)
 }
 } // namespace impl
 
+/**
+ * Makes the string representation of enum flags, each entry separated by given
+ * delimiter. If enum_flags_contains<E>(flags) == false, i.e. value can not be
+ * decomposed as disjunction of enum entries in E, then alt is returned.
+ */
 template <enum_type E>
 constexpr auto enum_flags_name(
   E flags, char delim = '|', std::string_view alt = {}) -> std::string
@@ -272,6 +251,11 @@ constexpr auto enum_flags_name(
   return impl::enum_flags_name_impl(flags, delim, alt);
 }
 
+/**
+ * Makes the string representation of enum flags, entries separated by given
+ * delimiter. If enum_flags_contains<E>(flags) == false, i.e. value can not be
+ * decomposed as disjunction of enum entries in E, then alt is returned.
+ */
 template <enum_type E>
 constexpr auto enum_flags_name(
   E flags, std::string_view delim, std::string_view alt = {}) -> std::string
@@ -279,7 +263,29 @@ constexpr auto enum_flags_name(
   return impl::enum_flags_name_impl(flags, delim, alt);
 }
 
-template <std::output_iterator<char> Iter, std::sentinel_for<Iter> Sentinel,
+/**
+ * Writes the string representation of enum flags to given output range
+ * [iter, sentinel), entries separated by given delimiter.
+ * The returned value contains two fields {ec, out}:
+ * (1) If enum_flags_contains<E>(flags) == true, and [iter, sentinel) is enough
+ *     to store the string representation, then
+ *     * ec is std::errc{}, and
+ *     * out is the one-past-the-end iterator of the characters written, i.e.
+ *       [iter, out) is the output string;
+ * (2) If enum_flags_contains<E>(flags) == true, but [iter, sentinel) is not
+ *     enough to store the string representation, then
+ *     * ec is std::errc::value_too_large, and
+ *     * Contents in [iter, out) are left in unspecified state;
+ * (3) If enum_flags_contains<E>(flags) == false, and [iter, sentinel) is enough
+ *     to store alt, then
+ *     * ec is std::errc::invalid_argument, and
+ *     * Contents in [first, out) is copy of alt. Specially, if alt is an empty
+ *       string then out == first and input buffer is kept unchanged;
+ * (4) If enum_flags_contains<E>(flags) == false, and [iter, sentinel) is not
+ *     enough to store alt, then {ec, out} is same as (2).
+ */
+template <std::output_iterator<char> Iter,
+          std::sentinel_for<Iter> Sentinel,
           enum_type E>
 constexpr auto enum_flags_name_to(
   Iter iter, Sentinel sentinel, E value, char delim = '|',
@@ -288,33 +294,19 @@ constexpr auto enum_flags_name_to(
   return impl::enum_flags_name_to_impl(iter, sentinel, value, delim, alt);
 }
 
-template <std::output_iterator<char> Iter, std::sentinel_for<Iter> Sentinel,
+/**
+ * Writes the string representation of enum flags to given output range
+ * [iter, sentinel), entries separated by given delimiter.
+ * The returned value contains two fields {ec, out}, details see above.
+ */
+template <std::output_iterator<char> Iter,
+          std::sentinel_for<Iter> Sentinel,
           enum_type E>
 constexpr auto enum_flags_name_to(
   Iter iter, Sentinel sentinel, E value, std::string_view delim,
   std::string_view alt = {}) -> enum_flags_name_to_result<Iter>
 {
   return impl::enum_flags_name_to_impl(iter, sentinel, value, delim, alt);
-}
-
-template <std::output_iterator<char> Iter, std::sentinel_for<Iter> Sentinel,
-          enum_type E, enum_flags_name_alt_invocable<Iter, Sentinel> AltFunc>
-constexpr auto enum_flags_name_to(
-  Iter iter, Sentinel sentinel, E value, char delim, AltFunc alt_func)
-  -> enum_flags_name_to_result<Iter>
-{
-  return impl::enum_flags_name_to_impl(
-    iter, sentinel, value, delim, std::move(alt_func));
-}
-
-template <std::output_iterator<char> Iter, std::sentinel_for<Iter> Sentinel,
-          enum_type E, enum_flags_name_alt_invocable<Iter, Sentinel> AltFunc>
-constexpr auto enum_flags_name_to(
-  Iter iter, Sentinel sentinel, E value, std::string_view delim,
-  AltFunc alt_func) -> enum_flags_name_to_result<Iter>
-{
-  return impl::enum_flags_name_to_impl(
-    iter, sentinel, value, delim, std::move(alt_func));
 }
 } // namespace reflect_cpp26
 

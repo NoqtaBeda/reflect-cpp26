@@ -64,7 +64,7 @@ concept integral_key_kv_pair = pair_like<KVPair> &&
 
 template <class KVPair>
 concept string_key_kv_pair = pair_like<KVPair> &&
-  is_string_like_v<std::tuple_element_t<0, std::remove_cvref_t<KVPair>>>;
+  string_like<std::tuple_element_t<0, std::remove_cvref_t<KVPair>>>;
 
 template <class T>
 struct alignment_adjusted_wrapper {

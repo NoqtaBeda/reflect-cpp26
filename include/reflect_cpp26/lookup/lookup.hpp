@@ -83,7 +83,7 @@ consteval void lookup_namespace_members(
  * Gets members of class or union type T (including those inherited from
  * bases of T if T is a class type) that satisfy given predicate.
  */
-template <invocable_r_with<bool, std::meta::info> Predicate>
+template <invocable_r<bool, std::meta::info> Predicate>
 consteval auto lookup_type_members(
   std::meta::info T, const Predicate& pred) -> std::vector<std::meta::info>
 {
@@ -95,7 +95,7 @@ consteval auto lookup_type_members(
 /**
  * Gets direct members of namespace ns that satisfy given predicate.
  */
-template <invocable_r_with<bool, std::meta::info> Predicate>
+template <invocable_r<bool, std::meta::info> Predicate>
 consteval auto lookup_namespace_members(
   std::meta::info ns, const Predicate& pred) -> std::vector<std::meta::info>
 {
@@ -109,7 +109,7 @@ consteval auto lookup_namespace_members(
  * bases of T if T is a class type) whose identifier satisfy given predicate.
  * All the members without identifier will be filtered out.
  */
-template <invocable_r_with<bool, std::string_view> Predicate>
+template <invocable_r<bool, std::string_view> Predicate>
 consteval auto lookup_type_members_by_name(
   std::meta::info T, const Predicate& pred) -> std::vector<std::meta::info>
 {
@@ -124,7 +124,7 @@ consteval auto lookup_type_members_by_name(
  * Gets members of namespace ns whose identifier satisfy given predicate.
  * All the members without identifier will be filtered out.
  */
-template <invocable_r_with<bool, std::string_view> Predicate>
+template <invocable_r<bool, std::string_view> Predicate>
 consteval auto lookup_namespace_members_by_name(
   std::meta::info ns, const Predicate& pred) -> std::vector<std::meta::info>
 {

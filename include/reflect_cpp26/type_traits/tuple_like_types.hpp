@@ -35,12 +35,12 @@
 namespace reflect_cpp26 {
 namespace impl {
 template <class T>
-constexpr auto has_tuple_size_v = requires {
+concept has_tuple_size = requires {
   { std::tuple_size<T>::value } -> std::convertible_to<size_t>;
 };
 
 template <class T, size_t I>
-constexpr auto has_tuple_member_get_ith_v = requires (T t) {
+concept has_tuple_member_get_ith = requires (T t) {
   { t.template get<I>() } -> same_as_one_of<
       std::tuple_element_t<I, T>,
       std::tuple_element_t<I, T>&>;
@@ -57,7 +57,7 @@ constexpr auto has_tuple_member_get_ith_v = requires (T t) {
 
 // get<I>(t) can be found via ADL.
 template <class T, size_t I>
-constexpr auto has_tuple_free_get_ith_v = requires (T t) {
+concept has_tuple_free_get_ith = requires (T t) {
   { get<I>(t) } -> same_as_one_of<
       std::tuple_element_t<I, T>,
       std::tuple_element_t<I, T>&>;
@@ -73,15 +73,15 @@ constexpr auto has_tuple_free_get_ith_v = requires (T t) {
 };
 
 template <class T, size_t I>
-constexpr auto has_tuple_get_ith_v =
-  has_tuple_member_get_ith_v<T, I> || has_tuple_free_get_ith_v<T, I>;
+concept has_tuple_get_ith =
+  has_tuple_member_get_ith<T, I> || has_tuple_free_get_ith<T, I>;
 
 template <class T>
-constexpr auto has_tuple_get_v = std::ranges::all_of(
+concept has_tuple_get = std::ranges::all_of(
   std::views::iota(0zU, std::tuple_size_v<T>),
   [](size_t i) {
     auto I = std::meta::reflect_constant(i);
-    return extract<bool>(substitute(^^has_tuple_get_ith_v, {^^T, I}));
+    return extract<bool>(substitute(^^has_tuple_get_ith, {^^T, I}));
   });
 
 consteval bool tuple_elements_match(
@@ -102,76 +102,15 @@ consteval bool tuple_elements_match(
 }
 
 template <class T, class... Args>
-constexpr auto is_tuple_like_no_cvref_of_exactly_v =
-  impl::tuple_elements_match(
-    ^^T, std::tuple_size_v<T>, std::array{^^Args...},
-    std::meta::is_same_type);
+concept is_tuple_like_of_exactly = impl::tuple_elements_match(
+  ^^T, std::tuple_size_v<T>, std::array{^^Args...},
+  std::meta::is_same_type);
 
 template <class T, class... Args>
-constexpr auto is_tuple_like_no_cvref_of_v =
-  impl::tuple_elements_match(
-    ^^T, std::tuple_size_v<T>, std::array{^^Args...},
-    std::meta::is_convertible_type);
-} // namespace impl
+concept is_tuple_like_of = impl::tuple_elements_match(
+  ^^T, std::tuple_size_v<T>, std::array{^^Args...},
+  std::meta::is_convertible_type);
 
-/**
- * Whether std::remove_cvref_t<T> is a tuple-like type.
- * See: https://en.cppreference.com/w/cpp/utility/tuple/tuple-like
- */
-template <class T>
-constexpr auto is_tuple_like_v = false;
-
-template <class T>
-  requires (impl::has_tuple_size_v<std::remove_cvref_t<T>>)
-constexpr auto is_tuple_like_v<T> =
-  impl::has_tuple_get_v<std::remove_cvref_t<T>>;
-
-template <class T>
-concept tuple_like = is_tuple_like_v<T>;
-
-/**
- * Whether std::remove_cvref_t<T> is a pair-like type, i.e. tuple-like type
- * with size == 2.
- */
-template <class T>
-constexpr auto is_pair_like_v = false;
-
-template <tuple_like T>
-constexpr auto is_pair_like_v<T> =
-  std::tuple_size_v<std::remove_cvref_t<T>> == 2;
-
-template <class T>
-constexpr auto pair_like = is_pair_like_v<T>;
-
-/**
- * Whether std::remove_cvref_t<T> is a tuple-like type whose element types
- * are exactly Args... respectively.
- */
-template <class T, class... Args>
-constexpr auto is_tuple_like_of_exactly_v = false;
-
-template <tuple_like T, class... Args>
-constexpr auto is_tuple_like_of_exactly_v<T, Args...> =
-  impl::is_tuple_like_no_cvref_of_exactly_v<std::remove_cvref_t<T>, Args...>;
-
-template <class T, class... Args>
-concept tuple_like_of_exactly = is_tuple_like_of_exactly_v<T, Args...>;
-
-/**
- * Whether std::remove_cvref_t<T> is a tuple-like type whose elements types
- * can be converted to Args... respectively.
- */
-template <class T, class... Args>
-constexpr auto is_tuple_like_of_v = false;
-
-template <tuple_like T, class... Args>
-constexpr auto is_tuple_like_of_v<T, Args...> =
-  impl::is_tuple_like_no_cvref_of_v<std::remove_cvref_t<T>, Args...>;
-
-template <class T, class... Args>
-concept tuple_like_of = is_tuple_like_of_v<T, Args...>;
-
-namespace impl {
 consteval bool sizes_are_equal(std::initializer_list<size_t> sizes)
 {
   auto first = data(sizes)[0]; // Compile error on empty sizes
@@ -182,7 +121,40 @@ consteval bool sizes_are_equal(std::initializer_list<size_t> sizes)
 } // namespace impl
 
 /**
- * Whether std::remove_cvref_t<Args>... are tuple-like types
+ * Whether T (possible cv-qualified) is a tuple-like type.
+ * See: https://en.cppreference.com/w/cpp/utility/tuple/tuple-like
+ */
+template <class T>
+concept tuple_like =
+  impl::has_tuple_size<std::remove_cv_t<T>> &&
+  impl::has_tuple_get<std::remove_cv_t<T>>;
+
+/**
+ * Whether std::remove_cv_t<T> is a pair-like type, i.e. tuple-like type
+ * with size == 2.
+ */
+template <class T>
+concept pair_like = tuple_like<T> &&
+  std::tuple_size_v<std::remove_cv_t<T>> == 2;
+
+/**
+ * Whether std::remove_cv_t<T> is a tuple-like type whose element types
+ * are exactly Args... respectively.
+ */
+template <class T, class... Args>
+concept tuple_like_of_exactly = tuple_like<T> &&
+  impl::is_tuple_like_of_exactly<std::remove_cv_t<T>, Args...>;
+
+/**
+ * Whether std::remove_cv_t<T> is a tuple-like type whose elements types
+ * can be converted to Args... respectively.
+ */
+template <class T, class... Args>
+concept tuple_like_of = tuple_like<T> &&
+  impl::is_tuple_like_of<std::remove_cv_t<T>, Args...>;
+
+/**
+ * Whether std::remove_cv_t<Args>... are tuple-like types
  * with the same tuple size.
  */
 template <class... Args>
@@ -191,9 +163,13 @@ constexpr auto are_tuple_like_of_same_size_v = false;
 template <tuple_like T, tuple_like... Args>
 constexpr auto are_tuple_like_of_same_size_v<T, Args...> =
   impl::sizes_are_equal({
-    std::tuple_size_v<std::remove_cvref_t<T>>,
-    std::tuple_size_v<std::remove_cvref_t<Args>>...});
+    std::tuple_size_v<std::remove_cv_t<T>>,
+    std::tuple_size_v<std::remove_cv_t<Args>>...});
 
+/**
+ * Whether std::remove_cv_t<T> and std::remove_cv_t<Tuple> are tuple-like
+ * types with the same tuple size.
+ */
 template <class T, class Tuple>
 concept tuple_like_of_same_size_with = are_tuple_like_of_same_size_v<T, Tuple>;
 } // namespace reflect_cpp26

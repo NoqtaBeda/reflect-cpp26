@@ -26,6 +26,10 @@
 #include <reflect_cpp26/enum/impl/enum_operator_macros.hpp>
 #include <reflect_cpp26/utils/concepts.hpp>
 
+/**
+ * Supports bitwise operations (operator &, &=, |, |=, ^, ^=, ~) for any
+ * enum type by using namespace reflect_cpp26::enum_bitwise_operators.
+ */
 namespace reflect_cpp26::enum_bitwise_operators {
 template <enum_type E>
 REFLECT_CPP26_DEFINE_ENUM_BINARY_OPERATOR(E, &)
@@ -46,6 +50,10 @@ template <enum_type E>
 REFLECT_CPP26_DEFINE_ENUM_UNARY_OPERATOR(E, E, ~)
 } // namespace reflect_cpp26::enum_bitwise_operators
 
+/**
+ * Defines free functions of binary bitwise operators for enum type E
+ * (operator &, &=, |, |=, ^, ^=).
+ */
 #define REFLECT_CPP26_DEFINE_ENUM_BITWISE_BINARY_OPERATORS(E) \
   REFLECT_CPP26_DEFINE_ENUM_BINARY_OPERATOR(E, &)             \
   REFLECT_CPP26_DEFINE_ENUM_BINARY_OPERATOR(E, |)             \
@@ -54,6 +62,10 @@ REFLECT_CPP26_DEFINE_ENUM_UNARY_OPERATOR(E, E, ~)
   REFLECT_CPP26_DEFINE_ENUM_ASSIGNMENT_OPERATOR(E, |)         \
   REFLECT_CPP26_DEFINE_ENUM_ASSIGNMENT_OPERATOR(E, ^)
 
+/**
+ * Defines free functions of bitwise operators for enum type E
+ * (operator &, &=, |, |=, ^, ^=, ~).
+ */
 #define REFLECT_CPP26_DEFINE_ENUM_BITWISE_OPERATORS(E)  \
   REFLECT_CPP26_DEFINE_ENUM_BITWISE_BINARY_OPERATORS(E) \
   REFLECT_CPP26_DEFINE_ENUM_UNARY_OPERATOR(E, E, ~)

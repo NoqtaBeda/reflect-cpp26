@@ -104,7 +104,7 @@ consteval auto make_enum_from_string_kv_pairs()
 
   auto entries = enumerators_of(^^E);
   const auto& names = []() -> const auto& {
-    if constexpr (CaseInsensitive) { return enum_ic_names_v<E>; }
+    if constexpr (CaseInsensitive) { return enum_names_tolower_v<E>; }
     else { return enum_names_v<E>; }
   }();
   for (auto i = 0zU, n = enum_count_v<E>; i < n; i++) {

@@ -30,7 +30,7 @@
 
 namespace reflect_cpp26 {
 /**
- * Whether value is an entry of enum type E.
+ * Whether value is an entry defined in enum type E.
  */
 template <enum_type E>
 constexpr bool enum_contains(E value) {
@@ -61,8 +61,14 @@ constexpr bool enum_contains(std::string_view str) {
   return impl::enum_from_string_map_v<E>.get(str).second;
 }
 
+/**
+ * Whether an entry of enum type E with given name exists by ASCII
+ * case-insensitive string comparison.
+ */
 template <enum_type E>
-constexpr bool enum_contains(std::string_view str, case_insensitive_tag_t) {
+constexpr bool enum_contains(
+  case_insensitive_by_ascii_tag_t, std::string_view str)
+{
   return impl::enum_from_ci_string_map_v<E>.get(str).second;
 }
 } // namespace reflect_cpp26

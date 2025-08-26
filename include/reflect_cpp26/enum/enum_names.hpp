@@ -30,7 +30,7 @@
 namespace reflect_cpp26 {
 namespace impl {
 template <class E, enum_entry_order Order>
-constexpr auto enum_names()
+constexpr auto enum_names() /* -> std::array<std::string_view, N> */
 {
   auto res = std::array<std::string_view, enum_count_v<E>>{};
   auto index = 0zU;
@@ -41,7 +41,7 @@ constexpr auto enum_names()
 }
 
 template <class E, enum_entry_order Order>
-constexpr auto enum_ic_names()
+constexpr auto enum_ci_names() /* -> std::array<std::string_view, N> */
 {
   auto res = std::array<std::string_view, enum_count_v<E>>{};
   auto index = 0zU;
@@ -52,21 +52,29 @@ constexpr auto enum_ic_names()
   return res;
 }
 
-template <class E, enum_entry_order Order = enum_entry_order::original>
-constexpr auto enum_names_v = enum_names<E, Order>();
+template <class E, enum_entry_order Order>
+constexpr auto enum_names_array_v = enum_names<E, Order>();
 
-template <class E, enum_entry_order Order = enum_entry_order::original>
-constexpr auto enum_ic_names_v = enum_ic_names<E, Order>();
+template <class E, enum_entry_order Order>
+constexpr auto enum_names_tolower_array_v = enum_ci_names<E, Order>();
 } // namespace impl
 
 /**
  * Gets the list of enum names.
  */
 template <enum_type E, enum_entry_order Order = enum_entry_order::original>
-constexpr auto enum_names() -> std::span<const std::string_view>
-{
-  return impl::enum_names_v<std::remove_cv_t<E>, Order>;
-}
+constexpr auto enum_names_v =
+  std::span{impl::enum_names_array_v<std::remove_cv_t<E>, Order>};
+
+/**
+ * Gets the list of enum names which are converted as all lower-case.
+ * (1) Duplicated string may exist if multiple enum names are the same after
+ *     case conversion;
+ * (2) Only ASCII characters can be case-converted.
+ */
+template <enum_type E, enum_entry_order Order = enum_entry_order::original>
+constexpr auto enum_names_tolower_v =
+  std::span{impl::enum_names_tolower_array_v<std::remove_cv_t<E>, Order>};
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_ENUM_ENUM_NAMES_HPP

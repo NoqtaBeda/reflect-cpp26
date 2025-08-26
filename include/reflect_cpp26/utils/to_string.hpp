@@ -215,13 +215,14 @@ constexpr auto to_display_string_impl(std::string_view string) -> std::string
 } // namespace impl
 
 /**
- * to_string(bool)
+ * to_string(bool).
+ * Note: implicit conversion is disabled to prevent ambiguity.
  */
-constexpr auto to_string(bool value) -> std::string {
+constexpr auto to_string(std::same_as<bool> auto value) -> std::string {
   return value ? "true" : "false";
 }
 
-constexpr auto to_display_string(bool value) -> std::string {
+constexpr auto to_display_string(std::same_as<bool> auto value) -> std::string {
   return to_string(value);
 }
 

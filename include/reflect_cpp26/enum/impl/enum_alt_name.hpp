@@ -23,7 +23,6 @@
 #ifndef REFLECT_CPP26_ENUM_IMPL_ENUM_ALT_NAME_HPP
 #define REFLECT_CPP26_ENUM_IMPL_ENUM_ALT_NAME_HPP
 
-#include <reflect_cpp26/enum/impl/tags.hpp>
 #include <reflect_cpp26/enum/enum_type_name.hpp>
 #include <reflect_cpp26/utils/string_utils.hpp>
 #include <charconv>
@@ -31,11 +30,10 @@
 
 namespace reflect_cpp26::impl {
 template <class Iter, class E>
-constexpr auto enum_alt_name_to(Iter iter, E value, with_allocated_buffer_tag_t)
-  -> Iter
+constexpr auto enum_alt_name_to(Iter iter, E value) -> Iter
 {
   *iter++ = '(';
-  iter = std::ranges::copy(enum_type_name<E>(), iter).out;
+  iter = std::ranges::copy(enum_type_name_v<E>, iter).out;
   *iter++ = ')';
 
   std::array<char, max_decimal_digits_int64> buffer;

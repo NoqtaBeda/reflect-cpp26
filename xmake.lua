@@ -105,7 +105,6 @@ meta_test_cases = {
   "utils/fixed_map/string_key/test_naive",
   -- Type Traits
   "type_traits/test_cvref",
-  "type_traits/test_function_types",
   "type_traits/test_is_invocable",
   "type_traits/test_string_like_types",
   "type_traits/test_tuple_like_types_1",
@@ -114,8 +113,6 @@ meta_test_cases = {
   "type_traits/class_types/test_flattenable_types",
   "type_traits/class_types/test_flattened_nsdm",
   "type_traits/class_types/test_member_access",
-  "type_traits/class_types/test_member_pointers",
-  "type_traits/class_types/test_member_reflections",
   "type_traits/class_types/test_structured_types",
   -- Enum
   "enum/impl/test_enum_flags_category",
@@ -157,6 +154,7 @@ meta_test_cases = {
   -- Type Operations
   "type_operations/test_comparison",
   "type_operations/test_member_access",
+  "type_operations/test_member_name_access",
   "type_operations/test_to_string",
   "type_operations/test_to_structured",
 }

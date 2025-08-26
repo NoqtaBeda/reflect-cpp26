@@ -157,7 +157,7 @@ consteval auto make_integral_key_map(
   -> std::meta::info
 {
   constexpr auto input_is_vector =
-    is_template_instance_of_v<KVPairRange, std::vector>;
+    template_instance_of<KVPairRange, std::vector>;
   if constexpr (input_is_vector) {
     return make_integral_key_map_impl(
       std::forward<KVPairRange>(kv_pairs), options);

@@ -79,8 +79,8 @@ constexpr auto enum_json(EntriesSpan entries) -> std::string
 }
 
 template <class E, enum_entry_order Order>
-constexpr auto enum_json_v =
-  std::define_static_string(enum_json(enum_entries<E, Order>()));
+constexpr auto enum_json_static_c_str_v = reflect_cpp26::define_static_string(
+  impl::enum_json(enum_entries_v<std::remove_cv_t<E>, Order>));
 } // namespace impl
 
 /**
@@ -89,7 +89,7 @@ constexpr auto enum_json_v =
 template <enum_type E, enum_entry_order Order = enum_entry_order::original>
 constexpr auto enum_json() -> std::string
 {
-  return impl::enum_json(enum_entries<E, Order>());
+  return impl::enum_json(enum_entries_v<E, Order>);
 }
 
 /**
@@ -97,10 +97,8 @@ constexpr auto enum_json() -> std::string
  * as compile-time fixed string.
  */
 template <enum_type E, enum_entry_order Order = enum_entry_order::original>
-constexpr auto enum_json_static() -> std::string_view
-{
-  return impl::enum_json_v<E, Order>;
-}
+constexpr auto enum_json_static_v =
+  std::string_view{impl::enum_json_static_c_str_v<std::remove_cv_t<E>, Order>};
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_ENUM_ENUM_JSON_HPP

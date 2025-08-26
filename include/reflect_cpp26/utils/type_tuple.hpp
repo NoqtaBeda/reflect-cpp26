@@ -26,8 +26,6 @@
 #include <reflect_cpp26/type_traits/template_instance.hpp>
 #include <reflect_cpp26/type_traits/tuple_like_types.hpp>
 #include <reflect_cpp26/utils/config.h>
-#include <reflect_cpp26/utils/constant.hpp>
-#include <reflect_cpp26/utils/functional.hpp>
 #include <ranges>
 #include <tuple>
 #include <type_traits>
@@ -37,9 +35,6 @@ template <class... Args>
 struct type_tuple {
   static constexpr auto size = sizeof...(Args);
 };
-
-template <size_t I, template_instance_of<type_tuple> TypeTuple>
-using ith_element_t = [: template_arguments_of(^^TypeTuple)[I] :];
 
 namespace impl {
 consteval auto make_type_tuple_cat_type(
@@ -67,7 +62,29 @@ consteval auto make_type_tuple_push_back_type(
   params.push_back(T);
   return substitute(^^type_tuple, params);
 }
+
+consteval auto tuple_elements_to_type_tuple(std::meta::info T)
+{
+  auto n = extract<size_t>(substitute(^^std::tuple_size_v, {T}));
+  auto elements = std::vector<std::meta::info>{};
+  for (auto i = 0zU; i < n; i++) {
+    auto I = std::meta::reflect_constant(i);
+    elements.push_back(substitute(^^std::tuple_element_t, {I, T}));
+  }
+  return substitute(^^type_tuple, elements);
+}
+
+template <class T>
+concept tuple_elements_defined = requires {
+  { typename T::tuple_elements{} } -> template_instance_of<type_tuple>;
+};
 } // namespace impl
+
+/**
+ * Extracts the I-th type in given type_tuple.
+ */
+template <size_t I, template_instance_of<type_tuple> TypeTuple>
+using ith_element_t = [: template_arguments_of(^^TypeTuple)[I] :];
 
 /**
  * Concatenates Tuples to a single type_tuple.
@@ -96,159 +113,33 @@ template <class T, size_t N>
 using type_tuple_repeat_t =
   [: substitute(^^type_tuple, std::views::repeat(^^T, N)) :];
 
-template <template <class...> class Traits, class TypeTuple>
-struct type_tuple_apply {
-  static_assert(false, "The 2nd parameter is not an instance of type_tuple.");
-};
-
-template <template <class...> class Traits, class... Args>
-struct type_tuple_apply<Traits, type_tuple<Args...>> : Traits<Args...> {};
-
 /**
- * Extracts Traits<Args...>::type where TypeTuple = type_tuple<Args...>.
+ * Given a tuple-like type T, tuple_elements_t<T> is a list that contains
+ * std::tuple_element_t<I, T> for I = 0 to N-1 where N is the tuple size of T.
+ * Example:
+ * using Tuple = std::tuple<int, unsigned, float>;
+ * using Elems = tuple_elements_t<Tuple>;
+ * static_assert(std::is_same_v<type_tuple<int, unsigned, float>, Elems>);
  */
-template <template <class...> class Traits,
-          template_instance_of<type_tuple> TypeTuple>
-using type_tuple_apply_t = typename type_tuple_apply<Traits, TypeTuple>::type;
-
-/**
- * Extracts Traits<Args...>::value where TypeTuple = type_tuple<Args...>.
- */
-template <template <class...> class Traits,
-          template_instance_of<type_tuple> TypeTuple>
-constexpr auto type_tuple_apply_v = type_tuple_apply<Traits, TypeTuple>::value;
-
-/**
- * Instantiates Template<Args...> where TypeTuple = type_tuple<Args...>.
- */
-template <template <class...> class Template,
-          template_instance_of<type_tuple> TypeTuple>
-using type_tuple_substitute_t =
-  [: substitute(^^Template, template_arguments_of(^^TypeTuple)) :];
-
-namespace impl {
-consteval bool type_tuple_is_invocable_generic(
-  std::meta::info pred_v, std::meta::info Func, std::meta::info Tuple)
-{
-  auto params = std::vector<std::meta::info>{Func};
-  params.append_range(template_arguments_of(remove_cvref(Tuple)));
-  return extract<bool>(substitute(pred_v, params));
-}
-
-consteval bool type_tuple_is_invocable_r_generic(
-  std::meta::info pred_v, std::meta::info R, std::meta::info Func,
-  std::meta::info Tuple)
-{
-  auto params = std::vector<std::meta::info>{R, Func};
-  params.append_range(template_arguments_of(remove_cvref(Tuple)));
-  return extract<bool>(substitute(pred_v, params));
-}
-
-template <template <class> class Traits, class TypeTuple>
-struct type_tuple_transform_to_type {
-  static_assert(false, "The 2nd parameter is not an instance of type_tuple.");
-};
-
-template <template <class> class Traits, class... Args>
-struct type_tuple_transform_to_type<Traits, type_tuple<Args...>> {
-  using type = type_tuple<typename Traits<Args>::type...>;
-};
-
-template <template <class> class Traits, class TypeTuple>
-struct type_tuple_transform_to_value {
-  static_assert(false, "The 2nd parameter is not an instance of type_tuple.");
-};
-
-template <template <class> class Traits, class... Args>
-struct type_tuple_transform_to_value<Traits, type_tuple<Args...>> {
-  static constexpr auto value = constant<Traits<Args>::value...>{};
-};
-} // namespace impl
-
-/**
- * Equivalent to std::is_invocable_v<Func, Args...> where
- * TypeTuple = type_tuple<Args...>.
- */
-template <class Func, template_instance_of<type_tuple> TypeTuple>
-constexpr auto type_tuple_is_invocable_v =
-  impl::type_tuple_is_invocable_generic(
-    ^^std::is_invocable_v, ^^Func, ^^TypeTuple);
-
-/**
- * Equivalent to std::is_nothrow_invocable_v<Func, Args...> where
- * TypeTuple = type_tuple<Args...>.
- */
-template <class Func, template_instance_of<type_tuple> TypeTuple>
-constexpr auto type_tuple_is_nothrow_invocable_v =
-  impl::type_tuple_is_invocable_generic(
-    ^^std::is_nothrow_invocable_v, ^^Func, ^^TypeTuple);
-
-/**
- * Equivalent to std::is_invocable_r_v<R, Func, Args...> where
- * TypeTuple = type_tuple<Args...>.
- */
-template <class R, class Func, template_instance_of<type_tuple> TypeTuple>
-constexpr auto type_tuple_is_invocable_r_v =
-  impl::type_tuple_is_invocable_r_generic(
-    ^^std::is_invocable_r_v, ^^R, ^^Func, ^^TypeTuple);
-
-/**
- * Equivalent to std::is_nothrow_invocable_r_v<R, Func, Args...> where
- * TypeTuple = type_tuple<Args...>.
- */
-template <class R, class Func, template_instance_of<type_tuple> TypeTuple>
-constexpr auto type_tuple_is_nothrow_invocable_r_v =
-  impl::type_tuple_is_invocable_r_generic(
-    ^^std::is_nothrow_invocable_r_v, ^^R, ^^Func, ^^TypeTuple);
-
-/**
- * Makes type_tuple<Ts...> where
- *   Ts...[i] = typename Traits<Args...[i]>::type
- *   TypeTuple = type_tuple<Args...>
- */
-template <template <class> class Traits, class TypeTuple>
-using type_tuple_transform_t =
-  typename impl::type_tuple_transform_to_type<Traits, TypeTuple>::type;
-
-/**
- * Makes constant<Vs...> where
- *   Vs...[i] = Traits<Args...[i]>::value
- *   TypeTuple = type_typle<Args...>
- */
-template <template <class> class Traits, class TypeTuple>
-constexpr auto type_tuple_transform_v =
-  impl::type_tuple_transform_to_value<Traits, TypeTuple>::value;
-
-namespace impl {
-template <class T>
-concept tuple_elements_defined = requires {
-  { typename T::tuple_elements{} } -> template_instance_of<type_tuple>;
-};
-
-consteval auto tuple_elements_to_type_tuple(std::meta::info T)
-{
-  auto n = extract<size_t>(substitute(^^std::tuple_size_v, {T}));
-  auto elements = std::vector<std::meta::info>{};
-  for (auto i = 0zU; i < n; i++) {
-    auto I = std::meta::reflect_constant(i);
-    elements.push_back(substitute(^^std::tuple_element_t, {I, T}));
-  }
-  return substitute(^^type_tuple, elements);
-}
-} // namespace impl
-
 template <tuple_like Tuple>
 using tuple_elements_t = [: impl::tuple_elements_to_type_tuple(^^Tuple) :];
 } // namespace reflect_cpp26
 
 /**
- * Convenient way to mark a type as tuple-like by specifying it's tuple elements
- * in 'tuple_elements' type member which is an instance of type_tuple.
+ * Convenient way to mark a type as tuple-like (enabling std::tuple_size and
+ * std::tuple_element) by specifying it's tuple elements in 'tuple_elements'
+ * type member which is an instance of type_tuple.
+ * Examples in reflect_cpp26 source code:
+ * (1) tuple_wrapper in tests/utils/test_type_tuple.cpp;
+ * (2) kv_pair_wrapper types in implementation of module fixed_map.
  */
 template <reflect_cpp26::impl::tuple_elements_defined TupleLike>
 struct std::tuple_size<TupleLike>
   : std::integral_constant<size_t, TupleLike::tuple_elements::size> {};
 
+/**
+ * Same as above.
+ */
 template <size_t I, reflect_cpp26::impl::tuple_elements_defined TupleLike>
 struct std::tuple_element<I, TupleLike> {
   using tuple_elements = typename TupleLike::tuple_elements;

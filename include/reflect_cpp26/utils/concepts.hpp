@@ -25,14 +25,6 @@
 
 #include <type_traits>
 
-// Reused by multiple headers in reflect_cpp26
-#define REFLECT_CPP26_DEFINE_CONCEPT_WITH_CVREF(concept_name)               \
-  template <class T>                                                        \
-  concept concept_name##_or_ref = concept_name<std::remove_reference_t<T>>; \
-                                                                            \
-  template <class T>                                                        \
-  concept concept_name##_or_cvref = concept_name<std::remove_cvref_t<T>>;
-
 namespace reflect_cpp26 {
 #define REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(category)  \
   template <class T>                                          \
@@ -97,35 +89,6 @@ REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(union)
 
 template <class T>
 concept class_or_union_type = std::is_class_v<T> || std::is_union_v<T>;
-
-#define REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(category) \
-  REFLECT_CPP26_DEFINE_CONCEPT_WITH_CVREF(category##_type)
-
-REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(abstract)
-REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(aggregate)
-REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(arithmetic)
-REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(array)
-REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(bounded_array)
-REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(class)
-REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(compound)
-REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(empty)
-REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(enum)
-REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(final)
-REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(fundamental)
-REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(implicit_lifetime)
-REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(member_function_pointer)
-REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(member_object_pointer)
-REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(member_pointer)
-REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(object)
-REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(pointer)
-REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(polymorphic)
-REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(scalar)
-REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(scoped_enum)
-REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(unbounded_array)
-REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(union)
-REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF(class_or_union)
-
-#undef REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_WITH_CVREF
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_UTILS_CONCEPTS_HPP

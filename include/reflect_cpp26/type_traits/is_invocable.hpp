@@ -23,37 +23,11 @@
 #ifndef REFLECT_CPP26_TYPE_TRAITS_IS_INVOCABLE_HPP
 #define REFLECT_CPP26_TYPE_TRAITS_IS_INVOCABLE_HPP
 
-// Root header: Include only:
-// (1) C++ stdlib; (2) utils/config.h; (3) Other root headers
 #include <reflect_cpp26/utils/config.h>
 #include <ranges>
 #include <type_traits>
 
 namespace reflect_cpp26 {
-/**
- * Stronger constraint than std::is_invocable_r_v with implicit conversion
- * of result type disallowed. Usable if ambiguity is a concern.
- */
-template <class R, class Func, class... Args>
-constexpr auto is_invocable_exactly_r_v = false;
-
-template <class R, class Func, class... Args>
-  requires (std::is_invocable_v<Func, Args...>)
-constexpr auto is_invocable_exactly_r_v<R, Func, Args...> =
-  std::is_same_v<std::invoke_result_t<Func, Args...>, R>;
-
-/**
- * Stronger constraint than std::is_nothrow_invocable_r_v with
- * implicit conversion of result type banned. Usable if ambiguity is a concern.
- */
-template <class R, class Func, class... Args>
-constexpr auto is_nothrow_invocable_exactly_r_v = false;
-
-template <class R, class Func, class... Args>
-  requires (std::is_nothrow_invocable_v<Func, Args...>)
-constexpr auto is_nothrow_invocable_exactly_r_v<R, Func, Args...> =
-  std::is_same_v<std::invoke_result_t<Func, Args...>, R>;
-
 namespace impl {
 consteval bool is_invocable_n_generic(
   std::meta::info Predicate, std::meta::info F, std::meta::info Arg, size_t N)
@@ -74,47 +48,70 @@ consteval bool is_invocable_r_n_generic(
 } // namespace impl
 
 /**
+ * Stronger constraint than std::is_invocable_r_v with implicit conversion
+ * of result type disallowed. Usable if ambiguity is a concern.
+ */
+template <class R, class Func, class... Args>
+constexpr auto is_invocable_exactly_r_v = []() consteval {
+  if constexpr (std::is_invocable_v<Func, Args...>) {
+    return std::is_same_v<std::invoke_result_t<Func, Args...>, R>;
+  } else {
+    return false;
+  }
+}();
+
+/**
+ * Stronger constraint than std::is_nothrow_invocable_r_v with
+ * implicit conversion of result type banned. Usable if ambiguity is a concern.
+ */
+template <class R, class Func, class... Args>
+constexpr auto is_nothrow_invocable_exactly_r_v = []() consteval {
+  if constexpr (std::is_nothrow_invocable_v<Func, Args...>) {
+    return std::is_same_v<std::invoke_result_t<Func, Args...>, R>;
+  } else {
+    return false;
+  }
+}();
+
+/**
  * Equivalent to std::is_invocable_v<Func, Arg...>
  * where Arg is repeated N times.
  */
 template <class Func, class Arg, size_t N>
-constexpr auto is_invocable_n_v =
-  impl::is_invocable_n_generic(^^std::is_invocable_v, ^^Func, ^^Arg, N);
+constexpr auto is_invocable_n_v = impl::is_invocable_n_generic(
+  ^^std::is_invocable_v, ^^Func, ^^Arg, N);
 
 /**
  * Equivalent to std::is_nothrow_invocable_v<Func, Arg...>
  * where Arg is repeated N times.
  */
 template <class Func, class Arg, size_t N>
-constexpr auto is_nothrow_invocable_n_v =
-  impl::is_invocable_n_generic(^^std::is_nothrow_invocable_v, ^^Func, ^^Arg, N);
+constexpr auto is_nothrow_invocable_n_v = impl::is_invocable_n_generic(
+  ^^std::is_nothrow_invocable_v, ^^Func, ^^Arg, N);
 
 /**
  * Equivalent to std::is_invocable_r_v<R, Func, Arg...>
  * where Arg is repeated N times.
  */
 template <class R, class Func, class Arg, size_t N>
-constexpr auto is_invocable_r_n_v =
-  impl::is_invocable_r_n_generic(
-    ^^std::is_invocable_r_v, ^^R, ^^Func, ^^Arg, N);
+constexpr auto is_invocable_r_n_v = impl::is_invocable_r_n_generic(
+  ^^std::is_invocable_r_v, ^^R, ^^Func, ^^Arg, N);
 
 /**
  * Equivalent to is_invocable_exactly_r_v<R, Func, Args...>
  * where Arg is repeated N times.
  */
 template <class R, class Func, class Arg, size_t N>
-constexpr auto is_invocable_exactly_r_n_v =
-  impl::is_invocable_r_n_generic(
-    ^^is_invocable_exactly_r_v, ^^R, ^^Func, ^^Arg, N);
+constexpr auto is_invocable_exactly_r_n_v = impl::is_invocable_r_n_generic(
+  ^^is_invocable_exactly_r_v, ^^R, ^^Func, ^^Arg, N);
 
 /**
  * Equivalent to std::is_nothrow_invocable_r_v<R, Func, Arg...>
  * where Arg is repeated N times.
  */
 template <class R, class Func, class Arg, size_t N>
-constexpr auto is_nothrow_invocable_r_n_v =
-  impl::is_invocable_r_n_generic(
-    ^^std::is_nothrow_invocable_r_v, ^^R, ^^Func, ^^Arg, N);
+constexpr auto is_nothrow_invocable_r_n_v = impl::is_invocable_r_n_generic(
+  ^^std::is_nothrow_invocable_r_v, ^^R, ^^Func, ^^Arg, N);
 
 /**
  * Equivalent to is_nothrow_invocable_exactly_r_v<R, Func, Args...>
@@ -127,36 +124,58 @@ constexpr auto is_nothrow_invocable_exactly_r_n_v =
 
 // -------- Concepts --------
 
-#define REFLECT_CPP26_INVOCABLE_CONCEPT(name, ns)       \
-  template <class F, class... Args>                     \
-  concept name##_with = ns::is_##name##_v<F, Args...>;
+#define REFLECT_CPP26_INVOCABLE_CONCEPT(name, ns) \
+  template <class F, class... Args>               \
+  concept name = ns::is_##name##_v<F, Args...>;
 
+/**
+ * concept invocable<T, Args...>
+ * concept nothrow_invocable<T, Args...>
+ */
 REFLECT_CPP26_INVOCABLE_CONCEPT(invocable, std)
 REFLECT_CPP26_INVOCABLE_CONCEPT(nothrow_invocable, std)
 #undef REFLECT_CPP26_INVOCABLE_CONCEPT
 
-#define REFLECT_CPP26_INVOCABLE_CONCEPT_R(name, ns)           \
-  template <class F, class R, class... Args>                  \
-  concept name##_r_with = ns::is_##name##_r_v<R, F, Args...>;
+#define REFLECT_CPP26_INVOCABLE_CONCEPT_R(name, ns)       \
+  template <class F, class R, class... Args>              \
+  concept name##_r = ns::is_##name##_r_v<R, F, Args...>;
 
+/**
+ * concept invocable_r<T, R, Args...>
+ * concept invocable_exactly_r<T, R, Args...>
+ *
+ * concept nothrow_invocable_r<T, R, Args...>
+ * concept nothrow_invocable_exactly_r<T, R, Args...>
+ */
 REFLECT_CPP26_INVOCABLE_CONCEPT_R(invocable, std)
 REFLECT_CPP26_INVOCABLE_CONCEPT_R(nothrow_invocable, std)
 REFLECT_CPP26_INVOCABLE_CONCEPT_R(invocable_exactly, reflect_cpp26)
 REFLECT_CPP26_INVOCABLE_CONCEPT_R(nothrow_invocable_exactly, reflect_cpp26)
 #undef REFLECT_CPP26_INVOCABLE_CONCEPT_R
 
-#define REFLECT_CPP26_INVOCABLE_CONCEPT_N(name)       \
-  template <class F, class Arg, size_t N>             \
-  concept name##_with_n = is_##name##_n_v<F, Arg, N>;
+#define REFLECT_CPP26_INVOCABLE_CONCEPT_N(name)   \
+  template <class F, class Arg, size_t N>         \
+  concept name##_n = is_##name##_n_v<F, Arg, N>;
 
+/**
+ * concept invocable_n<T, Arg, N>
+ * concept nothrow_invocable_n<T, Arg, N>
+ */
 REFLECT_CPP26_INVOCABLE_CONCEPT_N(invocable)
 REFLECT_CPP26_INVOCABLE_CONCEPT_N(nothrow_invocable)
 #undef REFLECT_CPP26_INVOCABLE_CONCEPT_N
 
-#define REFLECT_CPP26_INVOCABLE_CONCEPT_R_N(name)             \
-  template <class F, class R, class Arg, size_t N>            \
-  concept name##_r_with_n = is_##name##_r_n_v<R, F, Arg, N>;
+#define REFLECT_CPP26_INVOCABLE_CONCEPT_R_N(name)       \
+  template <class F, class R, class Arg, size_t N>      \
+  concept name##_r_n = is_##name##_r_n_v<R, F, Arg, N>;
 
+/**
+ * concept invocable_r_n<T, R, Arg, N>
+ * concept invocable_exactly_r_n<T, R, Arg, N>
+ *
+ * concept nothrow_invocable_r_n<T, R, Arg, N>
+ * concept nothrow_invocable_exactly_r_n<T, R, Arg, N>
+ */
 REFLECT_CPP26_INVOCABLE_CONCEPT_R_N(invocable)
 REFLECT_CPP26_INVOCABLE_CONCEPT_R_N(nothrow_invocable)
 REFLECT_CPP26_INVOCABLE_CONCEPT_R_N(invocable_exactly)

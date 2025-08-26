@@ -31,12 +31,8 @@ namespace reflect_cpp26 {
  * Gets the enum type name (without cv-qualifiers and namespaces).
  */
 template <enum_type E>
-constexpr auto enum_type_name() -> std::string_view
-{
-  using ENoCV = std::remove_cv_t<E>;
-  return reflect_cpp26::identifier_of(
-    dealias(^^ENoCV), "(anonymous enum type)");
-}
+constexpr auto enum_type_name_v = reflect_cpp26::identifier_of(
+  dealias(remove_cvref(^^E)), "(anonymous enum type)");
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_ENUM_ENUM_TYPE_NAME_HPP

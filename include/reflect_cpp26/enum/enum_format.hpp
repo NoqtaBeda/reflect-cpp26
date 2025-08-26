@@ -33,6 +33,10 @@
 #endif
 
 namespace reflect_cpp26 {
+/**
+ * std::format and fmt::format support for enum types.
+ * Enable by including this header.
+ */
 template <class FormatError>
 struct enum_common_formatter {
   std::optional<std::string> custom_delim;
@@ -72,19 +76,23 @@ struct enum_common_formatter {
     using iterator_type = typename FormatContext::iterator;
     auto dest = ctx.out();
     if (as_flags) {
-      auto delim = custom_delim ? std::string_view{*custom_delim} : "|";
-      return enum_flags_name_to(dest, std::unreachable_sentinel, value, delim,
-        [value](iterator_type iter, std::unreachable_sentinel_t) {
-          return enum_flags_name_to_result{
-            .done = true,
-            .out = impl::enum_alt_name_to(
-              iter, value, impl::with_allocated_buffer),
-          };
-        }).out;
+      auto do_output = [value, dest](auto delim) {
+          auto [ec, out] = enum_flags_name_to(
+          dest, std::unreachable_sentinel, value, delim);
+        if (std::errc{} != ec) {
+          // Expects ec == std::errc::invalid_argument, buffer unchanged
+          return impl::enum_alt_name_to(dest, value);
+        } else {
+          return out;
+        }
+      };
+      return custom_delim.has_value()
+        ? do_output(*custom_delim)
+        : do_output('|');
     } else {
       auto name = enum_name(value);
       if (name.empty()) {
-        return impl::enum_alt_name_to(dest, value, impl::with_allocated_buffer);
+        return impl::enum_alt_name_to(dest, value);
       }
       return std::ranges::copy(name, dest).out;
     }

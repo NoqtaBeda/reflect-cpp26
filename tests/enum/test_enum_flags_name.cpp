@@ -71,45 +71,45 @@ TEST(EnumFlagsName, D1ToArray)
   auto buffer = std::array<char, 12>{};
   auto to_res_1 = rfl::enum_flags_name_to(
     buffer.begin(), buffer.end(), D1::one | D1::two | D1::four);
-  EXPECT_TRUE(to_res_1.done);
+  EXPECT_EQ(std::errc{}, to_res_1.ec);
   EXPECT_EQ(buffer.begin() + 12, to_res_1.out);
   EXPECT_EQ("four|two|one", std::string(std::from_range, buffer));
 
   std::ranges::fill(buffer, '\0');
   auto to_res_2 = rfl::enum_flags_name_to(
     buffer.begin(), buffer.end(), D1::one | D1::two);
-  EXPECT_TRUE(to_res_2.done);
+  EXPECT_EQ(std::errc{}, to_res_2.ec);
   EXPECT_EQ(buffer.begin() + 7, to_res_2.out);
   EXPECT_EQ("two|one", std::string(buffer.begin(), buffer.begin() + 7));
 
   std::ranges::fill(buffer, '\0');
   auto to_res_3 = rfl::enum_flags_name_to(
     buffer.begin(), buffer.end(), D1::one | D1::two | D1::four, " | ");
-  EXPECT_FALSE(to_res_3.done);
+  EXPECT_EQ(std::errc::value_too_large, to_res_3.ec);
 
   std::ranges::fill(buffer, '\0');
   auto to_res_4 = rfl::enum_flags_name_to(
     buffer.begin(), buffer.end(), static_cast<D1>(30), '|', "<invalid>");
-  EXPECT_TRUE(to_res_4.done);
+  EXPECT_EQ(std::errc::invalid_argument, to_res_4.ec);
   EXPECT_EQ(buffer.begin() + 9, to_res_4.out);
   EXPECT_EQ("<invalid>", std::string(buffer.begin(), buffer.begin() + 9));
 
   std::ranges::fill(buffer, '\0');
   auto to_res_5 = rfl::enum_flags_name_to(
     buffer.begin(), buffer.end(), static_cast<D1>(45), '|', "InvalidInput");
-  EXPECT_TRUE(to_res_5.done);
+  EXPECT_EQ(std::errc::invalid_argument, to_res_5.ec);
   EXPECT_EQ(buffer.begin() + 12, to_res_5.out);
   EXPECT_EQ("InvalidInput", std::string(std::from_range, buffer));
 
   std::ranges::fill(buffer, '\0');
   auto to_res_6 = rfl::enum_flags_name_to(
     buffer.begin(), buffer.end(), static_cast<D1>(60), '|', "<invalid flag>");
-  EXPECT_FALSE(to_res_6.done);
+  EXPECT_EQ(std::errc::value_too_large, to_res_6.ec);
 
   std::ranges::fill(buffer, '\0');
   auto to_res_7 = rfl::enum_flags_name_to(
     buffer.begin(), buffer.end(), static_cast<D1>(0));
-  EXPECT_TRUE(to_res_7.done);
+  EXPECT_EQ(std::errc{}, to_res_7.ec);
   EXPECT_EQ(buffer.begin(), to_res_7.out);
   EXPECT_EQ('\0', buffer[0]);
 }
@@ -121,14 +121,14 @@ TEST(EnumFlagsName, D1ToList)
   auto to_res_1 = rfl::enum_flags_name_to(
     std::counted_iterator(std::front_inserter(list), 12), std::default_sentinel,
     D1::one | D1::two | D1::four);
-  EXPECT_TRUE(to_res_1.done);
+  EXPECT_EQ(std::errc{}, to_res_1.ec);
   EXPECT_EQ(0, to_res_1.out.count());
   EXPECT_EQ("eno|owt|ruof", std::string(std::from_range, list));
 
   list.assign_range(std::views::repeat('\0', 12));
   auto to_res_2 = rfl::enum_flags_name_to(
     list.rbegin(), list.rend(), D1::two | D1::four, " | ");
-  EXPECT_TRUE(to_res_2.done);
+  EXPECT_EQ(std::errc{}, to_res_2.ec);
   EXPECT_EQ(2, std::ranges::distance(list.begin(), to_res_2.out.base()));
   EXPECT_EQ("owt | ruof",
     std::string(std::from_range, list | std::views::drop(2)));
@@ -137,31 +137,31 @@ TEST(EnumFlagsName, D1ToList)
   auto to_res_3 = rfl::enum_flags_name_to(
     std::counted_iterator(std::front_inserter(list), 12), std::default_sentinel,
     D1::one | D1::two | D1::four, " | ");
-  EXPECT_FALSE(to_res_3.done);
+  EXPECT_EQ(std::errc::value_too_large, to_res_3.ec);
 
   list.clear();
   auto to_res_4 = rfl::enum_flags_name_to(
     std::counted_iterator(std::front_inserter(list), 12), std::default_sentinel,
     static_cast<D1>(30), '|', "<invalid>");
-  EXPECT_TRUE(to_res_4.done);
+  EXPECT_EQ(std::errc::invalid_argument, to_res_4.ec);
   EXPECT_EQ(3, to_res_4.out.count());
   EXPECT_EQ(">dilavni<", std::string(std::from_range, list));
 
   list.assign_range(std::views::repeat('\0', 12));
   auto to_res_5 = rfl::enum_flags_name_to(
     list.begin(), list.end(), static_cast<D1>(60), '|', "InvalidInput");
-  EXPECT_TRUE(to_res_5.done);
+  EXPECT_EQ(std::errc::invalid_argument, to_res_5.ec);
   EXPECT_EQ(list.end(), to_res_5.out);
   EXPECT_EQ("InvalidInput", std::string(std::from_range, list));
 
   auto to_res_6 = rfl::enum_flags_name_to(
     list.begin(), list.end(), static_cast<D1>(90), '|', "<invalid flag>");
-  EXPECT_FALSE(to_res_6.done);
+  EXPECT_EQ(std::errc::value_too_large, to_res_6.ec);
 
   list.assign_range(std::views::repeat('\0', 12));
   auto to_res_7 = rfl::enum_flags_name_to(
     list.begin(), list.end(), static_cast<D1>(0));
-  EXPECT_TRUE(to_res_7.done);
+  EXPECT_EQ(std::errc{}, to_res_7.ec);
   EXPECT_EQ(list.begin(), to_res_7.out);
   EXPECT_EQ('\0', list.front());
 }
@@ -173,14 +173,14 @@ TEST(EnumFlagsName, D1ToIstream)
   auto to_res_1 = rfl::enum_flags_name_to(
     std::ostream_iterator<char>(sout_1), std::unreachable_sentinel,
     static_cast<D1>(15));
-  EXPECT_TRUE(to_res_1.done);
+  EXPECT_EQ(std::errc{}, to_res_1.ec);
   EXPECT_EQ("eight|four|two|one", sout_1.str());
 
   auto sout_2 = std::ostringstream{};
   auto to_res_2 = rfl::enum_flags_name_to(
     std::ostream_iterator<char>(sout_2), std::unreachable_sentinel,
     static_cast<D1>(10), " | ");
-  EXPECT_TRUE(to_res_2.done);
+  EXPECT_EQ(std::errc{}, to_res_2.ec);
   EXPECT_EQ("eight | two", sout_2.str());
 }
 
@@ -381,32 +381,32 @@ TEST(EnumFlagsName, E3ToArray)
   auto buffer = std::array<char, 16>{};
   auto to_res_1 = rfl::enum_flags_name_to(
     buffer.begin(), buffer.end(), static_cast<E3>(0b1111), " | ");
-  EXPECT_TRUE(to_res_1.done);
+  EXPECT_EQ(std::errc{}, to_res_1.ec);
   EXPECT_EQ(buffer.begin() + 14, to_res_1.out);
   EXPECT_EQ("those | unable", std::string(buffer.begin(), buffer.begin() + 14));
 
   std::ranges::fill(buffer, '\0');
   auto to_res_2 = rfl::enum_flags_name_to(
     buffer.begin(), buffer.end(), static_cast<E3>(0b1'0011));
-  EXPECT_TRUE(to_res_2.done);
+  EXPECT_EQ(std::errc{}, to_res_2.ec);
   EXPECT_EQ(buffer.begin() + 16, to_res_2.out);
   EXPECT_EQ("to|are|irregular", std::string(std::from_range, buffer));
 
   std::ranges::fill(buffer, '\0');
   auto to_res_3 = rfl::enum_flags_name_to(
     buffer.begin(), buffer.end(), static_cast<E3>(0b1'0011), " | ");
-  EXPECT_FALSE(to_res_3.done);
+  EXPECT_EQ(std::errc::value_too_large, to_res_3.ec);
 
   std::ranges::fill(buffer, '\0');
   auto to_res_4 = rfl::enum_flags_name_to(
     buffer.begin(), buffer.end(), static_cast<E3>(0b1111'1101));
-  EXPECT_FALSE(to_res_4.done);
+  EXPECT_EQ(std::errc::value_too_large, to_res_4.ec);
 
   std::ranges::fill(buffer, '\0');
   auto to_res_5 = rfl::enum_flags_name_to(
     buffer.begin(), buffer.end(), static_cast<E3>(0b0110'0000), '|',
     "<invalid>");
-  EXPECT_TRUE(to_res_5.done);
+  EXPECT_EQ(std::errc::invalid_argument, to_res_5.ec);
   EXPECT_EQ(buffer.begin() + 9, to_res_5.out);
   EXPECT_EQ("<invalid>", std::string(buffer.begin(), buffer.begin() + 9));
 
@@ -414,7 +414,7 @@ TEST(EnumFlagsName, E3ToArray)
   auto to_res_6 = rfl::enum_flags_name_to(
     buffer.begin(), buffer.end(), static_cast<E3>(0b1000'1111), '|',
     "Invalid E3 Input");
-  EXPECT_TRUE(to_res_6.done);
+  EXPECT_EQ(std::errc::invalid_argument, to_res_6.ec);
   EXPECT_EQ(buffer.begin() + 16, to_res_6.out);
   EXPECT_EQ("Invalid E3 Input", std::string(std::from_range, buffer));
 
@@ -422,12 +422,12 @@ TEST(EnumFlagsName, E3ToArray)
   auto to_res_7 = rfl::enum_flags_name_to(
     buffer.begin(), buffer.end(), static_cast<E3>(0b1111'1000), '|',
     "<invalid E3 flag>");
-  EXPECT_FALSE(to_res_7.done);
+  EXPECT_EQ(std::errc::value_too_large, to_res_7.ec);
 
   std::ranges::fill(buffer, '\0');
   auto to_res_8 = rfl::enum_flags_name_to(
     buffer.begin(), buffer.end(), static_cast<E3>(0));
-  EXPECT_TRUE(to_res_8.done);
+  EXPECT_EQ(std::errc{}, to_res_8.ec);
   EXPECT_EQ(buffer.begin(), to_res_8.out);
   EXPECT_EQ('\0', buffer[0]);
 }
@@ -438,7 +438,7 @@ TEST(EnumFlagsName, E3ToList)
   auto to_res_1 = rfl::enum_flags_name_to(
     std::counted_iterator(std::front_inserter(list), 16), std::default_sentinel,
     static_cast<E3>(0b11'0111));
-  EXPECT_TRUE(to_res_1.done);
+  EXPECT_EQ(std::errc{}, to_res_1.ec);
   EXPECT_THAT(to_res_1.out.count(), testing::AnyOf(0, 4));
   EXPECT_THAT(std::string(std::from_range, list),
     testing::AnyOf("elbanu|esopmoced", "elbanu|stinu"));
@@ -447,7 +447,7 @@ TEST(EnumFlagsName, E3ToList)
   auto to_res_2 = rfl::enum_flags_name_to(
     std::counted_iterator(std::back_inserter(list), 64), std::default_sentinel,
     static_cast<E3>(0b1111'1111), " | ");
-  EXPECT_TRUE(to_res_2.done);
+  EXPECT_EQ(std::errc{}, to_res_2.ec);
   // Note: The following candidate list is incomplete.
   EXPECT_THAT(to_res_2.out.count(), testing::AnyOf(48, 43));
   EXPECT_THAT(std::string(std::from_range, list),
@@ -456,7 +456,7 @@ TEST(EnumFlagsName, E3ToList)
   list.assign_range(std::views::repeat('\0', 16));
   auto to_res_3 = rfl::enum_flags_name_to(
     list.rbegin(), list.rend(), static_cast<E3>(0b1100'1110), ',');
-  EXPECT_TRUE(to_res_3.done);
+  EXPECT_EQ(std::errc{}, to_res_3.ec);
   EXPECT_EQ(4, std::ranges::distance(list.begin(), to_res_3.out.base()));
   EXPECT_EQ("era,tniojsid",
     std::string(std::from_range, list | std::views::drop(4)));
@@ -465,13 +465,13 @@ TEST(EnumFlagsName, E3ToList)
   auto to_res_4 = rfl::enum_flags_name_to(
     std::counted_iterator(std::front_inserter(list), 12), std::default_sentinel,
     static_cast<E3>(0b1100'1110), " | ");
-  EXPECT_FALSE(to_res_4.done);
+  EXPECT_EQ(std::errc::value_too_large, to_res_4.ec);
 
   list.clear();
   auto to_res_5 = rfl::enum_flags_name_to(
     std::counted_iterator(std::front_inserter(list), 12), std::default_sentinel,
     static_cast<E3>(0b0100'0100), '|', "<invalid>");
-  EXPECT_TRUE(to_res_5.done);
+  EXPECT_EQ(std::errc::invalid_argument, to_res_5.ec);
   EXPECT_EQ(3, to_res_5.out.count());
   EXPECT_EQ(">dilavni<", std::string(std::from_range, list));
 
@@ -479,19 +479,19 @@ TEST(EnumFlagsName, E3ToList)
   auto to_res_6 = rfl::enum_flags_name_to(
     list.begin(), list.end(), static_cast<E3>(0b0000'1001), '|',
     "InvalidInput");
-  EXPECT_TRUE(to_res_6.done);
+  EXPECT_EQ(std::errc::invalid_argument, to_res_6.ec);
   EXPECT_EQ(list.end(), to_res_6.out);
   EXPECT_EQ("InvalidInput", std::string(std::from_range, list));
 
   auto to_res_7 = rfl::enum_flags_name_to(
     list.begin(), list.end(), static_cast<E3>(0b1000'1000), '|',
     "<invalid flag>");
-  EXPECT_FALSE(to_res_7.done);
+  EXPECT_EQ(std::errc::value_too_large, to_res_7.ec);
 
   list.assign_range(std::views::repeat('\0', 12));
   auto to_res_8 = rfl::enum_flags_name_to(
     list.begin(), list.end(), static_cast<E3>(0));
-  EXPECT_TRUE(to_res_8.done);
+  EXPECT_EQ(std::errc{}, to_res_8.ec);
   EXPECT_EQ(list.begin(), to_res_8.out);
   EXPECT_EQ('\0', list.front());
 }
@@ -502,14 +502,14 @@ TEST(EnumFlagsName, E3ToIstream)
   auto to_res_1 = rfl::enum_flags_name_to(
     std::ostream_iterator<char>(sout_1), std::unreachable_sentinel,
     static_cast<E3>(0b0001'0011), "~ ");
-  EXPECT_TRUE(to_res_1.done);
+  EXPECT_EQ(std::errc{}, to_res_1.ec);
   EXPECT_EQ("to~ are~ irregular", sout_1.str());
 
   auto sout_2 = std::ostringstream{};
   auto to_res_2 = rfl::enum_flags_name_to(
     std::ostream_iterator<char>(sout_2), std::unreachable_sentinel,
     static_cast<E3>(0b1111'1100), " | ");
-  EXPECT_TRUE(to_res_2.done);
+  EXPECT_EQ(std::errc{}, to_res_2.ec);
   EXPECT_THAT(sout_2.str(),
     testing::AnyOf("as | decompose | those",
                    "as | disjoint | decompose",
@@ -533,28 +533,28 @@ TEST(EnumFlagsName, EmptyToArray)
   auto buffer = std::array<char, 8>{};
   auto to_res_1 = rfl::enum_flags_name_to(
     buffer.begin(), buffer.end(), static_cast<empty>(0));
-  EXPECT_TRUE(to_res_1.done);
+  EXPECT_EQ(std::errc{}, to_res_1.ec);
   EXPECT_EQ(buffer.begin(), to_res_1.out);
   EXPECT_EQ('\0', buffer[0]);
 
   std::ranges::fill(buffer, '\0');
   auto to_res_2 = rfl::enum_flags_name_to(
     buffer.begin(), buffer.end(), static_cast<empty>(1));
-  EXPECT_TRUE(to_res_2.done);
+  EXPECT_EQ(std::errc::invalid_argument, to_res_2.ec);
   EXPECT_EQ(buffer.begin(), to_res_2.out);
   EXPECT_EQ('\0', buffer[0]);
 
   std::ranges::fill(buffer, '\0');
   auto to_res_3 = rfl::enum_flags_name_to(
     buffer.begin(), buffer.end(), static_cast<empty>(-1), '|', "<ERROR>");
-  EXPECT_TRUE(to_res_3.done);
+  EXPECT_EQ(std::errc::invalid_argument, to_res_3.ec);
   EXPECT_EQ(buffer.begin() + 7, to_res_3.out);
   EXPECT_EQ("<ERROR>", std::string(buffer.begin(), buffer.begin() + 7));
 
   std::ranges::fill(buffer, '\0');
   auto to_res_4 = rfl::enum_flags_name_to(
     buffer.begin(), buffer.end(), static_cast<empty>(2), '|', "<invalid>");
-  EXPECT_FALSE(to_res_4.done);
+  EXPECT_EQ(std::errc::value_too_large, to_res_4.ec);
 }
 
 TEST(EnumFlagsName, SingleOne)

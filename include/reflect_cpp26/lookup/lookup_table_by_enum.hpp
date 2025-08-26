@@ -239,7 +239,7 @@ consteval auto get_namespace_member_table_entries(
   [&]() consteval {                                                         \
     constexpr auto res = REFLECT_CPP26_TYPE_LOOKUP_TABLE_BY_ENUM(           \
       T, E, __VA_ARGS__);                                                   \
-    static_assert(res.size() == reflect_cpp26::enum_unique_count<E>(),      \
+    static_assert(res.size() == reflect_cpp26::enum_unique_count_v<E>,      \
       "Expects all unique entries of E to be covered.");                    \
     return res;                                                             \
   }();
@@ -268,7 +268,7 @@ consteval auto get_namespace_member_table_entries(
   [&]() consteval {                                                         \
     constexpr auto res = REFLECT_CPP26_NAMESPACE_LOOKUP_TABLE_BY_ENUM(      \
       ns, E, __VA_ARGS__);                                                  \
-    static_assert(res.size() == reflect_cpp26::enum_unique_count<E>(),      \
+    static_assert(res.size() == reflect_cpp26::enum_unique_count_v<E>,      \
       "Expects all unique entries of E to be covered.");                    \
     return res;                                                             \
   }();

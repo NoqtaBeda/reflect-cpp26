@@ -34,12 +34,12 @@ namespace rfl = reflect_cpp26;
 
 template <class E>
 constexpr auto enum_flags_cast_ci(std::string_view str) {
-  return rfl::enum_flags_cast<E>(str, rfl::case_insensitive);
+  return rfl::enum_flags_cast<E>(rfl::case_insensitive_by_ascii, str);
 }
 
 template <class E, class Delim>
 constexpr auto enum_flags_cast_ci(std::string_view str, Delim delim) {
-  return rfl::enum_flags_cast<E>(str, rfl::case_insensitive, delim);
+  return rfl::enum_flags_cast<E>(rfl::case_insensitive_by_ascii, str, delim);
 }
 
 TEST(EnumFlagsCastFromStringCI, D1)

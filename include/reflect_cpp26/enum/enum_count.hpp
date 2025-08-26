@@ -29,9 +29,7 @@
 #include <utility>
 
 namespace reflect_cpp26 {
-template <class E>
-constexpr auto enum_count_v = enumerators_of(^^E).size();
-
+namespace impl {
 template <class E>
 consteval auto enum_unique_count_impl() -> size_t
 {
@@ -44,25 +42,20 @@ consteval auto enum_unique_count_impl() -> size_t
   auto [pos, _] = std::ranges::unique(values);
   return pos - values.begin();
 }
-
-template <class E>
-constexpr auto enum_unique_count_v = enum_unique_count_impl<E>();
+} // namespace impl
 
 /**
  * Gets the number of entries of enum type E.
  */
 template <enum_type E>
-constexpr auto enum_count() -> size_t {
-  return enum_count_v<std::remove_cv_t<E>>;
-}
+constexpr auto enum_count_v = enumerators_of(^^E).size();
 
 /**
  * Gets the number of entries of enum type E with unique value.
  */
 template <enum_type E>
-constexpr auto enum_unique_count() -> size_t {
-  return enum_unique_count_v<std::remove_cv_t<E>>;
-}
+constexpr auto enum_unique_count_v =
+  impl::enum_unique_count_impl<std::remove_cv_t<E>>();
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_ENUM_ENUM_COUNT_HPP

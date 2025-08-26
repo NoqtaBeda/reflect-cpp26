@@ -59,7 +59,7 @@ template <class E>
 consteval auto make_enum_flags_entries() -> std::vector<enum_flags_entry>
 {
   auto res = std::vector<enum_flags_entry>{};
-  auto names = reflect_cpp26::enum_names<E>();
+  auto names = reflect_cpp26::enum_names_v<E>;
   auto entries = enumerators_of(^^E);
   for (auto i = 0zU, n = entries.size(); i < n; i++) {
     auto e = extract<E>(entries[i]);

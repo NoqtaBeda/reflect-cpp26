@@ -33,9 +33,9 @@ using namespace reflect_cpp26;
 
 TEST(EnumValues, All)
 {
-  EXPECT_EQ_STATIC(foo_signed_rep::yi, enum_value<foo_signed_rep>(3));
+  EXPECT_EQ_STATIC(foo_signed_rep::yi, enum_values_v<foo_signed_rep>[3]);
   EXPECT_EQ_STATIC(foo_signed_rep::four,
-    enum_value<const foo_signed_rep, enum_entry_order::by_value>(7));
+    enum_values_v<const foo_signed_rep, enum_entry_order::by_value>[7]);
   EXPECT_EQ_STATIC(foo_signed_rep::yi,
-    enum_value<volatile foo_signed_rep, enum_entry_order::by_name>(9));
+    enum_values_v<volatile foo_signed_rep, enum_entry_order::by_name>[9]);
 }

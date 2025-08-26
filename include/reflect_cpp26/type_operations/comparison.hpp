@@ -23,7 +23,6 @@
 #ifndef REFLECT_CPP26_TYPE_OPERATIONS_COMPARISON_HPP
 #define REFLECT_CPP26_TYPE_OPERATIONS_COMPARISON_HPP
 
-#include <reflect_cpp26/type_traits/function_types.hpp>
 #include <reflect_cpp26/type_traits/reduction.hpp>
 #include <reflect_cpp26/type_traits/string_like_types.hpp>
 #include <reflect_cpp26/type_traits/tuple_like_types.hpp>
@@ -70,21 +69,21 @@ constexpr bool is_generic_comparable_with()
   } else if constexpr (is_directly_comparable_with_v<LeafComparator, T, U>) {
     // Case (2): Directly comparable.
     return true;
-  } else if constexpr (is_c_style_string_v<T>) {
+  } else if constexpr (c_style_string<T>) {
     // Case (3.1): For C-style strings (CharT* or const CharT*):
     // the other operand must be a character range.
     // For the case of const CharT* vs. const CharU*,
     // it's allowed by case (2) yet discouraged due to semantic confusion
     // if CharT and CharU are the same; disallowed otherwise.
     if constexpr (std::ranges::input_range<U>) {
-      return is_char_type_v<std::ranges::range_value_t<U>>;
+      return char_type<std::ranges::range_value_t<U>>;
     } else {
       return false;
     }
-  } else if constexpr (is_c_style_string_v<U>) {
+  } else if constexpr (c_style_string<U>) {
     // Case (3.2): Similar to above
     if constexpr (std::ranges::input_range<T>) {
-      return is_char_type_v<std::ranges::range_value_t<T>>;
+      return char_type<std::ranges::range_value_t<T>>;
     } else {
       return false;
     }
@@ -96,11 +95,14 @@ constexpr bool is_generic_comparable_with()
   } else if constexpr (are_tuple_like_of_same_size_v<T, U>) {
     // Case (5): For tuple-like objects: elementwise comparison is performed.
     constexpr auto N = std::tuple_size_v<T>;
-    return REFLECT_CPP26_EXPAND_I(N).all_of([](auto I) {
+    template for (constexpr auto I: std::views::iota(0zU, N)) {
       using EIT = std::tuple_element_t<I, T>;
       using EIU = std::tuple_element_t<I, U>;
-      return is_generic_comparable_with_v<LeafComparator, EIT, EIU>;
-    });
+      if (!is_generic_comparable_with_v<LeafComparator, EIT, EIU>) {
+        return false;
+      }
+    }
+    return true;
   } else {
     return false;
   }
@@ -117,12 +119,12 @@ struct generic_comparison_interface {
     if constexpr (any_of_v<std::is_array, T, U>) {
       // Case (1): C-style arrays. The other operand is ensured to be range.
       return Derived::compare_range(t, u);
-    } else if constexpr (is_c_style_string_v<T> && !is_c_style_string_v<U>) {
+    } else if constexpr (c_style_string<T> && !c_style_string<U>) {
       // Case (3.1): C-style string comparison, where U is ensured to be range.
       auto sv = std::basic_string_view<char_type_t<T>>{};
       if (t != nullptr) { sv = t; }
       return Derived::compare_range(sv, u);
-    } else if constexpr (is_c_style_string_v<U> && !is_c_style_string_v<T>) {
+    } else if constexpr (c_style_string<U> && !c_style_string<T>) {
       // Case (3.2): C-style string comparison, where T is ensured to be range.
       auto sv = std::basic_string_view<char_type_t<U>>{};
       if (u != nullptr) { sv = u; }
@@ -201,10 +203,13 @@ struct generic_equal_t
   template <class T, class U>
   static constexpr auto compare_tuple_like(const T& t, const U& u) -> bool
   {
-    return REFLECT_CPP26_EXPAND_I(std::tuple_size_v<T>).all_of(
-      [&t, &u](auto I) {
-        return operator()(get_ith_element<I>(t), get_ith_element<I>(u));
-      });
+    constexpr auto N = std::tuple_size_v<T>;
+    template for (constexpr auto I: std::views::iota(0zU, N)) {
+      if (!operator()(get_ith_element<I>(t), get_ith_element<I>(u))) {
+        return false;
+      }
+    }
+    return true;
   }
 };
 
@@ -235,10 +240,13 @@ struct generic_not_equal_t
   template <class T, class U>
   static constexpr auto compare_tuple_like(const T& t, const U& u) -> bool
   {
-    return REFLECT_CPP26_EXPAND_I(std::tuple_size_v<T>).any_of(
-      [&t, &u](auto I) {
-        return operator()(get_ith_element<I>(t), get_ith_element<I>(u));
-      });
+    constexpr auto N = std::tuple_size_v<T>;
+    template for (constexpr auto I: std::views::iota(0zU, N)) {
+      if (operator()(get_ith_element<I>(t), get_ith_element<I>(u))) {
+        return true; // I-th elements are not equal
+      }
+    }
+    return false;
   }
 };
 
@@ -246,22 +254,27 @@ struct generic_compare_three_way_t
   : impl::generic_comparison_interface<
       generic_compare_three_way_t, compare_three_way_t>
 {
+private:
   template <class T, class U>
   struct compare_tuple_like_result {
     static consteval auto get_common_type() -> std::meta::info
     {
       constexpr auto N = std::tuple_size_v<T>;
-      auto results = REFLECT_CPP26_EXPAND_I(N).map([](auto I) {
+      auto results = std::vector<std::meta::info>();
+      results.reserve(N);
+      template for (constexpr auto I: std::views::iota(0zU, N)) {
         using R = decltype(operator()(
           std::declval<std::tuple_element_t<I, T>>(),
           std::declval<std::tuple_element_t<I, U>>()));
-        return ^^R;
-      });
+        results.push_back(^^R);
+      }
       return substitute(^^std::common_type_t, results);
     }
+
     using type = [:get_common_type():];
   };
 
+public:
   template <class T, class U>
   static constexpr auto compare_range(const T& t, const U& u) /* -> ResultT */
   {
@@ -284,60 +297,80 @@ struct generic_compare_three_way_t
     /* -> ResultT */
   {
     using ResultT = typename compare_tuple_like_result<T, U>::type;
-    auto res = static_cast<ResultT>(std::strong_ordering::equal);
-    REFLECT_CPP26_EXPAND_I(std::tuple_size_v<T>).for_each(
-      [&t, &u, &res](auto I) {
-        res = operator()(get_ith_element<I>(t), get_ith_element<I>(u));
-        return /* continues if */ res == std::strong_ordering::equal;
-      });
-    return res;
+    constexpr auto N = std::tuple_size_v<T>;
+    template for (constexpr auto I: std::views::iota(0zU, N)) {
+      auto res = operator()(get_ith_element<I>(t), get_ith_element<I>(u));
+      if (res != std::partial_ordering::equivalent) {
+        return static_cast<ResultT>(res);
+      }
+    }
+    return static_cast<ResultT>(std::strong_ordering::equal);
   }
 };
 
 /**
  * Generic comparison. Let op be the underlying comparator,
  * then comparison result of t and u is:
- * (1) If op(t, u) is supported directly, then return op(t, u);
- * (2) If both t and u are input ranges, then return the lexicographical
+ * (1) If at least one of t and u is reference to C-style array, go to (3);
+ * (2) If op(t, u) is supported directly, then return op(t, u);
+ * (3) If exactly one of t or u is C-style string (i.e. const CharT*), then
+ *     string comparison is applied;
+ * (4) If both t and u are input ranges, then return the lexicographical
  *     comparison result, where each pair of elements are compared via
  *     generic comparator (i.e. generic comparison is a recursive procedure);
- * (3) If both t and u are tuple-like types with the same size, then return
+ * (5) If both t and u are tuple-like types with the same size, then return
  *     the lexicographical comparison result of tuple elements via
  *     generic comparator. 3-way comparison takes the common type as result;
- * (4) Otherwise, invoking generic comparator is ill-formed.
+ * Otherwise, invoking generic comparator is ill-formed.
  *
  * Be careful with C-style arrays:
  * (1) If both t and u are references to C-style arrays, then lexicographical
- *     comparison is supported;
+ *     comparison is supported, same as case (3) above;
  * (2) If exactly one of t and u is reference to C-style array, then the other
- *     operand must not be convertible to pointer type, otherwise invocation
- *     is ill-formed.
+ *     operand must be an input range whose elements are comparable with those
+ *     in the C-style array, otherwise invocation is ill-formed.
+ *
+ * Also be careful with C-style strings:
+ * (1) If both t and u are C-style strings (i.e. const CharT*), then pointer
+ *     comparison is applied with builtin operator== for pointers, same as
+ *     case (1) above.
  */
 constexpr auto generic_equal = generic_equal_t{};
 constexpr auto generic_not_equal = generic_not_equal_t{};
 constexpr auto generic_compare_three_way = generic_compare_three_way_t{};
 
+/**
+ * Whether generic_equal(t, u) is well-defined (see above).
+ */
 template <class T, class U>
 constexpr auto is_generic_equal_comparable_v =
   requires (const T& t, const U& u) {
     generic_equal(t, u);
-    generic_equal(u, t);
   };
 
+/**
+ * Whether generic_not_equal(t, u) is well-defined (see above).
+ */
 template <class T, class U>
 constexpr auto is_generic_not_equal_comparable_v =
   requires (const T& t, const U& u) {
     generic_not_equal(t, u);
-    generic_not_equal(u, t);
   };
 
+/**
+ * Whether generic_compare_three_way(t, u) is well-defined (see above).
+ */
 template <class T, class U>
 constexpr auto is_generic_three_way_comparable_v =
   requires (const T& t, const U& u) {
     generic_compare_three_way(t, u);
-    generic_compare_three_way(u, t);
   };
 
+/**
+ * concept generic_equal_comparable_with<T, U>
+ * concept generic_not_equal_comparable_with<T, U>
+ * concept generic_three_way_comparable_with<T, U>
+ */
 REFLECT_CPP26_COMPARISON_CONCEPT(generic_equal)
 REFLECT_CPP26_COMPARISON_CONCEPT(generic_not_equal)
 REFLECT_CPP26_COMPARISON_CONCEPT(generic_three_way)

@@ -43,7 +43,7 @@ constexpr auto npos = std::numeric_limits<size_t>::max();
 
 namespace impl {
 template <template <auto...> class Derived, auto... Vs>
-  requires (!is_nontype_template_instance_of_v<decltype(Vs), Derived> && ...)
+  requires (!nontype_template_instance_of<decltype(Vs), Derived> && ...)
 struct constant_base {
 private:
   template <size_t I>
@@ -114,7 +114,7 @@ private:
     } else {
       constexpr auto Next = Func(Derived<Prev>{}, Derived<Vs...[I]>{});
       static_assert(
-        !is_nontype_template_instance_of_v<decltype(Next), Derived>,
+        !nontype_template_instance_of<decltype(Next), Derived>,
         "Result of func shall not be constant<x>. Return x instead.");
       return reduce_impl<I + 1, Func, Next>();
     }

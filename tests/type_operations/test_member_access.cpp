@@ -101,27 +101,27 @@ TEST(TypeOperationsMemberAccess, WithInheritance1)
   EXPECT_EQ("23", rfl::get_last_direct_nonstatic_data_member(bar));
   EXPECT_EQ("22", rfl::get_last_public_direct_nonstatic_data_member(bar));
 
-  EXPECT_EQ(10, rfl::get_ith_flattened_nonstatic_data_member<0>(bar));
-  EXPECT_EQ(11, rfl::get_ith_flattened_nonstatic_data_member<1>(bar));
-  EXPECT_EQ(12, rfl::get_ith_flattened_nonstatic_data_member<2>(bar));
-  EXPECT_EQ(13, rfl::get_ith_flattened_nonstatic_data_member<3>(bar));
-  EXPECT_EQ(14, rfl::get_ith_flattened_nonstatic_data_member<4>(bar));
-  EXPECT_EQ("20", rfl::get_ith_flattened_nonstatic_data_member<5>(bar));
-  EXPECT_EQ("21", rfl::get_ith_flattened_nonstatic_data_member<6>(bar));
-  EXPECT_EQ("22", rfl::get_ith_flattened_nonstatic_data_member<7>(bar));
-  EXPECT_EQ("23", rfl::get_ith_flattened_nonstatic_data_member<8>(bar));
+  EXPECT_EQ(10, rfl::get_ith_nonstatic_data_member<0>(bar));
+  EXPECT_EQ(11, rfl::get_ith_nonstatic_data_member<1>(bar));
+  EXPECT_EQ(12, rfl::get_ith_nonstatic_data_member<2>(bar));
+  EXPECT_EQ(13, rfl::get_ith_nonstatic_data_member<3>(bar));
+  EXPECT_EQ(14, rfl::get_ith_nonstatic_data_member<4>(bar));
+  EXPECT_EQ("20", rfl::get_ith_nonstatic_data_member<5>(bar));
+  EXPECT_EQ("21", rfl::get_ith_nonstatic_data_member<6>(bar));
+  EXPECT_EQ("22", rfl::get_ith_nonstatic_data_member<7>(bar));
+  EXPECT_EQ("23", rfl::get_ith_nonstatic_data_member<8>(bar));
 
-  EXPECT_EQ(11, rfl::get_ith_public_flattened_nonstatic_data_member<0>(bar));
-  EXPECT_EQ(12, rfl::get_ith_public_flattened_nonstatic_data_member<1>(bar));
-  EXPECT_EQ(13, rfl::get_ith_public_flattened_nonstatic_data_member<2>(bar));
-  EXPECT_EQ("21", rfl::get_ith_public_flattened_nonstatic_data_member<3>(bar));
-  EXPECT_EQ("22", rfl::get_ith_public_flattened_nonstatic_data_member<4>(bar));
+  EXPECT_EQ(11, rfl::get_ith_public_nonstatic_data_member<0>(bar));
+  EXPECT_EQ(12, rfl::get_ith_public_nonstatic_data_member<1>(bar));
+  EXPECT_EQ(13, rfl::get_ith_public_nonstatic_data_member<2>(bar));
+  EXPECT_EQ("21", rfl::get_ith_public_nonstatic_data_member<3>(bar));
+  EXPECT_EQ("22", rfl::get_ith_public_nonstatic_data_member<4>(bar));
 
-  EXPECT_EQ(10, rfl::get_first_flattened_nonstatic_data_member(bar));
-  EXPECT_EQ(11, rfl::get_first_public_flattened_nonstatic_data_member(bar));
+  EXPECT_EQ(10, rfl::get_first_nonstatic_data_member(bar));
+  EXPECT_EQ(11, rfl::get_first_public_nonstatic_data_member(bar));
 
-  EXPECT_EQ("23", rfl::get_last_flattened_nonstatic_data_member(bar));
-  EXPECT_EQ("22", rfl::get_last_public_flattened_nonstatic_data_member(bar));
+  EXPECT_EQ("23", rfl::get_last_nonstatic_data_member(bar));
+  EXPECT_EQ("22", rfl::get_last_public_nonstatic_data_member(bar));
 }
 
 struct baz_t : protected std::pair<double, double>, public bar_t {
@@ -152,34 +152,34 @@ TEST(TypeOperationsMemberAccess, WithInheritance2)
   EXPECT_EQ(36.75, rfl::get_last_direct_nonstatic_data_member(baz));
   EXPECT_EQ(35.50, rfl::get_last_public_direct_nonstatic_data_member(baz));
 
-  EXPECT_EQ(4.0, rfl::get_ith_flattened_nonstatic_data_member<0>(baz));
-  EXPECT_EQ(0.25, rfl::get_ith_flattened_nonstatic_data_member<1>(baz));
-  EXPECT_EQ(14, rfl::get_ith_flattened_nonstatic_data_member<2>(baz));
-  EXPECT_EQ(15, rfl::get_ith_flattened_nonstatic_data_member<3>(baz));
-  EXPECT_EQ(16, rfl::get_ith_flattened_nonstatic_data_member<4>(baz));
-  EXPECT_EQ(17, rfl::get_ith_flattened_nonstatic_data_member<5>(baz));
-  EXPECT_EQ(18, rfl::get_ith_flattened_nonstatic_data_member<6>(baz));
-  EXPECT_EQ("24", rfl::get_ith_flattened_nonstatic_data_member<7>(baz));
-  EXPECT_EQ("25", rfl::get_ith_flattened_nonstatic_data_member<8>(baz));
-  EXPECT_EQ("26", rfl::get_ith_flattened_nonstatic_data_member<9>(baz));
-  EXPECT_EQ("27", rfl::get_ith_flattened_nonstatic_data_member<10>(baz));
-  EXPECT_EQ(34.25, rfl::get_ith_flattened_nonstatic_data_member<11>(baz));
-  EXPECT_EQ(35.50, rfl::get_ith_flattened_nonstatic_data_member<12>(baz));
-  EXPECT_EQ(36.75, rfl::get_ith_flattened_nonstatic_data_member<13>(baz));
+  EXPECT_EQ(4.0, rfl::get_ith_nonstatic_data_member<0>(baz));
+  EXPECT_EQ(0.25, rfl::get_ith_nonstatic_data_member<1>(baz));
+  EXPECT_EQ(14, rfl::get_ith_nonstatic_data_member<2>(baz));
+  EXPECT_EQ(15, rfl::get_ith_nonstatic_data_member<3>(baz));
+  EXPECT_EQ(16, rfl::get_ith_nonstatic_data_member<4>(baz));
+  EXPECT_EQ(17, rfl::get_ith_nonstatic_data_member<5>(baz));
+  EXPECT_EQ(18, rfl::get_ith_nonstatic_data_member<6>(baz));
+  EXPECT_EQ("24", rfl::get_ith_nonstatic_data_member<7>(baz));
+  EXPECT_EQ("25", rfl::get_ith_nonstatic_data_member<8>(baz));
+  EXPECT_EQ("26", rfl::get_ith_nonstatic_data_member<9>(baz));
+  EXPECT_EQ("27", rfl::get_ith_nonstatic_data_member<10>(baz));
+  EXPECT_EQ(34.25, rfl::get_ith_nonstatic_data_member<11>(baz));
+  EXPECT_EQ(35.50, rfl::get_ith_nonstatic_data_member<12>(baz));
+  EXPECT_EQ(36.75, rfl::get_ith_nonstatic_data_member<13>(baz));
 
-  EXPECT_EQ(15, rfl::get_ith_public_flattened_nonstatic_data_member<0>(baz));
-  EXPECT_EQ(16, rfl::get_ith_public_flattened_nonstatic_data_member<1>(baz));
-  EXPECT_EQ(17, rfl::get_ith_public_flattened_nonstatic_data_member<2>(baz));
-  EXPECT_EQ("25", rfl::get_ith_public_flattened_nonstatic_data_member<3>(baz));
-  EXPECT_EQ("26", rfl::get_ith_public_flattened_nonstatic_data_member<4>(baz));
-  EXPECT_EQ(34.25, rfl::get_ith_public_flattened_nonstatic_data_member<5>(baz));
-  EXPECT_EQ(35.50, rfl::get_ith_public_flattened_nonstatic_data_member<6>(baz));
+  EXPECT_EQ(15, rfl::get_ith_public_nonstatic_data_member<0>(baz));
+  EXPECT_EQ(16, rfl::get_ith_public_nonstatic_data_member<1>(baz));
+  EXPECT_EQ(17, rfl::get_ith_public_nonstatic_data_member<2>(baz));
+  EXPECT_EQ("25", rfl::get_ith_public_nonstatic_data_member<3>(baz));
+  EXPECT_EQ("26", rfl::get_ith_public_nonstatic_data_member<4>(baz));
+  EXPECT_EQ(34.25, rfl::get_ith_public_nonstatic_data_member<5>(baz));
+  EXPECT_EQ(35.50, rfl::get_ith_public_nonstatic_data_member<6>(baz));
 
-  EXPECT_EQ(4.0, rfl::get_first_flattened_nonstatic_data_member(baz));
-  EXPECT_EQ(15, rfl::get_first_public_flattened_nonstatic_data_member(baz));
+  EXPECT_EQ(4.0, rfl::get_first_nonstatic_data_member(baz));
+  EXPECT_EQ(15, rfl::get_first_public_nonstatic_data_member(baz));
 
-  EXPECT_EQ(36.75, rfl::get_last_flattened_nonstatic_data_member(baz));
-  EXPECT_EQ(35.50, rfl::get_last_public_flattened_nonstatic_data_member(baz));
+  EXPECT_EQ(36.75, rfl::get_last_nonstatic_data_member(baz));
+  EXPECT_EQ(35.50, rfl::get_last_public_nonstatic_data_member(baz));
 }
 
 struct qux_t {

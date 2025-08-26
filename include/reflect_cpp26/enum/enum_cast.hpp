@@ -44,8 +44,13 @@ constexpr auto enum_cast(std::string_view str)
   return std::nullopt;
 }
 
+/**
+ * Returns the value of enum type E whose name is equal to str by ASCII
+ * case-insensitive comparison, or std::nullopt if such value does not exist
+ * in E.
+ */
 template <enum_type E>
-constexpr auto enum_cast(std::string_view str, case_insensitive_tag_t)
+constexpr auto enum_cast(case_insensitive_by_ascii_tag_t, std::string_view str)
   -> std::optional<std::remove_cv_t<E>>
 {
   auto [v, found] = impl::enum_from_ci_string_map_v<E>.get(str);

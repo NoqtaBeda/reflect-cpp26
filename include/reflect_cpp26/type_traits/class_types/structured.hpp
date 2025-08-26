@@ -23,9 +23,7 @@
 #ifndef REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_STRUCTURED_HPP
 #define REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_STRUCTURED_HPP
 
-#include <reflect_cpp26/type_traits/function_types.hpp>
 #include <reflect_cpp26/utils/meta_utility.hpp>
-#include <reflect_cpp26/utils/type_tuple.hpp>
 
 namespace reflect_cpp26 {
 namespace impl {
@@ -45,20 +43,13 @@ constexpr auto is_value_initializable_structured_type_v =
  * See: https://en.cppreference.com/w/cpp/language/template_parameters
  */
 template <class T>
-constexpr bool is_structured_type_v =
-  impl::is_structured_type(^^std::remove_cv_t<T>);
-
-/**
- * Tests whether T is a structured type.
- */
-template <class T>
-concept structured_type = is_structured_type_v<T>;
+concept structured_type = impl::is_structured_type(^^std::remove_cv_t<T>);
 
 namespace impl {
 consteval bool is_structured_nsdm(std::meta::info m)
 {
   return is_public(m) && !is_volatile(m) && !is_mutable_member(m)
-    && extract_bool(^^is_structured_type_v, remove_all_extents(type_of(m)));
+    && extract_bool(^^structured_type, remove_all_extents(type_of(m)));
 }
 
 consteval bool is_structured_class_type(std::meta::info T)
@@ -69,7 +60,7 @@ consteval bool is_structured_class_type(std::meta::info T)
   auto bases_are_structured = std::ranges::all_of(all_direct_bases_of(T),
     [](std::meta::info base) {
       return is_public(base) && !is_virtual(base)
-        && extract_bool(^^is_structured_type_v, type_of(base));
+        && extract_bool(^^structured_type, type_of(base));
     });
   return bases_are_structured && std::ranges::all_of(
     all_direct_nonstatic_data_members_of(T), is_structured_nsdm);

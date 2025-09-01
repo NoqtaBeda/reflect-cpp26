@@ -24,7 +24,7 @@
 #define REFLECT_CPP26_TYPE_OPERATIONS_TO_STRUCTURED_HPP
 
 #include <reflect_cpp26/type_traits/arithmetic_types.hpp>
-#include <reflect_cpp26/type_traits/class_types.hpp>
+#include <reflect_cpp26/type_traits/class_types/structured.hpp>
 #include <reflect_cpp26/type_traits/tuple_like_types.hpp>
 #include <reflect_cpp26/utils/define_static_values.hpp>
 #include <reflect_cpp26/utils/meta_tuple.hpp>

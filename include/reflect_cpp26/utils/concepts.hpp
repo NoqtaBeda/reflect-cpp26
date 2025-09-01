@@ -89,6 +89,9 @@ REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(union)
 
 template <class T>
 concept class_or_union_type = std::is_class_v<T> || std::is_union_v<T>;
+
+template <class T>
+concept integral_or_enum_type = std::is_integral_v<T> || std::is_enum_v<T>;
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_UTILS_CONCEPTS_HPP

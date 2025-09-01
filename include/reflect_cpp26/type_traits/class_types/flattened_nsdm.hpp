@@ -24,28 +24,21 @@
 #define REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_FLATTENED_NSDM_HPP
 
 #include <reflect_cpp26/type_traits/class_types/flattenable.hpp>
+#include <reflect_cpp26/utils/constant.hpp>
 
 namespace reflect_cpp26 {
 struct flattened_data_member_info {
-  /**
-   * Index of current non-static data member in
-   * all_flattened_nonstatic_data_members_v<T>.
-   */
+  // Index of current non-static data member in
+  // all_flattened_nonstatic_data_members_v<T>.
   size_t index;
-  /**
-   * If current member is public in T, then public_index = index of current
-   * non-static data member in public_flattened_nonstatic_data_members_v<T>.
-   * Otherwise, public_index = npos;
-   */
+  // If current member is public in T, then public_index = index of current
+  // non-static data member in public_flattened_nonstatic_data_members_v<T>.
+  // Otherwise, public_index = npos;
   size_t public_index;
-  /**
-   * Reflection to a public non-static data member of T,
-   * either defined by T directly or inherited from some base class.
-   */
+  // Reflection to a public non-static data member of T,
+  // either defined by T directly or inherited from some base class.
   std::meta::info member;
-  /**
-   * Actual offset of member relative to T.
-   */
+  // Actual offset of member relative to T.
   std::meta::member_offset actual_offset;
 
   consteval bool is_public() const {

@@ -21,6 +21,7 @@
  **/
 
 #include "tests/test_options.hpp"
+#include <reflect_cpp26/utils/constant.hpp>
 #include <reflect_cpp26/utils/meta_span.hpp>
 #include <reflect_cpp26/utils/meta_string_view.hpp>
 #include <reflect_cpp26/utils/meta_tuple.hpp>
@@ -50,7 +51,7 @@ static_assert(rfl::structured_type<const volatile long double>);
 // pointers and nullptr
 using std_array_int_4 = std::array<int, 4>;
 using std_vector_int = std::vector<int>;
-constexpr auto printf_constant = rfl::constant<std::printf>{};
+constexpr auto printf_constant = rfl::constant_v<std::printf>;
 constexpr auto printf_fptr = std::printf;
 // Note: decltype(printf) -> int (const char *, ...)
 static_assert(NOT rfl::structured_type<decltype(printf)>);
@@ -154,10 +155,9 @@ union baz_union_1_t {
   bar_with_volatile_t as_bar; // not literal type due to its volatile members
   foo_t as_foo;               //  is literal type
 };
-constexpr auto baz_union_1_constant_1 =
-  rfl::constant<baz_union_1_t{}>{};
+constexpr auto baz_union_1_constant_1 = rfl::constant_v<baz_union_1_t{}>;
 constexpr auto baz_union_1_constant_2 =
-  rfl::constant<baz_union_1_t{.as_foo = {}}>{};
+  rfl::constant_v<baz_union_1_t{.as_foo = {}}>;
 
 // Not structured since no literal type member.
 union baz_union_2_t {
@@ -229,8 +229,8 @@ struct struct_not_trivially_destructible_t {
 static_assert(NOT std::is_trivially_destructible_v<
   struct_not_trivially_destructible_t>, "Incorrect test case.");
 constexpr auto some_global_int = 42;
-constexpr auto struct_not_trivially_destructible_constant = rfl::constant<
-  struct_not_trivially_destructible_t{10, 20, some_global_int}>{};
+constexpr auto struct_not_trivially_destructible_constant =
+  rfl::constant_v<struct_not_trivially_destructible_t{10, 20, some_global_int}>;
 
 union union_not_destructible_1_t {
   struct_not_destructible_t as_struct;
@@ -307,7 +307,7 @@ struct default_ctor_not_constexpr_t {
   }
 };
 constexpr auto default_ctor_not_constexpr_constant_2 =
-  rfl::constant<default_ctor_not_constexpr_t{42}>{};
+  rfl::constant_v<default_ctor_not_constexpr_t{42}>;
 
 // class types: default constructor is not constexpr-constructible
 static_assert(rfl::structured_type<default_ctor_not_constexpr_t>);

@@ -25,8 +25,9 @@
 
 #include <reflect_cpp26/utils/concepts.hpp>
 #include <reflect_cpp26/utils/config.h>
-#include <reflect_cpp26/utils/constant.hpp>
 #include <reflect_cpp26/utils/ranges.hpp>
+
+#define REFLECT_CPP26_CURRENT_CONTEXT std::meta::access_context::current()
 
 namespace reflect_cpp26 {
 // -------- Reflection with access control (P3547) --------
@@ -123,19 +124,41 @@ REFLECT_CPP26_DEFINE_QUERY_V_WITH_ACCESS_CONTEXT(nonstatic_data_members)
 // -------- Member reflection property query --------
 
 /**
- * Whether m is a non-static class member (data member or member function) that
- * supports addressing, i.e. &[:m:] is a valid expression.
+ * Whether m is a class member (data member or member function, either static
+ * or not) that supports addressing, i.e. &[:m:] is a valid expression.
  */
-consteval bool is_addressable_nonstatic_member(std::meta::info m)
+consteval bool is_addressable_class_member(std::meta::info m)
 {
-  if (!is_class_member(m) || is_template(m) || is_static_member(m)) {
+  if (!is_class_member(m) || is_template(m) || is_type(m)) {
     return false;
   }
   if (is_nonstatic_data_member(m)) {
     return !is_reference_type(type_of(m)) && !is_bit_field(m);
-  } else {
+  } else if (is_function(m)) {
+    // Member functions (including static and non-static)
     return !is_constructor(m) && !is_destructor(m) && !is_deleted(m);
+  } else {
+    // Static data members: always supports addressing even if it's a reference
+    return true;
   }
+}
+
+/**
+ * Whether m is a non-class member that supports addressing, i.e.
+ * &[:m:] is a valid expression.
+ */
+consteval bool is_addressable_non_class_member(std::meta::info m)
+{
+  if (is_type(m) || is_namespace(m) || is_template(m)) {
+    return false;
+  }
+  if (is_class_member(m)) {
+    return false;
+  }
+  if (is_function(m) && is_deleted(m)) {
+    return false;
+  }
+  return true;
 }
 
 // -------- Reflecting pointers-to-member --------
@@ -159,7 +182,7 @@ consteval auto reflect_pointer_to_member(Member T::*mptr)
   // todo: Is O(1) lookup possible?
   auto target = std::meta::reflect_constant(mptr);
   template for (constexpr auto cur: all_direct_members_v<T>) {
-    if constexpr (is_addressable_nonstatic_member(cur)) {
+    if constexpr (is_addressable_class_member(cur)) {
       auto cur_refl = std::meta::reflect_constant(&[:cur:]);
       if (cur_refl == target) { return cur; }
     }
@@ -172,13 +195,6 @@ consteval auto reflect_pointer_to_member(Member T::*mptr)
 
 template <std::meta::info V>
 consteval auto extract()
-{
-  using T = [:type_of(V):];
-  return std::meta::extract<T>(V);
-}
-
-template <std::meta::info V>
-consteval auto extract(constant<V>)
 {
   using T = [:type_of(V):];
   return std::meta::extract<T>(V);

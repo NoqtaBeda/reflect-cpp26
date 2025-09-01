@@ -21,7 +21,6 @@
  **/
 
 #include "tests/test_options.hpp"
-#include <reflect_cpp26/utils/constant.hpp>
 #include <reflect_cpp26/utils/meta_tuple.hpp>
 
 #ifdef ENABLE_FULL_HEADER_TEST
@@ -34,13 +33,12 @@ namespace rfl = reflect_cpp26;
 
 // ---- tuple_like ----
 
-using rfl_constant = rfl::constant<1, 2u, '3', 4.0>;
 using rfl_meta_tuple = rfl::meta_tuple<char, char*, char**>;
 
 // Tuple-like types (with cvref)
-static_assert(rfl::tuple_like<volatile rfl_constant>);
+static_assert(rfl::tuple_like<volatile rfl_meta_tuple>);
 static_assert(rfl::tuple_like<const volatile rfl_meta_tuple>);
-static_assert(NOT rfl::tuple_like<volatile rfl_constant&>);
+static_assert(NOT rfl::tuple_like<volatile rfl_meta_tuple&>);
 static_assert(NOT rfl::tuple_like<const volatile rfl_meta_tuple&&>);
 
 // Nested tuple-like types
@@ -59,12 +57,8 @@ static_assert(rfl::tuple_like<const nested_meta_tuple>);
 
 // With cvref
 static_assert(rfl::tuple_like_of_exactly<
-  volatile rfl_constant, int, unsigned, char, double>);
-static_assert(rfl::tuple_like_of_exactly<
   const volatile rfl_meta_tuple, char, char*, char**>);
 // Expects exact match
-static_assert(NOT rfl::tuple_like_of_exactly<
-  rfl_constant, int, unsigned, int, double>);
 static_assert(NOT rfl::tuple_like_of_exactly<
   rfl_meta_tuple, char, char const*, char* const*>);
 
@@ -72,21 +66,17 @@ static_assert(NOT rfl::tuple_like_of_exactly<
 
 // Implicit conversion is OK
 static_assert(rfl::tuple_like_of<
-  volatile rfl_constant, int, unsigned, int, double>);
-static_assert(rfl::tuple_like_of<
   const volatile rfl_meta_tuple, char, char const*, char* const*>);
 
 // ---- are_tuple_like_of_same_size_v ----
 
 static_assert(rfl::are_tuple_like_of_same_size_v<
   std::tuple<int, int*, int**>,
-  const rfl::meta_tuple<float, double, long>,
-  volatile rfl::constant<1, '2', 3.0>>);
+  const rfl::meta_tuple<float, double, long>>);
 
 static_assert(NOT rfl::are_tuple_like_of_same_size_v<
   std::tuple<int, int*, int**>,
-  const rfl::meta_tuple<float, double, long>,
-  volatile rfl::constant<1, '2'>>);
+  const rfl::meta_tuple<float, double>>);
 
 TEST(TypeTraits, TupleLikeTypes2) {
   EXPECT_TRUE(true); // All test cases done with static-asserts above

@@ -74,7 +74,7 @@ using ith_public_direct_nonstatic_data_member_type_t =
  */
 template <size_t I, class T>
   requires (partially_flattenable_class<std::remove_cvref_t<T>>)
-using ith_flattened_nonstatic_data_member_type_t =
+using ith_nonstatic_data_member_type_t =
   REFLECT_CPP26_ITH_FLATTENED_NSDM(all_flattened_nonstatic_data_members_v);
 
 /**
@@ -83,7 +83,7 @@ using ith_flattened_nonstatic_data_member_type_t =
  */
 template <size_t I, class T>
   requires (partially_flattenable_class<std::remove_cvref_t<T>>)
-using ith_public_flattened_nonstatic_data_member_type_t =
+using ith_public_nonstatic_data_member_type_t =
   REFLECT_CPP26_ITH_FLATTENED_NSDM(public_flattened_nonstatic_data_members_v);
 
 #undef REFLECT_CPP26_ITH_DIRECT_NSDM

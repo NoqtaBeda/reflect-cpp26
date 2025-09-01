@@ -23,9 +23,7 @@
 #ifndef REFLECT_CPP26_UTILS_META_TUPLE_HPP
 #define REFLECT_CPP26_UTILS_META_TUPLE_HPP
 
-#include <reflect_cpp26/type_traits/template_instance.hpp>
 #include <reflect_cpp26/type_traits/tuple_like_types.hpp>
-#include <reflect_cpp26/utils/expand.hpp>
 #include <reflect_cpp26/utils/functional.hpp>
 #include <reflect_cpp26/utils/meta_utility.hpp>
 #include <ranges>
@@ -54,18 +52,6 @@ public:
   // cvref dropped during CTAD
   constexpr meta_tuple(const Args&... args) : values{args...} {}
 
-  template <tuple_like_of<Args...> TupleLike>
-  constexpr auto& operator=(TupleLike&& tuple)
-  {
-    constexpr auto members = REFLECT_CPP26_EXPAND(
-      all_direct_nonstatic_data_members_of(^^underlying_type));
-    members.for_each([this, &tuple](auto index, auto member) {
-      values.[:member:] =
-        get_ith_element<index>(std::forward<TupleLike>(tuple));
-    });
-    return *this;
-  }
-
   /**
    * Free get function of meta_tuple.
    */
@@ -92,7 +78,52 @@ public:
   friend constexpr const auto&& get(const meta_tuple&& tuple) {
     return std::move(tuple.values.[: get_nth_field(I) :]);
   }
+
+  constexpr auto operator<=>(const meta_tuple&) const = default;
+  constexpr bool operator==(const meta_tuple&) const = default;
 };
+
+// TODO: We need better way to implement operator == and <=>
+//       between meta_tuple and other tuple-like types.
+
+namespace impl {
+template <class Tuple1, class Tuple2>
+constexpr bool is_memberwise_eq_comparable()
+{
+  constexpr auto N = std::tuple_size_v<Tuple1>;
+  if constexpr (std::tuple_size_v<Tuple2> == N) {
+    template for (constexpr auto I: std::views::iota(0zU, N)) {
+      using E1 = std::tuple_element_t<I, Tuple1>;
+      using E2 = std::tuple_element_t<I, Tuple2>;
+      if (!is_equal_comparable_v<E1, E2>) {
+        return false;
+      }
+    }
+    return true;
+  } else {
+    return false;
+  }
+}
+
+template <class Tuple1, class Tuple2>
+constexpr auto is_memberwise_eq_comparable_v =
+  is_memberwise_eq_comparable<Tuple1, Tuple2>();
+} // namespace impl
+
+template <tuple_like TupleLike, class... Args>
+  requires (impl::is_memberwise_eq_comparable_v<meta_tuple<Args...>, TupleLike>)
+constexpr bool operator==(const meta_tuple<Args...>& lhs, const TupleLike& rhs)
+{
+  constexpr auto N = sizeof...(Args);
+  template for (constexpr auto I: std::views::iota(0zU, N)) {
+    const auto& x = get_ith_element<I>(lhs);
+    const auto& y = get_ith_element<I>(rhs);
+    if (!(x == y)) {
+      return false;
+    }
+  }
+  return true;
+}
 
 // Deduction guide (cvref dropped, same behavior as std::tuple)
 template <class... Args>

@@ -24,8 +24,11 @@
 #define REFLECT_CPP26_LOOKUP_LOOKUP_TABLE_BY_NAME_HPP
 
 #include <reflect_cpp26/lookup/impl/lookup_table_common.hpp>
+#include <reflect_cpp26/fixed_map/string_key.hpp>
+#include <reflect_cpp26/utils/tags.hpp>
+
+// todo: remove this header after refactoring
 #include <reflect_cpp26/utils/expand.hpp>
-#include <reflect_cpp26/utils/fixed_map/string_key.hpp>
 
 namespace reflect_cpp26 {
 namespace impl::lookup::by_name {
@@ -34,8 +37,8 @@ consteval auto make_member_table(MemberItems member_items)
 {
   return REFLECT_CPP26_STRING_KEY_FIXED_MAP(
     member_items.map([](auto entry) {
-      auto cur_key = entry.value.second;
-      auto cur_value = &[:entry.value.first:];
+      auto cur_key = entry.value.first;
+      auto cur_value = &[:entry.value.second:];
       static_assert(std::is_convertible_v<decltype(cur_value), Target>,
         "Inconsistent types.");
       return std::pair{cur_key, static_cast<Target>(cur_value)};
@@ -46,7 +49,7 @@ template <class T, class MemberItems>
 consteval auto make_type_member_table(MemberItems member_items)
 {
   static_assert(member_items.size() > 0, "Member list can not be empty.");
-  constexpr auto first_member = get<0>(member_items).first;
+  constexpr auto first_member = get<0>(member_items).second;
   using MemberType = [: type_of(first_member) :];
 
   if constexpr (is_static_member(first_member)) {
@@ -62,7 +65,7 @@ template <class MemberItems>
 consteval auto make_namespace_member_table(MemberItems member_items)
 {
   static_assert(member_items.size() > 0, "Member list can not be empty.");
-  using MemberType = [: type_of(get<0>(member_items).first) :];
+  using MemberType = [: type_of(get<0>(member_items).second) :];
   using TargetType = MemberType*;
   return make_member_table<TargetType>(member_items);
 }
@@ -79,83 +82,160 @@ consteval auto rename_member_table_entry_by_pattern(
   return std::string{name};
 }
 
+consteval auto decompose_prefix_suffix(std::string_view pattern)
+  -> std::pair<std::string_view, std::string_view>
+{
+  auto star_pos = pattern.find('*');
+  if (star_pos == npos) {
+    compile_error("Invalid pattern: Expects format 'prefix*suffix'.");
+  }
+  auto next_star_pos = pattern.find('*', star_pos + 1);
+  if (next_star_pos != npos) {
+    compile_error("Multiple '*' is disallowed.");
+  }
+  return {pattern.substr(0, star_pos), pattern.substr(star_pos + 1)};
+}
+
 /**
- * LOOKUP_TABLE_BY_NAME(T_or_ns, prefix, suffix)
- * Filters all the members of type T or namespace ns whose identifier matches
- * given prefix and given suffix.
+ * FILTER_FN(T, pattern):
+ * Filters all the members of type T whose identifier matches given pattern.
+ * Pattern is a string of format 'prefix*suffix' where 'prefix' and 'suffix'
+ * can be any valid C++ identifier substring and '*' refers to the matched part.
+ * Example:
+ * struct foo_t {
+ *   void dump_add_result() const;             // (1)
+ *   void dump_sub_result() const;             // (2)
+ *   void dump_bitwise_xor_result() const;     // (3)
+ *   void dump_arithmetic_result_impl() const; // (4) expects mismatch
+ * };
+ * Then the pattern 'dump_*_result' will match (1,2,3) and '*' is matched as
+ * 'add', 'sub', 'bitwise_xor' respectively. The generated table will be [
+ *   'add': &foo_t::dump_add_result,
+ *   'sub': &foo_t::dump_sub_result,
+ *   'bitwise_xor': &foo_t::dump_bitwise_xor_result,
+ * ].
+ * Anonymous or non-addressable members (nested classes, templates, bit-fields,
+ * constructors, destructor, deleted functions, etc.) will be ignored.
  */
 consteval auto get_type_member_table_entries(
-  std::meta::info T, std::string_view prefix, std::string_view suffix,
-  std::meta::access_context ctx = std::meta::access_context::current())
+  std::meta::info T,
+  std::string_view pattern,
+  std::meta::access_context ctx = REFLECT_CPP26_CURRENT_CONTEXT)
 {
+  auto pt = decompose_prefix_suffix(pattern);
   return get_type_member_table_entries_impl<std::string>(T, ctx.via(T),
-    [prefix, suffix](std::string_view identifier) {
-      return rename_member_table_entry_by_pattern(prefix, suffix, identifier);
-    });
-}
-
-consteval auto get_namespace_member_table_entries(
-  std::meta::info ns, std::string_view prefix, std::string_view suffix,
-  std::meta::access_context ctx = std::meta::access_context::current())
-{
-  return get_namespace_member_table_entries_impl<std::string>(ns, ctx,
-    [prefix, suffix](std::string_view identifier) {
-      return rename_member_table_entry_by_pattern(prefix, suffix, identifier);
+    [pt](std::string_view identifier) {
+      return rename_member_table_entry_by_pattern(
+        pt.first, pt.second, identifier);
     });
 }
 
 /**
- * LOOKUP_TABLE_BY_NAME(T_or_ns, filter, prefix, suffix)
- * Filters all the members of type T or namespace ns whose:
- * (1) member category matches given filter;
- * (2) identifier matches given prefix and given suffix.
+ * FILTER_FN(ns, pattern):
+ * Filters all members of namespace ns whose identifier matches given pattern.
+ * Anonymous or non-addressable members (classes, nested namespaces, templates,
+ * deleted functions, etc.) will be ignored.
  */
-consteval auto get_type_member_table_entries(
-  std::meta::info T, type_member_filter_flags filter_flags,
-  std::string_view prefix, std::string_view suffix,
-  std::meta::access_context ctx = std::meta::access_context::current())
-{
-  return get_type_member_table_entries_impl<std::string>(
-    T, ctx.via(T), filter_flags,
-    [prefix, suffix](std::string_view identifier) {
-      return rename_member_table_entry_by_pattern(prefix, suffix, identifier);
-    });
-}
-
 consteval auto get_namespace_member_table_entries(
-  std::meta::info ns, namespace_member_filter_flags filter_flags,
-  std::string_view prefix, std::string_view suffix,
-  std::meta::access_context ctx = std::meta::access_context::current())
+  std::meta::info ns,
+  std::string_view pattern,
+  std::meta::access_context ctx = REFLECT_CPP26_CURRENT_CONTEXT)
 {
-  return get_namespace_member_table_entries_impl<std::string>(
-    ns, ctx, filter_flags,
-    [prefix, suffix](std::string_view identifier) {
-      return rename_member_table_entry_by_pattern(prefix, suffix, identifier);
+  auto pt = decompose_prefix_suffix(pattern);
+  return get_namespace_member_table_entries_impl<std::string>(ns, ctx,
+    [pt](std::string_view identifier) {
+      return rename_member_table_entry_by_pattern(
+        pt.first, pt.second, identifier);
     });
 }
 
 /**
- * LOOKUP_TABLE_BY_NAME(T_or_ns, filter_fn)
- * Filters all the members of type T or namespace ns by filter_fn.
+ * FILTER_FN(T, tag, pattern)
+ * Filters all the members of type T whose:
+ * (1) category matches given tag;
+ * (2) identifier matches given pattern.
+ *
+ * filter_tag should be one of (defined in utils/tags.hpp):
+ * (1) nonstatic_data_members_only;
+ * (2) nonstatic_member_functions_only;
+ * (3) static_data_members_only;
+ * (4) static_member_functions_only.
+ * Anonymous or non-addressable members (nested classes, templates, bit-fields,
+ * constructors, destructor, deleted functions, etc.) will be ignored.
+ */
+template <class_member_filter_tag FilterTag>
+consteval auto get_type_member_table_entries(
+  std::meta::info T,
+  FilterTag filter_tag,
+  std::string_view pattern,
+  std::meta::access_context ctx = std::meta::access_context::current())
+{
+  auto pt = decompose_prefix_suffix(pattern);
+  return get_type_member_table_entries_impl<std::string>(
+    T, ctx.via(T),
+    is_functions_only(filter_tag),
+    is_static_members_only(filter_tag),
+    [pt](std::string_view identifier) {
+      return rename_member_table_entry_by_pattern(
+        pt.first, pt.second, identifier);
+    });
+}
+
+/**
+ * FILTER_FN(ns, tag, pattern):
+ * Filters all members of namespace ns whose:
+ * (1) category matches given tag;
+ * (2) identifier matches given pattern.
+ * Anonymous or non-addressable members (classes, nested namespaces, templates,
+ * deleted functions, etc.) will be ignored.
+ */
+template <non_class_member_filter_tag FilterTag>
+consteval auto get_namespace_member_table_entries(
+  std::meta::info ns,
+  FilterTag filter_tag,
+  std::string_view pattern,
+  std::meta::access_context ctx = std::meta::access_context::current())
+{
+  auto pt = decompose_prefix_suffix(pattern);
+  return get_namespace_member_table_entries_impl<std::string>(
+    ns, ctx, is_functions_only(filter_tag),
+    [pt](std::string_view identifier) {
+      return rename_member_table_entry_by_pattern(
+        pt.first, pt.second, identifier);
+    });
+}
+
+/**
+ * FILTER_FN(T, filter_fn)
+ * Filters all the members of type T by filter_fn.
  * Supported call signatures of filter_fn:
  * (1) (std::meta::info member) -> std::optional<std::string>
  *     If member is to be preserved, its rename is returned;
  *     Otherwise, std::nullopt shall be returned.
  * (2) (std::string_view identifier) -> std::optional<std::string>
  *     Similar with above. Members without identifier will be filtered out.
+ * Anonymous or non-addressable members will be ignored.
  */
 template <filter_function_by_optional<std::string> FilterFn>
 consteval auto get_type_member_table_entries(
-  std::meta::info T, const FilterFn& filter_fn,
+  std::meta::info T,
+  const FilterFn& filter_fn,
   std::meta::access_context ctx = std::meta::access_context::current())
 {
   return get_type_member_table_entries_impl<std::string>(
     T, ctx.via(T), filter_fn);
 }
 
+/**
+ * FILTER_FN(ns, filter_fn)
+ * Filters all the members of namespace ns by filter_fn.
+ * Supported call signatures of filter_fn see above.
+ * Anonymous or non-addressable members will be ignored.
+ */
 template <filter_function_by_optional<std::string> FilterFn>
 consteval auto get_namespace_member_table_entries(
-  std::meta::info ns, const FilterFn& filter_fn,
+  std::meta::info ns,
+  const FilterFn& filter_fn,
   std::meta::access_context ctx = std::meta::access_context::current())
 {
   return get_namespace_member_table_entries_impl<std::string>(
@@ -166,24 +246,31 @@ consteval auto get_namespace_member_table_entries(
  * LOOKUP_TABLE_BY_NAME(T_or_ns, filter_fn)
  * Similar with above. Only members that match given filter flags are preserved.
  */
-template <filter_function_by_optional<std::string> FilterFn>
+template <class_member_filter_tag FilterTag,
+          filter_function_by_optional<std::string> FilterFn>
 consteval auto get_type_member_table_entries(
-  std::meta::info T, type_member_filter_flags filter_flags,
+  std::meta::info T,
+  FilterTag filter_tag,
   const FilterFn& filter_fn,
   std::meta::access_context ctx = std::meta::access_context::current())
 {
   return get_type_member_table_entries_impl<std::string>(
-    T, ctx.via(T), filter_flags, filter_fn);
+    T, ctx.via(T),
+    is_functions_only(filter_tag),
+    is_static_members_only(filter_tag),
+    filter_fn);
 }
 
-template <filter_function_by_optional<std::string> FilterFn>
+template <non_class_member_filter_tag FilterTag,
+          filter_function_by_optional<std::string> FilterFn>
 consteval auto get_namespace_member_table_entries(
-  std::meta::info ns, namespace_member_filter_flags filter_flags,
+  std::meta::info ns,
+  FilterTag filter_tag,
   const FilterFn& filter_fn,
   std::meta::access_context ctx = std::meta::access_context::current())
 {
   return get_namespace_member_table_entries_impl<std::string>(
-    ns, ctx, filter_flags, filter_fn);
+    ns, ctx, is_functions_only(filter_tag), filter_fn);
 }
 } // namespace impl::lookup::by_name
 } // namespace reflect_cpp26

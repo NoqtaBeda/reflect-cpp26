@@ -78,7 +78,7 @@ constexpr auto constant_tuple = std::tuple{
 struct get_from_constant_tuple_t {
   static constexpr auto operator()(auto ec)
   {
-    constexpr auto I = std::to_underlying(ec.value);
+    constexpr auto I = std::to_underlying(ec());
     return get<I>(constant_tuple);
   }
 };
@@ -142,8 +142,8 @@ TEST(EnumSwitch, ToCommon)
   constexpr auto get_res_6 = enum_switch_to_common(
     get_from_constant_tuple_t{},
     static_cast<integer_indices>(-1),
-    constant<1234>{});
-  // common_type_t<short, int, long, constant<int>>
+    constant_v<1234>);
+  // common_type_t<short, int, long, std::integral_constant<int, I>>
   EXPECT_TRUE_STATIC(std::is_same_v<decltype(get_res_6), const long>);
   EXPECT_EQ_STATIC(1234, get_res_6);
 
@@ -183,7 +183,7 @@ TEST(EnumSwitch, Dereference)
   auto default_str = "<n/a>"s;
 
   get_from_non_constant_tuple_t{}(
-    &array, constant<array_index::zero>{}) += "<test>";
+    &array, constant_v<array_index::zero>) += "<test>";
   EXPECT_EQ("abc<test>", array[0]) << "Implementation error with test case.";
 
   auto&& str1 = enum_switch(

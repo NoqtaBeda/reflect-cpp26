@@ -659,39 +659,39 @@ TEST(TypeOperationsComparison, Strings2)
 
 TEST(TypeOperationsComparison, TupleLike)
 {
-  constexpr auto constant_1 = rfl::constant<1, 2, 3>{};
-  constexpr auto constant_2 = rfl::constant<1, 2.0, 3u>{};
-  constexpr auto constant_3 = rfl::constant<1, 2, 4294967299>{}; // 2 ** 32 + 3
-  constexpr auto constant_4 = rfl::constant<1, 2, 3, 4>{};
+  constexpr auto tuple_1 = std::tuple{1, 2, 3};
+  constexpr auto tuple_2 = std::tuple{1, 2.0, 3u};
+  constexpr auto tuple_3 = rfl::meta_tuple{1, 2, 4294967299}; // 2 ** 32 + 3
+  constexpr auto tuple_4 = rfl::meta_tuple{1, 2, 3, 4};
 
-  static_assert(rfl::generic_equal(constant_1, constant_2));
-  static_assert(! rfl::generic_not_equal(constant_1, constant_2));
+  static_assert(rfl::generic_equal(tuple_1, tuple_2));
+  static_assert(! rfl::generic_not_equal(tuple_1, tuple_2));
   static_assert(check_equality(
     std::partial_ordering::equivalent,
-    rfl::generic_compare_three_way(constant_1, constant_2)));
+    rfl::generic_compare_three_way(tuple_1, tuple_2)));
 
-  static_assert(! rfl::generic_equal(constant_1, constant_3));
-  static_assert(rfl::generic_not_equal(constant_1, constant_3));
+  static_assert(! rfl::generic_equal(tuple_1, tuple_3));
+  static_assert(rfl::generic_not_equal(tuple_1, tuple_3));
   static_assert(check_equality(
     std::strong_ordering::less,
-    rfl::generic_compare_three_way(constant_1, constant_3)));
+    rfl::generic_compare_three_way(tuple_1, tuple_3)));
 
   // Tuple-like with different sizes are not comparable
   static_assert(rfl::generic_equal_comparable_with<
-    decltype(constant_1), decltype(constant_2)>);
+    decltype(tuple_1), decltype(tuple_2)>);
   static_assert(! rfl::is_generic_equal_comparable_v<
-    decltype(constant_1), decltype(constant_4)>);
+    decltype(tuple_1), decltype(tuple_4)>);
   static_assert(! rfl::generic_not_equal_comparable_with<
-    decltype(constant_1), decltype(constant_4)>);
+    decltype(tuple_1), decltype(tuple_4)>);
   static_assert(! rfl::is_generic_three_way_comparable_v<
-    decltype(constant_1), decltype(constant_4)>);
+    decltype(tuple_1), decltype(tuple_4)>);
 
-  constexpr auto std_tuple_1 = std::tuple{1.0, 2, 3u};
-  static_assert(rfl::generic_equal(constant_1, std_tuple_1));
-  static_assert(! rfl::generic_not_equal(constant_1, std_tuple_1));
+  constexpr auto tuple_5 = std::tuple{1.0, 2, 3u};
+  static_assert(rfl::generic_equal(tuple_1, tuple_5));
+  static_assert(! rfl::generic_not_equal(tuple_1, tuple_5));
   static_assert(check_equality(
     std::partial_ordering::equivalent,
-    rfl::generic_compare_three_way(constant_1, std_tuple_1)));
+    rfl::generic_compare_three_way(tuple_1, tuple_5)));
 }
 
 TEST(TypeOperationsComparison, NestedRanges)

@@ -35,7 +35,7 @@ constexpr auto enum_switch_is_invocable_r() -> bool
 {
   template for (constexpr auto entry: enum_meta_entries_v<E>) {
     constexpr auto ev = extract<E>(entry);
-    if (!std::is_invocable_r_v<R, Func, constant<ev>>) {
+    if (!std::is_invocable_r_v<R, Func, constant_t<ev>>) {
       return false;
     }
   }
@@ -51,7 +51,7 @@ constexpr auto enum_switch_invoke_result() -> std::meta::info
   auto results = make_reserved_vector<std::meta::info>(enum_count_v<E>);
   template for (constexpr auto entry: enum_meta_entries_v<E>) {
     constexpr auto ev = extract<E>(entry);
-    results.push_back(^^std::invoke_result_t<Func, constant<ev>>);
+    results.push_back(^^std::invoke_result_t<Func, constant_t<ev>>);
   }
   return substitute(^^std::common_type_t, results);
 }
@@ -65,7 +65,7 @@ constexpr auto enum_switch_void(Func&& func, E value) -> void
   template for (constexpr auto entry: enum_meta_entries_v<E>) {
     constexpr auto ev = extract<E>(entry);
     if (ev == value) {
-      func(constant<ev>());
+      func(constant_v<ev>);
       return;
     }
   }
@@ -78,7 +78,7 @@ constexpr auto enum_switch_optional(Func&& func, E value) -> std::optional<T>
   template for (constexpr auto entry: enum_meta_entries_v<E>) {
     constexpr auto ev = extract<E>(entry);
     if (ev == value) {
-      res = func(constant<ev>());
+      res = func(constant_v<ev>);
       break;
     }
   }
@@ -91,7 +91,7 @@ constexpr auto enum_switch_value(Func&& func, E value, T&& init) -> R
   template for (constexpr auto entry: enum_meta_entries_v<E>) {
     constexpr auto ev = extract<E>(entry);
     if (ev == value) {
-      return func(constant<ev>());
+      return func(constant_v<ev>);
     }
   }
   return init;
@@ -101,12 +101,13 @@ constexpr auto enum_switch_value(Func&& func, E value, T&& init) -> R
 /**
  * Enum switch-case. Equivalent to:
  * case E::value1:
- *   return func(constant<E::value1>{}); // Or return nothing if T is void
+ *   return func(constant_v<E::value1>); // Or return nothing if T is void
  * case E::value2:
- *   return func(constant<E::value2>{}); // Or return nothing if T is void
+ *   return func(constant_v<E::value2>); // Or return nothing if T is void
  * ...
  * default:
  *   return std::nullopt; // Or no-op if T is void
+ * where constant_v<V> is std::integral_constant<E, V>{}.
  */
 template <non_reference_type T = void, enum_type E, class Func>
   requires (impl::enum_switch_invocable_r<T, E, Func>)
@@ -122,12 +123,13 @@ constexpr auto enum_switch(Func&& func, E value)
 /**
  * Enum switch-case with default value. Equivalent to:
  * case E::value1:
- *   return func(constant<E::value1>{}) as decay(T);
+ *   return func(constant_v<E::value1>) as decay(T);
  * case E::value2:
- *   return func(constant<E::value2>{}) as decay(T);
+ *   return func(constant_v<E::value2>) as decay(T);
  * ...
  * default:
  *   return default_value;
+ * where constant_v<V> is std::integral_constant<E, V>{}.
  */
 template <class T, enum_type E, class Func>
   requires (impl::enum_switch_invocable_r<std::decay_t<T>, E, Func>)
@@ -140,13 +142,14 @@ constexpr auto enum_switch(Func&& func, E value, T&& default_value)
 /**
  * Enum switch-case with default value. Equivalent to:
  * case E::value1:
- *   return func(constant<E::value1>{}) as ResultT;
+ *   return func(constant_v<E::value1>) as ResultT;
  * case E::value2:
- *   return func(constant<E::value2>{}) as ResultT;
+ *   return func(constant_v<E::value2>) as ResultT;
  * ...
  * default:
  *   return default_value as ResultT;
- * ResultT is common type of default_value and func(constant<E::valueN>{})...
+ * ResultT is common type of default_value and func(constant_v<E::valueN>)...
+ * constant_v<V> is std::integral_constant<E, V>{}.
  */
 template <class T, enum_type E, class Func>
   requires (impl::enum_switch_invocable_r<void, E, Func>)

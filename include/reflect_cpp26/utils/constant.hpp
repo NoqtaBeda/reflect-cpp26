@@ -33,13 +33,31 @@
 #include <vector>
 
 namespace reflect_cpp26 {
-template <auto... Vs>
-struct constant;
+/**
+ * Convenient wrapper for std::integral_constant.
+ * Note: despite the naming 'integral constant', V can be anything that is
+ * compile-time evaluable.
+ */
+template <auto V>
+using constant_t = std::integral_constant<decltype(V), V>;
+
+/**
+ * Convenient wrapper for std::integral_constant.
+ * Note: despite the naming 'integral constant', V can be anything that is
+ * compile-time evaluable.
+ */
+template <auto V>
+constexpr auto constant_v = constant_t<V>{};
 
 /**
  * Null index.
  */
 constexpr auto npos = std::numeric_limits<size_t>::max();
+
+// -------- TODO: Remove the following part after dependency cleanup --------
+
+template <auto... Vs>
+struct constant;
 
 namespace impl {
 template <template <auto...> class Derived, auto... Vs>

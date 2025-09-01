@@ -24,8 +24,9 @@
 #define REFLECT_CPP26_ENUM_IMPL_ENUM_MAPS_HPP
 
 #include <reflect_cpp26/enum/enum_names.hpp>
-#include <reflect_cpp26/utils/fixed_map/integral_key.hpp>
-#include <reflect_cpp26/utils/fixed_map/string_key.hpp>
+#include <reflect_cpp26/fixed_map/integral_key.hpp>
+#include <reflect_cpp26/fixed_map/string_key.hpp>
+#include <reflect_cpp26/utils/constant.hpp>
 #include <reflect_cpp26/utils/functional.hpp>
 #include <utility>
 
@@ -91,6 +92,7 @@ consteval auto make_enum_name_map()
   constexpr auto options = integral_key_map_options{
     .already_sorted = true,
     .already_unique = true,
+    .adjusts_alignment = true,
   };
   return REFLECT_CPP26_INTEGRAL_KEY_FIXED_MAP(
     make_enum_name_map_kv_pairs<E>(), options);
@@ -126,7 +128,8 @@ template <class E>
 consteval auto make_enum_from_ci_string_map()
 {
   constexpr auto options = string_key_map_options{
-    .case_insensitive = true,
+    .ascii_case_insensitive = true,
+    .adjusts_alignment = true,
   };
   return REFLECT_CPP26_STRING_KEY_FIXED_MAP(
     make_enum_from_string_kv_pairs<E, true>(), options);

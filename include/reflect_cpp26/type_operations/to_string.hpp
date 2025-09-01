@@ -73,9 +73,12 @@ consteval bool is_generic_to_string_invocable()
     return generic_to_string_invocable<std::ranges::range_value_t<T>>;
   } else if constexpr (tuple_like<T>) {
     constexpr auto N = std::tuple_size_v<T>;
-    return REFLECT_CPP26_EXPAND_I(N).all_of([](auto I) {
-      return generic_to_string_invocable<std::tuple_element_t<I, T>>;
-    });
+    template for (constexpr auto I: std::views::iota(0zU, N)) {
+      if (!generic_to_string_invocable<std::tuple_element_t<I, T>>) {
+        return false;
+      }
+    }
+    return true;
   } else {
     return false;
   }
@@ -125,12 +128,12 @@ constexpr auto generic_tuple_like_to_string(const T& input) -> std::string
 {
   constexpr auto N = std::tuple_size_v<T>;
   auto res = std::string{"{"};
-  REFLECT_CPP26_EXPAND_I(N).for_each([&res, &input](auto I) {
+  template for (constexpr auto I: std::views::iota(0zU, N)) {
     if constexpr (I != 0) {
       res += ", ";
     }
     res += ToStringFn::operator()(get_ith_element<I>(input));
-  });
+  }
   res += '}';
   return res;
 }

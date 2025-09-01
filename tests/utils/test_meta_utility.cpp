@@ -90,31 +90,32 @@ TEST(UtilsMetaUtility, IsAddressableNonStaticMember)
   static constexpr auto d = 42;
   constexpr auto obj = C::make(1, 2, 3, d, 4, 5);
 
-  static_assert(rfl::is_addressable_nonstatic_member(^^C::a));
-  static_assert(rfl::is_addressable_nonstatic_member(^^C::b));
-  static_assert(rfl::is_addressable_nonstatic_member(^^C::c));
+  static_assert(rfl::is_addressable_class_member(^^C::a));
+  static_assert(rfl::is_addressable_class_member(^^C::b));
+  static_assert(rfl::is_addressable_class_member(^^C::c));
+  // Static members
+  static_assert(rfl::is_addressable_class_member(^^C::constant));
+  static_assert(rfl::is_addressable_class_member(^^C::non_constant));
+  static_assert(rfl::is_addressable_class_member(^^C::make));
+
   // Bit-field members can not be addressed
-  static_assert(NOT rfl::is_addressable_nonstatic_member(^^C::x));
-  static_assert(NOT rfl::is_addressable_nonstatic_member(^^C::y));
+  static_assert(NOT rfl::is_addressable_class_member(^^C::x));
+  static_assert(NOT rfl::is_addressable_class_member(^^C::y));
   // Reference members can not be addressed
-  static_assert(NOT rfl::is_addressable_nonstatic_member(^^C::d));
+  static_assert(NOT rfl::is_addressable_class_member(^^C::d));
   // Constructors and destructures can not be addressed
-  static_assert(NOT rfl::is_addressable_nonstatic_member(^^C::C));
-  static_assert(NOT rfl::is_addressable_nonstatic_member(^^C::~C));
+  static_assert(NOT rfl::is_addressable_class_member(^^C::C));
+  static_assert(NOT rfl::is_addressable_class_member(^^C::~C));
   // Deleted members can not be addressed
-  static_assert(NOT rfl::is_addressable_nonstatic_member(^^C::dump));
+  static_assert(NOT rfl::is_addressable_class_member(^^C::dump));
   // Template members can not be addressed before instantiation
-  static_assert(NOT rfl::is_addressable_nonstatic_member(^^C::get));
-  static_assert(rfl::is_addressable_nonstatic_member(^^C::get<1>));
-  // Static members are excluded
-  static_assert(NOT rfl::is_addressable_nonstatic_member(^^C::constant));
-  static_assert(NOT rfl::is_addressable_nonstatic_member(^^C::non_constant));
-  static_assert(NOT rfl::is_addressable_nonstatic_member(^^C::make));
+  static_assert(NOT rfl::is_addressable_class_member(^^C::get));
+  static_assert(rfl::is_addressable_class_member(^^C::get<1>));
 
   // Not class member at all
-  static_assert(NOT rfl::is_addressable_nonstatic_member(^^C));
-  static_assert(NOT rfl::is_addressable_nonstatic_member(^^obj));
+  static_assert(NOT rfl::is_addressable_class_member(^^C));
+  static_assert(NOT rfl::is_addressable_class_member(^^obj));
   constexpr auto obj_a_refl = std::meta::reflect_constant(obj.a);
-  static_assert(NOT rfl::is_addressable_nonstatic_member(obj_a_refl));
-  static_assert(NOT rfl::is_addressable_nonstatic_member(^^std));
+  static_assert(NOT rfl::is_addressable_class_member(obj_a_refl));
+  static_assert(NOT rfl::is_addressable_class_member(^^std));
 }

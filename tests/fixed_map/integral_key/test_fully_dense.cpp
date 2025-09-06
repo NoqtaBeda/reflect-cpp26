@@ -71,7 +71,7 @@ struct point_t {
   constexpr bool operator==(const point_t&) const = default;
 };
 
-template <rfl::integral_key_map_options Options>
+template <rfl::integral_key_fixed_map_options Options>
 constexpr void test_unsigned_integral_key_common()
 {
   using Value = point_t;
@@ -121,7 +121,7 @@ constexpr void test_unsigned_integral_key_common()
 
 TEST(FixedMap, UnsignedIntegralKeyFullyContinuous1)
 {
-  constexpr auto options = rfl::integral_key_map_options{
+  constexpr auto options = rfl::integral_key_fixed_map_options{
     .adjusts_alignment = false,
   };
   test_unsigned_integral_key_common<options>();
@@ -129,7 +129,7 @@ TEST(FixedMap, UnsignedIntegralKeyFullyContinuous1)
 
 TEST(FixedMap, UnsignedIntegralKeyFullyContinuous2)
 {
-  constexpr auto options = rfl::integral_key_map_options{
+  constexpr auto options = rfl::integral_key_fixed_map_options{
     .adjusts_alignment = true,
   };
   test_unsigned_integral_key_common<options>();

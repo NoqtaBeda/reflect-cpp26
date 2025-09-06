@@ -176,12 +176,10 @@ constexpr bool visit_identifier_segments(
   std::string_view input, Tag tag, Visitor&& visitor)
 {
   if (input.empty()) {
-    REFLECT_CPP26_ERROR_IF_CONSTEVAL("Empty string is invalid.");
     return false;
   }
   auto first_char = input.front();
   if (ascii_isdigit(first_char) || !is_valid_identifier_char(first_char)) {
-    REFLECT_CPP26_ERROR_IF_CONSTEVAL("Invalid first character.");
     return false;
   }
   auto len = input.length();
@@ -189,7 +187,6 @@ constexpr bool visit_identifier_segments(
   for (auto tail = 0zU; tail < len; head = tail = tail + 1) {
     for (; tail < len; ++tail) {
       if (!is_valid_identifier_char(input[tail])) {
-        REFLECT_CPP26_ERROR_IF_CONSTEVAL("Invalid identifier character.");
         return false;
       }
       if (is_identifier_delimiter_char(input[tail])) {

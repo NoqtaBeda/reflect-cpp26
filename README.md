@@ -18,27 +18,21 @@ xmake f -m <debug|release> \
 
 xmake build --group=tests/**
 LD_LIBRARY_PATH=<path-to-libc++> xmake run --group=tests/**
-
-# ASM check to test whether rudundant symbols exist in the build target
-LD_LIBRARY_PATH=<path-to-libc++> xmake run run_asm_check
 ```
 
 # TODO
 * Validators: Complete redesign
+* Lookup:
+  * Doc fix
 * Type traits
   * Recursively flattenable
 * Type operations
   * `member_named<fixed_string>`
-* Improvements to `constant`:
-  * `map`, `filter` with index
-  * `index_of`, `last_index_of`, `includes` with start index
+* `fixed_set`
 * utils:
-  * `fixed_set`
   * Fixed string
   * `to_string` for string types other than `char`
   * String hash with different `p` for `char16_t` and `char32_t`
 * Missing UT for string-key fixed map (in utils):
   * Case-insensitive UT with `string_key_map_by_hash_binary_search_slow`;
-  * Hash collision cases with every hash-related scenario;
-  * Wide character cases with every hash-related scenario.
-    * the underlying hash function shall be redesigned for wide char types.
+  * Hash collision cases with every hash-related scenario.

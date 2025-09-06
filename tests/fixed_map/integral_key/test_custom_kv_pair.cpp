@@ -44,7 +44,7 @@ constexpr auto get(string_wrapper s)
   }
 }
 
-template <rfl::integral_key_map_options Options>
+template <rfl::integral_key_fixed_map_options Options>
 constexpr void test_custom_kv_pair_common()
 {
   constexpr auto map = FIXED_MAP(std::vector<string_wrapper>({
@@ -98,7 +98,7 @@ constexpr void test_custom_kv_pair_common()
 
 TEST(FixedMap, IntegralKeyCustomKVPair1)
 {
-  constexpr auto options = rfl::integral_key_map_options{
+  constexpr auto options = rfl::integral_key_fixed_map_options{
     .already_sorted = true,
     .already_unique = true,
     .adjusts_alignment = false,
@@ -111,7 +111,7 @@ TEST(FixedMap, IntegralKeyCustomKVPair1)
 
 TEST(FixedMap, IntegralKeyCustomKVPair2)
 {
-  constexpr auto options = rfl::integral_key_map_options{
+  constexpr auto options = rfl::integral_key_fixed_map_options{
     .already_sorted = true,
     .already_unique = true,
     .adjusts_alignment = true,

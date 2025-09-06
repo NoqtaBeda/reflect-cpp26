@@ -27,31 +27,83 @@
 #include <reflect_cpp26/utils/concepts.hpp>
 
 namespace reflect_cpp26 {
-/**
- * Gets the index of given enum value in specified order.
- * Returns npos if the value is not found.
- */
-template <enum_entry_order Order = enum_entry_order::original, enum_type E>
-constexpr auto enum_index(E value) -> size_t
-{
-  using ENoCV = std::remove_cv_t<E>;
-  auto [indices, found] =
-    impl::enum_index_map_v<ENoCV>.get(impl::to_int64_or_uint64(value));
-  return found ? get<Order>(indices) : npos;
-}
+template <enum_entry_order Order>
+struct enum_index_by_t {
+  /**
+   * Gets the index of given enum value in specified order.
+   * Returns npos if the value is not found.
+   */
+  template <enum_type E>
+  static constexpr size_t operator()(E value)
+  {
+    auto key = impl::to_int64_or_uint64(value);
+    auto [indices, found] = impl::enum_index_map_v<E>.get(key);
+    return found ? get<Order>(indices) : npos;
+  }
+};
 
-/**
- * Gets the index of given enum value in value order, duplicated value removed.
- * Returns npos if the value is not found.
- */
-template <enum_type E>
-constexpr auto enum_unique_index(E value) -> size_t
-{
-  using ENoCV = std::remove_cv_t<E>;
-  auto [indices, found] =
-    impl::enum_index_map_v<ENoCV>.get(impl::to_int64_or_uint64(value));
-  return found ? indices.by_value_unique : npos;
-}
+template <enum_entry_order Order>
+struct enum_index_opt_by_t {
+  /**
+   * Gets the index of given enum value in specified order.
+   * Returns std::nullopt if the value is not found.
+   */
+  template <enum_type E>
+  static constexpr auto operator()(E value) -> std::optional<size_t>
+  {
+    auto key = impl::to_int64_or_uint64(value);
+    auto [indices, found] = impl::enum_index_map_v<E>.get(key);
+    if (found) {
+      return get<Order>(indices);
+    }
+    return std::nullopt;
+  }
+};
+
+struct enum_unique_index_t {
+  /**
+   * Gets the index of given enum value in value ascending order,
+   * duplicated value removed.
+   * Returns npos if the value is not found.
+   */
+  template <enum_type E>
+  static constexpr size_t operator()(E value)
+  {
+    auto key = impl::to_int64_or_uint64(value);
+    auto [indices, found] = impl::enum_index_map_v<E>.get(key);
+    return found ? indices.by_value_unique : npos;
+  }
+};
+
+struct enum_unique_index_opt_t {
+  /**
+   * Gets the index of given enum value in value ascending order,
+   * duplicated value removed.
+   * Returns std::nullopt if the value is not found.
+   */
+  template <enum_type E>
+  static constexpr size_t operator()(E value)
+  {
+    auto key = impl::to_int64_or_uint64(value);
+    auto [indices, found] = impl::enum_index_map_v<E>.get(key);
+    if (found) {
+      return indices.by_value_unique;
+    }
+    return npos;
+  }
+};
+
+template <enum_entry_order Order>
+constexpr auto enum_index_by = enum_index_by_t<Order>{};
+
+template <enum_entry_order Order>
+constexpr auto enum_index_opt_by = enum_index_opt_by_t<Order>{};
+
+constexpr auto enum_index = enum_index_by<enum_entry_order::original>;
+constexpr auto enum_index_opt = enum_index_opt_by<enum_entry_order::original>;
+
+constexpr auto enum_unique_index = enum_unique_index_t{};
+constexpr auto enum_unique_index_opt = enum_unique_index_opt_t{};
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_ENUM_ENUM_INDEX_HPP

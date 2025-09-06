@@ -91,7 +91,7 @@ struct dense_integral_key_map {
   key_type _max_key;
 };
 
-// -------- Factory function --------
+// -------- Factory --------
 
 template <bool ValidityStored, bool AlignmentAdjusted, class KVPair>
 constexpr auto dense_integral_key_map_factory(meta_span<KVPair> sorted_entries)
@@ -136,7 +136,7 @@ constexpr auto dense_integral_key_map_factory(meta_span<KVPair> sorted_entries)
 
 // -------- Builder --------
 
-struct dense_integral_key_map_options {
+struct dense_integral_key_fixed_map_options {
   bool adjusts_alignment;
   bool default_value_is_always_invalid;
 };
@@ -145,7 +145,7 @@ template <class KVPairIter>
 consteval auto make_dense_integral_key_map(
   KVPairIter sorted_first,
   KVPairIter sorted_last,
-  dense_integral_key_map_options options) -> std::meta::info
+  dense_integral_key_fixed_map_options options) -> std::meta::info
 {
   using KVPair = std::iter_value_t<KVPairIter>;
   using factory_fn_type = std::meta::info (*)(meta_span<KVPair>);

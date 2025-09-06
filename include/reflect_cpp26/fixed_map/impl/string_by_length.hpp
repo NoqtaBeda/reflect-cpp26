@@ -88,7 +88,7 @@ consteval bool key_lengths_are_all_distinct(const KVPairRange& kv_pairs)
 template <class KVPairRange>
 consteval auto try_make_string_key_map_by_length(
   const KVPairRange& kv_pairs,
-  integral_key_map_options options_for_underlying,
+  integral_key_fixed_map_options options_for_underlying,
   bool case_insensitive) -> std::optional<std::meta::info>
 {
   using KVPair = std::ranges::range_value_t<KVPairRange>;
@@ -102,7 +102,7 @@ consteval auto try_make_string_key_map_by_length(
   }
   options_for_underlying.already_unique = true;
   options_for_underlying.default_value_is_always_invalid = true;
-  auto underlying = make_integral_key_map(wrapped, options_for_underlying);
+  auto underlying = make_integral_key_fixed_map(wrapped, options_for_underlying);
 
   auto policy_type = string_key_policy_type(case_insensitive);
   return extract<std::meta::info>(

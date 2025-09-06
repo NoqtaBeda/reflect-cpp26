@@ -90,6 +90,20 @@ constexpr bool do_copy_enum_flags_segment(
   return true;
 }
 
+template <class Iter, class Sentinel, class Alt>
+constexpr auto do_copy_alt(Iter& iter, Sentinel sentinel, Alt alt)
+  -> enum_flags_name_to_result<Iter>
+{
+  if constexpr (std::is_same_v<Alt, std::monostate>) {
+    return {.ec = std::errc::invalid_argument, .out = iter};
+  } else {
+    auto ec = do_copy_enum_flags_segment(iter, sentinel, alt)
+      ? std::errc::invalid_argument // alt string output successfully
+      : std::errc::value_too_large; // No enough space for alt
+    return {.ec = ec, .out = iter};
+  }
+}
+
 template <class Iter, class Sentinel, class E, class Delim, class Alt>
 constexpr auto regular_enum_flags_name_to_impl(
   Iter iter, Sentinel sentinel, E flags, Delim delim, Alt alt)
@@ -101,10 +115,7 @@ constexpr auto regular_enum_flags_name_to_impl(
     return {.ec = std::errc{}, .out = iter}; // Nothing to copy from ""
   }
   if ((remaining & decomp.full_set) != remaining) {
-    auto ec = do_copy_enum_flags_segment(iter, sentinel, alt)
-      ? std::errc::invalid_argument // alt string output successfully
-      : std::errc::value_too_large; // No enough space for alt
-    return {.ec = ec, .out = iter};
+    return do_copy_alt(iter, sentinel, alt);
   }
 
   // First pass checks whether flags can be decomposed
@@ -112,10 +123,7 @@ constexpr auto regular_enum_flags_name_to_impl(
     if constexpr (e.popcount != 1) {
       auto intersection = remaining & e.underlying;
       if (intersection != e.underlying && intersection != 0) {
-        auto ec = do_copy_enum_flags_segment(iter, sentinel, alt)
-          ? std::errc::invalid_argument // alt string output successfully
-          : std::errc::value_too_large; // No enough space for alt
-        return {.ec = ec, .out = iter};
+        return do_copy_alt(iter, sentinel, alt);
       }
     }
   }
@@ -146,10 +154,7 @@ constexpr auto irregular_enum_flags_name_to_impl(
     return {.ec = std::errc{}, .out = iter}; // Nothing to copy from ""
   }
   if ((underlying & decomp.full_set) != underlying) {
-    auto ec = do_copy_enum_flags_segment(iter, sentinel, alt)
-      ? std::errc::invalid_argument // alt string output successfully
-      : std::errc::value_too_large; // No enough space for alt
-    return {.ec = ec, .out = iter};
+    return do_copy_alt(iter, sentinel, alt);
   }
 
   // First passchecks whether flags can be decomposed properly
@@ -159,10 +164,7 @@ constexpr auto irregular_enum_flags_name_to_impl(
     if ((underlying & u) == u && (covered |= u) == underlying) { break; }
   }
   if (covered != underlying) {
-    auto ec = do_copy_enum_flags_segment(iter, sentinel, alt)
-      ? std::errc::invalid_argument // alt string output successfully
-      : std::errc::value_too_large; // No enough space for alt
-    return {.ec = ec, .out = iter};
+    return do_copy_alt(iter, sentinel, alt);
   }
 
   // Second pass generates the flags string
@@ -197,10 +199,7 @@ constexpr auto enum_flags_name_to_impl(
     if (std::to_underlying(flags) == 0) {
       return {.ec = std::errc{}, .out = iter}; // Nothing to copy from ""
     }
-    auto ec = do_copy_enum_flags_segment(iter, sentinel, std::move(alt))
-      ? std::errc::invalid_argument // alt string output successfully
-      : std::errc::value_too_large; // No enough space for alt
-    return {.ec = ec, .out = iter};
+    return do_copy_alt(iter, sentinel, alt);
   } else if constexpr (enum_flags_is_regular_v<E>) {
     return regular_enum_flags_name_to_impl(
       iter, sentinel, flags, delim, std::move(alt));
@@ -210,17 +209,22 @@ constexpr auto enum_flags_name_to_impl(
   }
 }
 
-template <class E, class Delim>
-constexpr auto enum_flags_name_impl(E flags, Delim delim, std::string_view alt)
+template <class E, class Delim, class Alt>
+constexpr auto enum_flags_name_impl(E flags, Delim delim, Alt alt)
   -> std::string
 {
   if constexpr (enum_flags_is_empty_v<E>) {
-    return std::to_underlying(flags) == 0 ? "" : std::string{alt};
+    if constexpr (std::is_same_v<Alt, std::monostate>) {
+      return std::string{};
+    } else {
+      return std::to_underlying(flags) == 0 ? "" : std::string{alt};
+    }
   } else {
     constexpr auto decomp = enum_flags_decomposer_v<E>;
     auto res = std::string{};
     auto reserved_size =
       decomp.sum_name_length + delim_length(delim) * decomp.units.size();
+
     if constexpr (enum_flags_is_regular_v<E>) {
       res.resize_and_overwrite(reserved_size, [&](char* buffer, size_t) {
         auto tail = regular_enum_flags_name_to_impl(
@@ -239,75 +243,207 @@ constexpr auto enum_flags_name_impl(E flags, Delim delim, std::string_view alt)
 }
 } // namespace impl
 
-/**
- * Makes the string representation of enum flags, each entry separated by given
- * delimiter. If enum_flags_contains<E>(flags) == false, i.e. value can not be
- * decomposed as disjunction of enum entries in E, then alt is returned.
- */
-template <enum_type E>
-constexpr auto enum_flags_name(
-  E flags, char delim = '|', std::string_view alt = {}) -> std::string
-{
-  return impl::enum_flags_name_impl(flags, delim, alt);
-}
+struct enum_flags_name_t {
+  /**
+   * Makes the string representation of enum flags, entries separated by given
+   * delimiter.
+   * If enum_flags_contains<E>(flags) == false, i.e. value can not be decomposed
+   * as disjunction of enum entries in E, then empty string is returned.
+   */
+  template <enum_type E>
+  static constexpr auto operator()(E flags, char delim = '|') -> std::string
+  {
+    return impl::enum_flags_name_impl(flags, delim, std::monostate{});
+  }
 
-/**
- * Makes the string representation of enum flags, entries separated by given
- * delimiter. If enum_flags_contains<E>(flags) == false, i.e. value can not be
- * decomposed as disjunction of enum entries in E, then alt is returned.
- */
-template <enum_type E>
-constexpr auto enum_flags_name(
-  E flags, std::string_view delim, std::string_view alt = {}) -> std::string
-{
-  return impl::enum_flags_name_impl(flags, delim, alt);
-}
+  /**
+   * Makes the string representation of enum flags, entries separated by given
+   * delimiter.
+   * If enum_flags_contains<E>(flags) == false, then alt is returned.
+   */
+  template <enum_type E>
+  static constexpr auto operator()(
+    E flags, char delim, std::string_view alt) -> std::string
+  {
+    return impl::enum_flags_name_impl(flags, delim, alt);
+  }
 
-/**
- * Writes the string representation of enum flags to given output range
- * [iter, sentinel), entries separated by given delimiter.
- * The returned value contains two fields {ec, out}:
- * (1) If enum_flags_contains<E>(flags) == true, and [iter, sentinel) is enough
- *     to store the string representation, then
- *     * ec is std::errc{}, and
- *     * out is the one-past-the-end iterator of the characters written, i.e.
- *       [iter, out) is the output string;
- * (2) If enum_flags_contains<E>(flags) == true, but [iter, sentinel) is not
- *     enough to store the string representation, then
- *     * ec is std::errc::value_too_large, and
- *     * Contents in [iter, out) are left in unspecified state;
- * (3) If enum_flags_contains<E>(flags) == false, and [iter, sentinel) is enough
- *     to store alt, then
- *     * ec is std::errc::invalid_argument, and
- *     * Contents in [first, out) is copy of alt. Specially, if alt is an empty
- *       string then out == first and input buffer is kept unchanged;
- * (4) If enum_flags_contains<E>(flags) == false, and [iter, sentinel) is not
- *     enough to store alt, then {ec, out} is same as (2).
- */
-template <std::output_iterator<char> Iter,
-          std::sentinel_for<Iter> Sentinel,
-          enum_type E>
-constexpr auto enum_flags_name_to(
-  Iter iter, Sentinel sentinel, E value, char delim = '|',
-  std::string_view alt = {}) -> enum_flags_name_to_result<Iter>
-{
-  return impl::enum_flags_name_to_impl(iter, sentinel, value, delim, alt);
-}
+  /**
+   * Makes the string representation of enum flags, entries separated by given
+   * delimiter.
+   * If enum_flags_contains<E>(flags) == false, i.e. value can not be decomposed
+   * as disjunction of enum entries in E, then empty string is returned.
+   */
+  template <enum_type E>
+  static constexpr auto operator()(E flags, std::string_view delim)
+    -> std::string
+  {
+    return impl::enum_flags_name_impl(flags, delim, std::monostate{});
+  }
 
-/**
- * Writes the string representation of enum flags to given output range
- * [iter, sentinel), entries separated by given delimiter.
- * The returned value contains two fields {ec, out}, details see above.
- */
-template <std::output_iterator<char> Iter,
-          std::sentinel_for<Iter> Sentinel,
-          enum_type E>
-constexpr auto enum_flags_name_to(
-  Iter iter, Sentinel sentinel, E value, std::string_view delim,
-  std::string_view alt = {}) -> enum_flags_name_to_result<Iter>
-{
-  return impl::enum_flags_name_to_impl(iter, sentinel, value, delim, alt);
-}
+  /**
+   * Makes the string representation of enum flags, entries separated by given
+   * delimiter.
+   * If enum_flags_contains<E>(flags) == false, then alt is returned.
+   */
+  template <enum_type E>
+  static constexpr auto operator()(
+    E flags, std::string_view delim, std::string_view alt) -> std::string
+  {
+    return impl::enum_flags_name_impl(flags, delim, alt);
+  }
+
+  /**
+   * Bind expression is supported.
+   * Example: enum_flags_name(_1, _2, "<invalid>") is equivalent to
+   * std::bind(enum_flags_name, _1, _2, "<invalid>").
+   */
+  REFLECT_CPP26_FUNCTOR_BIND_VARIADIC(enum_flags_name_t)
+};
+
+struct enum_flags_name_opt_t {
+  /**
+   * Makes the string representation of enum flags, entries separated by given
+   * delimiter.
+   * If enum_flags_contains<E>(flags) == false, i.e. value can not be decomposed
+   * as disjunction of enum entries in E, then std::nullopt is returned.
+   */
+  template <enum_type E>
+  static constexpr auto operator()(E flags, char delim = '|')
+    -> std::optional<std::string>
+  {
+    // TODO: Better implementation
+    auto res = impl::enum_flags_name_impl(flags, delim, "*");
+    if (!res.empty() && res[0] == '*') {
+      return std::nullopt;
+    }
+    return res;
+  }
+
+  /**
+   * Makes the string representation of enum flags, entries separated by given
+   * delimiter.
+   * If enum_flags_contains<E>(flags) == false, i.e. value can not be decomposed
+   * as disjunction of enum entries in E, then std::nullopt is returned.
+   */
+  template <enum_type E>
+  static constexpr auto operator()(E flags, std::string_view delim)
+    -> std::optional<std::string>
+  {
+    // TODO: Better implementation
+    auto res = impl::enum_flags_name_impl(flags, delim, "*");
+    if (!res.empty() && res[0] == '*') {
+      return std::nullopt;
+    }
+    return res;
+  }
+
+  /**
+   * Bind expression is supported.
+   * Example: enum_flags_name_opt(_1, ", ") is equivalent to
+   * std::bind(enum_flags_name_opt, _1, ", ").
+   */
+  REFLECT_CPP26_FUNCTOR_BIND_VARIADIC(enum_flags_name_opt_t)
+};
+
+struct enum_flags_name_to_t {
+  /**
+   * Writes the string representation of enum flags to given output range
+   * [iter, sentinel), entries separated by given delimiter.
+   * The returned value contains two fields {ec, out}:
+   * (1) If enum_flags_contains<E>(flags) == true, and [iter, sentinel) is
+   *     enough to store the string representation, then
+   *     * ec is std::errc{}, and
+   *     * out is the one-past-the-end iterator of the characters written, i.e.
+   *       [iter, out) is the output string;
+   * (2) If enum_flags_contains<E>(flags) == true, but [iter, sentinel) is not
+   *     enough to store the string representation, then
+   *     * ec is std::errc::value_too_large, and
+   *     * Contents in [iter, out) are left in unspecified state;
+   * (3) If enum_flags_contains<E>(flags) == false, then
+   *     * ec is std::errc::invalid_argument, and
+   *     * out is first and input buffer is kept unchanged.
+   */
+  template <std::output_iterator<char> Iter,
+            std::sentinel_for<Iter> Sentinel, enum_type E>
+  static constexpr auto operator()(
+    Iter iter, Sentinel sentinel, E value, char delim = '|')
+    -> enum_flags_name_to_result<Iter>
+  {
+    return impl::enum_flags_name_to_impl(
+      iter, sentinel, value, delim, std::monostate{});
+  }
+
+  /**
+   * Writes the string representation of enum flags to given output range
+   * [iter, sentinel), entries separated by given delimiter.
+   * The returned value contains two fields {ec, out}, details see above.
+   */
+  template <std::output_iterator<char> Iter,
+            std::sentinel_for<Iter> Sentinel, enum_type E>
+  static constexpr auto operator()(
+    Iter iter, Sentinel sentinel, E value, std::string_view delim)
+    -> enum_flags_name_to_result<Iter>
+  {
+    return impl::enum_flags_name_to_impl(
+      iter, sentinel, value, delim, std::monostate{});
+  }
+
+  /**
+   * Writes the string representation of enum flags to given output range
+   * [iter, sentinel), entries separated by given delimiter.
+   * The returned value contains two fields {ec, out}:
+   * (1) If enum_flags_contains<E>(flags) == true, and [iter, sentinel) is
+   *     enough to store the string representation, then
+   *     * ec is std::errc{}, and
+   *     * out is the one-past-the-end iterator of the characters written, i.e.
+   *       [iter, out) is the output string;
+   * (2) If enum_flags_contains<E>(flags) == true, but [iter, sentinel) is not
+   *     enough to store the string representation, then
+   *     * ec is std::errc::value_too_large, and
+   *     * Contents in [iter, out) are left in unspecified state;
+   * (3) If enum_flags_contains<E>(flags) == false, and [iter, sentinel) is
+   *     enough to store alt, then
+   *     * ec is std::errc::invalid_argument, and
+   *     * Contents in [first, out) is copy of alt. Specially, if alt is an
+   *       empty string then out == first and input buffer is kept unchanged;
+   * (4) If enum_flags_contains<E>(flags) == false, and [iter, sentinel) is not
+   *     enough to store alt, then {ec, out} is same as (2).
+   */
+  template <std::output_iterator<char> Iter,
+            std::sentinel_for<Iter> Sentinel, enum_type E>
+  static constexpr auto operator()(
+    Iter iter, Sentinel sentinel, E value, char delim, std::string_view alt)
+    -> enum_flags_name_to_result<Iter>
+  {
+    return impl::enum_flags_name_to_impl(iter, sentinel, value, delim, alt);
+  }
+
+  /**
+   * Writes the string representation of enum flags to given output range
+   * [iter, sentinel), entries separated by given delimiter.
+   * The returned value contains two fields {ec, out}, details see above.
+   */
+  template <std::output_iterator<char> Iter,
+            std::sentinel_for<Iter> Sentinel, enum_type E>
+  static constexpr auto operator()(
+    Iter iter, Sentinel sentinel, E value, std::string_view delim,
+    std::string_view alt) -> enum_flags_name_to_result<Iter>
+  {
+    return impl::enum_flags_name_to_impl(iter, sentinel, value, delim, alt);
+  }
+
+  /**
+   * Bind expression is supported.
+   * Example: enum_flags_name_to(buf_head, buf_tail, _1, _2) is equivalent to
+   * std::bind(enum_flags_name_to, buf_head, buf_tail, _1, _2).
+   */
+  REFLECT_CPP26_FUNCTOR_BIND_VARIADIC(enum_flags_name_to_t)
+};
+
+constexpr auto enum_flags_name = enum_flags_name_t{};
+constexpr auto enum_flags_name_opt = enum_flags_name_opt_t{};
+constexpr auto enum_flags_name_to = enum_flags_name_to_t{};
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_ENUM_ENUM_FLAGS_NAME_HPP

@@ -31,7 +31,7 @@
 #include <reflect_cpp26/fixed_map/impl/string_with_hash_collision.hpp>
 
 namespace reflect_cpp26 {
-struct string_key_map_options {
+struct string_key_fixed_map_options {
   // Whether input keys contains ASCII characters only.
   // UB or wrong result may occur if this flag is set as true but the input
   // keys are not ASCII-only actually.
@@ -75,8 +75,8 @@ constexpr bool has_hash_collision(std::vector<uint64_t> hash_values)
 // Precondition: All keys in kv_pairs are lower case
 // if options.ascii_case_insensitive is true.
 template <class KVPair>
-consteval auto make_string_key_map_impl(
-  std::vector<KVPair> kv_pairs, string_key_map_options options)
+consteval auto make_string_key_fixed_map_impl(
+  std::vector<KVPair> kv_pairs, string_key_fixed_map_options options)
   -> std::meta::info
 {
   if (!options.already_unique) {
@@ -102,7 +102,7 @@ consteval auto make_string_key_map_impl(
   }
 
   // (2) Length-based
-  auto options_for_underlying = integral_key_map_options{
+  auto options_for_underlying = integral_key_fixed_map_options{
     .adjusts_alignment = options.adjusts_alignment,
     .min_load_factor = options.min_load_factor,
     .dense_lookup_threshold = options.dense_lookup_threshold,
@@ -170,8 +170,8 @@ consteval auto make_string_key_map_impl(
  */
 template <std::ranges::input_range KVPairRange>
   requires (impl::string_key_kv_pair<std::ranges::range_value_t<KVPairRange>>)
-consteval auto make_string_key_map(
-  KVPairRange&& kv_pairs, string_key_map_options options = {})
+consteval auto make_string_key_fixed_map(
+  KVPairRange&& kv_pairs, string_key_fixed_map_options options = {})
   -> std::meta::info
 {
   if (options.ascii_case_insensitive) {
@@ -182,7 +182,7 @@ consteval auto make_string_key_map(
           return std::pair{k_lower, to_structured(v)};
         })
       | std::ranges::to<std::vector>();
-    return impl::make_string_key_map_impl(converted, options);
+    return impl::make_string_key_fixed_map_impl(converted, options);
   } else {
     auto converted = kv_pairs
       | std::views::transform([](const auto& kv_pair) {
@@ -191,7 +191,7 @@ consteval auto make_string_key_map(
           return std::pair{k_static, to_structured(v)};
         })
       | std::ranges::to<std::vector>();
-    return impl::make_string_key_map_impl(converted, options);
+    return impl::make_string_key_fixed_map_impl(converted, options);
   }
 }
 } // namespace reflect_cpp26
@@ -201,7 +201,7 @@ consteval auto make_string_key_map(
  * extracts it immediately.
  * Details see above.
  */
-#define REFLECT_CPP26_STRING_KEY_FIXED_MAP(kv_pairs, ...)           \
-  [: reflect_cpp26::make_string_key_map(kv_pairs, ##__VA_ARGS__) :]
+#define REFLECT_CPP26_STRING_KEY_FIXED_MAP(kv_pairs, ...)                 \
+  [: reflect_cpp26::make_string_key_fixed_map(kv_pairs, ##__VA_ARGS__) :]
 
 #endif // REFLECT_CPP26_UTILS_FIXED_MAP_STRING_KEY_HPP

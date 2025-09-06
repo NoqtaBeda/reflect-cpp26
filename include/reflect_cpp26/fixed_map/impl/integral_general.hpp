@@ -99,7 +99,7 @@ constexpr auto general_integral_key_map_factory_v = std::meta::reflect_constant(
 
 // -------- Builder --------
 
-struct general_integral_key_map_options {
+struct general_integral_key_fixed_map_options {
   bool adjusts_alignment;
   bool default_value_is_always_invalid;
   size_t binary_search_threshold;
@@ -109,13 +109,13 @@ struct general_integral_key_map_options {
 template <class KVPairIter>
 consteval auto make_general_integral_key_map(
   KVPairIter first, KVPairIter dense_first, KVPairIter dense_last,
-  KVPairIter last, general_integral_key_map_options options) -> std::meta::info
+  KVPairIter last, general_integral_key_fixed_map_options options) -> std::meta::info
 {
-  auto dense_options = dense_integral_key_map_options{
+  auto dense_options = dense_integral_key_fixed_map_options{
     .adjusts_alignment = options.adjusts_alignment,
     .default_value_is_always_invalid = options.default_value_is_always_invalid,
   };
-  auto sparse_options = sparse_integral_key_map_options{
+  auto sparse_options = sparse_integral_key_fixed_map_options{
     .adjusts_alignment = options.adjusts_alignment,
     .binary_search_threshold = options.binary_search_threshold,
   };

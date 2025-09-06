@@ -66,7 +66,7 @@ struct fully_dense_integral_key_map {
   key_type _max_key;
 };
 
-// -------- Factory function --------
+// -------- Factory --------
 
 template <bool AlignmentAdjusted, class KVPair>
 constexpr auto fully_dense_integral_key_map_factory(

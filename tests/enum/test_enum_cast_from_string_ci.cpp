@@ -33,7 +33,7 @@ namespace rfl = reflect_cpp26;
 
 template <class E>
 constexpr auto enum_cast_ci(std::string_view str) {
-  return rfl::enum_cast<E>(rfl::case_insensitive_by_ascii, str);
+  return rfl::enum_cast<E>(rfl::ascii_case_insensitive, str);
 }
 
 template <class E>

@@ -100,7 +100,7 @@ struct binary_search_integral_key_map {
   meta_span<span_element_type> _entries;
 };
 
-// -------- Factory functions --------
+// -------- Factory --------
 
 template <class KVPair>
 constexpr auto linear_search_integral_key_map_factory(
@@ -132,7 +132,7 @@ constexpr auto binary_search_integral_key_map_factory(
 
 // -------- Builder --------
 
-struct sparse_integral_key_map_options {
+struct sparse_integral_key_fixed_map_options {
   bool adjusts_alignment;
   size_t binary_search_threshold;
 };
@@ -141,7 +141,7 @@ template <class KVPairIter>
 consteval auto make_sparse_integral_key_map(
   KVPairIter sorted_first,
   KVPairIter sorted_last,
-  sparse_integral_key_map_options options) -> std::meta::info
+  sparse_integral_key_fixed_map_options options) -> std::meta::info
 {
   using KVPair = std::iter_value_t<KVPairIter>;
   // (1) Empty

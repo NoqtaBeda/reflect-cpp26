@@ -597,3 +597,43 @@ TEST(EnumFlagsName, SingleZeroRep)
   EXPECT_EQ_STATIC("<invalid>",
     rfl::enum_flags_name(static_cast<single_zero_rep>(1), ',', "<invalid>"));
 }
+
+template <class E>
+struct fma_to_enum_t {
+  static constexpr auto operator()(auto x, auto y, auto z) -> E {
+    return static_cast<E>(x * y + z);
+  }
+};
+
+template <class E>
+constexpr auto fma_to_enum = fma_to_enum_t<E>{};
+
+TEST(EnumFlagsName, BindExpression)
+{
+  using namespace std::placeholders;
+  constexpr auto F = rfl::enum_flags_name_opt(
+    std::bind(fma_to_enum<D1>, _2, _3, _4), _1);
+  EXPECT_EQ_STATIC("four, two, one", F(", ", -4, -2, -1));
+  EXPECT_EQ_STATIC("eight\none", F('\n', 4, 2, 1));
+  EXPECT_EQ_STATIC("", F('\n', 2, -3, 6));
+  EXPECT_EQ_STATIC(std::nullopt, F('\n', -4, 2, -1));
+
+  constexpr auto G = rfl::enum_flags_name(
+    std::bind(fma_to_enum<D1>, _4, _5, _3), _1, _2);
+  EXPECT_EQ_STATIC("eight, two, one", G(", ", "<invalid>", 5, 3, 2));
+  EXPECT_EQ_STATIC("<invalid>", G(", ", "<invalid>", 2, 3, 5));
+
+  char buffer[10];
+  auto H = rfl::enum_flags_name_to(
+    buffer, buffer + 10, std::bind(fma_to_enum<D1>, _2, _3, _4), _1);
+  auto [ec1, ptr1] = H(',', 2, 3, 6);
+  EXPECT_EQ(std::errc{}, ec1);
+  EXPECT_EQ(10, ptr1 - buffer);
+  EXPECT_EQ("eight,four", std::string(buffer, ptr1));
+
+  auto [ec2, _] = H(", ", 2, 3, 6);
+  EXPECT_EQ(std::errc::value_too_large, ec2);
+
+  auto [ec3, _] = H(", ", 6, 3, 2);
+  EXPECT_EQ(std::errc::invalid_argument, ec3);
+}

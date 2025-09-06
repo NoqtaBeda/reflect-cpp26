@@ -27,11 +27,11 @@
 
 namespace reflect_cpp26 {
 struct case_insensitive_tag_t {};
-struct case_insensitive_by_ascii_tag_t {};
+struct ascii_case_insensitive_tag_t {};
 
 [[deprecated]]
 constexpr auto case_insensitive = case_insensitive_tag_t{};
-constexpr auto case_insensitive_by_ascii = case_insensitive_by_ascii_tag_t{};
+constexpr auto ascii_case_insensitive = ascii_case_insensitive_tag_t{};
 
 struct nonstatic_data_members_only_tag_t {};
 struct nonstatic_member_functions_only_tag_t {};

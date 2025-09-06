@@ -26,8 +26,8 @@
 namespace rfl = reflect_cpp26;
 
 // Expected hash table layout:
-// [0] "Dog"    (8)
-// [1] ""       (0)
+// [0] ""       (0)
+// [1] "Dog"    (8)
 // [2] "Apple"  (a)
 // [3] "Cat"    (2)
 // [4]

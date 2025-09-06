@@ -42,7 +42,7 @@ constexpr auto enum_flags_cast_impl(std::string_view str, Delim delim)
     }
     auto opt = [trimmed] constexpr {
       if constexpr (CaseInsensitive) {
-        return enum_cast<E>(case_insensitive_by_ascii, trimmed);
+        return enum_cast<E>(ascii_case_insensitive, trimmed);
       } else {
         return enum_cast<E>(trimmed);
       }
@@ -56,72 +56,84 @@ constexpr auto enum_flags_cast_impl(std::string_view str, Delim delim)
 }
 } // namespace impl
 
-/**
- * Returns the enum flag value if input str can be decomposed as enum entry
- * names split by given delimiter, or std::nullopt otherwise.
- *
- * Input segments are trimmed such that leading and trailing ASCII space
- * characters (' ', '\n', '\t', etc.) are removed. Example:
- *   str = "first | second | third\n", delim = '|', then
- *   segments = ["first", "second", "third"].
- */
 template <enum_type E>
-constexpr auto enum_flags_cast(std::string_view str, char delim = '|')
-  -> std::optional<std::remove_cv_t<E>>
-{
-  return impl::enum_flags_cast_impl<false, std::remove_cv_t<E>>(str, delim);
-}
-
-/**
- * Returns the enum flag value if input str can be decomposed as enum entry
- * names split by given delimiter, or std::nullopt otherwise.
- */
-template <enum_type E>
-constexpr auto enum_flags_cast(std::string_view str, std::string_view delim)
-  -> std::optional<std::remove_cv_t<E>>
-{
-  return impl::enum_flags_cast_impl<false, std::remove_cv_t<E>>(str, delim);
-}
-
-/**
- * Returns the enum flag value if input str can be decomposed as enum entry
- * names split by given delimiter, or std::nullopt otherwise. ASCII
- * case-insensitive string comparison is applied.
- */
-template <enum_type E>
-constexpr auto enum_flags_cast(
-  case_insensitive_by_ascii_tag_t, std::string_view str, char delim = '|')
-  -> std::optional<std::remove_cv_t<E>>
-{
-  return impl::enum_flags_cast_impl<true, std::remove_cv_t<E>>(str, delim);
-}
-
-/**
- * Returns the enum flag value if input str can be decomposed as enum entry
- * names split by given delimiter, or std::nullopt otherwise. ASCII
- * case-insensitive string comparison is applied.
- */
-template <enum_type E>
-constexpr auto enum_flags_cast(
-  case_insensitive_by_ascii_tag_t, std::string_view str, std::string_view delim)
-  -> std::optional<std::remove_cv_t<E>>
-{
-  return impl::enum_flags_cast_impl<true, std::remove_cv_t<E>>(str, delim);
-}
-
-/**
- * Casts value to E if value can be decomposed as disjunction of enum entries
- * in E, or returns std::nullopt otherwise.
- */
-template <enum_type E, std::integral I>
-constexpr auto enum_flags_cast(I value) -> std::optional<std::remove_cv_t<E>>
-{
+struct enum_flags_cast_t {
+private:
   using ENoCV = std::remove_cv_t<E>;
-  if (enum_flags_contains<ENoCV>(value)) {
-    return static_cast<ENoCV>(value);
+
+public:
+  /**
+   * Returns the enum flag value if input str can be decomposed as enum entry
+   * names split by given delimiter, or std::nullopt otherwise.
+   *
+   * Input segments are trimmed such that leading and trailing ASCII space
+   * characters (' ', '\n', '\t', etc.) are removed. Example:
+   *   str = "first | second | third\n", delim = '|', then
+   *   segments = ["first", "second", "third"].
+   */
+  static constexpr auto operator()(std::string_view str, char delim = '|')
+    -> std::optional<ENoCV>
+  {
+    return impl::enum_flags_cast_impl<false, ENoCV>(str, delim);
   }
-  return std::nullopt;
-}
+
+  /**
+   * Returns the enum flag value if input str can be decomposed as enum entry
+   * names split by given delimiter, or std::nullopt otherwise.
+   */
+  static constexpr auto operator()(std::string_view str, std::string_view delim)
+    -> std::optional<ENoCV>
+  {
+    return impl::enum_flags_cast_impl<false, ENoCV>(str, delim);
+  }
+
+  /**
+   * Returns the enum flag value if input str can be decomposed as enum entry
+   * names split by given delimiter, or std::nullopt otherwise. ASCII
+   * case-insensitive string comparison is applied.
+   */
+  static constexpr auto operator()(
+    ascii_case_insensitive_tag_t, std::string_view str, char delim = '|')
+    -> std::optional<ENoCV>
+  {
+    return impl::enum_flags_cast_impl<true, ENoCV>(str, delim);
+  }
+
+  /**
+   * Returns the enum flag value if input str can be decomposed as enum entry
+   * names split by given delimiter, or std::nullopt otherwise. ASCII
+   * case-insensitive string comparison is applied.
+   */
+  static constexpr auto operator()(
+    ascii_case_insensitive_tag_t, std::string_view str,
+    std::string_view delim) -> std::optional<ENoCV>
+  {
+    return impl::enum_flags_cast_impl<true, ENoCV>(str, delim);
+  }
+
+  /**
+   * Casts value to E if value can be decomposed as disjunction of enum entries
+   * in E, or returns std::nullopt otherwise.
+   */
+  static constexpr auto operator()(std::integral auto value)
+    -> std::optional<ENoCV>
+  {
+    if (enum_flags_contains<ENoCV>(value)) {
+      return static_cast<ENoCV>(value);
+    }
+    return std::nullopt;
+  }
+
+  /**
+   * Bind expression is supported.
+   * Example: enum_flags_cast<E>(_1) is equivalent to
+   * std::bind(enum_flags_cast<E>, _1).
+   */
+  REFLECT_CPP26_FUNCTOR_BIND_VARIADIC(enum_flags_cast_t<E>)
+};
+
+template <enum_type E>
+constexpr auto enum_flags_cast = enum_flags_cast_t<std::remove_cv_t<E>>{};
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_ENUM_ENUM_FLAGS_CAST_HPP

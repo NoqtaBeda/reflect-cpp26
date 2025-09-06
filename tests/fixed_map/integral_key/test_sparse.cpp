@@ -56,7 +56,7 @@ TEST(FixedMap, SignedIntegralKeySparseLinearSearch)
   EXPECT_NOT_FOUND_STATIC(0.0, map, static_cast<unsigned>(-100));
 }
 
-template <rfl::integral_key_map_options Options>
+template <rfl::integral_key_fixed_map_options Options>
 void test_binary_search_common()
 {
   using InputValueType = std::pair<uint64_t, int64_t>;
@@ -105,7 +105,7 @@ void test_binary_search_common()
 
 TEST(FixedMap, UnsignedIntegralKeySparseBinarySearch1)
 {
-  constexpr auto options = rfl::integral_key_map_options{
+  constexpr auto options = rfl::integral_key_fixed_map_options{
     .adjusts_alignment = false,
     .binary_search_threshold = 1,
   };
@@ -114,7 +114,7 @@ TEST(FixedMap, UnsignedIntegralKeySparseBinarySearch1)
 
 TEST(FixedMap, UnsignedIntegralKeySparseBinarySearch2)
 {
-  constexpr auto options = rfl::integral_key_map_options{
+  constexpr auto options = rfl::integral_key_fixed_map_options{
     .adjusts_alignment = true,
     .binary_search_threshold = 1,
   };

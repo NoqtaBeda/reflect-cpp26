@@ -36,8 +36,8 @@ constexpr bool test_foo_signed_common()
 {
   // Note: enum_contains(e) is not massively tested
   // since enum_contains<E>(i) forwards to it.
-  EXPECT_TRUE_STATIC(enum_contains(E::four));
-  EXPECT_FALSE_STATIC(enum_contains(static_cast<E>(-3)));
+  EXPECT_TRUE_STATIC(enum_contains<E>(E::four));
+  EXPECT_FALSE_STATIC(enum_contains<E>(static_cast<E>(-3)));
 
   EXPECT_TRUE_STATIC(enum_contains<E>(4));
   EXPECT_TRUE_STATIC(enum_contains<E>(-1));

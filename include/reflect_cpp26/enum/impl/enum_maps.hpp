@@ -89,7 +89,7 @@ consteval auto make_enum_name_map_kv_pairs()
 template <class E>
 consteval auto make_enum_name_map()
 {
-  constexpr auto options = integral_key_map_options{
+  constexpr auto options = integral_key_fixed_map_options{
     .already_sorted = true,
     .already_unique = true,
     .adjusts_alignment = true,
@@ -127,7 +127,7 @@ consteval auto make_enum_from_string_map()
 template <class E>
 consteval auto make_enum_from_ci_string_map()
 {
-  constexpr auto options = string_key_map_options{
+  constexpr auto options = string_key_fixed_map_options{
     .ascii_case_insensitive = true,
     .adjusts_alignment = true,
   };
@@ -197,7 +197,7 @@ template <class E>
 consteval auto make_enum_index_map()
 {
   static_assert(enum_count_v<E> <= enum_count_limit, "Enum type too large.");
-  constexpr auto options = integral_key_map_options{
+  constexpr auto options = integral_key_fixed_map_options{
     .already_sorted = true,
     .already_unique = true,
   };

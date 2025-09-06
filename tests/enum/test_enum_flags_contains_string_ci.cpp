@@ -34,13 +34,13 @@ namespace rfl = reflect_cpp26;
 
 template <class E>
 constexpr bool enum_flags_contains_ci(std::string_view str) {
-  return rfl::enum_flags_contains<E>(rfl::case_insensitive_by_ascii, str);
+  return rfl::enum_flags_contains<E>(rfl::ascii_case_insensitive, str);
 }
 
 template <class E, class Delim>
 constexpr bool enum_flags_contains_ci(std::string_view str, Delim delim) {
   return rfl::enum_flags_contains<E>(
-    rfl::case_insensitive_by_ascii, str, delim);
+    rfl::ascii_case_insensitive, str, delim);
 }
 
 TEST(EnumFlagsContainsStringCI, D1)

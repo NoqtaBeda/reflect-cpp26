@@ -24,7 +24,6 @@
 #define REFLECT_CPP26_ENUM_ENUM_VALUES_HPP
 
 #include <reflect_cpp26/enum/enum_meta_entries.hpp>
-#include <reflect_cpp26/utils/expand.hpp>
 #include <reflect_cpp26/utils/meta_utility.hpp>
 #include <ranges>
 

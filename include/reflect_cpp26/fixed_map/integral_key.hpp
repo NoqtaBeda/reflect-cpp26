@@ -31,7 +31,7 @@
 #include <reflect_cpp26/fixed_map/impl/integral_sparse.hpp>
 
 namespace reflect_cpp26 {
-struct integral_key_map_options {
+struct integral_key_fixed_map_options {
   // Whether input key-value-pair range is already sorted.
   // UB or wrong result may occur if this flag is set as true but the input
   // range is not sorted actually.
@@ -128,8 +128,8 @@ consteval auto find_longest_dense_subrange(
 }
 
 template <integral_key_kv_pair KVPair>
-consteval auto make_integral_key_map_impl(
-  std::vector<KVPair> kv_pairs, integral_key_map_options options)
+consteval auto make_integral_key_fixed_map_impl(
+  std::vector<KVPair> kv_pairs, integral_key_fixed_map_options options)
   -> std::meta::info
 {
   // (1) Empty
@@ -148,7 +148,7 @@ consteval auto make_integral_key_map_impl(
   auto [dense_begin, dense_end] =
     find_longest_dense_subrange(kv_pairs, options.min_load_factor);
   // (2) Dense
-  auto dense_options = dense_integral_key_map_options{
+  auto dense_options = dense_integral_key_fixed_map_options{
     .adjusts_alignment = options.adjusts_alignment,
     .default_value_is_always_invalid = options.default_value_is_always_invalid,
   };
@@ -156,7 +156,7 @@ consteval auto make_integral_key_map_impl(
     return make_dense_integral_key_map(dense_begin, dense_end, dense_options);
   }
   // (3) Sparse
-  auto sparse_options = sparse_integral_key_map_options{
+  auto sparse_options = sparse_integral_key_fixed_map_options{
     .adjusts_alignment = options.adjusts_alignment,
     .binary_search_threshold = options.binary_search_threshold,
   };
@@ -165,7 +165,7 @@ consteval auto make_integral_key_map_impl(
       kv_pairs.cbegin(), kv_pairs.cend(), sparse_options);
   }
   // (4) General
-  auto general_options = general_integral_key_map_options{
+  auto general_options = general_integral_key_fixed_map_options{
     .adjusts_alignment = options.adjusts_alignment,
     .default_value_is_always_invalid = options.default_value_is_always_invalid,
     .binary_search_threshold = options.binary_search_threshold,
@@ -195,8 +195,8 @@ consteval auto make_integral_key_map_impl(
  */
 template <std::ranges::input_range KVPairRange>
   requires (impl::integral_key_kv_pair<std::ranges::range_value_t<KVPairRange>>)
-consteval auto make_integral_key_map(
-  KVPairRange kv_pairs, integral_key_map_options options = {})
+consteval auto make_integral_key_fixed_map(
+  KVPairRange kv_pairs, integral_key_fixed_map_options options = {})
   -> std::meta::info
 {
   using KVPair = std::ranges::range_value_t<KVPairRange>;
@@ -210,7 +210,7 @@ consteval auto make_integral_key_map(
         })
       | std::ranges::to<std::vector>();
     auto nested_res =
-      impl::make_integral_key_map_impl(structured_kv_pairs, options);
+      impl::make_integral_key_fixed_map_impl(structured_kv_pairs, options);
     return extract<std::meta::info>(substitute(
       ^^impl::integral_key_map_enum_wrapper_factory_v, {^^Key, nested_res}));
   } else {
@@ -219,7 +219,7 @@ consteval auto make_integral_key_map(
           return to_structured(kv_pair);
         })
       | std::ranges::to<std::vector>();
-    return impl::make_integral_key_map_impl(structured_kv_pairs, options);
+    return impl::make_integral_key_fixed_map_impl(structured_kv_pairs, options);
   }
 }
 } // namespace reflect_cpp26
@@ -230,6 +230,6 @@ consteval auto make_integral_key_map(
  * Details see above.
  */
 #define REFLECT_CPP26_INTEGRAL_KEY_FIXED_MAP(kv_pairs, ...)           \
-  [: reflect_cpp26::make_integral_key_map(kv_pairs, ##__VA_ARGS__) :]
+  [: reflect_cpp26::make_integral_key_fixed_map(kv_pairs, ##__VA_ARGS__) :]
 
 #endif // REFLECT_CPP26_UTILS_FIXED_MAP_INTEGRAL_KEY_HPP

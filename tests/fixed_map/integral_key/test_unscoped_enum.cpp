@@ -66,7 +66,7 @@ constexpr auto make_kv_pairs()
   };
 }
 
-template <rfl::integral_key_map_options Options>
+template <rfl::integral_key_fixed_map_options Options>
 constexpr void test_unscoped_enum_wrapper_common()
 {
   constexpr auto map = FIXED_MAP(make_kv_pairs(), Options);
@@ -105,7 +105,7 @@ constexpr void test_unscoped_enum_wrapper_common()
 
 TEST(FixedMap, UnscopedEnumWrapper1)
 {
-  constexpr auto options = rfl::integral_key_map_options{
+  constexpr auto options = rfl::integral_key_fixed_map_options{
     .adjusts_alignment = false,
     .default_value_is_always_invalid = false,
     .min_load_factor = 0.9,
@@ -116,7 +116,7 @@ TEST(FixedMap, UnscopedEnumWrapper1)
 
 TEST(FixedMap, UnscopedEnumWrapper2)
 {
-  constexpr auto options = rfl::integral_key_map_options{
+  constexpr auto options = rfl::integral_key_fixed_map_options{
     .adjusts_alignment = true,
     .default_value_is_always_invalid = false,
     .min_load_factor = 0.9,
@@ -127,7 +127,7 @@ TEST(FixedMap, UnscopedEnumWrapper2)
 
 TEST(FixedMap, UnscopedEnumWrapper3)
 {
-  constexpr auto options = rfl::integral_key_map_options{
+  constexpr auto options = rfl::integral_key_fixed_map_options{
     .adjusts_alignment = false,
     .default_value_is_always_invalid = true,
     .min_load_factor = 0.9,
@@ -138,7 +138,7 @@ TEST(FixedMap, UnscopedEnumWrapper3)
 
 TEST(FixedMap, UnscopedEnumWrapper4)
 {
-  constexpr auto options = rfl::integral_key_map_options{
+  constexpr auto options = rfl::integral_key_fixed_map_options{
     .adjusts_alignment = true,
     .default_value_is_always_invalid = true,
     .min_load_factor = 0.9,

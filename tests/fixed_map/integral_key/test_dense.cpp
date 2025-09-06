@@ -25,7 +25,7 @@
 
 namespace rfl = reflect_cpp26;
 
-template <rfl::integral_key_map_options Options>
+template <rfl::integral_key_fixed_map_options Options>
 constexpr void test_signed_integral_key_common()
 {
   using InputKVPair = std::pair<signed char, const char*>;
@@ -80,7 +80,7 @@ constexpr void test_signed_integral_key_common()
 
 TEST(FixedMap, SignedIntegralKeyContinuousWithHoles1)
 {
-  constexpr auto options = rfl::integral_key_map_options{
+  constexpr auto options = rfl::integral_key_fixed_map_options{
     .already_sorted = true,
     .already_unique = true,
     .adjusts_alignment = false,
@@ -92,7 +92,7 @@ TEST(FixedMap, SignedIntegralKeyContinuousWithHoles1)
 
 TEST(FixedMap, SignedIntegralKeyContinuousWithHoles2)
 {
-  constexpr auto options = rfl::integral_key_map_options{
+  constexpr auto options = rfl::integral_key_fixed_map_options{
     .already_sorted = true,
     .already_unique = true,
     .adjusts_alignment = false,
@@ -104,7 +104,7 @@ TEST(FixedMap, SignedIntegralKeyContinuousWithHoles2)
 
 TEST(FixedMap, SignedIntegralKeyContinuousWithHoles3)
 {
-  constexpr auto options = rfl::integral_key_map_options{
+  constexpr auto options = rfl::integral_key_fixed_map_options{
     .already_sorted = true,
     .already_unique = true,
     .adjusts_alignment = true,
@@ -116,7 +116,7 @@ TEST(FixedMap, SignedIntegralKeyContinuousWithHoles3)
 
 TEST(FixedMap, SignedIntegralKeyContinuousWithHoles4)
 {
-  constexpr auto options = rfl::integral_key_map_options{
+  constexpr auto options = rfl::integral_key_fixed_map_options{
     .already_sorted = true,
     .already_unique = true,
     .adjusts_alignment = true,
@@ -171,7 +171,7 @@ void test_unsigned_integral_key_continuous_common(const FixedMap& map)
 
 TEST(FixedMap, UnsignedIntegralKeyContinuousWithHoles1)
 {
-  constexpr auto options = rfl::integral_key_map_options{
+  constexpr auto options = rfl::integral_key_fixed_map_options{
     .min_load_factor = 0.5,
   };
   constexpr auto map = FIXED_MAP(
@@ -181,7 +181,7 @@ TEST(FixedMap, UnsignedIntegralKeyContinuousWithHoles1)
 
 TEST(FixedMap, UnsignedIntegralKeyContinuousWithHoles2)
 {
-  constexpr auto options = rfl::integral_key_map_options{
+  constexpr auto options = rfl::integral_key_fixed_map_options{
     .default_value_is_always_invalid = true,
     .min_load_factor = 0.5,
   };

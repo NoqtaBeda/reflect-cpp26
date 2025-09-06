@@ -42,7 +42,7 @@ consteval auto make_kv_pairs()
   };
 }
 
-template <class CharT, rfl::string_key_map_options Options>
+template <class CharT, rfl::string_key_fixed_map_options Options>
 constexpr void test_by_hash_search_common()
 {
   using Value = std::pair<size_t, size_t>;
@@ -86,7 +86,7 @@ constexpr void test_by_hash_search_common()
 template <class CharT, bool AA>
 constexpr void test_by_hash_binary_search_common()
 {
-  constexpr auto options = rfl::string_key_map_options{
+  constexpr auto options = rfl::string_key_fixed_map_options{
     // Cases where CI == false has been tested in test_by_hash_search_1.cpp
     .ascii_case_insensitive = true,
     .adjusts_alignment = AA,

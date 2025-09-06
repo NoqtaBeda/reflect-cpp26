@@ -41,7 +41,7 @@ consteval auto make_kv_pairs()
   };
 }
 
-template <class CharT, rfl::string_key_map_options Options>
+template <class CharT, rfl::string_key_fixed_map_options Options>
 constexpr void test_by_hash_search_common(const char* expected_type_name)
 {
   constexpr auto CI = Options.ascii_case_insensitive;
@@ -77,7 +77,7 @@ constexpr void test_by_hash_search_common(const char* expected_type_name)
 template <class CharT, bool CI>
 constexpr void test_by_hash_linear_search_common()
 {
-  constexpr auto options = rfl::string_key_map_options{
+  constexpr auto options = rfl::string_key_fixed_map_options{
     .ascii_case_insensitive = CI,
     .min_load_factor = 1.0,
     .binary_search_threshold = 9,
@@ -89,7 +89,7 @@ constexpr void test_by_hash_linear_search_common()
 template <class CharT, bool CI>
 constexpr void test_by_hash_binary_search_common()
 {
-  constexpr auto options = rfl::string_key_map_options{
+  constexpr auto options = rfl::string_key_fixed_map_options{
     .ascii_case_insensitive = CI,
     .min_load_factor = 1.0,
     .binary_search_threshold = 8,

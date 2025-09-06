@@ -328,6 +328,47 @@ constexpr auto get_second = get_ith_element_t<1>{};
  */
 template <size_t I>
 constexpr auto get_ith_element = get_ith_element_t<I>{};
+
+// -------- Bind expression utilities --------
+
+template <class T>
+concept bind_expression = std::is_bind_expression_v<T>;
+
+template <class T>
+concept bind_placeholder = static_cast<bool>(std::is_placeholder_v<T>);
+
+template <class T>
+concept bind_expression_or_placeholder =
+  bind_expression<T> || bind_placeholder<T>;
+
+// Used internally
+#define REFLECT_CPP26_FUNCTOR_BIND_UNARY(functor)                         \
+  template <class Expr>                                                   \
+    requires (bind_expression_or_placeholder<std::remove_cvref_t<Expr>>)  \
+  static constexpr auto operator()(Expr&& expr)                           \
+  {                                                                       \
+    return std::bind(functor{}, std::forward<Expr>(expr));                \
+  }
+
+// Used internally
+#define REFLECT_CPP26_FUNCTOR_BIND_BINARY(functor)                          \
+  template <class Expr1, class Expr2>                                       \
+    requires (bind_expression_or_placeholder<std::remove_cvref_t<Expr1>> || \
+              bind_expression_or_placeholder<std::remove_cvref_t<Expr2>>)   \
+  static constexpr auto operator()(Expr1&& expr1, Expr2&& expr2)            \
+  {                                                                         \
+    return std::bind(                                                       \
+      functor{}, std::forward<Expr1>(expr1), std::forward<Expr2>(expr2));   \
+  }
+
+// Used internally
+#define REFLECT_CPP26_FUNCTOR_BIND_VARIADIC(functor)                          \
+  template <class... Es>                                                      \
+    requires (bind_expression_or_placeholder<std::remove_cvref_t<Es>> || ...) \
+  static constexpr auto operator()(Es&&... exprs)                             \
+  {                                                                           \
+    return std::bind(functor{}, std::forward<Es>(exprs)...);                  \
+  }
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_UTILS_FUNCTIONAL_HPP

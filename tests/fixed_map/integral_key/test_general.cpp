@@ -130,7 +130,7 @@ constexpr auto test_unsigned_integral_key_general_common(const FixedMap& map)
 
 TEST(FixedMap, UnsignedIntegralKeyGeneral1)
 {
-  constexpr auto options = rfl::integral_key_map_options{
+  constexpr auto options = rfl::integral_key_fixed_map_options{
     .min_load_factor = 0.5,
     .dense_lookup_threshold = 5,
     .binary_search_threshold = 4,
@@ -149,7 +149,7 @@ TEST(FixedMap, UnsignedIntegralKeyGeneral1)
 
 TEST(FixedMap, UnsignedIntegralKeyGeneral2)
 {
-  constexpr auto options = rfl::integral_key_map_options{
+  constexpr auto options = rfl::integral_key_fixed_map_options{
     .default_value_is_always_invalid = true,
     .min_load_factor = 0.5,
     .dense_lookup_threshold = 5,

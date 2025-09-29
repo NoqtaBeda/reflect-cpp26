@@ -42,12 +42,16 @@ enum class namespace_member_category {
 };
 
 struct class_member_lookup_table_options {
+  // Selects which category of class members will be picked.
   class_member_category category = class_member_category::unspecified;
+  // Options of the underlying fixed map.
   fixed_map_options_variant fixed_map_options;
 };
 
 struct namespace_member_lookup_table_options {
+  // Selects which category of namespace members will be picked.
   namespace_member_category category = namespace_member_category::unspecified;
+  // Options of the underlying fixed map.
   fixed_map_options_variant fixed_map_options;
 };
 
@@ -498,6 +502,50 @@ consteval auto decompose_prefix_suffix(std::string_view pattern)
 }
 } // namespace impl::lookup
 
+/**
+ * Generates a lookup table of specified class members in compile-time.
+ * Result V is the reflected constant of the lookup table generated, which can
+ * be extracted via [: V :] or reflect_cpp26::extract<V>().
+ *
+ * This function will traverse all the accessible members (direct or inherited)
+ * of class T via given access context and test each member whether it satisfies
+ * all the conditions below:
+ * (1) It is addressable, i.e. the following members will be ignored:
+ *     * Constructor and destructor;
+ *     * Template member functions and static data members;
+ *     * Deleted member functions;
+ *     * Nested classes and using declarations;
+ *     * Non-static reference and bit-field members.
+ * (2) It has identifier which matches given pattern. Pattern is a string of
+ *     format "prefix*suffix" where '*' refers to the matched part. For example,
+ *     pattern "get*" will match "getName", "getUserList", etc and pattern
+ *     "is_*_member" matches "is_static_data_member", "is_valid_member", etc.
+ * (3) It matches given options.
+ *
+ * Requirements:
+ * (1) Pattern must contain exactly one matcher symbol '*'.
+ *
+ * Example:
+ * struct Foo {
+ *   int firstValue;
+ *   int secondValue;
+ *   // Filtered out due to pattern mismatch
+ *   int valuesCount;
+ *   // Filtered out due to category mismatch (specified in options)
+ *   bool hasPositiveFirstValue() const;
+ *   bool hasPositiveSecondValue() const;
+ * private:
+ *   // Filtered out due to inaccessibility
+ *   int thirdValue;
+ * };
+ * constexpr auto table = REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(
+ *   Foo, "*Value", {
+ *     .category = class_member_category::nonstatic_data_members,
+ *   });
+ * auto mp1 = table["first"];    // &Foo::firstValue
+ * auto mp2 = table["second"];   // &Foo::secondValue
+ * auto mpNull = table["third"]; // nullptr
+ */
 consteval auto make_class_member_lookup_table(
   std::meta::info T,
   std::string_view pattern,
@@ -515,6 +563,26 @@ consteval auto make_class_member_lookup_table(
   return impl::lookup::build_table(T, entries, options.fixed_map_options);
 }
 
+/**
+ * Generates a lookup table of specified namespace members in compile-time.
+ * Result V is the reflected constant of the lookup table generated, which can
+ * be extracted via [: V :] or reflect_cpp26::extract<V>().
+ *
+ * This function will traverse all the accessible members of namespace ns via
+ * given access context and test each member whether it satisfies all the
+ * conditions below:
+ * (1) It is addressable, i.e. the following members will be ignored:
+ *     * Templates;
+ *     * Nested namespaces;
+ *     * Class declarations or definitions;
+ *     * Using declarations;
+ *     * Deleted functions.
+ * (2) It has identifier which matches given pattern (details see above);
+ * (3) It matches given options.
+ *
+ * Requirements:
+ * (1) Pattern must contain exactly one matcher symbol '*'.
+ */
 consteval auto make_namespace_member_lookup_table(
   std::meta::info ns,
   std::string_view pattern,
@@ -533,6 +601,35 @@ consteval auto make_namespace_member_lookup_table(
   return impl::lookup::build_table(ns, entries, options.fixed_map_options);
 }
 
+/**
+ * Generates a lookup table of specified class members in compile-time.
+ * Result V is the reflected constant of the lookup table generated, which can
+ * be extracted via [: V :] or reflect_cpp26::extract<V>().
+ *
+ * This function will traverse all the accessible members (direct or inherited)
+ * of class T via given access context and test each member whether it satisfies
+ * all the conditions below:
+ * (1) It is addressable (details see above);
+ * (2) It passes given filter function (details see below);
+ * (3) It matches given options.
+ *
+ * Supported call signatures of filter_fn:
+ * (1) (std::string_view identifier) -> std::optional<Ret>
+ *     Ret is either of integral type, enum type, or string-like type whose
+ *     character type is exactly char.
+ *     For each traversed member with identifier, let
+ *     R = filter_fn(identifier_of(member)). If R == std::nullopt, then the
+ *     member is excluded. Otherwise, *R is the key for current member in the
+ *     generated lookup table.
+ *     Non-addressable or anonymous members will be excluded before invoking
+ *     filter_fn.
+ * (2) (std::meta::info member) -> std::optional<Ret>
+ *     Expected type of Ret is same as above.
+ *     For each traversed member, let R = filter_fn(member).
+ *     If R == std::nullopt, then the member is discarded. Otherwise, *R is the
+ *     key for current member in the generated lookup table.
+ *     Non-addressable members will be excluded before invoking filter_fn.
+ */
 template <impl::lookup::filter_function FilterFn>
 consteval auto make_class_member_lookup_table(
   std::meta::info T,
@@ -547,6 +644,18 @@ consteval auto make_class_member_lookup_table(
   return impl::lookup::build_table(T, entries, options.fixed_map_options);
 }
 
+/**
+ * Generates a lookup table of specified namespace members in compile-time.
+ * Result V is the reflected constant of the lookup table generated, which can
+ * be extracted via [: V :] or reflect_cpp26::extract<V>().
+ *
+ * This function will traverse all the accessible members of namespace ns via
+ * given access context and test each member whether it satisfies all the
+ * conditions below:
+ * (1) It is addressable (details see above);
+ * (2) It passes given filter function (details see above);
+ * (3) It matches given options.
+ */
 template <impl::lookup::filter_function FilterFn>
 consteval auto make_namespace_member_lookup_table(
   std::meta::info ns,
@@ -561,6 +670,34 @@ consteval auto make_namespace_member_lookup_table(
   return impl::lookup::build_table(ns, entries, options.fixed_map_options);
 }
 
+/**
+ * Generates a lookup table of specified class members in compile-time.
+ * Result V is the reflected constant of the lookup table generated, which can
+ * be extracted via [: V :] or reflect_cpp26::extract<V>().
+ *
+ * This function will traverse all the accessible members (direct or inherited)
+ * of class T via given access context and test each member whether it satisfies
+ * all the conditions below:
+ * (1) It is addressable (details see above);
+ * (2) It has identifier which matches given pattern (details see above);
+ * (3) Let p = the matched part of its identifier,
+ *     transform_fn(p) != std::nullopt;
+ * (4) It matches given options.
+ *
+ * Supported signatures of transform_fn:
+ * (std::string_view p) -> Ret of std::optional<Ret>
+ * where Ret is either of integral type, enum type, or string-like type whose
+ * character type is exactly char.
+ * If the result type is std::optional<Ret> and transform_fn(p) == std::nullopt,
+ * then current member is discarded. Otherwise, transform_fn(p) (or
+ * *transform_fn(p) if the result type is std::optional) is the key for current
+ * member in the generated lookup table.
+ * Non-addressable, anonymous or name-unmatched members will be excluded before
+ * invoking transform_fn.
+ *
+ * Requirements:
+ * (1) Pattern must contain exactly one matcher symbol '*'.
+ */
 template <impl::lookup::transform_function TransformFn>
 consteval auto make_class_member_lookup_table(
   std::meta::info T,
@@ -590,6 +727,23 @@ consteval auto make_class_member_lookup_table(
   return impl::lookup::build_table(T, entries, options.fixed_map_options);
 }
 
+/**
+ * Generates a lookup table of specified namespace members in compile-time.
+ * Result V is the reflected constant of the lookup table generated, which can
+ * be extracted via [: V :] or reflect_cpp26::extract<V>().
+ *
+ * This function will traverse all the accessible members of namespace ns via
+ * given access context and test each member whether it satisfies all the
+ * conditions below:
+ * (1) It is addressable (details see above);
+ * (2) It has identifier which matches given pattern (details see above);
+ * (3) Let p = the matched part of its identifier,
+ *     transform_fn(p) != std::nullopt (details see above);
+ * (4) It matches given options.
+ *
+ * Requirements:
+ * (1) Pattern must contain exactly one matcher symbol '*'.
+ */
 template <impl::lookup::transform_function TransformFn>
 consteval auto make_namespace_member_lookup_table(
   std::meta::info ns,
@@ -619,9 +773,19 @@ consteval auto make_namespace_member_lookup_table(
   return impl::lookup::build_table(ns, entries, options.fixed_map_options);
 }
 
+/**
+ * Generates a lookup table of specified class members in compile-time and
+ * extracts it immediately.
+ * Details see above.
+ */
 #define REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(T, ...) \
   [: reflect_cpp26::make_class_member_lookup_table(^^T, ##__VA_ARGS__) :]
 
+/**
+ * Generates a lookup table of specified namespace members in compile-time and
+ * extracts it immediately.
+ * Details see above.
+ */
 #define REFLECT_CPP26_NAMESPACE_MEMBER_LOOKUP_TABLE(ns, ...) \
   [: reflect_cpp26::make_namespace_member_lookup_table(^^ns, ##__VA_ARGS__) :]
 } // namespace reflect_cpp26

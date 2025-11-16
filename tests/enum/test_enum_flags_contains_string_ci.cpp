@@ -20,9 +20,10 @@
  * SOFTWARE.
  **/
 
+#include <climits>
+
 #include "tests/enum/flags_test_cases.hpp"
 #include "tests/test_options.hpp"
-#include <climits>
 
 #ifdef ENABLE_FULL_HEADER_TEST
 #include <reflect_cpp26/enum.hpp>
@@ -39,12 +40,10 @@ constexpr bool enum_flags_contains_ci(std::string_view str) {
 
 template <class E, class Delim>
 constexpr bool enum_flags_contains_ci(std::string_view str, Delim delim) {
-  return rfl::enum_flags_contains<E>(
-    rfl::ascii_case_insensitive, str, delim);
+  return rfl::enum_flags_contains<E>(rfl::ascii_case_insensitive, str, delim);
 }
 
-TEST(EnumFlagsContainsStringCI, D1)
-{
+TEST(EnumFlagsContainsStringCI, D1) {
   EXPECT_TRUE_STATIC(enum_flags_contains_ci<D1>("One"));
   EXPECT_TRUE_STATIC(enum_flags_contains_ci<D1>("TWO"));
   EXPECT_TRUE_STATIC(enum_flags_contains_ci<D1>("four"));
@@ -72,8 +71,7 @@ TEST(EnumFlagsContainsStringCI, D1)
   EXPECT_FALSE_STATIC(enum_flags_contains_ci<D1>("one, four | eight", ",|"));
 }
 
-TEST(EnumFlagsContainsStringCI, D2)
-{
+TEST(EnumFlagsContainsStringCI, D2) {
   EXPECT_TRUE_STATIC(enum_flags_contains_ci<D2>("zero"));
   EXPECT_TRUE_STATIC(enum_flags_contains_ci<D2>("LiNG"));
   EXPECT_TRUE_STATIC(enum_flags_contains_ci<D2>("one"));
@@ -93,14 +91,10 @@ TEST(EnumFlagsContainsStringCI, D2)
   EXPECT_TRUE_STATIC(enum_flags_contains_ci<D2>("ONE | TWO | FOUR"));
   EXPECT_TRUE_STATIC(enum_flags_contains_ci<D2>("One | ThrEE | FouR", " | "));
   EXPECT_TRUE_STATIC(enum_flags_contains_ci<D2>("WU, qi", ','));
-  EXPECT_TRUE_STATIC(enum_flags_contains_ci<D2>(
-    " TWo + SiX + EiGht ", " + "));
-  EXPECT_TRUE_STATIC(enum_flags_contains_ci<D2>(
-    " TwO + FoUr + EigHt + er + yi ", '+'));
-  EXPECT_TRUE_STATIC(enum_flags_contains_ci<D2>(
-    "\nOne \n\nThrEE\nSevEN\nWU  \n\n", '\n'));
-  EXPECT_TRUE_STATIC(enum_flags_contains_ci<D2>(
-    "\nONE \n\nThreE SeveN WU  \n\n", ' '));
+  EXPECT_TRUE_STATIC(enum_flags_contains_ci<D2>(" TWo + SiX + EiGht ", " + "));
+  EXPECT_TRUE_STATIC(enum_flags_contains_ci<D2>(" TwO + FoUr + EigHt + er + yi ", '+'));
+  EXPECT_TRUE_STATIC(enum_flags_contains_ci<D2>("\nOne \n\nThrEE\nSevEN\nWU  \n\n", '\n'));
+  EXPECT_TRUE_STATIC(enum_flags_contains_ci<D2>("\nONE \n\nThreE SeveN WU  \n\n", ' '));
 
   // Empty string
   EXPECT_TRUE_STATIC(enum_flags_contains_ci<D2>(""));
@@ -110,12 +104,10 @@ TEST(EnumFlagsContainsStringCI, D2)
   EXPECT_FALSE_STATIC(enum_flags_contains_ci<D2>("Jiu"));
   EXPECT_FALSE_STATIC(enum_flags_contains_ci<D2>("One Two Three"));
   EXPECT_FALSE_STATIC(enum_flags_contains_ci<D2>("One Two Four"));
-  EXPECT_FALSE_STATIC(enum_flags_contains_ci<D2>(
-    "\nOne \n\nThree\nSeven\nWU  \n\n", ' '));
+  EXPECT_FALSE_STATIC(enum_flags_contains_ci<D2>("\nOne \n\nThree\nSeven\nWU  \n\n", ' '));
 }
 
-TEST(EnumFlagsContainsStringCI, Empty)
-{
+TEST(EnumFlagsContainsStringCI, Empty) {
   EXPECT_TRUE_STATIC(enum_flags_contains_ci<empty>(""));
   EXPECT_TRUE_STATIC(enum_flags_contains_ci<empty>("  "));
   EXPECT_TRUE_STATIC(enum_flags_contains_ci<empty>("  ", '|'));

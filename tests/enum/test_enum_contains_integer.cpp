@@ -32,8 +32,7 @@
 using namespace reflect_cpp26;
 
 template <class E>
-constexpr bool test_foo_signed_common()
-{
+constexpr bool test_foo_signed_common() {
   // Note: enum_contains(e) is not massively tested
   // since enum_contains<E>(i) forwards to it.
   EXPECT_TRUE_STATIC(enum_contains<E>(E::four));
@@ -80,8 +79,7 @@ TEST(EnumContainsInteger, FooSignedRep) {
   test_foo_signed_common<foo_signed_rep>();
 }
 
-TEST(EnumContainsInteger, BarUnsigned)
-{
+TEST(EnumContainsInteger, BarUnsigned) {
   EXPECT_TRUE_STATIC(enum_contains<bar_unsigned>(10));
   EXPECT_TRUE_STATIC(enum_contains<bar_unsigned>(12));
   EXPECT_TRUE_STATIC(enum_contains<bar_unsigned>(3));
@@ -108,8 +106,7 @@ TEST(EnumContainsInteger, BarUnsigned)
   EXPECT_FALSE_STATIC(enum_contains<bar_unsigned>(L'1'));
 }
 
-TEST(EnumContainsInteger, BazSigned)
-{
+TEST(EnumContainsInteger, BazSigned) {
   EXPECT_TRUE_STATIC(enum_contains<baz_signed>(2));
   EXPECT_TRUE_STATIC(enum_contains<baz_signed>(-1));
   EXPECT_TRUE_STATIC(enum_contains<baz_signed>(3));
@@ -130,8 +127,7 @@ TEST(EnumContainsInteger, BazSigned)
   EXPECT_FALSE_STATIC(enum_contains<baz_signed>(u'6'));
 }
 
-TEST(EnumContainsInteger, QuxUnsigned)
-{
+TEST(EnumContainsInteger, QuxUnsigned) {
   EXPECT_TRUE_STATIC(enum_contains<qux_unsigned>(0));
   EXPECT_TRUE_STATIC(enum_contains<qux_unsigned>(static_cast<uint16_t>(-1)));
   EXPECT_TRUE_STATIC(enum_contains<qux_unsigned>(1));
@@ -152,14 +148,12 @@ TEST(EnumContainsInteger, QuxUnsigned)
   EXPECT_FALSE_STATIC(enum_contains<qux_unsigned>(U'6'));
 }
 
-TEST(EnumContainsInteger, Empty)
-{
+TEST(EnumContainsInteger, Empty) {
   EXPECT_FALSE_STATIC(enum_contains<empty>(-1));
   EXPECT_FALSE_STATIC(enum_contains<empty>(0));
 }
 
-TEST(EnumCastFromInteger, Single)
-{
+TEST(EnumCastFromInteger, Single) {
   EXPECT_TRUE_STATIC(enum_contains<single>(233));
 
   EXPECT_FALSE_STATIC(enum_contains<single>(-1));
@@ -167,8 +161,7 @@ TEST(EnumCastFromInteger, Single)
   EXPECT_FALSE_STATIC(enum_contains<single>(u8'2'));
 }
 
-TEST(EnumCastFromInteger, SingleRep)
-{
+TEST(EnumCastFromInteger, SingleRep) {
   EXPECT_TRUE_STATIC(enum_contains<single_rep>(233));
 
   EXPECT_FALSE_STATIC(enum_contains<single_rep>(-1));
@@ -176,8 +169,7 @@ TEST(EnumCastFromInteger, SingleRep)
   EXPECT_FALSE_STATIC(enum_contains<single_rep>(u8'3'));
 }
 
-TEST(EnumCastFromInteger, Color)
-{
+TEST(EnumCastFromInteger, Color) {
   EXPECT_FALSE_STATIC(enum_contains<color>(int8_t{-1}));
   EXPECT_FALSE_STATIC(enum_contains<color>(int16_t{-1}));
   EXPECT_FALSE_STATIC(enum_contains<color>(int32_t{-1}));
@@ -329,8 +321,7 @@ TEST(EnumCastFromInteger, Color)
   ASSERT_TRUE_STATIC(enum_contains<color>(0xFFFFFF));
 }
 
-TEST(EnumCastFromInteger, TerminalColor)
-{
+TEST(EnumCastFromInteger, TerminalColor) {
   EXPECT_FALSE_STATIC(enum_contains<terminal_color>(int8_t{-1}));
   EXPECT_FALSE_STATIC(enum_contains<terminal_color>(int16_t{-1}));
   EXPECT_FALSE_STATIC(enum_contains<terminal_color>(int32_t{-1}));
@@ -360,8 +351,7 @@ TEST(EnumCastFromInteger, TerminalColor)
   EXPECT_TRUE_STATIC(enum_contains<terminal_color>(34));
 }
 
-TEST(EnumCastFromInteger, HashCollision)
-{
+TEST(EnumCastFromInteger, HashCollision) {
   EXPECT_TRUE_STATIC(enum_contains<hash_collision>(0));
   EXPECT_TRUE_STATIC(enum_contains<hash_collision>(1));
   EXPECT_FALSE_STATIC(enum_contains<hash_collision>(-1));

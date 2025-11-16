@@ -37,8 +37,7 @@ constexpr bool enum_contains_ci(std::string_view str) {
 }
 
 template <class E>
-constexpr void test_invalid_cases_common()
-{
+constexpr void test_invalid_cases_common() {
   EXPECT_FALSE_STATIC(enum_contains_ci<E>("ZER0"));
   EXPECT_FALSE_STATIC(enum_contains_ci<E>("hello_world"));
   EXPECT_FALSE_STATIC(enum_contains_ci<E>(" zero "));
@@ -48,8 +47,7 @@ constexpr void test_invalid_cases_common()
 }
 
 template <class E>
-constexpr void test_foo_signed_common()
-{
+constexpr void test_foo_signed_common() {
   EXPECT_TRUE_STATIC(enum_contains_ci<E>("four"));
   EXPECT_TRUE_STATIC(enum_contains_ci<E>("one"));
   EXPECT_TRUE_STATIC(enum_contains_ci<E>("error"));
@@ -71,20 +69,17 @@ constexpr void test_foo_signed_common()
   EXPECT_TRUE_STATIC(enum_contains_ci<E>("TwO"));
 }
 
-TEST(EnumContainsString, FooSigned)
-{
+TEST(EnumContainsString, FooSigned) {
   test_foo_signed_common<foo_signed>();
   test_invalid_cases_common<foo_signed>();
 }
 
-TEST(EnumContainsString, FooSignedReorder)
-{
+TEST(EnumContainsString, FooSignedReorder) {
   test_foo_signed_common<foo_signed_reorder>();
   test_invalid_cases_common<foo_signed_reorder>();
 }
 
-TEST(EnumContainsString, FooSignedRep)
-{
+TEST(EnumContainsString, FooSignedRep) {
   test_foo_signed_common<foo_signed_rep>();
   test_invalid_cases_common<foo_signed_rep>();
   EXPECT_TRUE_STATIC(enum_contains_ci<foo_signed_rep>("yi"));
@@ -93,8 +88,7 @@ TEST(EnumContainsString, FooSignedRep)
   EXPECT_TRUE_STATIC(enum_contains_ci<foo_signed_rep>("ER"));
 }
 
-TEST(EnumContainsString, BarUnsigned)
-{
+TEST(EnumContainsString, BarUnsigned) {
   EXPECT_TRUE_STATIC(enum_contains_ci<bar_unsigned>("fourteen"));
   EXPECT_TRUE_STATIC(enum_contains_ci<bar_unsigned>("twelve"));
   EXPECT_TRUE_STATIC(enum_contains_ci<bar_unsigned>("ONE"));
@@ -109,8 +103,7 @@ TEST(EnumContainsString, BarUnsigned)
   test_invalid_cases_common<bar_unsigned>();
 }
 
-TEST(EnumContainsString, BazSigned)
-{
+TEST(EnumContainsString, BazSigned) {
   EXPECT_TRUE_STATIC(enum_contains_ci<baz_signed>("san"));
   EXPECT_TRUE_STATIC(enum_contains_ci<baz_signed>("ER"));
   EXPECT_TRUE_STATIC(enum_contains_ci<baz_signed>("YI"));
@@ -122,8 +115,7 @@ TEST(EnumContainsString, BazSigned)
   test_invalid_cases_common<baz_signed>();
 }
 
-TEST(EnumContainsString, QuxUnsigned)
-{
+TEST(EnumContainsString, QuxUnsigned) {
   EXPECT_TRUE_STATIC(enum_contains_ci<qux_unsigned>("eR"));
   EXPECT_TRUE_STATIC(enum_contains_ci<qux_unsigned>("fuyi"));
   EXPECT_TRUE_STATIC(enum_contains_ci<qux_unsigned>("Yi"));
@@ -136,15 +128,13 @@ TEST(EnumContainsString, QuxUnsigned)
   test_invalid_cases_common<qux_unsigned>();
 }
 
-TEST(EnumConstainsString, Empty)
-{
+TEST(EnumConstainsString, Empty) {
   test_invalid_cases_common<empty>();
   EXPECT_FALSE_STATIC(enum_contains_ci<empty>("zero"));
   EXPECT_FALSE_STATIC(enum_contains_ci<empty>("invalid"));
 }
 
-TEST(EnumConstainsString, Single)
-{
+TEST(EnumConstainsString, Single) {
   EXPECT_TRUE_STATIC(enum_contains_ci<single>("value"));
   EXPECT_TRUE_STATIC(enum_contains_ci<single>("Value"));
   EXPECT_TRUE_STATIC(enum_contains_ci<single>("VALUE"));
@@ -152,8 +142,7 @@ TEST(EnumConstainsString, Single)
   test_invalid_cases_common<single>();
 }
 
-TEST(EnumConstainsString, SingleRep)
-{
+TEST(EnumConstainsString, SingleRep) {
   EXPECT_TRUE_STATIC(enum_contains_ci<single_rep>("Laugh"));
   EXPECT_TRUE_STATIC(enum_contains_ci<single_rep>("HaHaHa"));
   EXPECT_TRUE_STATIC(enum_contains_ci<single_rep>("Over"));
@@ -165,8 +154,7 @@ TEST(EnumConstainsString, SingleRep)
   test_invalid_cases_common<single_rep>();
 }
 
-TEST(EnumConstainsString, Color)
-{
+TEST(EnumConstainsString, Color) {
   EXPECT_TRUE_STATIC(enum_contains_ci<color>("hot_pink"));
   EXPECT_TRUE_STATIC(enum_contains_ci<color>("purple"));
   EXPECT_TRUE_STATIC(enum_contains_ci<color>("blanched_almond"));
@@ -311,8 +299,7 @@ TEST(EnumConstainsString, Color)
   test_invalid_cases_common<color>();
 }
 
-TEST(EnumConstainsString, TerminalColor)
-{
+TEST(EnumConstainsString, TerminalColor) {
   EXPECT_TRUE_STATIC(enum_contains_ci<terminal_color>("blue"));
   EXPECT_TRUE_STATIC(enum_contains_ci<terminal_color>("bright_yellow"));
   EXPECT_TRUE_STATIC(enum_contains_ci<terminal_color>("grEEn"));
@@ -333,8 +320,7 @@ TEST(EnumConstainsString, TerminalColor)
   test_invalid_cases_common<terminal_color>();
 }
 
-TEST(EnumConstainsString, HashCollision)
-{
+TEST(EnumConstainsString, HashCollision) {
   EXPECT_TRUE_STATIC(enum_contains_ci<hash_collision>("_wSYZDRpiqjf8rfv"));
   EXPECT_TRUE_STATIC(enum_contains_ci<hash_collision>("_cuffjihgp_jnjks"));
   test_invalid_cases_common<hash_collision>();

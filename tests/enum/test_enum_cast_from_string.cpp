@@ -32,8 +32,7 @@
 using namespace reflect_cpp26;
 
 template <class E>
-void test_invalid_cases_common()
-{
+void test_invalid_cases_common() {
   ASSERT_EQ_STATIC(std::nullopt, enum_cast<E>("ZERO"));
   ASSERT_EQ_STATIC(std::nullopt, enum_cast<E>("hello_world"));
   ASSERT_EQ_STATIC(std::nullopt, enum_cast<E>(" zero "));
@@ -43,8 +42,7 @@ void test_invalid_cases_common()
 }
 
 template <class E>
-void test_foo_signed_common()
-{
+void test_foo_signed_common() {
   ASSERT_EQ_STATIC(E::four, enum_cast<E>("four"));
   ASSERT_EQ_STATIC(E::one, enum_cast<E>("one"));
   ASSERT_EQ_STATIC(E::error, enum_cast<E>("error"));
@@ -66,15 +64,13 @@ TEST(EnumCastFromString, FooSignedReorder) {
   test_foo_signed_common<foo_signed_reorder>();
 }
 
-TEST(EnumCastFromString, FooSignedRep)
-{
+TEST(EnumCastFromString, FooSignedRep) {
   test_foo_signed_common<foo_signed_rep>();
   ASSERT_EQ_STATIC(foo_signed_rep::one, enum_cast<foo_signed_rep>("yi"));
   ASSERT_EQ_STATIC(foo_signed_rep::two, enum_cast<foo_signed_rep>("er"));
 }
 
-TEST(EnumCastFromString, BarUnsigned)
-{
+TEST(EnumCastFromString, BarUnsigned) {
   ASSERT_EQ_STATIC(bar_unsigned::fourteen, enum_cast<bar_unsigned>("fourteen"));
   ASSERT_EQ_STATIC(bar_unsigned::twelve, enum_cast<bar_unsigned>("twelve"));
   ASSERT_EQ_STATIC(bar_unsigned::one, enum_cast<bar_unsigned>("one"));
@@ -90,8 +86,7 @@ TEST(EnumCastFromString, BarUnsigned)
   test_invalid_cases_common<bar_unsigned>();
 }
 
-TEST(EnumCastFromString, BazSigned)
-{
+TEST(EnumCastFromString, BazSigned) {
   ASSERT_EQ_STATIC(baz_signed::san, enum_cast<baz_signed>("san"));
   ASSERT_EQ_STATIC(baz_signed::er, enum_cast<baz_signed>("er"));
   ASSERT_EQ_STATIC(baz_signed::yi, enum_cast<baz_signed>("yi"));
@@ -103,8 +98,7 @@ TEST(EnumCastFromString, BazSigned)
   ASSERT_EQ_STATIC(std::nullopt, enum_cast<baz_signed>("si"));
 }
 
-TEST(EnumCastFromString, QuxUnsigned)
-{
+TEST(EnumCastFromString, QuxUnsigned) {
   ASSERT_EQ_STATIC(qux_unsigned::er, enum_cast<qux_unsigned>("er"));
   ASSERT_EQ_STATIC(qux_unsigned::fuyi, enum_cast<qux_unsigned>("fuyi"));
   ASSERT_EQ_STATIC(qux_unsigned::yi, enum_cast<qux_unsigned>("yi"));
@@ -117,22 +111,19 @@ TEST(EnumCastFromString, QuxUnsigned)
   ASSERT_EQ_STATIC(std::nullopt, enum_cast<qux_unsigned>("zero"));
 }
 
-TEST(EnumCastFromString, Empty)
-{
+TEST(EnumCastFromString, Empty) {
   test_invalid_cases_common<empty>();
   ASSERT_EQ_STATIC(std::nullopt, enum_cast<empty>("zero"));
   ASSERT_EQ_STATIC(std::nullopt, enum_cast<empty>("invalid"));
 }
 
-TEST(EnumCastFromString, Single)
-{
+TEST(EnumCastFromString, Single) {
   ASSERT_EQ_STATIC(single::value, enum_cast<single>("value"));
   test_invalid_cases_common<single>();
   ASSERT_EQ_STATIC(std::nullopt, enum_cast<single>("233"));
 }
 
-TEST(EnumCastFromString, SingleRep)
-{
+TEST(EnumCastFromString, SingleRep) {
   ASSERT_EQ_STATIC(single_rep::hahaha, enum_cast<single_rep>("laugh"));
   ASSERT_EQ_STATIC(single_rep::hahaha, enum_cast<single_rep>("hahaha"));
   ASSERT_EQ_STATIC(single_rep::hahaha, enum_cast<single_rep>("over"));
@@ -144,8 +135,7 @@ TEST(EnumCastFromString, SingleRep)
   ASSERT_EQ_STATIC(std::nullopt, enum_cast<single_rep>("value"));
 }
 
-TEST(EnumCastFromString, Color)
-{
+TEST(EnumCastFromString, Color) {
   ASSERT_EQ_STATIC(color::hot_pink, enum_cast<color>("hot_pink"));
   ASSERT_EQ_STATIC(color::purple, enum_cast<color>("purple"));
   ASSERT_EQ_STATIC(color::blanched_almond, enum_cast<color>("blanched_almond"));
@@ -157,11 +147,9 @@ TEST(EnumCastFromString, Color)
   ASSERT_EQ_STATIC(color::yellow_green, enum_cast<color>("yellow_green"));
   ASSERT_EQ_STATIC(color::light_gray, enum_cast<color>("light_gray"));
   ASSERT_EQ_STATIC(color::salmon, enum_cast<color>("salmon"));
-  ASSERT_EQ_STATIC(color::medium_slate_blue,
-    enum_cast<color>("medium_slate_blue"));
+  ASSERT_EQ_STATIC(color::medium_slate_blue, enum_cast<color>("medium_slate_blue"));
   ASSERT_EQ_STATIC(color::dark_turquoise, enum_cast<color>("dark_turquoise"));
-  ASSERT_EQ_STATIC(color::medium_sea_green,
-    enum_cast<color>("medium_sea_green"));
+  ASSERT_EQ_STATIC(color::medium_sea_green, enum_cast<color>("medium_sea_green"));
   ASSERT_EQ_STATIC(color::dark_sea_green, enum_cast<color>("dark_sea_green"));
   ASSERT_EQ_STATIC(color::pale_green, enum_cast<color>("pale_green"));
   ASSERT_EQ_STATIC(color::dark_orange, enum_cast<color>("dark_orange"));
@@ -172,8 +160,7 @@ TEST(EnumCastFromString, Color)
   ASSERT_EQ_STATIC(color::tomato, enum_cast<color>("tomato"));
   ASSERT_EQ_STATIC(color::lavender_blush, enum_cast<color>("lavender_blush"));
   ASSERT_EQ_STATIC(color::pale_violet_red, enum_cast<color>("pale_violet_red"));
-  ASSERT_EQ_STATIC(color::dark_olive_green,
-    enum_cast<color>("dark_olive_green"));
+  ASSERT_EQ_STATIC(color::dark_olive_green, enum_cast<color>("dark_olive_green"));
   ASSERT_EQ_STATIC(color::moccasin, enum_cast<color>("moccasin"));
   ASSERT_EQ_STATIC(color::crimson, enum_cast<color>("crimson"));
   ASSERT_EQ_STATIC(color::deep_sky_blue, enum_cast<color>("deep_sky_blue"));
@@ -194,11 +181,9 @@ TEST(EnumCastFromString, Color)
   ASSERT_EQ_STATIC(color::sky_blue, enum_cast<color>("sky_blue"));
   ASSERT_EQ_STATIC(color::lime, enum_cast<color>("lime"));
   ASSERT_EQ_STATIC(color::cornsilk, enum_cast<color>("cornsilk"));
-  ASSERT_EQ_STATIC(color::light_golden_rod_yellow,
-    enum_cast<color>("light_golden_rod_yellow"));
+  ASSERT_EQ_STATIC(color::light_golden_rod_yellow, enum_cast<color>("light_golden_rod_yellow"));
   ASSERT_EQ_STATIC(color::blue_violet, enum_cast<color>("blue_violet"));
-  ASSERT_EQ_STATIC(color::light_slate_gray,
-    enum_cast<color>("light_slate_gray"));
+  ASSERT_EQ_STATIC(color::light_slate_gray, enum_cast<color>("light_slate_gray"));
   ASSERT_EQ_STATIC(color::saddle_brown, enum_cast<color>("saddle_brown"));
   ASSERT_EQ_STATIC(color::navy, enum_cast<color>("navy"));
   ASSERT_EQ_STATIC(color::aquamarine, enum_cast<color>("aquamarine"));
@@ -223,8 +208,7 @@ TEST(EnumCastFromString, Color)
   ASSERT_EQ_STATIC(color::cornflower_blue, enum_cast<color>("cornflower_blue"));
   ASSERT_EQ_STATIC(color::gold, enum_cast<color>("gold"));
   ASSERT_EQ_STATIC(color::cyan, enum_cast<color>("cyan"));
-  ASSERT_EQ_STATIC(color::medium_turquoise,
-    enum_cast<color>("medium_turquoise"));
+  ASSERT_EQ_STATIC(color::medium_turquoise, enum_cast<color>("medium_turquoise"));
   ASSERT_EQ_STATIC(color::turquoise, enum_cast<color>("turquoise"));
   ASSERT_EQ_STATIC(color::ghost_white, enum_cast<color>("ghost_white"));
   ASSERT_EQ_STATIC(color::slate_gray, enum_cast<color>("slate_gray"));
@@ -232,14 +216,11 @@ TEST(EnumCastFromString, Color)
   ASSERT_EQ_STATIC(color::wheat, enum_cast<color>("wheat"));
   ASSERT_EQ_STATIC(color::white, enum_cast<color>("white"));
   ASSERT_EQ_STATIC(color::light_pink, enum_cast<color>("light_pink"));
-  ASSERT_EQ_STATIC(color::medium_spring_green,
-    enum_cast<color>("medium_spring_green"));
-  ASSERT_EQ_STATIC(color::medium_aquamarine,
-    enum_cast<color>("medium_aquamarine"));
+  ASSERT_EQ_STATIC(color::medium_spring_green, enum_cast<color>("medium_spring_green"));
+  ASSERT_EQ_STATIC(color::medium_aquamarine, enum_cast<color>("medium_aquamarine"));
   ASSERT_EQ_STATIC(color::magenta, enum_cast<color>("magenta"));
   ASSERT_EQ_STATIC(color::khaki, enum_cast<color>("khaki"));
-  ASSERT_EQ_STATIC(color::medium_violet_red,
-    enum_cast<color>("medium_violet_red"));
+  ASSERT_EQ_STATIC(color::medium_violet_red, enum_cast<color>("medium_violet_red"));
   ASSERT_EQ_STATIC(color::papaya_whip, enum_cast<color>("papaya_whip"));
   ASSERT_EQ_STATIC(color::navajo_white, enum_cast<color>("navajo_white"));
   ASSERT_EQ_STATIC(color::light_green, enum_cast<color>("light_green"));
@@ -266,8 +247,7 @@ TEST(EnumCastFromString, Color)
   ASSERT_EQ_STATIC(color::light_salmon, enum_cast<color>("light_salmon"));
   ASSERT_EQ_STATIC(color::orchid, enum_cast<color>("orchid"));
   ASSERT_EQ_STATIC(color::silver, enum_cast<color>("silver"));
-  ASSERT_EQ_STATIC(color::light_steel_blue,
-    enum_cast<color>("light_steel_blue"));
+  ASSERT_EQ_STATIC(color::light_steel_blue, enum_cast<color>("light_steel_blue"));
   ASSERT_EQ_STATIC(color::linen, enum_cast<color>("linen"));
   ASSERT_EQ_STATIC(color::floral_white, enum_cast<color>("floral_white"));
   ASSERT_EQ_STATIC(color::white_smoke, enum_cast<color>("white_smoke"));
@@ -302,42 +282,30 @@ TEST(EnumCastFromString, Color)
   test_invalid_cases_common<color>();
 }
 
-TEST(EnumCastFromString, TerminalColor)
-{
+TEST(EnumCastFromString, TerminalColor) {
   ASSERT_EQ_STATIC(terminal_color::blue, enum_cast<terminal_color>("blue"));
-  ASSERT_EQ_STATIC(terminal_color::bright_yellow,
-    enum_cast<terminal_color>("bright_yellow"));
+  ASSERT_EQ_STATIC(terminal_color::bright_yellow, enum_cast<terminal_color>("bright_yellow"));
   ASSERT_EQ_STATIC(terminal_color::green, enum_cast<terminal_color>("green"));
   ASSERT_EQ_STATIC(terminal_color::cyan, enum_cast<terminal_color>("cyan"));
-  ASSERT_EQ_STATIC(terminal_color::bright_green,
-    enum_cast<terminal_color>("bright_green"));
+  ASSERT_EQ_STATIC(terminal_color::bright_green, enum_cast<terminal_color>("bright_green"));
   ASSERT_EQ_STATIC(terminal_color::black, enum_cast<terminal_color>("black"));
-  ASSERT_EQ_STATIC(terminal_color::bright_white,
-    enum_cast<terminal_color>("bright_white"));
+  ASSERT_EQ_STATIC(terminal_color::bright_white, enum_cast<terminal_color>("bright_white"));
   ASSERT_EQ_STATIC(terminal_color::yellow, enum_cast<terminal_color>("yellow"));
-  ASSERT_EQ_STATIC(terminal_color::bright_blue,
-    enum_cast<terminal_color>("bright_blue"));
-  ASSERT_EQ_STATIC(terminal_color::bright_red,
-    enum_cast<terminal_color>("bright_red"));
+  ASSERT_EQ_STATIC(terminal_color::bright_blue, enum_cast<terminal_color>("bright_blue"));
+  ASSERT_EQ_STATIC(terminal_color::bright_red, enum_cast<terminal_color>("bright_red"));
   ASSERT_EQ_STATIC(terminal_color::red, enum_cast<terminal_color>("red"));
-  ASSERT_EQ_STATIC(terminal_color::bright_magenta,
-    enum_cast<terminal_color>("bright_magenta"));
-  ASSERT_EQ_STATIC(terminal_color::bright_black,
-    enum_cast<terminal_color>("bright_black"));
+  ASSERT_EQ_STATIC(terminal_color::bright_magenta, enum_cast<terminal_color>("bright_magenta"));
+  ASSERT_EQ_STATIC(terminal_color::bright_black, enum_cast<terminal_color>("bright_black"));
   ASSERT_EQ_STATIC(terminal_color::white, enum_cast<terminal_color>("white"));
-  ASSERT_EQ_STATIC(terminal_color::magenta,
-    enum_cast<terminal_color>("magenta"));
+  ASSERT_EQ_STATIC(terminal_color::magenta, enum_cast<terminal_color>("magenta"));
 
   test_invalid_cases_common<terminal_color>();
   ASSERT_EQ_STATIC(std::nullopt, enum_cast<terminal_color>("fuchsia"));
 }
 
-TEST(EnumCastFromString, HashCollision)
-{
-  ASSERT_EQ_STATIC(hash_collision::_wSYZDRpiQJf8Rfv,
-      enum_cast<hash_collision>("_wSYZDRpiQJf8Rfv"));
-  ASSERT_EQ_STATIC(hash_collision::_cuFFJIHGp_jNJKS,
-    enum_cast<hash_collision>("_cuFFJIHGp_jNJKS"));
+TEST(EnumCastFromString, HashCollision) {
+  ASSERT_EQ_STATIC(hash_collision::_wSYZDRpiQJf8Rfv, enum_cast<hash_collision>("_wSYZDRpiQJf8Rfv"));
+  ASSERT_EQ_STATIC(hash_collision::_cuFFJIHGp_jNJKS, enum_cast<hash_collision>("_cuFFJIHGp_jNJKS"));
 
   test_invalid_cases_common<hash_collision>();
 }

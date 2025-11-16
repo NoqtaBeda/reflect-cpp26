@@ -23,9 +23,9 @@
 #ifndef REFLECT_CPP26_ENUM_ENUM_ENTRIES_HPP
 #define REFLECT_CPP26_ENUM_ENUM_ENTRIES_HPP
 
+#include <algorithm>
 #include <reflect_cpp26/enum/enum_names.hpp>
 #include <reflect_cpp26/enum/enum_values.hpp>
-#include <algorithm>
 #include <span>
 #include <utility>
 
@@ -49,14 +49,10 @@ consteval auto make_enum_entries() /* -> std::array<enum_entry_t<E>, N> */
 
 template <class E, enum_entry_order Order>
 constexpr auto enum_entries_array_v = make_enum_entries<E, Order>();
-} // namespace impl
+}  // namespace impl
 
-/**
- * Gets the list of (value, name) pairs.
- */
 template <enum_type E, enum_entry_order Order = enum_entry_order::original>
-constexpr auto enum_entries_v =
-  std::span{impl::enum_entries_array_v<std::remove_cv_t<E>, Order>};
-} // namespace reflect_cpp26
+constexpr auto enum_entries_v = std::span{impl::enum_entries_array_v<std::remove_cv_t<E>, Order>};
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_ENUM_ENUM_ENTRIES_HPP
+#endif  // REFLECT_CPP26_ENUM_ENUM_ENTRIES_HPP

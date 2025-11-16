@@ -36,13 +36,11 @@ struct empty_integral_key_map {
     return 0;
   }
 
-  static constexpr auto get(non_bool_integral auto)
-    -> std::pair<const value_type&, bool> {
+  static constexpr auto get(non_bool_integral auto) -> std::pair<const value_type&, bool> {
     return {map_null_value_v<value_type>, false};
   }
 
-  static constexpr auto operator[](non_bool_integral auto)
-    -> const value_type& {
+  static constexpr auto operator[](non_bool_integral auto) -> const value_type& {
     return map_null_value_v<value_type>;
   }
 };
@@ -53,6 +51,6 @@ template <class KVPair>
 consteval auto make_empty_integral_key_map() -> std::meta::info {
   return std::meta::reflect_constant(empty_integral_key_map<KVPair>{});
 }
-} // namespace reflect_cpp26::impl
+}  // namespace reflect_cpp26::impl
 
-#endif // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_INTEGRAL_EMPTY_HPP
+#endif  // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_INTEGRAL_EMPTY_HPP

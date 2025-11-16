@@ -20,9 +20,10 @@
  * SOFTWARE.
  **/
 
-#include "tests/test_options.hpp"
 #include <reflect_cpp26/enum/enum_bitwise_operators.hpp>
 #include <system_error>
+
+#include "tests/test_options.hpp"
 
 #ifdef ENABLE_FULL_HEADER_TEST
 #include <reflect_cpp26/type_operations.hpp>
@@ -38,23 +39,19 @@ struct foo_1_t {
   int c_arr[4];
 };
 
-TEST(TypeOperationsToString, IntRange)
-{
+TEST(TypeOperationsToString, IntRange) {
   auto foo = foo_1_t{
-    .vec = {-1, 1, -2, 2, -3, 3},
-    .std_arr = {1, -2, 3, -4},
-    .c_arr = {-1, -2, -3, -4},
+      .vec = {-1, 1, -2, 2, -3, 3},
+      .std_arr = {1, -2, 3, -4},
+      .c_arr = {-1, -2, -3, -4},
   };
   EXPECT_EQ("[-1, 1, -2, 2, -3, 3]", rfl::generic_to_string(foo.vec));
   EXPECT_EQ("[1, -2, 3, -4]", rfl::generic_to_string(foo.std_arr));
   EXPECT_EQ("[-1, -2, -3, -4]", rfl::generic_to_string(foo.c_arr));
 
-  EXPECT_EQ("[-1, 1, -2, 2, -3, 3]",
-    rfl::generic_to_display_string(foo.vec));
-  EXPECT_EQ("[1, -2, 3, -4]",
-    rfl::generic_to_display_string(foo.std_arr));
-  EXPECT_EQ("[-1, -2, -3, -4]",
-    rfl::generic_to_display_string(foo.c_arr));
+  EXPECT_EQ("[-1, 1, -2, 2, -3, 3]", rfl::generic_to_display_string(foo.vec));
+  EXPECT_EQ("[1, -2, 3, -4]", rfl::generic_to_display_string(foo.std_arr));
+  EXPECT_EQ("[-1, -2, -3, -4]", rfl::generic_to_display_string(foo.c_arr));
 }
 
 struct foo_2_t {
@@ -63,24 +60,21 @@ struct foo_2_t {
   const char* c_arr[4];
 };
 
-TEST(TypeOperationsToString, StringRange)
-{
+TEST(TypeOperationsToString, StringRange) {
   auto foo = foo_2_t{
-    .vec = {"abc", "def", "ghi\tjkl"},
-    .std_arr = {"Hello", "World", "and", "C++"},
-    .c_arr = {"foo", "bar", "i love you", "n\nt\t"},
+      .vec = {"abc", "def", "ghi\tjkl"},
+      .std_arr = {"Hello", "World", "and", "C++"},
+      .c_arr = {"foo", "bar", "i love you", "n\nt\t"},
   };
   EXPECT_EQ("[abc, def, ghi\tjkl]", rfl::generic_to_string(foo.vec));
   EXPECT_EQ("[Hello, World, and, C++]", rfl::generic_to_string(foo.std_arr));
-  EXPECT_EQ("[foo, bar, i love you, n\nt\t]",
-    rfl::generic_to_string(foo.c_arr));
+  EXPECT_EQ("[foo, bar, i love you, n\nt\t]", rfl::generic_to_string(foo.c_arr));
 
-  EXPECT_EQ("[\"abc\", \"def\", \"ghi\\tjkl\"]",
-    rfl::generic_to_display_string(foo.vec));
+  EXPECT_EQ("[\"abc\", \"def\", \"ghi\\tjkl\"]", rfl::generic_to_display_string(foo.vec));
   EXPECT_EQ("[\"Hello\", \"World\", \"and\", \"C++\"]",
-    rfl::generic_to_display_string(foo.std_arr));
+            rfl::generic_to_display_string(foo.std_arr));
   EXPECT_EQ("[\"foo\", \"bar\", \"i love you\", \"n\\nt\\t\"]",
-    rfl::generic_to_display_string(foo.c_arr));
+            rfl::generic_to_display_string(foo.c_arr));
 }
 
 enum foo_flags_unscoped {
@@ -98,29 +92,25 @@ enum class foo_flags_scoped {
 };
 REFLECT_CPP26_DEFINE_ENUM_BITWISE_OPERATORS(foo_flags_scoped)
 
-TEST(TypeOperationsToString, EnumAndEnumRange)
-{
+TEST(TypeOperationsToString, EnumAndEnumRange) {
   constexpr auto errc_array = std::array{
-    std::errc::address_family_not_supported,
-    std::errc::bad_address,
-    std::errc::connection_aborted,
-    std::errc::destination_address_required,
+      std::errc::address_family_not_supported,
+      std::errc::bad_address,
+      std::errc::connection_aborted,
+      std::errc::destination_address_required,
   };
   EXPECT_EQ_STATIC(
-    "[address_family_not_supported, "
-    "bad_address, "
-    "connection_aborted, "
-    "destination_address_required]",
-    rfl::generic_to_string(errc_array));
+      "[address_family_not_supported, "
+      "bad_address, "
+      "connection_aborted, "
+      "destination_address_required]",
+      rfl::generic_to_string(errc_array));
 
-  constexpr auto U =  static_cast<foo_flags_unscoped>(
-    foo_flag_one | foo_flag_four | foo_flag_eight);
+  constexpr auto U = static_cast<foo_flags_unscoped>(foo_flag_one | foo_flag_four | foo_flag_eight);
   // The compiler and the library can not know whether an arbitrary unscoped
   // enum type is semantically an eum flags type.
-  EXPECT_EQ_STATIC("(foo_flags_unscoped)13",
-    rfl::generic_to_display_string(U));
+  EXPECT_EQ_STATIC("(foo_flags_unscoped)13", rfl::generic_to_display_string(U));
 
   using enum foo_flags_scoped;
-  EXPECT_EQ_STATIC("eight|four|one",
-    rfl::generic_to_display_string(one | four | eight));
+  EXPECT_EQ_STATIC("eight|four|one", rfl::generic_to_display_string(one | four | eight));
 }

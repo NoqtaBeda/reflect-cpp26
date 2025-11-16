@@ -32,20 +32,15 @@ struct enum_name_t {
    * Gets the enum name of value, or alt if fails.
    */
   template <enum_type E>
-  static constexpr auto operator()(E value, std::string_view alt = {})
-    -> std::string_view
-  {
-    const auto& [name, found] =
-      impl::enum_name_map_v<E>.get(impl::to_int64_or_uint64(value));
-    return found ? static_cast<std::string_view>(name) : alt;
+  static constexpr auto operator()(E value) -> std::string_view {
+    const auto& [name, found] = impl::enum_name_map_v<E>.get(impl::to_int64_or_uint64(value));
+    return found ? static_cast<std::string_view>(name) : std::string_view{};
   }
 
-  /**
-   * Bind expression is supported.
-   * Example: enum_name(_2) is equivalent to std::bind(enum_name, _2).
-   */
-  REFLECT_CPP26_FUNCTOR_BIND_UNARY(enum_name_t)
-  REFLECT_CPP26_FUNCTOR_BIND_BINARY(enum_name_t)
+  template <bind_expression_or_placeholder BindExpr>
+  static constexpr auto operator()(BindExpr&& expr) {
+    return std::bind(enum_name_t{}, std::forward<BindExpr>(expr));
+  }
 };
 
 struct enum_name_opt_t {
@@ -53,25 +48,22 @@ struct enum_name_opt_t {
    * Gets the enum name of value, or std::nullopt if fails.
    */
   template <enum_type E>
-  static constexpr auto operator()(E value) -> std::optional<std::string_view>
-  {
-    const auto& [name, found] =
-      impl::enum_name_map_v<E>.get(impl::to_int64_or_uint64(value));
+  static constexpr auto operator()(E value) -> std::optional<std::string_view> {
+    const auto& [name, found] = impl::enum_name_map_v<E>.get(impl::to_int64_or_uint64(value));
     if (found) {
       return static_cast<std::string_view>(name);
     }
     return std::nullopt;
   }
 
-  /**
-   * Bind expression is supported.
-   * Example: enum_name_opt(_2) is equivalent to std::bind(enum_name_opt, _2).
-   */
-  REFLECT_CPP26_FUNCTOR_BIND_UNARY(enum_name_opt_t)
+  template <bind_expression_or_placeholder BindExpr>
+  static constexpr auto operator()(BindExpr&& expr) {
+    return std::bind(enum_name_opt_t{}, std::forward<BindExpr>(expr));
+  }
 };
 
 constexpr auto enum_name = enum_name_t{};
 constexpr auto enum_name_opt = enum_name_opt_t{};
-} // namespace reflect_cpp26
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_ENUM_ENUM_NAME_HPP
+#endif  // REFLECT_CPP26_ENUM_ENUM_NAME_HPP

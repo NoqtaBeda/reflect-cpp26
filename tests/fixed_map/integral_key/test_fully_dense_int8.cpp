@@ -20,20 +20,22 @@
  * SOFTWARE.
  **/
 
-#include "tests/fixed_map/integral_key/integral_key_test_options.hpp"
 #include <reflect_cpp26/fixed_map/integral_key.hpp>
+
+#include "tests/fixed_map/integral_key/integral_key_test_options.hpp"
 
 namespace rfl = reflect_cpp26;
 
-TEST(FixedMap, IntegralKeyInt8Full)
-{
+TEST(FixedMap, IntegralKeyInt8Full) {
   constexpr auto delta = 1000.0;
   using KVPair = std::pair<int8_t, double>;
   constexpr auto make_kv_pairs = [delta]() constexpr {
     auto res = std::vector<KVPair>(1 << CHAR_BIT);
-    for (auto i = SCHAR_MIN; ; i++) {
+    for (auto i = SCHAR_MIN;; i++) {
       res[i - SCHAR_MIN] = {i, i + delta};
-      if (i == SCHAR_MAX) { break; }
+      if (i == SCHAR_MAX) {
+        break;
+      }
     }
     return res;
   };
@@ -45,7 +47,7 @@ TEST(FixedMap, IntegralKeyInt8Full)
   EXPECT_EQ_STATIC(SCHAR_MIN, map.min_key());
   EXPECT_EQ_STATIC(SCHAR_MAX, map.max_key());
 
-  for (auto i = SCHAR_MIN; ; i++) {
+  for (auto i = SCHAR_MIN;; i++) {
     auto [v, found] = map.get(i);
     EXPECT_TRUE(found) << "Failed with i = " << i;
     EXPECT_EQ(i + delta, v) << "Failed with i = " << i;
@@ -57,8 +59,7 @@ TEST(FixedMap, IntegralKeyInt8Full)
   EXPECT_NOT_FOUND_STATIC(0.0, map, SCHAR_MAX + 1);
 }
 
-TEST(FixedMap, IntegralKeyUInt8Full)
-{
+TEST(FixedMap, IntegralKeyUInt8Full) {
   constexpr auto delta = 1000.0;
   using KVPair = std::pair<uint8_t, double>;
   constexpr auto make_kv_pairs = [delta]() constexpr {

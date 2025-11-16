@@ -29,6 +29,6 @@ namespace reflect_cpp26 {
  */
 template <class T>
 concept value_initializable = requires { T{}; };
-} // namespace reflect_cpp26
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_TYPE_TRAITS_TYPE_INITIALIZATION_HPP
+#endif  // REFLECT_CPP26_TYPE_TRAITS_TYPE_INITIALIZATION_HPP

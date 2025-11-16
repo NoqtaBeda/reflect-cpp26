@@ -23,22 +23,22 @@
 #ifndef REFLECT_CPP26_UTILS_TO_STRING_UTILS_HPP
 #define REFLECT_CPP26_UTILS_TO_STRING_UTILS_HPP
 
-#include <reflect_cpp26/type_traits/string_like_types.hpp>
 #include <reflect_cpp26/utils/config.h>
+
+#include <reflect_cpp26/type_traits/string_like_types.hpp>
 
 namespace reflect_cpp26 {
 // Including minus sign '-'
-constexpr size_t max_decimal_digits_int8  = 4;  // -128
-constexpr size_t max_decimal_digits_int16 = 6;  // -32768
-constexpr size_t max_decimal_digits_int32 = 11; // -2147483648
-constexpr size_t max_decimal_digits_int64 = 20; // -9223372036854775808
+constexpr size_t max_decimal_digits_int8 = 4;    // -128
+constexpr size_t max_decimal_digits_int16 = 6;   // -32768
+constexpr size_t max_decimal_digits_int32 = 11;  // -2147483648
+constexpr size_t max_decimal_digits_int64 = 20;  // -9223372036854775808
 
 /**
  * Gets the maximum number of characters to represent an integer
  * (either signed or unsigned) of given size bytes.
  */
-constexpr size_t max_decimal_digits(size_t bytes)
-{
+constexpr size_t max_decimal_digits(size_t bytes) {
   switch (bytes) {
     case 1:
       return max_decimal_digits_int8;
@@ -50,7 +50,7 @@ constexpr size_t max_decimal_digits(size_t bytes)
       return max_decimal_digits_int64;
     default:
       REFLECT_CPP26_UNREACHABLE("Invalid size bytes.");
-      return 0; // dummy
+      return 0;  // dummy
   }
 }
 
@@ -58,8 +58,7 @@ constexpr size_t max_decimal_digits(size_t bytes)
  * Nullptr-safe helper to convert a string-like type to std::basic_string_view.
  */
 template <string_like StringT>
-constexpr auto make_string_view(const StringT& str)
-{
+constexpr auto make_string_view(const StringT& str) {
   using CharT = char_type_t<StringT>;
   if constexpr (std::is_pointer_v<StringT>) {
     auto res = std::basic_string_view<CharT>{};
@@ -71,6 +70,6 @@ constexpr auto make_string_view(const StringT& str)
     return std::basic_string_view<CharT>{str};
   }
 }
-} // namespace reflect_cpp26
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_UTILS_TO_STRING_UTILS_HPP
+#endif  // REFLECT_CPP26_UTILS_TO_STRING_UTILS_HPP

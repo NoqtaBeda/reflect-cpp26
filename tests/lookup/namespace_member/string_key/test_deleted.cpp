@@ -20,11 +20,11 @@
  * SOFTWARE.
  **/
 
-#include "tests/lookup/lookup_test_options.hpp"
 #include <reflect_cpp26/lookup/lookup_table.hpp>
 
-#define LOOKUP_TABLE(...) \
-  REFLECT_CPP26_NAMESPACE_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
+#include "tests/lookup/lookup_test_options.hpp"
+
+#define LOOKUP_TABLE(...) REFLECT_CPP26_NAMESPACE_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
 
 namespace rfl = reflect_cpp26;
 
@@ -45,14 +45,12 @@ bool write_difference(int x, int y, int* dest) {
   return false;
 }
 
-bool write_product(int x, int y, int* dest) = delete("Expected to be excluded");
-} // namespace test_deleted
+bool write_product(int x, int y, int* dest) = delete ("Expected to be excluded");
+}  // namespace test_deleted
 
-TEST(NamespaceLookupTableByName, WithDeleted)
-{
+TEST(NamespaceLookupTableByName, WithDeleted) {
   constexpr auto table_f = LOOKUP_TABLE(test_deleted, "write_*");
-  static_assert(std::is_same_v<
-    bool (*)(int, int, int*), decltype(table_f)::value_type>);
+  static_assert(std::is_same_v<bool (*)(int, int, int*), decltype(table_f)::value_type>);
   static_assert(table_f.size() == 2);
 
   int dest = 0;

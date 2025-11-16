@@ -20,28 +20,30 @@
  * SOFTWARE.
  **/
 
-#include "tests/lookup/lookup_test_options.hpp"
 #include <reflect_cpp26/lookup/lookup_table.hpp>
 
-#define LOOKUP_TABLE(...) \
-  REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
+#include "tests/lookup/lookup_test_options.hpp"
+
+#define LOOKUP_TABLE(...) REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
 
 namespace rfl = reflect_cpp26;
 
 struct A {
   explicit constexpr A(double base)
-    : pub_a1(base),
-      pub_a2(base + 1.0),
-      pub_a3(base + 2.0),
-      prot_a1(base + 3.0),
-      prot_a2(base + 4.0),
-      priv_a1(base + 5.0) {}
+      : pub_a1(base),
+        pub_a2(base + 1.0),
+        pub_a3(base + 2.0),
+        prot_a1(base + 3.0),
+        prot_a2(base + 4.0),
+        priv_a1(base + 5.0) {}
 
-  constexpr bool get_value_from_A(std::string_view key, double* dest) const
-  {
-    constexpr auto table = LOOKUP_TABLE(A, "*", {
-      .category = rfl::class_member_category::nonstatic_data_members,
-    });
+  constexpr bool get_value_from_A(std::string_view key, double* dest) const {
+    constexpr auto table =
+        LOOKUP_TABLE(A,
+                     "*",
+                     {
+                         .category = rfl::class_member_category::nonstatic_data_members,
+                     });
     static_assert(std::is_same_v<double A::*, decltype(table)::value_type>);
     static_assert(table.size() == 6);
 
@@ -57,26 +59,30 @@ public:
   double pub_a1;
   double pub_a2;
   double pub_a3;
+
 protected:
   double prot_a1;
   double prot_a2;
+
 private:
   double priv_a1;
 };
 
 struct B : A {
   explicit constexpr B(double base)
-    : A(base),
-      pub_b1(base + 10.0),
-      pub_b2(base + 11.0),
-      prot_b1(base + 12.0),
-      priv_b1(base + 13.0) {}
+      : A(base),
+        pub_b1(base + 10.0),
+        pub_b2(base + 11.0),
+        prot_b1(base + 12.0),
+        priv_b1(base + 13.0) {}
 
-  constexpr bool get_value_from_B(std::string_view key, double* dest) const
-  {
-    constexpr auto table = LOOKUP_TABLE(B, "*", {
-      .category = rfl::class_member_category::nonstatic_data_members,
-    });
+  constexpr bool get_value_from_B(std::string_view key, double* dest) const {
+    constexpr auto table =
+        LOOKUP_TABLE(B,
+                     "*",
+                     {
+                         .category = rfl::class_member_category::nonstatic_data_members,
+                     });
     static_assert(std::is_same_v<double B::*, decltype(table)::value_type>);
     static_assert(table.size() == 9);
 
@@ -91,8 +97,10 @@ struct B : A {
 public:
   double pub_b1;
   double pub_b2;
+
 protected:
   double prot_b1;
+
 private:
   double priv_b1;
 
@@ -108,8 +116,7 @@ private:
   static constexpr double B::* p9 = &B::priv_b1;
 };
 
-TEST(ClassLookupTableByName, AccessContext1)
-{
+TEST(ClassLookupTableByName, AccessContext1) {
   constexpr auto a = A(10.0);
   constexpr auto b = B(10.0);
 
@@ -157,22 +164,23 @@ TEST(ClassLookupTableByName, AccessContext1)
   test_get_value_from_A(b);
   test_get_value_from_B(b);
 
-  constexpr auto table_public = LOOKUP_TABLE(B, "*", {
-    .category = rfl::class_member_category::nonstatic_data_members,
-  });
-  static_assert(std::is_same_v<
-    double B::*, decltype(table_public)::value_type>);
+  constexpr auto table_public =
+      LOOKUP_TABLE(B,
+                   "*",
+                   {
+                       .category = rfl::class_member_category::nonstatic_data_members,
+                   });
+  static_assert(std::is_same_v<double B::*, decltype(table_public)::value_type>);
   static_assert(table_public.size() == 5);
 
-  auto test_access_public =
-    [](const B& obj, const auto& table) constexpr {
-      auto dest = 0.0;
-      CHECK_MEMBER_VARIABLE(10.0, obj, table["pub_a1"]);
-      CHECK_MEMBER_VARIABLE(11.0, obj, table["pub_a2"]);
-      CHECK_MEMBER_VARIABLE(12.0, obj, table["pub_a3"]);
-      CHECK_MEMBER_VARIABLE(20.0, obj, table["pub_b1"]);
-      CHECK_MEMBER_VARIABLE(21.0, obj, table["pub_b2"]);
-    };
+  auto test_access_public = [](const B& obj, const auto& table) constexpr {
+    auto dest = 0.0;
+    CHECK_MEMBER_VARIABLE(10.0, obj, table["pub_a1"]);
+    CHECK_MEMBER_VARIABLE(11.0, obj, table["pub_a2"]);
+    CHECK_MEMBER_VARIABLE(12.0, obj, table["pub_a3"]);
+    CHECK_MEMBER_VARIABLE(20.0, obj, table["pub_b1"]);
+    CHECK_MEMBER_VARIABLE(21.0, obj, table["pub_b2"]);
+  };
   test_access_public(b, table_public);
   EXPECT_EQ_STATIC(nullptr, table_public["prot_a1"]);
   EXPECT_EQ_STATIC(nullptr, table_public["prot_a2"]);
@@ -180,13 +188,14 @@ TEST(ClassLookupTableByName, AccessContext1)
   EXPECT_EQ_STATIC(nullptr, table_public["prot_b1"]);
   EXPECT_EQ_STATIC(nullptr, table_public["priv_b1"]);
 
-  constexpr auto table_all = LOOKUP_TABLE(
-    B, "*", {
-      .category = rfl::class_member_category::nonstatic_data_members,
-    },
-    rfl::unchecked_context());
-  static_assert(std::is_same_v<
-    double B::*, decltype(table_all)::value_type>);
+  constexpr auto table_all =
+      LOOKUP_TABLE(B,
+                   "*",
+                   {
+                       .category = rfl::class_member_category::nonstatic_data_members,
+                   },
+                   rfl::unchecked_context());
+  static_assert(std::is_same_v<double B::*, decltype(table_all)::value_type>);
   static_assert(table_all.size() == 10);
 
   test_access_public(b, table_all);

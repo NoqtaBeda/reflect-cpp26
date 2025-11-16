@@ -36,7 +36,7 @@ REFLECT_CPP26_DEFINE_ENUM_BINARY_OPERATOR_R(E, std::strong_ordering, <=>)
 
 template <enum_type E>
 REFLECT_CPP26_DEFINE_ENUM_BINARY_OPERATOR_R(E, bool, ==)
-} // namespace reflect_cpp26::enum_comparison_operators
+}  // namespace reflect_cpp26::enum_comparison_operators
 
 /**
  * Defines free functions of comparison operators for enum type E
@@ -46,4 +46,4 @@ REFLECT_CPP26_DEFINE_ENUM_BINARY_OPERATOR_R(E, bool, ==)
   REFLECT_CPP26_DEFINE_ENUM_BINARY_OPERATOR_R(E, std::strong_ordering, <=>) \
   REFLECT_CPP26_DEFINE_ENUM_BINARY_OPERATOR_R(E, bool, ==)
 
-#endif // REFLECT_CPP26_ENUM_ENUM_COMPARISON_OPERATORS_HPP
+#endif  // REFLECT_CPP26_ENUM_ENUM_COMPARISON_OPERATORS_HPP

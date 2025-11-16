@@ -23,35 +23,30 @@
 #ifndef REFLECT_CPP26_ENUM_ENUM_VALUES_HPP
 #define REFLECT_CPP26_ENUM_ENUM_VALUES_HPP
 
+#include <ranges>
 #include <reflect_cpp26/enum/enum_meta_entries.hpp>
 #include <reflect_cpp26/utils/meta_utility.hpp>
-#include <ranges>
 
 namespace reflect_cpp26 {
 namespace impl {
 template <class E>
 consteval auto make_enum_values(std::span<const std::meta::info> entries)
-  /* -> std::array<E, N> */
+/* -> std::array<E, N> */
 {
   auto res = std::array<E, enum_count_v<E>>{};
   auto index = 0zU;
-  for (auto e: entries) {
+  for (auto e : entries) {
     res[index++] = extract<E>(e);
   }
   return res;
 }
 
 template <class E, enum_entry_order Order>
-constexpr auto enum_values_array_v =
-  make_enum_values<E>(enum_meta_entries_v<E, Order>);
-} // namespace impl
+constexpr auto enum_values_array_v = make_enum_values<E>(enum_meta_entries_v<E, Order>);
+}  // namespace impl
 
-/**
- * Gets the list of enum values.
- */
 template <class E, enum_entry_order Order = enum_entry_order::original>
-constexpr auto enum_values_v =
-  std::span{impl::enum_values_array_v<std::remove_cv_t<E>, Order>};
-} // namespace reflect_cpp26
+constexpr auto enum_values_v = std::span{impl::enum_values_array_v<std::remove_cv_t<E>, Order>};
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_ENUM_ENUM_VALUES_HPP
+#endif  // REFLECT_CPP26_ENUM_ENUM_VALUES_HPP

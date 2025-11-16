@@ -39,8 +39,7 @@ enum class foo_t {
   eight = 8,
 };
 
-TEST(EnumFormat, NonFlags)
-{
+TEST(EnumFormat, NonFlags) {
   EXPECT_EQ("one", std::format("{}", foo_t::one));
   EXPECT_EQ("three", std::format("{}", foo_t::three));
   EXPECT_EQ("five", std::format("{}", foo_t::five));
@@ -51,19 +50,15 @@ TEST(EnumFormat, NonFlags)
   EXPECT_EQ("(foo_t)-10", std::format("{}", static_cast<foo_t>(-10)));
 }
 
-TEST(EnumFormat, Flags)
-{
+TEST(EnumFormat, Flags) {
   EXPECT_EQ("one", std::format("{:f}", foo_t::one));
-  EXPECT_THAT(std::format("{:F}", foo_t::three),
-    testing::AnyOf("three", "two|one"));
-  EXPECT_THAT(std::format("{:f | }", foo_t::five),
-    testing::AnyOf("five", "four | one"));
-  EXPECT_THAT(std::format("{:F, }", foo_t::seven),
-    testing::AnyOf("seven", "four, two, one"));
+  EXPECT_THAT(std::format("{:F}", foo_t::three), testing::AnyOf("three", "two|one"));
+  EXPECT_THAT(std::format("{:f | }", foo_t::five), testing::AnyOf("five", "four | one"));
+  EXPECT_THAT(std::format("{:F, }", foo_t::seven), testing::AnyOf("seven", "four, two, one"));
   EXPECT_THAT(std::format("{:F, }", static_cast<foo_t>(11)),
-    testing::AnyOf("eight, three", "eight, two, one"));
+              testing::AnyOf("eight, three", "eight, two, one"));
   EXPECT_THAT(std::format("{:f\n}", static_cast<foo_t>(15)),
-    testing::AnyOf("eight\nseven", "eight\nfour\ntwo\none"));
+              testing::AnyOf("eight\nseven", "eight\nfour\ntwo\none"));
 
   EXPECT_EQ("", std::format("{:F}", static_cast<foo_t>(0)));
   EXPECT_EQ("(foo_t)-10", std::format("{:F}", static_cast<foo_t>(-10)));

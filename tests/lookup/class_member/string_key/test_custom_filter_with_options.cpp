@@ -20,11 +20,11 @@
  * SOFTWARE.
  **/
 
-#include "tests/lookup/lookup_test_options.hpp"
 #include <reflect_cpp26/lookup/lookup_table.hpp>
 
-#define LOOKUP_TABLE(...) \
-  REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
+#include "tests/lookup/lookup_test_options.hpp"
+
+#define LOOKUP_TABLE(...) REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
 
 namespace rfl = reflect_cpp26;
 
@@ -38,24 +38,24 @@ struct foo_3_t {
   volatile int64_t a6;
 };
 
-TEST(ClassLookupTableByName, CustomFilterCaseInsensitive)
-{
-  constexpr auto table = LOOKUP_TABLE(
-    foo_3_t,
-    [](std::string_view identifier) -> std::optional<std::string> {
-      auto i = identifier[1] - '0';
-      if (i % 2 == 1) {
-        return std::string{identifier};
-      }
-      return std::nullopt;
-    }, {
-      .category = rfl::class_member_category::nonstatic_data_members,
-      .fixed_map_options = rfl::string_key_fixed_map_options{
-        .ascii_case_insensitive = true,
-      },
-    });
-  static_assert(std::is_same_v<const int32_t foo_3_t::*,
-    decltype(table)::value_type>);
+TEST(ClassLookupTableByName, CustomFilterCaseInsensitive) {
+  constexpr auto table =
+      LOOKUP_TABLE(foo_3_t,
+                   [](std::string_view identifier) -> std::optional<std::string> {
+                     auto i = identifier[1] - '0';
+                     if (i % 2 == 1) {
+                       return std::string{identifier};
+                     }
+                     return std::nullopt;
+                   },
+                   {
+                       .category = rfl::class_member_category::nonstatic_data_members,
+                       .fixed_map_options =
+                           rfl::string_key_fixed_map_options{
+                               .ascii_case_insensitive = true,
+                           },
+                   });
+  static_assert(std::is_same_v<const int32_t foo_3_t::*, decltype(table)::value_type>);
   static_assert(table.size() == 2);
 
   auto foo = foo_3_t{.a3 = 1, .a4 = 3, .a5 = 6, .a6 = 10};

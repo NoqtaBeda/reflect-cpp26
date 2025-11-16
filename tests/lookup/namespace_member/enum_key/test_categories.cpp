@@ -20,12 +20,12 @@
  * SOFTWARE.
  **/
 
-#include "tests/lookup/lookup_test_options.hpp"
 #include <reflect_cpp26/enum/enum_cast.hpp>
 #include <reflect_cpp26/lookup/lookup_table.hpp>
 
-#define LOOKUP_TABLE(...) \
-  REFLECT_CPP26_NAMESPACE_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
+#include "tests/lookup/lookup_test_options.hpp"
+
+#define LOOKUP_TABLE(...) REFLECT_CPP26_NAMESPACE_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
 
 namespace rfl = reflect_cpp26;
 
@@ -36,7 +36,7 @@ enum class baz_get_fn_key {
   bit_one_count = 3,
 };
 
-enum class baz_value_key: uint64_t {
+enum class baz_value_key : uint64_t {
   x = std::numeric_limits<uint64_t>::min(),
   y = std::numeric_limits<uint64_t>::max(),
 };
@@ -47,7 +47,7 @@ constexpr int get_negative(int value) {
   return value >= 0 ? -1 : value;
 }
 volatile double value_w = -1.0;
-} // namespace get_options_or_count
+}  // namespace get_options_or_count
 class get_dummy_count {};
 
 constexpr int get_odd(int value) {
@@ -64,12 +64,10 @@ constexpr int get_bit_one_count(int value) {
 }
 double get_x_count = 1.0;
 double get_y_count = 2.0;
-} // namespace baz
+}  // namespace baz
 
-TEST(NamespaceLookupTableByName, FunctionsOnly)
-{
-  constexpr auto table_f = LOOKUP_TABLE(
-    baz, "get_*", rfl::enum_cast<baz_get_fn_key>);
+TEST(NamespaceLookupTableByName, FunctionsOnly) {
+  constexpr auto table_f = LOOKUP_TABLE(baz, "get_*", rfl::enum_cast<baz_get_fn_key>);
   static_assert(std::is_same_v<int (*)(int), decltype(table_f)::value_type>);
   static_assert(table_f.size() == 4);
 
@@ -80,12 +78,13 @@ TEST(NamespaceLookupTableByName, FunctionsOnly)
   EXPECT_EQ_STATIC(nullptr, table_f[static_cast<baz_get_fn_key>(123)]);
 }
 
-TEST(NamespaceLookupTableByName, VariablesOnly)
-{
-  constexpr auto table_v = LOOKUP_TABLE(
-    baz, "get_*_count", rfl::enum_cast<baz_value_key>, {
-      .category = rfl::namespace_member_category::variables,
-    });
+TEST(NamespaceLookupTableByName, VariablesOnly) {
+  constexpr auto table_v = LOOKUP_TABLE(baz,
+                                        "get_*_count",
+                                        rfl::enum_cast<baz_value_key>,
+                                        {
+                                            .category = rfl::namespace_member_category::variables,
+                                        });
   static_assert(std::is_same_v<double*, decltype(table_v)::value_type>);
   static_assert(table_v.size() == 2);
 

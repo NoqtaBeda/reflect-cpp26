@@ -20,38 +20,38 @@
  * SOFTWARE.
  **/
 
-#include "tests/fixed_map/string_key/string_key_test_options.hpp"
 #include <reflect_cpp26/fixed_map/string_key.hpp>
+
+#include "tests/fixed_map/string_key/string_key_test_options.hpp"
 
 namespace rfl = reflect_cpp26;
 
 template <class CharT>
-void test_by_hash_table_common_2()
-{
+void test_by_hash_table_common_2() {
   using KVPair = std::pair<std::basic_string<CharT>, wrapper_t<int>>;
   constexpr auto make_kv_pairs = []() constexpr {
     return std::vector<KVPair>{
-      {to<CharT>("Apple"), {.value = 0}},       // 0x0000'0004'841a'c9fa
-      {to<CharT>("Banana"), {.value = 1}},      // 0x0000'0257'8da4'8005
-      {to<CharT>("Cat"), {.value = 2}},         // 0x0000'0000'0011'bd72
-      {to<CharT>("Dog"), {.value = 3}},         // 0x0000'0000'0012'0798
-      {to<CharT>("Horse"), {.value = 4}},       // 0x0000'0004'fed9'023d
-      {to<CharT>("Rabbit"), {.value = 5}},      // 0x0000'02e7'444d'd47e
-      {to<CharT>("Donkey"), {.value = 6}},      // 0x0000'026a'7a6f'a930
-      {to<CharT>("Sheep"), {.value = 7}},       // 0x0000'0005'befc'49e7
-      {to<CharT>("Pineapple"), {.value = 8}},   // 0x6143'2afc'63e3'd68a
-      {to<CharT>("Watermelon"), {.value = 9}},  // 0x0b85'1508'69f4'1520
-      {to<CharT>("Capybara"), {.value = 10}},   // 0x009f'595e'1a65'd529
-      {to<CharT>("ABCDEF"), {.value = 11}},     // 0x0000'024c'6c2c'6a9f
-      {to<CharT>("ABCDEV"), {.value = 12}},     // 0x0000'024c'6c2c'6aaf
+        {to<CharT>("Apple"), {.value = 0}},       // 0x0000'0004'841a'c9fa
+        {to<CharT>("Banana"), {.value = 1}},      // 0x0000'0257'8da4'8005
+        {to<CharT>("Cat"), {.value = 2}},         // 0x0000'0000'0011'bd72
+        {to<CharT>("Dog"), {.value = 3}},         // 0x0000'0000'0012'0798
+        {to<CharT>("Horse"), {.value = 4}},       // 0x0000'0004'fed9'023d
+        {to<CharT>("Rabbit"), {.value = 5}},      // 0x0000'02e7'444d'd47e
+        {to<CharT>("Donkey"), {.value = 6}},      // 0x0000'026a'7a6f'a930
+        {to<CharT>("Sheep"), {.value = 7}},       // 0x0000'0005'befc'49e7
+        {to<CharT>("Pineapple"), {.value = 8}},   // 0x6143'2afc'63e3'd68a
+        {to<CharT>("Watermelon"), {.value = 9}},  // 0x0b85'1508'69f4'1520
+        {to<CharT>("Capybara"), {.value = 10}},   // 0x009f'595e'1a65'd529
+        {to<CharT>("ABCDEF"), {.value = 11}},     // 0x0000'024c'6c2c'6a9f
+        {to<CharT>("ABCDEV"), {.value = 12}},     // 0x0000'024c'6c2c'6aaf
     };
   };
-  constexpr auto map = FIXED_MAP(make_kv_pairs(), {
-    .ascii_case_insensitive = false,
-    .min_load_factor = 0.5,
-  });
-  static_assert(std::is_same_v<
-    typename decltype(map)::result_type, const wrapper_t<int>&>);
+  constexpr auto map = FIXED_MAP(make_kv_pairs(),
+                                 {
+                                     .ascii_case_insensitive = false,
+                                     .min_load_factor = 0.5,
+                                 });
+  static_assert(std::is_same_v<typename decltype(map)::result_type, const wrapper_t<int>&>);
   EXPECT_THAT(display_string_of(^^decltype(map)),
               testing::HasSubstr("string_key_map_by_hash_table_fast"));
   EXPECT_EQ_STATIC(13, map.size());
@@ -79,32 +79,31 @@ void test_by_hash_table_common_2()
 }
 
 template <class CharT>
-void test_by_hash_table_common_ci_2()
-{
+void test_by_hash_table_common_ci_2() {
   using KVPair = std::pair<std::basic_string<CharT>, wrapper_t<int>>;
   constexpr auto make_kv_pairs = []() constexpr {
     return std::vector<KVPair>{
-      {to<CharT>("Apple"), {.value = 0}},       // 0x0000'0006'b5d1'941a
-      {to<CharT>("BANANA"), {.value = 1}},      // 0x0000'0376'fe2d'ee65
-      {to<CharT>("cat"), {.value = 2}},         // 0x0000'0000'001a'1e92
-      {to<CharT>("dog"), {.value = 3}},         // 0x0000'0000'001a'68b8
-      {to<CharT>("HoRsE"), {.value = 4}},       // 0x0000'0007'308f'cc5d
-      {to<CharT>("RaBBiT"), {.value = 5}},      // 0x0000'0406'b4d7'42de
-      {to<CharT>("Donkey"), {.value = 6}},      // 0x0000'0389'eaf9'1790
-      {to<CharT>("shEEp"), {.value = 7}},       // 0x0000'0007'f0b3'1407
-      {to<CharT>("PineApple"), {.value = 8}},   // 0x87c7'401f'860c'8aaa
-      {to<CharT>("WaterMelon"), {.value = 9}},  // 0xc11b'e602'e4c8'4180
-      {to<CharT>("cApYbArA"), {.value = 10}},   // 0x00ea'9ded'071d'd689
-      {to<CharT>("ABCDEF"), {.value = 11}},     // 0x0000'036e'12be'c81f
-      {to<CharT>("ABCDEV"), {.value = 12}},     // 0x0000'036e'12be'c82f
+        {to<CharT>("Apple"), {.value = 0}},       // 0x0000'0006'b5d1'941a
+        {to<CharT>("BANANA"), {.value = 1}},      // 0x0000'0376'fe2d'ee65
+        {to<CharT>("cat"), {.value = 2}},         // 0x0000'0000'001a'1e92
+        {to<CharT>("dog"), {.value = 3}},         // 0x0000'0000'001a'68b8
+        {to<CharT>("HoRsE"), {.value = 4}},       // 0x0000'0007'308f'cc5d
+        {to<CharT>("RaBBiT"), {.value = 5}},      // 0x0000'0406'b4d7'42de
+        {to<CharT>("Donkey"), {.value = 6}},      // 0x0000'0389'eaf9'1790
+        {to<CharT>("shEEp"), {.value = 7}},       // 0x0000'0007'f0b3'1407
+        {to<CharT>("PineApple"), {.value = 8}},   // 0x87c7'401f'860c'8aaa
+        {to<CharT>("WaterMelon"), {.value = 9}},  // 0xc11b'e602'e4c8'4180
+        {to<CharT>("cApYbArA"), {.value = 10}},   // 0x00ea'9ded'071d'd689
+        {to<CharT>("ABCDEF"), {.value = 11}},     // 0x0000'036e'12be'c81f
+        {to<CharT>("ABCDEV"), {.value = 12}},     // 0x0000'036e'12be'c82f
     };
   };
-  constexpr auto map = FIXED_MAP(make_kv_pairs(), {
-    .ascii_case_insensitive = true,
-    .min_load_factor = 0.5,
-  });
-  static_assert(std::is_same_v<
-    typename decltype(map)::result_type, const wrapper_t<int>&>);
+  constexpr auto map = FIXED_MAP(make_kv_pairs(),
+                                 {
+                                     .ascii_case_insensitive = true,
+                                     .min_load_factor = 0.5,
+                                 });
+  static_assert(std::is_same_v<typename decltype(map)::result_type, const wrapper_t<int>&>);
   EXPECT_THAT(display_string_of(^^decltype(map)),
               testing::HasSubstr("string_key_map_by_hash_table_fast"));
   EXPECT_EQ_STATIC(13, map.size());

@@ -47,6 +47,6 @@ constexpr auto constant_v = constant_t<V>{};
  * Null index.
  */
 constexpr auto npos = std::numeric_limits<size_t>::max();
-} // namespace reflect_cpp26
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_UTILS_CONSTANT_HPP
+#endif  // REFLECT_CPP26_UTILS_CONSTANT_HPP

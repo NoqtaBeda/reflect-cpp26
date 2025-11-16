@@ -24,6 +24,7 @@
 #define REFLECT_CPP26_TYPE_TRAITS_ARITHMETIC_TYPES_HPP
 
 #include <reflect_cpp26/utils/config.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
@@ -44,8 +45,7 @@ struct is_char_type_impl<char16_t> : std::true_type {};
 template <>
 struct is_char_type_impl<char32_t> : std::true_type {};
 
-consteval auto integral_to_integer_impl(std::meta::info T) -> std::meta::info
-{
+consteval auto integral_to_integer_impl(std::meta::info T) -> std::meta::info {
   switch (size_of(T)) {
     case 1:
       return is_signed_type(T) ? ^^int8_t : ^^uint8_t;
@@ -60,7 +60,7 @@ consteval auto integral_to_integer_impl(std::meta::info T) -> std::meta::info
       return std::meta::info{};
   }
 }
-} // namespace impl
+}  // namespace impl
 
 /**
  * Whether T is a (possibly cv-qualified) character type.
@@ -78,8 +78,7 @@ concept char_type = impl::is_char_type_impl<std::remove_cv_t<T>>::value;
  * Whether T is a (possibly cv-qualified) integral type which is not bool.
  */
 template <class T>
-concept non_bool_integral =
-  std::is_integral_v<T> && !std::is_same_v<std::remove_cv_t<T>, bool>;
+concept non_bool_integral = std::is_integral_v<T> && !std::is_same_v<std::remove_cv_t<T>, bool>;
 
 /**
  * Whether T is a (possibly cv-qualified) integer type.
@@ -92,7 +91,7 @@ concept integer_type = non_bool_integral<T> && !char_type<T>;
  * to integer type with the same size and signedness
  */
 template <std::integral T>
-using integral_to_integer_t = [: impl::integral_to_integer_impl(^^T) :];
-} // namespace reflect_cpp26
+using integral_to_integer_t = [:impl::integral_to_integer_impl(^^T):];
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_TYPE_TRAITS_ARITHMETIC_TYPES_HPP
+#endif  // REFLECT_CPP26_TYPE_TRAITS_ARITHMETIC_TYPES_HPP

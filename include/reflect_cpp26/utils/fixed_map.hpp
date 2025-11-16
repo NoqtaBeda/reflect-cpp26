@@ -26,4 +26,4 @@
 #include <reflect_cpp26/fixed_map/integral_key.hpp>
 #include <reflect_cpp26/fixed_map/string_key.hpp>
 
-#endif // REFLECT_CPP26_UTILS_FIXED_MAP_HPP
+#endif  // REFLECT_CPP26_UTILS_FIXED_MAP_HPP

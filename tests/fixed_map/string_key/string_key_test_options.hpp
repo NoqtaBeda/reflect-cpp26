@@ -22,19 +22,17 @@
 
 #pragma once
 
-#include "tests/fixed_map/fixed_map_test_options.hpp"
+#include <ranges>
 #include <string>
 #include <string_view>
-#include <ranges>
+
+#include "tests/fixed_map/fixed_map_test_options.hpp"
 
 #define FIXED_MAP(...) REFLECT_CPP26_STRING_KEY_FIXED_MAP(__VA_ARGS__)
 
 template <class ToCharT, class FromCharT>
-constexpr auto to(const FromCharT* str) -> std::basic_string<ToCharT>
-{
+constexpr auto to(const FromCharT* str) -> std::basic_string<ToCharT> {
   auto from_sv = std::basic_string_view<FromCharT>(str);
-  auto transform_fn = [](FromCharT c) {
-    return static_cast<ToCharT>(c);
-  };
+  auto transform_fn = [](FromCharT c) { return static_cast<ToCharT>(c); };
   return {std::from_range, from_sv | std::views::transform(transform_fn)};
 }

@@ -41,18 +41,12 @@ constexpr auto enum_entry_by_name(size_t index) {
   return enum_entries_v<E, enum_entry_order::by_name>[index];
 }
 
-TEST(EnumEntries, All)
-{
-  EXPECT_EQ_STATIC(
-    std::pair(foo_signed_rep::yi, "yi"),
-    enum_entries_v<foo_signed_rep>[3]);
-  EXPECT_EQ_STATIC(
-    std::pair(foo_signed_rep::one, "one"),
-    enum_entries_v<const volatile foo_signed_rep>[1]);
-  EXPECT_EQ_STATIC(
-    std::pair(foo_signed_rep::four, "four"),
-    enum_entry_by_value<const foo_signed_rep>(7));
-  EXPECT_EQ_STATIC(
-    std::pair(foo_signed_rep::yi, "yi"),
-    enum_entry_by_name<volatile foo_signed_rep>(9));
+TEST(EnumEntries, All) {
+  EXPECT_EQ_STATIC(std::pair(foo_signed_rep::yi, "yi"), enum_entries_v<foo_signed_rep>[3]);
+  EXPECT_EQ_STATIC(std::pair(foo_signed_rep::one, "one"),
+                   enum_entries_v<const volatile foo_signed_rep>[1]);
+  EXPECT_EQ_STATIC(std::pair(foo_signed_rep::four, "four"),
+                   enum_entry_by_value<const foo_signed_rep>(7));
+  EXPECT_EQ_STATIC(std::pair(foo_signed_rep::yi, "yi"),
+                   enum_entry_by_name<volatile foo_signed_rep>(9));
 }

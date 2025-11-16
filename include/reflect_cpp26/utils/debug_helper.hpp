@@ -45,8 +45,7 @@ constexpr auto type_name_of(const T&) -> std::string_view {
 
 namespace impl {
 template <class T>
-consteval auto make_type_description() -> std::string
-{
+consteval auto make_type_description() -> std::string {
   auto type_name = type_name_of<T>();
   auto location = source_location_of(^^T);
 
@@ -62,9 +61,8 @@ consteval auto make_type_description() -> std::string
 }
 
 template <class T>
-constexpr auto type_description_v =
-  reflect_cpp26::define_static_string(make_type_description<T>());
-} // namespace impl
+constexpr auto type_description_v = reflect_cpp26::define_static_string(make_type_description<T>());
+}  // namespace impl
 
 /**
  * Gets the detailed display string of type T, including:
@@ -84,6 +82,6 @@ template <class T>
 constexpr auto type_description_of(const T&) -> std::string_view {
   return type_description_of<std::remove_cv_t<T>>();
 }
-} // namespace reflect_cpp26
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_UTILS_DEBUG_HELPER_HPP
+#endif  // REFLECT_CPP26_UTILS_DEBUG_HELPER_HPP

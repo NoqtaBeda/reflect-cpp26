@@ -20,8 +20,9 @@
  * SOFTWARE.
  **/
 
-#include "tests/test_options.hpp"
 #include <utility>
+
+#include "tests/test_options.hpp"
 
 #ifdef ENABLE_FULL_HEADER_TEST
 #include <reflect_cpp26/type_traits.hpp>
@@ -53,8 +54,7 @@ static_assert(NOT rfl::pair_like<volatile std_pair&&>);
 // ---- is_tuple_like_of_exactly_v ----
 
 static_assert(rfl::tuple_like_of_exactly<std_tuple, int, int&, int**>);
-static_assert(rfl::tuple_like_of_exactly<
-  const std_pair, std::string&&, size_t&>);
+static_assert(rfl::tuple_like_of_exactly<const std_pair, std::string&&, size_t&>);
 // Expects exact match
 static_assert(NOT rfl::tuple_like_of_exactly<std_pair, std::string, size_t>);
 
@@ -66,9 +66,8 @@ static_assert(rfl::tuple_like_of<const std_pair, std::string, size_t>);
 static_assert(rfl::tuple_like_of<std_pair, std::string_view, unsigned>);
 // std::string -> std::string_view is OK, but inverse is not.
 static_assert(rfl::tuple_like_of<std::tuple<std::string>, std::string_view>);
-static_assert(NOT rfl::tuple_like_of<
-  std::tuple<std::string_view>, std::string>);
+static_assert(NOT rfl::tuple_like_of<std::tuple<std::string_view>, std::string>);
 
 TEST(TypeTraits, TupleLikeTypes1) {
-  EXPECT_TRUE(true); // All test cases done with static-asserts above
+  EXPECT_TRUE(true);  // All test cases done with static-asserts above
 }

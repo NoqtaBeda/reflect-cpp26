@@ -38,13 +38,11 @@ enum foo {
   foo_eight = 8,
 };
 
-constexpr auto str_concat(std::string_view lhs, std::string_view rhs)
-  -> std::string {
+constexpr auto str_concat(std::string_view lhs, std::string_view rhs) -> std::string {
   return std::string{lhs} + rhs;
 }
 
-TEST(EnumFlagsCastBindExpression, All)
-{
+TEST(EnumFlagsCastBindExpression, All) {
   using namespace std::placeholders;
 
   constexpr auto F = enum_flags_cast<foo>(_2);
@@ -59,10 +57,9 @@ TEST(EnumFlagsCastBindExpression, All)
   EXPECT_EQ_STATIC(std::nullopt, G("foo_eight", "foo_two | ", ", "));
   EXPECT_EQ_STATIC(std::nullopt, G("foo_eight | ", "foo_two", '|'));
 
-  constexpr auto H = enum_flags_cast<foo>(
-    ascii_case_insensitive, std::bind(str_concat, _2, _1), _4);
-  EXPECT_EQ_STATIC(10,
-    H("Foo_Eight", "Foo_Two | ", "(I have nothing to do)", '|'));
+  constexpr auto H =
+      enum_flags_cast<foo>(ascii_case_insensitive, std::bind(str_concat, _2, _1), _4);
+  EXPECT_EQ_STATIC(10, H("Foo_Eight", "Foo_Two | ", "(I have nothing to do)", '|'));
   EXPECT_EQ_STATIC(std::nullopt,
-    H("Foo_Eight", "Foo_Two | ", "(I have nothing to do either)", ", "));
+                   H("Foo_Eight", "Foo_Two | ", "(I have nothing to do either)", ", "));
 }

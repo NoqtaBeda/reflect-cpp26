@@ -43,4 +43,4 @@
 #include <reflect_cpp26/enum/enum_type_name.hpp>
 #include <reflect_cpp26/enum/enum_values.hpp>
 
-#endif // REFLECT_CPP26_ENUM_HPP
+#endif  // REFLECT_CPP26_ENUM_HPP

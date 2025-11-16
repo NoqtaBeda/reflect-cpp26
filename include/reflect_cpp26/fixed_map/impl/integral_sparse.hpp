@@ -45,10 +45,11 @@ struct linear_search_integral_key_map {
     return get_first(_entries.back());
   }
 
-  constexpr auto get(key_type key) const -> std::pair<result_type, bool>
-  {
-    for (const auto& entry: _entries) {
-      if (get_first(entry) == key) { return {get_second(entry), true}; }
+  constexpr auto get(key_type key) const -> std::pair<result_type, bool> {
+    for (const auto& entry : _entries) {
+      if (get_first(entry) == key) {
+        return {get_second(entry), true};
+      }
     }
     return {map_null_value_v<value_type>, false};
   }
@@ -78,9 +79,8 @@ struct binary_search_integral_key_map {
     return get_first(unwrap(_entries.back()));
   }
 
-  constexpr auto get(key_type key) const -> std::pair<result_type, bool>
-  {
-    for (auto head = _entries.begin(), tail = _entries.end(); head < tail; ) {
+  constexpr auto get(key_type key) const -> std::pair<result_type, bool> {
+    for (auto head = _entries.begin(), tail = _entries.end(); head < tail;) {
       auto mid = head + (tail - head) / 2;
       const auto& mid_entry = unwrap(*mid);
       if (get_first(mid_entry) == key) {
@@ -93,8 +93,8 @@ struct binary_search_integral_key_map {
 
   REFLECT_CPP26_INTEGRAL_KEY_MAP_COMMON_INTERFACE
 
-  using span_element_type = std::conditional_t<
-    AlignmentAdjusted, alignment_adjusted_wrapper<KVPair>, KVPair>;
+  using span_element_type =
+      std::conditional_t<AlignmentAdjusted, alignment_adjusted_wrapper<KVPair>, KVPair>;
 
   // Internal members (Note: keep them public for structured-ness).
   meta_span<span_element_type> _entries;
@@ -103,25 +103,23 @@ struct binary_search_integral_key_map {
 // -------- Factory --------
 
 template <class KVPair>
-constexpr auto linear_search_integral_key_map_factory(
-  meta_span<KVPair> sorted_entries) -> std::meta::info
-{
+constexpr auto linear_search_integral_key_map_factory(meta_span<KVPair> sorted_entries)
+    -> std::meta::info {
   auto res = linear_search_integral_key_map<KVPair>{
-    ._entries = sorted_entries,
+      ._entries = sorted_entries,
   };
   return std::meta::reflect_constant(res);
 }
 
 template <bool AlignmentAdjusted, class KVPair>
-constexpr auto binary_search_integral_key_map_factory(
-  meta_span<KVPair> sorted_entries) -> std::meta::info
-{
+constexpr auto binary_search_integral_key_map_factory(meta_span<KVPair> sorted_entries)
+    -> std::meta::info {
   using dest_type = binary_search_integral_key_map<AlignmentAdjusted, KVPair>;
   using span_element_type = typename dest_type::span_element_type;
 
   if constexpr (AlignmentAdjusted) {
     auto res = dest_type{
-      ._entries = span_element_type::make_static_array(sorted_entries),
+        ._entries = span_element_type::make_static_array(sorted_entries),
     };
     return std::meta::reflect_constant(res);
   } else {
@@ -138,11 +136,10 @@ struct sparse_integral_key_fixed_map_options {
 };
 
 template <class KVPairIter>
-consteval auto make_sparse_integral_key_map(
-  KVPairIter sorted_first,
-  KVPairIter sorted_last,
-  sparse_integral_key_fixed_map_options options) -> std::meta::info
-{
+consteval auto make_sparse_integral_key_map(KVPairIter sorted_first,
+                                            KVPairIter sorted_last,
+                                            sparse_integral_key_fixed_map_options options)
+    -> std::meta::info {
   using KVPair = std::iter_value_t<KVPairIter>;
   // (1) Empty
   if (sorted_first == sorted_last) {
@@ -165,6 +162,6 @@ consteval auto make_sparse_integral_key_map(
   auto entries = reflect_cpp26::define_static_array(sorted_subrange);
   return factory_fn(entries);
 }
-} // namespace reflect_cpp26::impl
+}  // namespace reflect_cpp26::impl
 
-#endif // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_INTEGRAL_SPARSE_HPP
+#endif  // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_INTEGRAL_SPARSE_HPP

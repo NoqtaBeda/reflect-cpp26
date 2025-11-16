@@ -20,11 +20,11 @@
  * SOFTWARE.
  **/
 
-#include "tests/lookup/lookup_test_options.hpp"
 #include <reflect_cpp26/lookup/lookup_table.hpp>
 
-#define LOOKUP_TABLE(...) \
-  REFLECT_CPP26_NAMESPACE_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
+#include "tests/lookup/lookup_test_options.hpp"
+
+#define LOOKUP_TABLE(...) REFLECT_CPP26_NAMESPACE_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
 
 namespace rfl = reflect_cpp26;
 
@@ -56,17 +56,16 @@ constexpr auto fp1 = printf;
 constexpr auto fp2 = scanf;
 constexpr auto pfp1 = &fp1;
 constexpr auto pfp2 = &fp2;
-} // namespace test_pointer
+}  // namespace test_pointer
 
-TEST(NamespaceLookupTableByName, WithPointers)
-{
-  constexpr auto table_p = LOOKUP_TABLE(test_pointer,
-    [](std::string_view identifier) -> std::optional<std::string> {
-      if (identifier.length() == 2) {
-        return std::string{"x"} + identifier[1];
-      }
-      return std::nullopt;
-    });
+TEST(NamespaceLookupTableByName, WithPointers) {
+  constexpr auto table_p =
+      LOOKUP_TABLE(test_pointer, [](std::string_view identifier) -> std::optional<std::string> {
+        if (identifier.length() == 2) {
+          return std::string{"x"} + identifier[1];
+        }
+        return std::nullopt;
+      });
   static_assert(std::is_same_v<const int**, decltype(table_p)::value_type>);
   static_assert(table_p.size() == 4);
 
@@ -94,10 +93,9 @@ TEST(NamespaceLookupTableByName, WithPointers)
   EXPECT_EQ_STATIC(nullptr, table_p["4"]);
   EXPECT_EQ_STATIC(nullptr, table_p["p1"]);
   EXPECT_EQ_STATIC(nullptr, table_p["pp2"]);
- 
+
   constexpr auto table_mp = LOOKUP_TABLE(test_pointer, "mp*");
-  static_assert(std::is_same_v<
-    int test_pointer::foo_t::* const*, decltype(table_mp)::value_type>);
+  static_assert(std::is_same_v<int test_pointer::foo_t::* const*, decltype(table_mp)::value_type>);
   static_assert(table_mp.size() == 3);
 
   constexpr auto foo = test_pointer::foo_t{.x = 12, .y = 24, .z = 36, .w = 48};
@@ -110,11 +108,13 @@ TEST(NamespaceLookupTableByName, WithPointers)
   EXPECT_EQ_STATIC(nullptr, table_mp["p1"]);
   EXPECT_EQ_STATIC(nullptr, table_mp["mp2"]);
 
-  constexpr auto table_pmp = LOOKUP_TABLE(test_pointer, "pmp*", {
-    .category = rfl::namespace_member_category::variables,
-  });
-  static_assert(std::is_same_v<
-    int test_pointer::foo_t::* const* const*, decltype(table_pmp)::value_type>);
+  constexpr auto table_pmp = LOOKUP_TABLE(test_pointer,
+                                          "pmp*",
+                                          {
+                                              .category = rfl::namespace_member_category::variables,
+                                          });
+  static_assert(
+      std::is_same_v<int test_pointer::foo_t::* const* const*, decltype(table_pmp)::value_type>);
   static_assert(table_pmp.size() == 2);
 
   ASSERT_NE_STATIC(nullptr, table_pmp["1"]);
@@ -127,8 +127,7 @@ TEST(NamespaceLookupTableByName, WithPointers)
   EXPECT_EQ_STATIC(nullptr, table_pmp["pmp2"]);
 
   constexpr auto table_fp = LOOKUP_TABLE(test_pointer, "fp*");
-  static_assert(std::is_same_v<
-    int (* const*)(const char*, ...), decltype(table_fp)::value_type>);
+  static_assert(std::is_same_v<int (*const*)(const char*, ...), decltype(table_fp)::value_type>);
   static_assert(table_fp.size() == 2);
 
   ASSERT_NE_STATIC(nullptr, table_fp["1"]);
@@ -141,8 +140,8 @@ TEST(NamespaceLookupTableByName, WithPointers)
   EXPECT_EQ_STATIC(nullptr, table_fp["pfp2"]);
 
   constexpr auto table_pfp = LOOKUP_TABLE(test_pointer, "pfp*");
-  static_assert(std::is_same_v<
-    int (* const* const*)(const char*, ...), decltype(table_pfp)::value_type>);
+  static_assert(
+      std::is_same_v<int (*const* const*)(const char*, ...), decltype(table_pfp)::value_type>);
   static_assert(table_pfp.size() == 2);
 
   ASSERT_NE_STATIC(nullptr, table_pfp["1"]);

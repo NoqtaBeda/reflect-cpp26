@@ -33,27 +33,23 @@ namespace rfl = reflect_cpp26;
 struct foo_t {
 private:
   int a_count;
+
 public:
   int x1;
   int y2;
   int z3;
+
 protected:
   int b_size;
 };
 
-TEST(TypeOperationsMemberNameAccess, NoInheritance)
-{
-  EXPECT_EQ_STATIC("a_count",
-    rfl::direct_nonstatic_data_member_names_v<foo_t>[0]);
-  EXPECT_EQ_STATIC("b_size",
-    rfl::direct_nonstatic_data_member_names_v<foo_t>[4]);
+TEST(TypeOperationsMemberNameAccess, NoInheritance) {
+  EXPECT_EQ_STATIC("a_count", rfl::direct_nonstatic_data_member_names_v<foo_t>[0]);
+  EXPECT_EQ_STATIC("b_size", rfl::direct_nonstatic_data_member_names_v<foo_t>[4]);
 
-  EXPECT_EQ_STATIC("x1",
-    rfl::public_direct_nonstatic_data_member_names_v<foo_t>[0]);
-  EXPECT_EQ_STATIC("y2",
-    rfl::public_direct_nonstatic_data_member_names_v<foo_t>[1]);
-  EXPECT_EQ_STATIC("z3",
-    rfl::public_direct_nonstatic_data_member_names_v<foo_t>[2]);
+  EXPECT_EQ_STATIC("x1", rfl::public_direct_nonstatic_data_member_names_v<foo_t>[0]);
+  EXPECT_EQ_STATIC("y2", rfl::public_direct_nonstatic_data_member_names_v<foo_t>[1]);
+  EXPECT_EQ_STATIC("z3", rfl::public_direct_nonstatic_data_member_names_v<foo_t>[2]);
 
   EXPECT_EQ_STATIC("a_count", rfl::nonstatic_data_member_names_v<foo_t>[0]);
   EXPECT_EQ_STATIC("b_size", rfl::nonstatic_data_member_names_v<foo_t>[4]);
@@ -66,9 +62,11 @@ TEST(TypeOperationsMemberNameAccess, NoInheritance)
 struct bar_t : public foo_t {
 private:
   std::string s1;
+
 public:
   std::string s2;
   std::string s3;
+
 private:
   std::string s4;
 };
@@ -79,30 +77,22 @@ struct baz_t : protected std::pair<double, double>, public bar_t {
   union {
     int as_int;
     float as_float;
-  }; // Anonymous data member
+  };  // Anonymous data member
 protected:
   double gamma;
 };
 
-TEST(TypeOperationsMemberNameAccess, WithInheritance)
-{
-  EXPECT_EQ_STATIC("alpha",
-    rfl::direct_nonstatic_data_member_names_v<baz_t>[0]);
-  EXPECT_EQ_STATIC("beta",
-    rfl::direct_nonstatic_data_member_names_v<baz_t>[1]);
+TEST(TypeOperationsMemberNameAccess, WithInheritance) {
+  EXPECT_EQ_STATIC("alpha", rfl::direct_nonstatic_data_member_names_v<baz_t>[0]);
+  EXPECT_EQ_STATIC("beta", rfl::direct_nonstatic_data_member_names_v<baz_t>[1]);
   EXPECT_EQ_STATIC("", rfl::direct_nonstatic_data_member_names_v<baz_t>[2]);
-  EXPECT_EQ_STATIC("gamma",
-    rfl::direct_nonstatic_data_member_names_v<baz_t>[3]);
+  EXPECT_EQ_STATIC("gamma", rfl::direct_nonstatic_data_member_names_v<baz_t>[3]);
   EXPECT_EQ_STATIC(4, rfl::direct_nonstatic_data_member_names_v<baz_t>.size());
 
-  EXPECT_EQ_STATIC("alpha",
-    rfl::public_direct_nonstatic_data_member_names_v<baz_t>[0]);
-  EXPECT_EQ_STATIC("beta",
-    rfl::public_direct_nonstatic_data_member_names_v<baz_t>[1]);
-  EXPECT_EQ_STATIC("",
-    rfl::public_direct_nonstatic_data_member_names_v<baz_t>[2]);
-  EXPECT_EQ_STATIC(3,
-    rfl::public_direct_nonstatic_data_member_names_v<baz_t>.size());
+  EXPECT_EQ_STATIC("alpha", rfl::public_direct_nonstatic_data_member_names_v<baz_t>[0]);
+  EXPECT_EQ_STATIC("beta", rfl::public_direct_nonstatic_data_member_names_v<baz_t>[1]);
+  EXPECT_EQ_STATIC("", rfl::public_direct_nonstatic_data_member_names_v<baz_t>[2]);
+  EXPECT_EQ_STATIC(3, rfl::public_direct_nonstatic_data_member_names_v<baz_t>.size());
 
   // Data members 'first' and 'second' are from std::pair
   EXPECT_EQ_STATIC("first", rfl::nonstatic_data_member_names_v<baz_t>[0]);
@@ -122,8 +112,7 @@ TEST(TypeOperationsMemberNameAccess, WithInheritance)
   EXPECT_EQ_STATIC("z3", rfl::public_nonstatic_data_member_names_v<baz_t>[2]);
   EXPECT_EQ_STATIC("s2", rfl::public_nonstatic_data_member_names_v<baz_t>[3]);
   EXPECT_EQ_STATIC("s3", rfl::public_nonstatic_data_member_names_v<baz_t>[4]);
-  EXPECT_EQ_STATIC("alpha",
-    rfl::public_nonstatic_data_member_names_v<baz_t>[5]);
+  EXPECT_EQ_STATIC("alpha", rfl::public_nonstatic_data_member_names_v<baz_t>[5]);
   EXPECT_EQ_STATIC("beta", rfl::public_nonstatic_data_member_names_v<baz_t>[6]);
   EXPECT_EQ_STATIC("", rfl::public_nonstatic_data_member_names_v<baz_t>[7]);
   EXPECT_EQ_STATIC(8, rfl::public_nonstatic_data_member_names_v<baz_t>.size());

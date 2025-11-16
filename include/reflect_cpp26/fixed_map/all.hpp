@@ -29,10 +29,9 @@
 #include <variant>
 
 namespace reflect_cpp26 {
-using fixed_map_options_variant = std::variant<
-  std::monostate, // All options by default
-  integral_key_fixed_map_options,
-  string_key_fixed_map_options>;
+using fixed_map_options_variant = std::variant<std::monostate,  // All options by default
+                                               integral_key_fixed_map_options,
+                                               string_key_fixed_map_options>;
 
 /**
  * Generates a fixed map in compile-time.
@@ -43,10 +42,8 @@ using fixed_map_options_variant = std::variant<
  *   make_string_key_fixed_map() in ./string_key.hpp.
  */
 template <std::ranges::input_range KVPairRange>
-consteval auto make_fixed_map(
-  KVPairRange kv_pairs, const fixed_map_options_variant& options = {})
-  -> std::meta::info
-{
+consteval auto make_fixed_map(KVPairRange kv_pairs, const fixed_map_options_variant& options = {})
+    -> std::meta::info {
   using KVPair = std::ranges::range_value_t<KVPairRange>;
   using KeyType = std::tuple_element_t<0, KVPair>;
   if constexpr (integral_or_enum_type<KeyType>) {
@@ -71,6 +68,6 @@ consteval auto make_fixed_map(
     }
   }
 }
-} // namespace reflect_cpp26
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_UTILS_FIXED_MAP_ALL_HPP
+#endif  // REFLECT_CPP26_UTILS_FIXED_MAP_ALL_HPP

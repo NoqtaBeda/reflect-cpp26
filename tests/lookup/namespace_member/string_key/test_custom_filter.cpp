@@ -20,16 +20,16 @@
  * SOFTWARE.
  **/
 
-#include "tests/lookup/lookup_test_options.hpp"
 #include <reflect_cpp26/lookup/lookup_table.hpp>
 
-#define LOOKUP_TABLE(...) \
-  REFLECT_CPP26_NAMESPACE_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
+#include "tests/lookup/lookup_test_options.hpp"
+
+#define LOOKUP_TABLE(...) REFLECT_CPP26_NAMESPACE_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
 
 namespace rfl = reflect_cpp26;
 
 namespace qux {
-#define ANNOTATE(...) [[ =(__VA_ARGS__) ]]
+#define ANNOTATE(...) [[=(__VA_ARGS__)]]
 constexpr long a = 1;
 constexpr long b = 2;
 constexpr long c = 3;
@@ -45,18 +45,16 @@ ANNOTATE('-')
 constexpr long subtract(long x, const long* y = nullptr) {
   return y == nullptr ? x : x - *y;
 }
-} // namespace qux
+}  // namespace qux
 
-TEST(NamespaceLookupTableByName, CustomFilter)
-{
-  constexpr auto table_v = LOOKUP_TABLE(
-    qux,
-    [](std::string_view identifier) -> std::optional<std::string> {
-      if (identifier.length() == 1 && (identifier[0] - 'a') % 2 == 0) {
-        return std::string{identifier};
-      }
-      return std::nullopt;
-    });
+TEST(NamespaceLookupTableByName, CustomFilter) {
+  constexpr auto table_v =
+      LOOKUP_TABLE(qux, [](std::string_view identifier) -> std::optional<std::string> {
+        if (identifier.length() == 1 && (identifier[0] - 'a') % 2 == 0) {
+          return std::string{identifier};
+        }
+        return std::nullopt;
+      });
   static_assert(std::is_same_v<const long*, decltype(table_v)::value_type>);
   static_assert(table_v.size() == 3);
 
@@ -66,17 +64,15 @@ TEST(NamespaceLookupTableByName, CustomFilter)
   EXPECT_EQ_STATIC(nullptr, table_v["b"]);
   EXPECT_EQ_STATIC(nullptr, table_v["d"]);
 
-  constexpr auto table_f = LOOKUP_TABLE(
-    qux,
-    [](std::meta::info member) -> std::optional<std::string> {
-      if (is_variable(member) || annotations_of(member).size() != 1) {
-        return std::nullopt;
-      }
-      auto annotation = extract<char>(annotations_of(member)[0]);
-      return std::string(1zU, annotation);
-    });
-  static_assert(std::is_same_v<
-    long (*)(long, const long*), decltype(table_f)::value_type>);
+  constexpr auto table_f =
+      LOOKUP_TABLE(qux, [](std::meta::info member) -> std::optional<std::string> {
+        if (is_variable(member) || annotations_of(member).size() != 1) {
+          return std::nullopt;
+        }
+        auto annotation = extract<char>(annotations_of(member)[0]);
+        return std::string(1zU, annotation);
+      });
+  static_assert(std::is_same_v<long (*)(long, const long*), decltype(table_f)::value_type>);
   static_assert(table_f.size() == 2);
 
   constexpr auto y = 42L;

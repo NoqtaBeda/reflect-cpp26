@@ -20,12 +20,12 @@
  * SOFTWARE.
  **/
 
-#include "tests/lookup/lookup_test_options.hpp"
 #include <reflect_cpp26/enum/enum_cast.hpp>
 #include <reflect_cpp26/lookup/lookup_table.hpp>
 
-#define LOOKUP_TABLE(...) \
-  REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
+#include "tests/lookup/lookup_test_options.hpp"
+
+#define LOOKUP_TABLE(...) REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
 
 namespace rfl = reflect_cpp26;
 
@@ -61,17 +61,15 @@ enum operand_dump_fn_key {
   operand_dump_value = 10,
 };
 
-TEST(ClassLookupTableByEnum, CustomFilter)
-{
+TEST(ClassLookupTableByEnum, CustomFilter) {
   // (std::string_view identifier) -> std::optional<E>
   constexpr auto table_dump = LOOKUP_TABLE(
-    operand_t,
-    [](std::string_view identifier) -> std::optional<operand_dump_fn_key> {
-      auto str = std::string{"operand_"} + identifier;
-      return rfl::enum_cast<operand_dump_fn_key>(str); 
-    });
-  static_assert(std::is_same_v<
-    std::string (operand_t::*)() const, decltype(table_dump)::value_type>);
+      operand_t, [](std::string_view identifier) -> std::optional<operand_dump_fn_key> {
+        auto str = std::string{"operand_"} + identifier;
+        return rfl::enum_cast<operand_dump_fn_key>(str);
+      });
+  static_assert(
+      std::is_same_v<std::string (operand_t::*)() const, decltype(table_dump)::value_type>);
   static_assert(table_dump.size() == 2);
 
   auto foo = operand_t{.value = 42};
@@ -80,16 +78,14 @@ TEST(ClassLookupTableByEnum, CustomFilter)
   EXPECT_EQ_STATIC(nullptr, table_dump[static_cast<operand_dump_fn_key>(2)]);
 
   // (std::meta::info member) -> std::optional<E>
-  constexpr auto table_op = LOOKUP_TABLE(
-    operand_t,
-    [](std::meta::info member) -> std::optional<std::meta::operators> {
-      if (is_operator_function(member) && !is_assignment(member)) {
-        return operator_of(member);
-      }
-      return std::nullopt;
-    });
-  static_assert(std::is_same_v<
-    operand_t& (operand_t::*)(long), decltype(table_op)::value_type>);
+  constexpr auto table_op =
+      LOOKUP_TABLE(operand_t, [](std::meta::info member) -> std::optional<std::meta::operators> {
+        if (is_operator_function(member) && !is_assignment(member)) {
+          return operator_of(member);
+        }
+        return std::nullopt;
+      });
+  static_assert(std::is_same_v<operand_t& (operand_t::*)(long), decltype(table_op)::value_type>);
   static_assert(table_op.size() == 4);
 
   foo.value = 42;

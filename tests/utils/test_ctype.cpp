@@ -20,9 +20,10 @@
  * SOFTWARE.
  **/
 
-#include "tests/test_options.hpp"
-#include <reflect_cpp26/utils/ctype.hpp>
 #include <cctype>
+#include <reflect_cpp26/utils/ctype.hpp>
+
+#include "tests/test_options.hpp"
 
 namespace rfl = reflect_cpp26;
 
@@ -40,25 +41,23 @@ namespace rfl = reflect_cpp26;
   F(isprint)                                      \
   F(ispunct)
 
-TEST(UtilsCtype, CharacterPredicate)
-{
+TEST(UtilsCtype, CharacterPredicate) {
   for (unsigned char i = 0; i <= 127; i++) {
-#define MAKE_EXPECT_EQ(fn)                            \
-    EXPECT_EQ(!!std::fn(i), rfl::ascii_##fn(i))       \
-      << std::format("Wrong " #fn "('\\x{:x}')", i);
+#define MAKE_EXPECT_EQ(fn) \
+  EXPECT_EQ(!!std::fn(i), rfl::ascii_##fn(i)) << std::format("Wrong " #fn "('\\x{:x}')", i);
 
     REFLECT_CPP26_CTYPE_PREDICATE_FOR_EACH(MAKE_EXPECT_EQ)
 #undef MAKE_EXPECT_EQ
   }
 
-#define MAKE_EXPECT_FALSE(fn)                                               \
-  EXPECT_FALSE(rfl::ascii_##fn(value))                                      \
-    << std::format("Wrong " #fn "({}): Failed to detect overflow.", value);
+#define MAKE_EXPECT_FALSE(fn)          \
+  EXPECT_FALSE(rfl::ascii_##fn(value)) \
+      << std::format("Wrong " #fn "({}): Failed to detect overflow.", value);
 
-#define TEST_OVERFLOW(type, expr)                               \
-  do {                                                          \
-    auto value = static_cast<type>(expr);                       \
-    REFLECT_CPP26_CTYPE_PREDICATE_FOR_EACH(MAKE_EXPECT_FALSE);  \
+#define TEST_OVERFLOW(type, expr)                              \
+  do {                                                         \
+    auto value = static_cast<type>(expr);                      \
+    REFLECT_CPP26_CTYPE_PREDICATE_FOR_EACH(MAKE_EXPECT_FALSE); \
   } while (false)
 
   TEST_OVERFLOW(int, -128);
@@ -70,8 +69,7 @@ TEST(UtilsCtype, CharacterPredicate)
 #undef MAKE_EXPECT_FALSE
 }
 
-TEST(UtilsCtype, ToLowerOrUpper)
-{
+TEST(UtilsCtype, ToLowerOrUpper) {
   EXPECT_EQ_STATIC("hello world!", rfl::ascii_tolower("Hello World!"));
   EXPECT_EQ_STATIC(u"HELLO WORLD!", rfl::ascii_toupper(u"Hello World!"));
 
@@ -85,8 +83,7 @@ TEST(UtilsCtype, ToLowerOrUpper)
   EXPECT_EQ_STATIC(L"", rfl::ascii_toupper(null));
 }
 
-TEST(UtilsCtype, Trim)
-{
+TEST(UtilsCtype, Trim) {
   EXPECT_EQ_STATIC("hello world", rfl::ascii_trim(" \n\thello world\f\r\v "));
   EXPECT_EQ_STATIC(U"Hello World", rfl::ascii_trim(U"  Hello World    \n  "));
   EXPECT_EQ_STATIC(u"", rfl::ascii_trim(u" \n \t \r \f \v "));

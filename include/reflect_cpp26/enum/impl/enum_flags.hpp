@@ -23,6 +23,7 @@
 #ifndef REFLECT_CPP26_ENUM_IMPL_ENUM_FLAGS_HPP
 #define REFLECT_CPP26_ENUM_IMPL_ENUM_FLAGS_HPP
 
+#include <bit>
 #include <reflect_cpp26/enum/enum_names.hpp>
 #include <reflect_cpp26/utils/define_static_values.hpp>
 #include <reflect_cpp26/utils/functional.hpp>
@@ -30,7 +31,6 @@
 #include <reflect_cpp26/utils/meta_string_view.hpp>
 #include <reflect_cpp26/utils/meta_utility.hpp>
 #include <reflect_cpp26/utils/utility.hpp>
-#include <bit>
 
 namespace reflect_cpp26::impl {
 struct enum_flags_entry {
@@ -56,8 +56,7 @@ struct irregular_enum_flags_units {
 };
 
 template <class E>
-consteval auto make_enum_flags_entries() -> std::vector<enum_flags_entry>
-{
+consteval auto make_enum_flags_entries() -> std::vector<enum_flags_entry> {
   auto res = std::vector<enum_flags_entry>{};
   auto names = reflect_cpp26::enum_names_v<E>;
   auto entries = enumerators_of(^^E);
@@ -65,21 +64,17 @@ consteval auto make_enum_flags_entries() -> std::vector<enum_flags_entry>
     auto e = extract<E>(entries[i]);
     auto u = zero_extend<uint64_t>(std::to_underlying(e));
     auto name = meta_string_view::from_std_string_view(names[i]);
-    res.push_back(
-      {.underlying = u, .popcount = std::popcount(u), .name = name});
+    res.push_back({.underlying = u, .popcount = std::popcount(u), .name = name});
   }
-
   return res;
 }
 
-consteval auto try_decompose_regular_enum_flags_units(
-  std::vector<enum_flags_entry> entries)
-  -> std::optional<regular_enum_flags_units>
-{
+consteval auto try_decompose_regular_enum_flags_units(std::vector<enum_flags_entry> entries)
+    -> std::optional<regular_enum_flags_units> {
   std::ranges::stable_sort(entries, {}, &enum_flags_entry::popcount);
   auto full_set = uint64_t{0};
   auto units = std::vector<enum_flags_entry>{};
-  for (const auto& e: entries) {
+  for (const auto& e : entries) {
     if (e.underlying == 0) {
       continue;
     }
@@ -92,34 +87,34 @@ consteval auto try_decompose_regular_enum_flags_units(
       return std::nullopt;
     }
     auto remaining = e.underlying;
-    for (const auto& u: units) {
+    for (const auto& u : units) {
       if ((remaining & u.underlying) == u.underlying) {
         remaining ^= u.underlying;
-        if (remaining == 0) { break; }
+        if (remaining == 0) {
+          break;
+        }
       } else if ((remaining & u.underlying) != 0) {
         return std::nullopt;
       }
     }
   }
   auto sum_name_length = size_t{0};
-  for (const auto& u: units) {
+  for (const auto& u : units) {
     sum_name_length += u.name.length();
   }
   std::ranges::sort(units, greater, &enum_flags_entry::underlying);
   auto units_span = reflect_cpp26::define_static_array(units);
   return regular_enum_flags_units{
-    .units = units_span,
-    .sum_name_length = sum_name_length,
-    .full_set = full_set,
+      .units = units_span,
+      .sum_name_length = sum_name_length,
+      .full_set = full_set,
   };
 }
 
-consteval auto decompose_irregular_enum_flags_units(
-  std::vector<enum_flags_entry> entries) -> irregular_enum_flags_units
-{
+consteval auto decompose_irregular_enum_flags_units(std::vector<enum_flags_entry> entries)
+    -> irregular_enum_flags_units {
   std::ranges::sort(entries, greater, &enum_flags_entry::underlying);
-  auto [dup_begin, dup_end] =
-    std::ranges::unique(entries, {}, &enum_flags_entry::underlying);
+  auto [dup_begin, dup_end] = std::ranges::unique(entries, {}, &enum_flags_entry::underlying);
   entries.erase(dup_begin, dup_end);
 
   auto n = entries.size();
@@ -131,7 +126,9 @@ consteval auto decompose_irregular_enum_flags_units(
     full_set |= u;
     for (auto j = i + 1; j < n; j++) {
       auto v = entries[j].underlying;
-      if ((u & v) == v) { adjacency_list[i].push_back(j); }
+      if ((u & v) == v) {
+        adjacency_list[i].push_back(j);
+      }
     }
   }
   auto indices = std::vector<size_t>();
@@ -141,25 +138,22 @@ consteval auto decompose_irregular_enum_flags_units(
     indices.append_range(adjacency_list[i]);
   }
   auto sum_name_length = size_t{0};
-  for (const auto& u: entries) {
+  for (const auto& u : entries) {
     sum_name_length += u.name.length();
   }
   return irregular_enum_flags_units{
-    .units = reflect_cpp26::define_static_array(entries),
-    .heads = reflect_cpp26::define_static_array(heads),
-    .subset_indices = reflect_cpp26::define_static_array(indices),
-    .sum_name_length = sum_name_length,
-    .full_set = full_set,
+      .units = reflect_cpp26::define_static_array(entries),
+      .heads = reflect_cpp26::define_static_array(heads),
+      .subset_indices = reflect_cpp26::define_static_array(indices),
+      .sum_name_length = sum_name_length,
+      .full_set = full_set,
   };
 }
 
 template <class E>
-consteval auto make_enum_flags_decomposer() -> std::meta::info
-{
+consteval auto make_enum_flags_decomposer() -> std::meta::info {
   auto entries = make_enum_flags_entries<E>();
-  auto is_non_empty = std::ranges::any_of(entries, [](const auto& e) {
-    return e.underlying != 0;
-  });
+  auto is_non_empty = std::ranges::any_of(entries, [](const auto& e) { return e.underlying != 0; });
   if (!is_non_empty) {
     return std::meta::reflect_constant(empty_enum_flags_tag_t{});
   }
@@ -172,23 +166,22 @@ consteval auto make_enum_flags_decomposer() -> std::meta::info
 }
 
 template <class E>
-constexpr auto enum_flags_decomposer_v =
-  extract<make_enum_flags_decomposer<E>()>();
+constexpr auto enum_flags_decomposer_v = extract<make_enum_flags_decomposer<E>()>();
 
 template <class E>
-constexpr auto enum_flags_is_empty_v = std::is_same_v<
-  std::remove_cvref_t<decltype(enum_flags_decomposer_v<E>)>,
-  empty_enum_flags_tag_t>;
+constexpr auto enum_flags_is_empty_v =
+    std::is_same_v<std::remove_cvref_t<decltype(enum_flags_decomposer_v<E>)>,
+                   empty_enum_flags_tag_t>;
 
 template <class E>
-constexpr auto enum_flags_is_regular_v = std::is_same_v<
-  std::remove_cvref_t<decltype(enum_flags_decomposer_v<E>)>,
-  regular_enum_flags_units>;
+constexpr auto enum_flags_is_regular_v =
+    std::is_same_v<std::remove_cvref_t<decltype(enum_flags_decomposer_v<E>)>,
+                   regular_enum_flags_units>;
 
 template <class E>
-constexpr auto enum_flags_is_irregular_v = std::is_same_v<
-  std::remove_cvref_t<decltype(enum_flags_decomposer_v<E>)>,
-  irregular_enum_flags_units>;
-} // namespace reflect_cpp26::impl
+constexpr auto enum_flags_is_irregular_v =
+    std::is_same_v<std::remove_cvref_t<decltype(enum_flags_decomposer_v<E>)>,
+                   irregular_enum_flags_units>;
+}  // namespace reflect_cpp26::impl
 
-#endif // REFLECT_CPP26_ENUM_IMPL_ENUM_FLAGS_HPP
+#endif  // REFLECT_CPP26_ENUM_IMPL_ENUM_FLAGS_HPP

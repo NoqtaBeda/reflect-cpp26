@@ -31,11 +31,8 @@
 
 using namespace reflect_cpp26;
 
-TEST(EnumNames, All)
-{
+TEST(EnumNames, All) {
   EXPECT_EQ_STATIC("yi", enum_names_v<foo_signed_rep>[3]);
-  EXPECT_EQ_STATIC("four",
-    enum_names_v<const foo_signed_rep, enum_entry_order::by_value>[7]);
-  EXPECT_EQ_STATIC("yi",
-    enum_names_v<volatile foo_signed_rep, enum_entry_order::by_name>[9]);
+  EXPECT_EQ_STATIC("four", enum_names_v<const foo_signed_rep, enum_entry_order::by_value>[7]);
+  EXPECT_EQ_STATIC("yi", enum_names_v<volatile foo_signed_rep, enum_entry_order::by_name>[9]);
 }

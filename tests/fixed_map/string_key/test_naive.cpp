@@ -20,30 +20,29 @@
  * SOFTWARE.
  **/
 
-#include "tests/fixed_map/string_key/string_key_test_options.hpp"
 #include <reflect_cpp26/fixed_map/string_key.hpp>
+
+#include "tests/fixed_map/string_key/string_key_test_options.hpp"
 
 namespace rfl = reflect_cpp26;
 
 template <class CharT, bool CI>
-void test_naive_common()
-{
+void test_naive_common() {
   using KVPair = std::pair<std::basic_string<CharT>, wrapper_t<double>>;
   constexpr auto make_kv_pairs = []() constexpr {
     return std::vector<KVPair>{
-      {to<CharT>("Apple"), {.value = 12.5}},
-      {to<CharT>("Pineapple"), {.value = 25.0}},
-      {to<CharT>("Pen"), {.value = 37.5}},
+        {to<CharT>("Apple"), {.value = 12.5}},
+        {to<CharT>("Pineapple"), {.value = 25.0}},
+        {to<CharT>("Pen"), {.value = 37.5}},
     };
   };
-  constexpr auto map = FIXED_MAP(make_kv_pairs(), {
-    .ascii_case_insensitive = CI,
-    .optimization_threshold = 4,
-  });
-  static_assert(std::is_same_v<
-    typename decltype(map)::result_type, const wrapper_t<double>&>);
-  EXPECT_THAT(display_string_of(^^decltype(map)),
-              testing::HasSubstr("naive_string_key_map"));
+  constexpr auto map = FIXED_MAP(make_kv_pairs(),
+                                 {
+                                     .ascii_case_insensitive = CI,
+                                     .optimization_threshold = 4,
+                                 });
+  static_assert(std::is_same_v<typename decltype(map)::result_type, const wrapper_t<double>&>);
+  EXPECT_THAT(display_string_of(^^decltype(map)), testing::HasSubstr("naive_string_key_map"));
   EXPECT_EQ_STATIC(3, map.size());
 
   EXPECT_EQ_STATIC(12.5, map[to<CharT>("Apple")]);
@@ -59,17 +58,17 @@ void test_naive_common()
   EXPECT_NOT_FOUND_STATIC(magic_value, map, to<CharT>("App"));
 }
 
-#define MAKE_NAIVE_MAP_TESTS(char_type, CharTypeName)   \
-  TEST(FixedMap, StringKeyNaive##CharTypeName) {        \
-    test_naive_common<char_type, false>();              \
-  }                                                     \
-  TEST(FixedMap, StringKeyNaiveCI##CharTypeName) {      \
-    test_naive_common<char_type, true>();               \
+#define MAKE_NAIVE_MAP_TESTS(char_type, CharTypeName) \
+  TEST(FixedMap, StringKeyNaive##CharTypeName) {      \
+    test_naive_common<char_type, false>();            \
+  }                                                   \
+  TEST(FixedMap, StringKeyNaiveCI##CharTypeName) {    \
+    test_naive_common<char_type, true>();             \
   }
 
-#define FOR_EACH_CHARACTER_TYPE(F)  \
-  F(char, Char)                     \
-  F(wchar_t, WChar)                 \
+#define FOR_EACH_CHARACTER_TYPE(F) \
+  F(char, Char)                    \
+  F(wchar_t, WChar)                \
   F(char16_t, Char16)
 
 FOR_EACH_CHARACTER_TYPE(MAKE_NAIVE_MAP_TESTS)

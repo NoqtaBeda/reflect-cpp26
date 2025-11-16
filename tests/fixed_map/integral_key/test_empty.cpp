@@ -20,13 +20,13 @@
  * SOFTWARE.
  **/
 
-#include "tests/fixed_map/integral_key/integral_key_test_options.hpp"
 #include <reflect_cpp26/fixed_map/integral_key.hpp>
+
+#include "tests/fixed_map/integral_key/integral_key_test_options.hpp"
 
 namespace rfl = reflect_cpp26;
 
-TEST(FixedMap, IntegralKeyEmpty)
-{
+TEST(FixedMap, IntegralKeyEmpty) {
   using KVPair = std::pair<int, const void*>;
   constexpr auto map_empty = FIXED_MAP(std::vector<KVPair>());
   EXPECT_THAT(display_string_of(^^decltype(map_empty)),

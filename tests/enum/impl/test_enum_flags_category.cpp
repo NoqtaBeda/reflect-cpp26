@@ -20,14 +20,14 @@
  * SOFTWARE.
  **/
 
+#include <reflect_cpp26/enum/impl/enum_flags.hpp>
+
 #include "tests/enum/flags_test_cases.hpp"
 #include "tests/test_options.hpp"
-#include <reflect_cpp26/enum/impl/enum_flags.hpp>
 
 namespace impl = reflect_cpp26::impl;
 
-TEST(EnumFlagsCategory, Empty)
-{
+TEST(EnumFlagsCategory, Empty) {
   static_assert(NOT impl::enum_flags_is_empty_v<D1>);
   static_assert(NOT impl::enum_flags_is_empty_v<D2>);
   static_assert(NOT impl::enum_flags_is_empty_v<D3>);
@@ -42,8 +42,7 @@ TEST(EnumFlagsCategory, Empty)
   static_assert(impl::enum_flags_is_empty_v<single_zero_rep>);
 }
 
-TEST(EnumFlagsCategory, Regular)
-{
+TEST(EnumFlagsCategory, Regular) {
   static_assert(impl::enum_flags_is_regular_v<D1>);
   static_assert(impl::enum_flags_is_regular_v<D2>);
   static_assert(impl::enum_flags_is_regular_v<D3>);
@@ -58,8 +57,7 @@ TEST(EnumFlagsCategory, Regular)
   static_assert(NOT impl::enum_flags_is_regular_v<single_zero_rep>);
 }
 
-TEST(EnumFlagsCategory, Irregular)
-{
+TEST(EnumFlagsCategory, Irregular) {
   static_assert(NOT impl::enum_flags_is_irregular_v<D1>);
   static_assert(NOT impl::enum_flags_is_irregular_v<D2>);
   static_assert(NOT impl::enum_flags_is_irregular_v<D3>);

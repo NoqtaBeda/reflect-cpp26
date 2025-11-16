@@ -23,10 +23,10 @@
 #ifndef REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_COMMON_HPP
 #define REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_COMMON_HPP
 
+#include <bit>
 #include <reflect_cpp26/utils/define_static_values.hpp>
 #include <reflect_cpp26/utils/functional.hpp>
 #include <reflect_cpp26/utils/meta_span.hpp>
-#include <bit>
 
 namespace reflect_cpp26::impl {
 template <class Value>
@@ -43,8 +43,7 @@ struct alignment_adjusted_wrapper {
 
   template <class InputIter>
   static constexpr auto make_static_array(InputIter first, InputIter last)
-    -> meta_span<alignment_adjusted_wrapper<T>>
-  {
+      -> meta_span<alignment_adjusted_wrapper<T>> {
     auto res = std::vector<alignment_adjusted_wrapper<T>>{};
     for (; first != last; ++first) {
       res.push_back(make(*first));
@@ -53,8 +52,7 @@ struct alignment_adjusted_wrapper {
   }
 
   template <class InputRange>
-  static constexpr auto make_static_array(const InputRange& range)
-  {
+  static constexpr auto make_static_array(const InputRange& range) {
     auto begin = std::ranges::begin(range);
     auto end = std::ranges::end(range);
     return make_static_array(begin, end);
@@ -63,17 +61,16 @@ struct alignment_adjusted_wrapper {
 
 template <class T>
 constexpr decltype(auto) unwrap(T&& value) {
-  return std::forward<T>(value); // End of recursion
+  return std::forward<T>(value);  // End of recursion
 }
 
 template <class T>
 constexpr decltype(auto) unwrap_once(T&& value) {
-  return std::forward<T>(value); // End of recursion
+  return std::forward<T>(value);  // End of recursion
 }
 
 template <class T>
-constexpr auto unwrap(const alignment_adjusted_wrapper<T>& wrapper)
-  -> const T& {
+constexpr auto unwrap(const alignment_adjusted_wrapper<T>& wrapper) -> const T& {
   return unwrap(wrapper.underlying);
 }
 
@@ -83,8 +80,7 @@ constexpr auto unwrap(alignment_adjusted_wrapper<T>&& wrapper) -> T {
 }
 
 template <class T>
-constexpr auto unwrap_once(const alignment_adjusted_wrapper<T>& wrapper)
-  -> const T& {
+constexpr auto unwrap_once(const alignment_adjusted_wrapper<T>& wrapper) -> const T& {
   return wrapper.underlying;
 }
 
@@ -92,6 +88,6 @@ template <class T>
 constexpr auto unwrap_once(alignment_adjusted_wrapper<T>&& wrapper) -> T {
   return std::move(wrapper.underlying);
 }
-} // namespace reflect_cpp26::impl
+}  // namespace reflect_cpp26::impl
 
-#endif // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_COMMON_HPP
+#endif  // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_COMMON_HPP

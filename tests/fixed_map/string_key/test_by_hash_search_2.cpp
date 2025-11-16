@@ -20,41 +20,39 @@
  * SOFTWARE.
  **/
 
-#include "tests/fixed_map/string_key/string_key_test_options.hpp"
 #include <reflect_cpp26/fixed_map/string_key.hpp>
+
+#include "tests/fixed_map/string_key/string_key_test_options.hpp"
 
 namespace rfl = reflect_cpp26;
 
 template <class CharT>
-consteval auto make_kv_pairs()
-{
+consteval auto make_kv_pairs() {
   using Value = std::pair<size_t, size_t>;
   using KVPair = std::pair<std::basic_string<CharT>, Value>;
   return std::vector<KVPair>{
-    {to<CharT>("Amiya"), {0, 1}},
-    {to<CharT>("Kal'tsit"), {1, 10}},
-    {to<CharT>("Blaze"), {2, 20}},
-    {to<CharT>("Rosmontis"), {3, 30}},
-    {to<CharT>("Logos"), {4, 40}},
-    {to<CharT>("Ch'en"), {5, 50}},
-    {to<CharT>("Crownslayer"), {6, 60}},
-    {to<CharT>("Sharp"), {7, 70}},
+      {to<CharT>("Amiya"), {0, 1}},
+      {to<CharT>("Kal'tsit"), {1, 10}},
+      {to<CharT>("Blaze"), {2, 20}},
+      {to<CharT>("Rosmontis"), {3, 30}},
+      {to<CharT>("Logos"), {4, 40}},
+      {to<CharT>("Ch'en"), {5, 50}},
+      {to<CharT>("Crownslayer"), {6, 60}},
+      {to<CharT>("Sharp"), {7, 70}},
   };
 }
 
 template <class CharT, rfl::string_key_fixed_map_options Options>
-constexpr void test_by_hash_search_common()
-{
+constexpr void test_by_hash_search_common() {
   using Value = std::pair<size_t, size_t>;
   constexpr auto CI = Options.ascii_case_insensitive;
   constexpr auto AA = Options.adjusts_alignment;
   constexpr auto map = FIXED_MAP(make_kv_pairs<CharT>(), Options);
   EXPECT_THAT(display_string_of(^^decltype(map)),
               testing::HasSubstr("string_key_map_by_hash_binary_search"));
-  static_assert(rfl::same_as_one_of<
-    typename decltype(map)::result_type,
-    const rfl::meta_tuple<size_t, size_t>&,
-    const std::pair<size_t, size_t>&>);
+  static_assert(rfl::same_as_one_of<typename decltype(map)::result_type,
+                                    const rfl::meta_tuple<size_t, size_t>&,
+                                    const std::pair<size_t, size_t>&>);
   EXPECT_EQ_STATIC(8, map.size());
 
   EXPECT_EQ_STATIC(Value(0, 1), map[to<CharT>("Amiya")]);
@@ -84,24 +82,23 @@ constexpr void test_by_hash_search_common()
 }
 
 template <class CharT, bool AA>
-constexpr void test_by_hash_binary_search_common()
-{
+constexpr void test_by_hash_binary_search_common() {
   constexpr auto options = rfl::string_key_fixed_map_options{
-    // Cases where CI == false has been tested in test_by_hash_search_1.cpp
-    .ascii_case_insensitive = true,
-    .adjusts_alignment = AA,
-    .min_load_factor = 1.0,
-    .binary_search_threshold = 8,
+      // Cases where CI == false has been tested in test_by_hash_search_1.cpp
+      .ascii_case_insensitive = true,
+      .adjusts_alignment = AA,
+      .min_load_factor = 1.0,
+      .binary_search_threshold = 8,
   };
   test_by_hash_search_common<CharT, options>();
 }
 
-#define MAKE_MAP_TESTS(char_type, CharTypeName)                   \
-  TEST(FixedMap, StringKeyByHashBinarySearch2##CharTypeName) {    \
-    test_by_hash_binary_search_common<char_type, false>();        \
-  }                                                               \
-  TEST(FixedMap, StringKeyByHashBinarySearch2AA##CharTypeName) {  \
-    test_by_hash_binary_search_common<char_type, true>();         \
+#define MAKE_MAP_TESTS(char_type, CharTypeName)                  \
+  TEST(FixedMap, StringKeyByHashBinarySearch2##CharTypeName) {   \
+    test_by_hash_binary_search_common<char_type, false>();       \
+  }                                                              \
+  TEST(FixedMap, StringKeyByHashBinarySearch2AA##CharTypeName) { \
+    test_by_hash_binary_search_common<char_type, true>();        \
   }
 
 MAKE_MAP_TESTS(char, Char)

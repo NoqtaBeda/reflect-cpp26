@@ -38,13 +38,11 @@ enum foo {
   foo_eight = 8,
 };
 
-constexpr auto str_concat(std::string_view lhs, std::string_view rhs)
-  -> std::string {
+constexpr auto str_concat(std::string_view lhs, std::string_view rhs) -> std::string {
   return std::string{lhs} + rhs;
 }
 
-TEST(EnumFlagsContainsBindExpression, All)
-{
+TEST(EnumFlagsContainsBindExpression, All) {
   using namespace std::placeholders;
 
   constexpr auto F = enum_flags_contains<foo>(_2);
@@ -53,17 +51,14 @@ TEST(EnumFlagsContainsBindExpression, All)
   EXPECT_TRUE_STATIC(F("foo_one", 7));
   EXPECT_FALSE_STATIC(F(2, 17));
 
-  constexpr auto G = enum_flags_contains<foo>(
-    std::bind(str_concat, _2, _1), _3);
+  constexpr auto G = enum_flags_contains<foo>(std::bind(str_concat, _2, _1), _3);
   EXPECT_TRUE_STATIC(G("foo_eight", "foo_two | ", '|'));
   EXPECT_FALSE_STATIC(G("foo_eight", "Foo_Two | ", '|'));
   EXPECT_FALSE_STATIC(G("foo_eight", "foo_two | ", ", "));
   EXPECT_FALSE_STATIC(G("foo_eight | ", "foo_two", '|'));
 
-  constexpr auto H = enum_flags_contains<foo>(
-    ascii_case_insensitive, std::bind(str_concat, _2, _1), _4);
-  EXPECT_TRUE_STATIC(
-    H("Foo_Eight", "Foo_Two | ", "(I have nothing to do)", '|'));
-  EXPECT_FALSE_STATIC(
-    H("Foo_Eight", "Foo_Two | ", "(I have nothing to do either)", ", "));
+  constexpr auto H =
+      enum_flags_contains<foo>(ascii_case_insensitive, std::bind(str_concat, _2, _1), _4);
+  EXPECT_TRUE_STATIC(H("Foo_Eight", "Foo_Two | ", "(I have nothing to do)", '|'));
+  EXPECT_FALSE_STATIC(H("Foo_Eight", "Foo_Two | ", "(I have nothing to do either)", ", "));
 }

@@ -20,12 +20,12 @@
  * SOFTWARE.
  **/
 
-#include "tests/lookup/lookup_test_options.hpp"
 #include <reflect_cpp26/enum/enum_cast.hpp>
 #include <reflect_cpp26/lookup/lookup_table.hpp>
 
-#define LOOKUP_TABLE(...) \
-  REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
+#include "tests/lookup/lookup_test_options.hpp"
+
+#define LOOKUP_TABLE(...) REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
 
 namespace rfl = reflect_cpp26;
 
@@ -50,27 +50,24 @@ struct foo_1_t {
 };
 
 enum class foo_1_key {
-  x, z, w,
+  x,
+  z,
+  w,
 };
 
-TEST(ClassLookupTableByEnum, Basic)
-{
-  constexpr auto table_v = LOOKUP_TABLE(
-    foo_1_t, "value_*", rfl::enum_cast<foo_1_key>);
+TEST(ClassLookupTableByEnum, Basic) {
+  constexpr auto table_v = LOOKUP_TABLE(foo_1_t, "value_*", rfl::enum_cast<foo_1_key>);
   static_assert(std::is_same_v<int foo_1_t::*, decltype(table_v)::value_type>);
   static_assert(table_v.size() == 2);
 
-  constexpr auto foo = foo_1_t{
-    .value_x = 10, .value_y = 20, .value_z = 30, .size = 4};
+  constexpr auto foo = foo_1_t{.value_x = 10, .value_y = 20, .value_z = 30, .size = 4};
   CHECK_MEMBER_VARIABLE_STATIC(10, foo, table_v[foo_1_key::x]);
   CHECK_MEMBER_VARIABLE_STATIC(30, foo, table_v[foo_1_key::z]);
   EXPECT_EQ_STATIC(nullptr, table_v[foo_1_key::w]);
   EXPECT_EQ_STATIC(nullptr, table_v[static_cast<foo_1_key>(-1)]);
 
-  constexpr auto table_f = LOOKUP_TABLE(
-    foo_1_t, "get_*_squared_plus_a", rfl::enum_cast<foo_1_key>);
-  static_assert(std::is_same_v<
-    int (foo_1_t::*)(int) const, decltype(table_f)::value_type>);
+  constexpr auto table_f = LOOKUP_TABLE(foo_1_t, "get_*_squared_plus_a", rfl::enum_cast<foo_1_key>);
+  static_assert(std::is_same_v<int (foo_1_t::*)(int) const, decltype(table_f)::value_type>);
   static_assert(table_f.size() == 1);
 
   CHECK_MEMBER_FUNCTION_STATIC(105, foo, table_f[foo_1_key::x], 5);

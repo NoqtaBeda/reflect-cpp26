@@ -20,9 +20,10 @@
  * SOFTWARE.
  **/
 
+#include <climits>
+
 #include "tests/enum/flags_test_cases.hpp"
 #include "tests/test_options.hpp"
-#include <climits>
 
 #ifdef ENABLE_FULL_HEADER_TEST
 #include <reflect_cpp26/enum.hpp>
@@ -32,8 +33,7 @@
 
 namespace rfl = reflect_cpp26;
 
-TEST(EnumFlagsContainsString, D1)
-{
+TEST(EnumFlagsContainsString, D1) {
   EXPECT_TRUE_STATIC(rfl::enum_flags_contains<D1>("one"));
   EXPECT_TRUE_STATIC(rfl::enum_flags_contains<D1>("two"));
   EXPECT_TRUE_STATIC(rfl::enum_flags_contains<D1>("four"));
@@ -62,8 +62,7 @@ TEST(EnumFlagsContainsString, D1)
   EXPECT_FALSE_STATIC(rfl::enum_flags_contains<D1>("one, four | eight", ",|"));
 }
 
-TEST(EnumFlagsContainsString, D2)
-{
+TEST(EnumFlagsContainsString, D2) {
   EXPECT_TRUE_STATIC(rfl::enum_flags_contains<D2>("Zero"));
   EXPECT_TRUE_STATIC(rfl::enum_flags_contains<D2>("LING"));
   EXPECT_TRUE_STATIC(rfl::enum_flags_contains<D2>("One"));
@@ -83,14 +82,10 @@ TEST(EnumFlagsContainsString, D2)
   EXPECT_TRUE_STATIC(rfl::enum_flags_contains<D2>("One | Two | Four"));
   EXPECT_TRUE_STATIC(rfl::enum_flags_contains<D2>("One | Three | Four", " | "));
   EXPECT_TRUE_STATIC(rfl::enum_flags_contains<D2>("WU, Qi", ','));
-  EXPECT_TRUE_STATIC(rfl::enum_flags_contains<D2>(
-    " Two + Six + Eight ", " + "));
-  EXPECT_TRUE_STATIC(rfl::enum_flags_contains<D2>(
-    " Two + Four + Eight + ER + YI ", '+'));
-  EXPECT_TRUE_STATIC(rfl::enum_flags_contains<D2>(
-    "\nOne \n\nThree\nSeven\nWU  \n\n", '\n'));
-  EXPECT_TRUE_STATIC(rfl::enum_flags_contains<D2>(
-    "\nOne \n\nThree Seven WU  \n\n", ' '));
+  EXPECT_TRUE_STATIC(rfl::enum_flags_contains<D2>(" Two + Six + Eight ", " + "));
+  EXPECT_TRUE_STATIC(rfl::enum_flags_contains<D2>(" Two + Four + Eight + ER + YI ", '+'));
+  EXPECT_TRUE_STATIC(rfl::enum_flags_contains<D2>("\nOne \n\nThree\nSeven\nWU  \n\n", '\n'));
+  EXPECT_TRUE_STATIC(rfl::enum_flags_contains<D2>("\nOne \n\nThree Seven WU  \n\n", ' '));
 
   // Empty string
   EXPECT_TRUE_STATIC(rfl::enum_flags_contains<D2>(""));
@@ -105,12 +100,10 @@ TEST(EnumFlagsContainsString, D2)
   EXPECT_FALSE_STATIC(rfl::enum_flags_contains<D2>("8"));
   EXPECT_FALSE_STATIC(rfl::enum_flags_contains<D2>("One Two Three"));
   EXPECT_FALSE_STATIC(rfl::enum_flags_contains<D2>("One Two Four"));
-  EXPECT_FALSE_STATIC(rfl::enum_flags_contains<D2>(
-    "\nOne \n\nThree\nSeven\nWU  \n\n", ' '));
+  EXPECT_FALSE_STATIC(rfl::enum_flags_contains<D2>("\nOne \n\nThree\nSeven\nWU  \n\n", ' '));
 }
 
-TEST(EnumFlagsContainsString, Empty)
-{
+TEST(EnumFlagsContainsString, Empty) {
   EXPECT_TRUE_STATIC(rfl::enum_flags_contains<empty>(""));
   EXPECT_TRUE_STATIC(rfl::enum_flags_contains<empty>("  "));
   EXPECT_TRUE_STATIC(rfl::enum_flags_contains<empty>("  ", '|'));

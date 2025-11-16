@@ -116,13 +116,14 @@ enum class E3 : uint8_t {
 
 // -------- Special cases --------
 
-enum class empty {};
+enum class empty {
+};
 
 enum class single_one {
   value = 1,
 };
 
-enum class single_one_rep: uint8_t {
+enum class single_one_rep : uint8_t {
   the = 1,
   ONLY = 1,
   Value = 1,
@@ -134,7 +135,7 @@ enum class single_zero {
   value = 0,
 };
 
-enum class single_zero_rep: unsigned {
+enum class single_zero_rep : unsigned {
   ONLY = 0,
   Zero = 0,
   inside = 0,

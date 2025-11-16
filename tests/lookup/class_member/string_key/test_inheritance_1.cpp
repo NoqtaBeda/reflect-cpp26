@@ -20,11 +20,11 @@
  * SOFTWARE.
  **/
 
-#include "tests/lookup/lookup_test_options.hpp"
 #include <reflect_cpp26/lookup/lookup_table.hpp>
 
-#define LOOKUP_TABLE(...) \
-  REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
+#include "tests/lookup/lookup_test_options.hpp"
+
+#define LOOKUP_TABLE(...) REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
 
 namespace rfl = reflect_cpp26;
 
@@ -62,11 +62,9 @@ struct bar_1_t : foo_1_t {
   }
 };
 
-TEST(ClassLookupTableByName, Inheritance1)
-{
+TEST(ClassLookupTableByName, Inheritance1) {
   constexpr auto table_value = LOOKUP_TABLE(bar_1_t, "value_*");
-  static_assert(std::is_same_v<
-    int bar_1_t::*, decltype(table_value)::value_type>);
+  static_assert(std::is_same_v<int bar_1_t::*, decltype(table_value)::value_type>);
   static_assert(table_value.size() == 6);
 
   constexpr auto bar = bar_1_t{{1, 2, 3, 4}, 5, 6, 7};

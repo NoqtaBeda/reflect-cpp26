@@ -41,19 +41,19 @@ struct string_key_identity_policy_t {
   }
 
   template <char_type CharT, string_like_of<CharT> StringU>
-  static constexpr bool equals(
-    meta_basic_string_view<CharT> t, const StringU& u)
-  {
+  static constexpr bool equals(meta_basic_string_view<CharT> t, const StringU& u) {
     return t == u;
   }
 
   template <char_type CharT, string_like_of<CharT> StringU>
-  static constexpr bool equals(
-    meta_basic_string_view<CharT> t, const StringU& u, equal_length_tag_t)
-  {
+  static constexpr bool equals(meta_basic_string_view<CharT> t,
+                               const StringU& u,
+                               equal_length_tag_t) {
     const auto* iu = std::ranges::data(u);
-    for (const auto *it = t.head; it < t.tail; ++it, ++iu) {
-      if (*it != *iu) { return false; }
+    for (const auto* it = t.head; it < t.tail; ++it, ++iu) {
+      if (*it != *iu) {
+        return false;
+      }
     }
     return true;
   }
@@ -72,31 +72,28 @@ struct string_key_case_insensitive_policy_t {
   }
 
   template <char_type CharT, string_like_of<CharT> StringU>
-  static constexpr bool equals(
-    meta_basic_string_view<CharT> t, const StringU& u)
-  {
+  static constexpr bool equals(meta_basic_string_view<CharT> t, const StringU& u) {
     return t.length() == u.length() && equals(t, u, equal_length);
   }
 
   // t has already been converted to all-lower case.
   template <char_type CharT, string_like_of<CharT> StringU>
-  static constexpr bool equals(
-    meta_basic_string_view<CharT> t, const StringU& u, equal_length_tag_t)
-  {
+  static constexpr bool equals(meta_basic_string_view<CharT> t,
+                               const StringU& u,
+                               equal_length_tag_t) {
     const auto* iu = std::ranges::data(u);
-    for (const auto *it = t.head; it < t.tail; ++it, ++iu) {
-      if (*it != ascii_tolower(*iu)) { return false; }
+    for (const auto* it = t.head; it < t.tail; ++it, ++iu) {
+      if (*it != ascii_tolower(*iu)) {
+        return false;
+      }
     }
     return true;
   }
 };
 
-consteval auto string_key_policy_type(bool case_insensitive)
-{
-  return case_insensitive
-    ? ^^string_key_case_insensitive_policy_t
-    : ^^string_key_identity_policy_t;
+consteval auto string_key_policy_type(bool case_insensitive) {
+  return case_insensitive ? ^^string_key_case_insensitive_policy_t : ^^string_key_identity_policy_t;
 }
-} // namespace reflect_cpp26::impl
+}  // namespace reflect_cpp26::impl
 
-#endif // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_POLICY_HPP
+#endif  // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_POLICY_HPP

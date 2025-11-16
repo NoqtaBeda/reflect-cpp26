@@ -30,7 +30,7 @@ namespace reflect_cpp26 {
 namespace impl {
 template <class T, std::meta::info ArrV>
 constexpr auto make_direct_nsdm_name_array()
-  /* std::array<std::string_view, N> */
+/* std::array<std::string_view, N> */
 {
   constexpr auto members = extract<substitute(ArrV, ^^T)>();
   constexpr auto N = members.size();
@@ -43,7 +43,7 @@ constexpr auto make_direct_nsdm_name_array()
 
 template <class T, std::meta::info ArrV>
 constexpr auto make_flattened_nsdm_name_array()
-  /* std::array<std::string_view, N> */
+/* std::array<std::string_view, N> */
 {
   constexpr auto members = extract<substitute(ArrV, ^^T)>();
   constexpr auto N = members.size();
@@ -58,9 +58,8 @@ template <class T, std::meta::info ArrV>
 constexpr auto direct_nsdm_names_v = make_direct_nsdm_name_array<T, ArrV>();
 
 template <class T, std::meta::info ArrV>
-constexpr auto flattened_nsdm_names_v =
-  make_flattened_nsdm_name_array<T, ArrV>();
-} // namespace impl
+constexpr auto flattened_nsdm_names_v = make_flattened_nsdm_name_array<T, ArrV>();
+}  // namespace impl
 
 /**
  * Gets the name list of all the non-static data members defined directly in
@@ -68,9 +67,8 @@ constexpr auto flattened_nsdm_names_v =
  * Anonymous members are named as empty string "" in the list.
  */
 template <class_or_union_type T>
-constexpr auto direct_nonstatic_data_member_names_v =
-  std::span{impl::direct_nsdm_names_v<
-    std::remove_cv_t<T>, ^^all_direct_nonstatic_data_members_v>};
+constexpr auto direct_nonstatic_data_member_names_v = std::span{
+    impl::direct_nsdm_names_v<std::remove_cv_t<T>, ^^all_direct_nonstatic_data_members_v>};
 
 /**
  * Gets the name list of non-static data members defined directly in
@@ -78,9 +76,8 @@ constexpr auto direct_nonstatic_data_member_names_v =
  * Anonymous members are named as empty string "" in the list.
  */
 template <class_or_union_type T>
-constexpr auto public_direct_nonstatic_data_member_names_v =
-  std::span{impl::direct_nsdm_names_v<
-    std::remove_cv_t<T>, ^^public_direct_nonstatic_data_members_v>};
+constexpr auto public_direct_nonstatic_data_member_names_v = std::span{
+    impl::direct_nsdm_names_v<std::remove_cv_t<T>, ^^public_direct_nonstatic_data_members_v>};
 
 /**
  * Gets the name list of all the non-static data members flattened from class T,
@@ -88,9 +85,8 @@ constexpr auto public_direct_nonstatic_data_member_names_v =
  * Anonymous members are named as empty string "" in the list.
  */
 template <partially_flattenable_class T>
-constexpr auto nonstatic_data_member_names_v =
-  std::span{impl::flattened_nsdm_names_v<
-    std::remove_cv_t<T>, ^^all_flattened_nonstatic_data_members_v>};
+constexpr auto nonstatic_data_member_names_v = std::span{
+    impl::flattened_nsdm_names_v<std::remove_cv_t<T>, ^^all_flattened_nonstatic_data_members_v>};
 
 /**
  * Gets the name list of non-static data members flattened from class T with
@@ -98,10 +94,9 @@ constexpr auto nonstatic_data_member_names_v =
  * Anonymous members are named as empty string "" in the list.
  */
 template <partially_flattenable_class T>
-constexpr auto public_nonstatic_data_member_names_v =
-  std::span{impl::flattened_nsdm_names_v<
-    std::remove_cv_t<T>, ^^public_flattened_nonstatic_data_members_v>};
+constexpr auto public_nonstatic_data_member_names_v = std::span{
+    impl::flattened_nsdm_names_v<std::remove_cv_t<T>, ^^public_flattened_nonstatic_data_members_v>};
 #undef REFLECT_CPP26_NSDM_NAME
-} // namespace reflect_cpp26
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_TYPE_OPERATIONS_MEMBER_NAME_ACCESS_HPP
+#endif  // REFLECT_CPP26_TYPE_OPERATIONS_MEMBER_NAME_ACCESS_HPP

@@ -38,13 +38,11 @@ enum foo {
   foo_eight = 8,
 };
 
-constexpr auto str_concat(std::string_view lhs, std::string_view rhs)
-  -> std::string {
+constexpr auto str_concat(std::string_view lhs, std::string_view rhs) -> std::string {
   return std::string{lhs} + rhs;
 }
 
-TEST(EnumCastBindExpression, All)
-{
+TEST(EnumCastBindExpression, All) {
   using namespace std::placeholders;
 
   constexpr auto F = enum_cast<foo>(_2);
@@ -58,8 +56,7 @@ TEST(EnumCastBindExpression, All)
   EXPECT_EQ_STATIC(std::nullopt, G("EIGHT", "foo_"));
   EXPECT_EQ_STATIC(std::nullopt, G("foo_", "eight"));
 
-  constexpr auto H = enum_cast<foo>(
-    ascii_case_insensitive, std::bind(str_concat, _2, _1));
+  constexpr auto H = enum_cast<foo>(ascii_case_insensitive, std::bind(str_concat, _2, _1));
   EXPECT_EQ_STATIC(foo_eight, H("eight", "foo_"));
   EXPECT_EQ_STATIC(foo_eight, H("EIGHT", "foo_"));
   EXPECT_EQ_STATIC(std::nullopt, H("foo_", "eight"));

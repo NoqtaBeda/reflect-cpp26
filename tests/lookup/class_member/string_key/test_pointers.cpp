@@ -20,11 +20,11 @@
  * SOFTWARE.
  **/
 
-#include "tests/lookup/lookup_test_options.hpp"
 #include <reflect_cpp26/lookup/lookup_table.hpp>
 
-#define LOOKUP_TABLE(...) \
-  REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
+#include "tests/lookup/lookup_test_options.hpp"
+
+#define LOOKUP_TABLE(...) REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
 
 namespace rfl = reflect_cpp26;
 
@@ -49,11 +49,9 @@ struct test_pointers_t {
   static inline long test_pointers_t::* static_mp2 = &test_pointers_t::a3;
 };
 
-TEST(ClassLookupTableByName, WithPointers)
-{
+TEST(ClassLookupTableByName, WithPointers) {
   constexpr auto table_pp = LOOKUP_TABLE(test_pointers_t, "pp*");
-  static_assert(std::is_same_v<
-    volatile int***, decltype(table_pp)::value_type>);
+  static_assert(std::is_same_v<volatile int***, decltype(table_pp)::value_type>);
   static_assert(table_pp.size() == 2);
 
   ASSERT_NE_STATIC(nullptr, table_pp["1"]);
@@ -68,15 +66,16 @@ TEST(ClassLookupTableByName, WithPointers)
   EXPECT_EQ_STATIC(nullptr, table_pp["static_mp1"]);
 
   constexpr auto table_mptr = LOOKUP_TABLE(test_pointers_t, "mp*");
-  static_assert(std::is_same_v<
-    long test_pointers_t::* test_pointers_t::*,
-    decltype(table_mptr)::value_type>);
+  static_assert(
+      std::is_same_v<long test_pointers_t::* test_pointers_t::*, decltype(table_mptr)::value_type>);
   static_assert(table_mptr.size() == 2);
 
-  constexpr auto foo = test_pointers_t{
-    .a1 = 10, .a2 = 20, .a3 = 30, .a4 = 40,
-    .mp1 = &test_pointers_t::a2,
-    .mp2 = &test_pointers_t::a4};
+  constexpr auto foo = test_pointers_t{.a1 = 10,
+                                       .a2 = 20,
+                                       .a3 = 30,
+                                       .a4 = 40,
+                                       .mp1 = &test_pointers_t::a2,
+                                       .mp2 = &test_pointers_t::a4};
   ASSERT_NE_STATIC(nullptr, table_mptr["1"]);
   EXPECT_EQ_STATIC(20, foo.*(foo.*table_mptr["1"]));
   ASSERT_NE_STATIC(nullptr, table_mptr["2"]);
@@ -88,10 +87,8 @@ TEST(ClassLookupTableByName, WithPointers)
   EXPECT_EQ_STATIC(nullptr, table_mptr["mp2"]);
   EXPECT_EQ_STATIC(nullptr, table_mptr["static_mp1"]);
 
-  constexpr auto table_static_mptr = LOOKUP_TABLE(
-    test_pointers_t, "static_mp*");
-  static_assert(std::is_same_v<
-    long test_pointers_t::**, decltype(table_static_mptr)::value_type>);
+  constexpr auto table_static_mptr = LOOKUP_TABLE(test_pointers_t, "static_mp*");
+  static_assert(std::is_same_v<long test_pointers_t::**, decltype(table_static_mptr)::value_type>);
   static_assert(table_static_mptr.size() == 2);
 
   ASSERT_NE_STATIC(nullptr, table_static_mptr["1"]);

@@ -30,34 +30,27 @@
 
 namespace rfl = reflect_cpp26;
 
-TEST(TypeTraits, CVRefFromNoCVRef)
-{
+TEST(TypeTraits, CVRefFromNoCVRef) {
   static_assert(std::is_same_v<rfl::add_cvref_like_t<int, double>, int>);
-  static_assert(std::is_same_v<
-    rfl::add_cvref_like_t<int, const double>, const int>);
-  static_assert(std::is_same_v<
-    rfl::add_cvref_like_t<const int, volatile double>, const volatile int>);
-  static_assert(std::is_same_v<
-    rfl::add_cvref_like_t<volatile int, const volatile double>,
-                          const volatile int>);
+  static_assert(std::is_same_v<rfl::add_cvref_like_t<int, const double>, const int>);
+  static_assert(
+      std::is_same_v<rfl::add_cvref_like_t<const int, volatile double>, const volatile int>);
+  static_assert(std::is_same_v<rfl::add_cvref_like_t<volatile int, const volatile double>,
+                               const volatile int>);
 
-  static_assert(std::is_same_v<
-    rfl::add_cvref_like_t<const int, double&>, const int&>);
-  static_assert(std::is_same_v<
-    rfl::add_cvref_like_t<volatile int, const double&>, const volatile int&>);
-  static_assert(std::is_same_v<
-    rfl::add_cvref_like_t<const int, volatile double&>, const volatile int&>);
-  static_assert(std::is_same_v<
-    rfl::add_cvref_like_t<volatile int, const volatile double&>,
-                          const volatile int&>);
+  static_assert(std::is_same_v<rfl::add_cvref_like_t<const int, double&>, const int&>);
+  static_assert(
+      std::is_same_v<rfl::add_cvref_like_t<volatile int, const double&>, const volatile int&>);
+  static_assert(
+      std::is_same_v<rfl::add_cvref_like_t<const int, volatile double&>, const volatile int&>);
+  static_assert(std::is_same_v<rfl::add_cvref_like_t<volatile int, const volatile double&>,
+                               const volatile int&>);
 
-  static_assert(std::is_same_v<
-    rfl::add_cvref_like_t<const int, double&&>, const int&&>);
-  static_assert(std::is_same_v<
-    rfl::add_cvref_like_t<volatile int, const double&&>, const volatile int&&>);
-  static_assert(std::is_same_v<
-    rfl::add_cvref_like_t<const int, volatile double&&>, const volatile int&&>);
-  static_assert(std::is_same_v<
-    rfl::add_cvref_like_t<volatile int, const volatile double&&>,
-                          const volatile int&&>);
+  static_assert(std::is_same_v<rfl::add_cvref_like_t<const int, double&&>, const int&&>);
+  static_assert(
+      std::is_same_v<rfl::add_cvref_like_t<volatile int, const double&&>, const volatile int&&>);
+  static_assert(
+      std::is_same_v<rfl::add_cvref_like_t<const int, volatile double&&>, const volatile int&&>);
+  static_assert(std::is_same_v<rfl::add_cvref_like_t<volatile int, const volatile double&&>,
+                               const volatile int&&>);
 }

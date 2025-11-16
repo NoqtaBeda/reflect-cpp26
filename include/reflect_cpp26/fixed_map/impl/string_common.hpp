@@ -27,16 +27,14 @@
 #include <reflect_cpp26/type_traits/string_like_types.hpp>
 #include <reflect_cpp26/type_traits/tuple_like_types.hpp>
 
-#define REFLECT_CPP26_STRING_KEY_MAP_COMMON_INTERFACE                         \
-  constexpr auto operator[](std::basic_string_view<character_type> key) const \
-    -> result_type {                                                          \
-    return get(key).first;                                                    \
+#define REFLECT_CPP26_STRING_KEY_MAP_COMMON_INTERFACE                                        \
+  constexpr auto operator[](std::basic_string_view<character_type> key) const->result_type { \
+    return get(key).first;                                                                   \
   }
 
 namespace reflect_cpp26::impl {
 template <class KVPair>
-concept string_key_kv_pair =
-  pair_like<KVPair> && string_like<std::tuple_element_t<0, KVPair>>;
+concept string_key_kv_pair = pair_like<KVPair> && string_like<std::tuple_element_t<0, KVPair>>;
 
 template <class T>
 struct string_hash_wrapper {
@@ -45,8 +43,7 @@ struct string_hash_wrapper {
 };
 
 template <class T>
-using alignment_adjusted_string_hash_wrapper =
-  alignment_adjusted_wrapper<string_hash_wrapper<T>>;
-} // namespace reflect_cpp26::impl
+using alignment_adjusted_string_hash_wrapper = alignment_adjusted_wrapper<string_hash_wrapper<T>>;
+}  // namespace reflect_cpp26::impl
 
-#endif // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_COMMON_HPP
+#endif  // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_COMMON_HPP

@@ -20,11 +20,11 @@
  * SOFTWARE.
  **/
 
-#include "tests/lookup/lookup_test_options.hpp"
 #include <reflect_cpp26/lookup/lookup_table.hpp>
 
-#define LOOKUP_TABLE(...) \
-  REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
+#include "tests/lookup/lookup_test_options.hpp"
+
+#define LOOKUP_TABLE(...) REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
 
 namespace rfl = reflect_cpp26;
 
@@ -35,24 +35,20 @@ struct with_ref_and_bf_t {
   const unsigned& ref1;
   const unsigned& ref2;
 
-  const unsigned bf1: 5;
-  const unsigned bf2: 10;
-  const unsigned bf3: 15;
+  const unsigned bf1 : 5;
+  const unsigned bf2 : 10;
+  const unsigned bf3 : 15;
 };
 
-TEST(ClassLookupTableByName, WithReferencesAndBitFields)
-{
+TEST(ClassLookupTableByName, WithReferencesAndBitFields) {
   constexpr auto table = LOOKUP_TABLE(with_ref_and_bf_t, "*");
-  static_assert(std::is_same_v<
-    const unsigned with_ref_and_bf_t::*, decltype(table)::value_type>);
+  static_assert(std::is_same_v<const unsigned with_ref_and_bf_t::*, decltype(table)::value_type>);
   static_assert(table.size() == 2);
 
   static constexpr auto v1 = 12u;
   static constexpr auto v2 = 24u;
   constexpr auto foo = with_ref_and_bf_t{
-    .value1 = 2, .value2 = 4,
-    .ref1 = v1, .ref2 = v2,
-    .bf1 = 5, .bf2 = 7, .bf3 = 11};
+      .value1 = 2, .value2 = 4, .ref1 = v1, .ref2 = v2, .bf1 = 5, .bf2 = 7, .bf3 = 11};
 
   CHECK_MEMBER_VARIABLE_STATIC(2, foo, table["value1"]);
   CHECK_MEMBER_VARIABLE_STATIC(4, foo, table["value2"]);

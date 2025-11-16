@@ -26,8 +26,8 @@
 #include <type_traits>
 
 namespace reflect_cpp26 {
-#define REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(category)  \
-  template <class T>                                          \
+#define REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(category) \
+  template <class T>                                         \
   concept category##_type = std::is_##category##_v<T>;
 
 REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(abstract)
@@ -57,8 +57,8 @@ REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(scoped_enum)
 REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(unbounded_array)
 REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT(union)
 
-#define REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(category)  \
-  template <class T>                                              \
+#define REFLECT_CPP26_DEFINE_TYPE_CATEGORY_CONCEPT_NEG(category) \
+  template <class T>                                             \
   concept non_##category##_type = !std::is_##category##_v<T>;
 
 // Some std traits are removed due to ambiguity concerns.
@@ -92,6 +92,6 @@ concept class_or_union_type = std::is_class_v<T> || std::is_union_v<T>;
 
 template <class T>
 concept integral_or_enum_type = std::is_integral_v<T> || std::is_enum_v<T>;
-} // namespace reflect_cpp26
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_UTILS_CONCEPTS_HPP
+#endif  // REFLECT_CPP26_UTILS_CONCEPTS_HPP

@@ -46,8 +46,7 @@ struct fully_dense_integral_key_map {
     return _max_key;
   }
 
-  constexpr auto get(key_type key) const -> std::pair<result_type, bool>
-  {
+  constexpr auto get(key_type key) const -> std::pair<result_type, bool> {
     if (key < _min_key || key > _max_key) {
       return {map_null_value_v<value_type>, false};
     }
@@ -57,8 +56,8 @@ struct fully_dense_integral_key_map {
 
   REFLECT_CPP26_INTEGRAL_KEY_MAP_COMMON_INTERFACE
 
-  using span_element_type = std::conditional_t<
-    AlignmentAdjusted, alignment_adjusted_wrapper<value_type>, value_type>;
+  using span_element_type =
+      std::conditional_t<AlignmentAdjusted, alignment_adjusted_wrapper<value_type>, value_type>;
 
   // Internal members (Note: keep them public for structured-ness).
   meta_span<span_element_type> _entries;
@@ -69,9 +68,8 @@ struct fully_dense_integral_key_map {
 // -------- Factory --------
 
 template <bool AlignmentAdjusted, class KVPair>
-constexpr auto fully_dense_integral_key_map_factory(
-  meta_span<KVPair> sorted_entries) -> std::meta::info
-{
+constexpr auto fully_dense_integral_key_map_factory(meta_span<KVPair> sorted_entries)
+    -> std::meta::info {
   using dest_type = fully_dense_integral_key_map<AlignmentAdjusted, KVPair>;
   using value_type = typename dest_type::value_type;
   using span_element_type = typename dest_type::span_element_type;
@@ -82,7 +80,7 @@ constexpr auto fully_dense_integral_key_map_factory(
 
   auto values = std::vector<value_type>{};
   values.reserve(sorted_entries.size());
-  for (const auto& [k, v]: sorted_entries) {
+  for (const auto& [k, v] : sorted_entries) {
     values.push_back(v);
   }
   if constexpr (AlignmentAdjusted) {
@@ -96,11 +94,9 @@ constexpr auto fully_dense_integral_key_map_factory(
 // -------- Builder --------
 
 template <class KVPairIter>
-consteval auto make_fully_dense_integral_key_map(
-  KVPairIter sorted_first,
-  KVPairIter sorted_last,
-  bool adjusts_alignment) -> std::meta::info
-{
+consteval auto make_fully_dense_integral_key_map(KVPairIter sorted_first,
+                                                 KVPairIter sorted_last,
+                                                 bool adjusts_alignment) -> std::meta::info {
   using KVPair = std::iter_value_t<KVPairIter>;
   using factory_fn_type = std::meta::info (*)(meta_span<KVPair>);
 
@@ -109,14 +105,14 @@ consteval auto make_fully_dense_integral_key_map(
   }
 
   auto AlignmentAdjusted = std::meta::reflect_constant(adjusts_alignment);
-  auto factory_fn = extract<factory_fn_type>(
-    substitute(^^fully_dense_integral_key_map_factory,
-      {AlignmentAdjusted, ^^KVPair}));
+  auto factory_fn = extract<factory_fn_type>(substitute(^^fully_dense_integral_key_map_factory,
+                                                        {
+                                                            AlignmentAdjusted, ^^KVPair}));
 
   auto subrange = std::ranges::subrange(sorted_first, sorted_last);
   auto entries = reflect_cpp26::define_static_array(subrange);
   return factory_fn(entries);
 }
-} // namespace impl
+}  // namespace reflect_cpp26::impl
 
-#endif // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_INTEGRAL_FULLY_DENSE_HPP
+#endif  // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_INTEGRAL_FULLY_DENSE_HPP

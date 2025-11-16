@@ -41,8 +41,7 @@ enum class flags_1 {
   seven = 7,
 };
 
-TEST(EnumComparisonOperators, OutOfBox)
-{
+TEST(EnumComparisonOperators, OutOfBox) {
   using namespace rfl::enum_comparison_operators;
 
   EXPECT_TRUE_STATIC(flags_1::one < flags_1::two);
@@ -68,8 +67,7 @@ TEST(EnumComparisonOperators, OutOfBox)
   EXPECT_TRUE_STATIC(flags_1::five >= flags_1::four);
   EXPECT_FALSE_STATIC(flags_1::five == flags_1::four);
   EXPECT_TRUE_STATIC(flags_1::five != flags_1::four);
-  EXPECT_EQ_STATIC(std::strong_ordering::greater,
-    flags_1::five <=> flags_1::four);
+  EXPECT_EQ_STATIC(std::strong_ordering::greater, flags_1::five <=> flags_1::four);
 }
 
 namespace foo_2 {
@@ -84,10 +82,9 @@ enum class flags_2 {
   SEVEN = 7,
 };
 REFLECT_CPP26_DEFINE_ENUM_COMPARISON_OPERATORS(flags_2)
-} // namespace foo_2
+}  // namespace foo_2
 
-TEST(EnumComparisonOperators, DefinedViaMacro)
-{
+TEST(EnumComparisonOperators, DefinedViaMacro) {
   using enum foo_2::flags_2;
 
   EXPECT_TRUE_STATIC(ONE < TWO);

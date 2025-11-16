@@ -31,7 +31,7 @@
 namespace reflect_cpp26 {
 namespace impl {
 consteval bool is_flattenable_aggregate(std::meta::info T);
-} // namespace impl
+}  // namespace impl
 
 /**
  * Whether T is a partially flattenable class type, i.e. T is a non-union class
@@ -53,9 +53,7 @@ consteval bool is_flattenable_aggregate(std::meta::info T);
  */
 template <class T>
 concept partially_flattenable_class =
-  std::is_class_v<T> &&
-  ! has_virtual_inheritance_v<T> &&
-  ! has_ambiguous_inheritance_v<T>;
+    std::is_class_v<T> && !has_virtual_inheritance_v<T> && !has_ambiguous_inheritance_v<T>;
 
 /**
  * Whether T is a partially flattenable type.
@@ -70,9 +68,7 @@ concept partially_flattenable_class =
  */
 template <class T>
 concept partially_flattenable =
-  std::is_scalar_v<T> ||
-  std::is_array_v<T> ||
-  partially_flattenable_class<T>;
+    std::is_scalar_v<T> || std::is_array_v<T> || partially_flattenable_class<T>;
 
 /**
  * Whether T is a flattenable class type, i.e. partially flattenable class type
@@ -83,7 +79,7 @@ concept partially_flattenable =
  */
 template <class T>
 concept flattenable_class =
-  partially_flattenable_class<T> && !has_non_public_nonstatic_data_members_v<T>;
+    partially_flattenable_class<T> && !has_non_public_nonstatic_data_members_v<T>;
 
 /**
  * Whether T is a flattenable type.
@@ -93,8 +89,7 @@ concept flattenable_class =
  * 3. T is a flattenable class type (see above).
  */
 template <class T>
-concept flattenable =
-  std::is_scalar_v<T> || std::is_array_v<T> || flattenable_class<T>;
+concept flattenable = std::is_scalar_v<T> || std::is_array_v<T> || flattenable_class<T>;
 
 /**
  * Whether T is a flattenable aggregate type, i.e. flattenable class type that
@@ -104,7 +99,7 @@ concept flattenable =
  */
 template <class T>
 concept flattenable_aggregate_class =
-  flattenable_class<T> && impl::is_flattenable_aggregate(remove_cv(^^T));
+    flattenable_class<T> && impl::is_flattenable_aggregate(remove_cv(^^T));
 
 /**
  * Whether T is a flattenable aggregate type.
@@ -113,30 +108,32 @@ concept flattenable_aggregate_class =
  * 2. T is a flattenable aggregate class type (see above).
  */
 template <class T>
-concept flattenable_aggregate =
-  std::is_array_v<T> || flattenable_aggregate_class<T>;
+concept flattenable_aggregate = std::is_array_v<T> || flattenable_aggregate_class<T>;
 
 namespace impl {
-consteval bool is_flattenable_aggregate(std::meta::info T)
-{
+consteval bool is_flattenable_aggregate(std::meta::info T) {
   if (!is_class_type(T)) {
     compile_error("Non-class types are not allowed here.");
   }
   if (!is_aggregate_type(T)) {
     return false;
   }
-  for (auto base: all_direct_bases_of(T)) {
-    auto ok = is_public(base) && !is_virtual(base) &&
-      extract_bool(^^flattenable_aggregate, type_of(base));
-    if (!ok) { return false; }
+  for (auto base : all_direct_bases_of(T)) {
+    auto ok = is_public(base) && !is_virtual(base)
+           && extract_bool(^^flattenable_aggregate, type_of(base));
+    if (!ok) {
+      return false;
+    }
   }
-  for (auto member: all_direct_nonstatic_data_members_of(T)) {
+  for (auto member : all_direct_nonstatic_data_members_of(T)) {
     auto ok = is_public(member);
-    if (!ok) { return false; }
+    if (!ok) {
+      return false;
+    }
   }
   return true;
 }
-} // namespace impl
-} // namespace reflect_cpp26
+}  // namespace impl
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_FLATTENABLE_HPP
+#endif  // REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_FLATTENABLE_HPP

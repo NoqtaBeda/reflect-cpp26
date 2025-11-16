@@ -25,4 +25,4 @@
 
 #include <reflect_cpp26/lookup/lookup_table.hpp>
 
-#endif // REFLECT_CPP26_LOOKUP_HPP
+#endif  // REFLECT_CPP26_LOOKUP_HPP

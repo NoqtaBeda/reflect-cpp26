@@ -55,16 +55,16 @@ struct wrapper_t {
     EXPECT_EQ(expected_res, p.first);                 \
   } while (false)
 
-#define EXPECT_FOUND_STATIC(expected_res, flat_map, key)  \
-  do {                                                    \
-    constexpr auto p = flat_map.get(key);                 \
-    EXPECT_TRUE_STATIC(p.second);                         \
-    EXPECT_EQ_STATIC(expected_res, p.first);              \
+#define EXPECT_FOUND_STATIC(expected_res, flat_map, key) \
+  do {                                                   \
+    constexpr auto p = flat_map.get(key);                \
+    EXPECT_TRUE_STATIC(p.second);                        \
+    EXPECT_EQ_STATIC(expected_res, p.first);             \
   } while (false)
 
-#define EXPECT_NOT_FOUND_STATIC(expected_res, flat_map, key)  \
-  do {                                                        \
-    constexpr auto p = flat_map.get(key);                     \
-    EXPECT_FALSE_STATIC(p.second);                            \
-    EXPECT_EQ_STATIC(expected_res, p.first);                  \
+#define EXPECT_NOT_FOUND_STATIC(expected_res, flat_map, key) \
+  do {                                                       \
+    constexpr auto p = flat_map.get(key);                    \
+    EXPECT_FALSE_STATIC(p.second);                           \
+    EXPECT_EQ_STATIC(expected_res, p.first);                 \
   } while (false)

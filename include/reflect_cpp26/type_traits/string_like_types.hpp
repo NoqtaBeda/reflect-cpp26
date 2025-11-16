@@ -25,23 +25,22 @@
 
 // Root header: Include only:
 // (1) C++ stdlib; (2) utils/config.h; (3) Other root headers
+#include <ranges>
 #include <reflect_cpp26/type_traits/arithmetic_types.hpp>
 #include <reflect_cpp26/type_traits/type_comparison.hpp>
-#include <ranges>
 #include <string_view>
 
 namespace reflect_cpp26 {
 namespace impl {
 template <class T>
-consteval bool is_string_like_impl()
-{
+consteval bool is_string_like_impl() {
   using D = std::decay_t<T>;
   if constexpr (std::is_reference_v<T>) {
     return false;
   } else if constexpr (std::ranges::contiguous_range<T>) {
     using V = std::ranges::range_value_t<T>;
     if constexpr (char_type<V>) {
-      return requires (D range) { std::basic_string_view<V>(range); };
+      return requires(D range) { std::basic_string_view<V>(range); };
     } else {
       return false;
     }
@@ -53,12 +52,14 @@ consteval bool is_string_like_impl()
   }
 }
 
-consteval auto get_char_type(std::meta::info T)
-{
-  auto is_range =
-    extract<bool>(substitute(^^std::ranges::contiguous_range, {T}));
+consteval auto get_char_type(std::meta::info T) {
+  auto is_range = extract<bool>(substitute(^^std::ranges::contiguous_range,
+                                           {
+                                               T}));
   if (is_range) {
-    return substitute(^^std::ranges::range_value_t, {T});
+    return substitute(^^std::ranges::range_value_t,
+                      {
+                          T});
   }
   auto D = decay(T);
   if (!is_pointer_type(D)) {
@@ -66,7 +67,7 @@ consteval auto get_char_type(std::meta::info T)
   }
   return remove_cv(remove_pointer(D));
 }
-} // namespace impl
+}  // namespace impl
 
 /**
  * Whether T (possibly with cv qualifiers) is a string-like type:
@@ -85,7 +86,7 @@ concept string_like = impl::is_string_like_impl<T>();
  * Extracts the character type of a string-like type.
  */
 template <string_like T>
-using char_type_t = [: impl::get_char_type(^^T) :];
+using char_type_t = [:impl::get_char_type(^^T):];
 
 /**
  * Whether T (possibly with cv qualifiers) is a string-like type whose
@@ -93,7 +94,7 @@ using char_type_t = [: impl::get_char_type(^^T) :];
  */
 template <class T, class CharT>
 concept string_like_of =
-  string_like<T> && char_type<CharT> && std::is_same_v<char_type_t<T>, CharT>;
+    string_like<T> && char_type<CharT> && std::is_same_v<char_type_t<T>, CharT>;
 
 /**
  * Whether T and Args... (possibly with cv qualifiers) are
@@ -104,16 +105,15 @@ constexpr auto are_string_like_of_same_char_type_v = false;
 
 template <string_like T, string_like... Args>
 constexpr auto are_string_like_of_same_char_type_v<T, Args...> =
-  are_all_same_v<char_type_t<T>, char_type_t<Args>...>;
+    are_all_same_v<char_type_t<T>, char_type_t<Args>...>;
 
 /**
  * Whether T is a C-style string, i.e. CharT* or const CharT*.
  * Note that volatile CharT* is disallowed.
  */
 template <class T>
-concept c_style_string =
-  std::is_pointer_v<T> && char_type<std::remove_pointer_t<T>> &&
-  ! std::is_volatile_v<std::remove_pointer_t<T>>;
-} // namespace reflect_cpp26
+concept c_style_string = std::is_pointer_v<T> && char_type<std::remove_pointer_t<T>>
+                      && !std::is_volatile_v<std::remove_pointer_t<T>>;
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_TYPE_TRAITS_STRING_LIKE_TYPES_HPP
+#endif  // REFLECT_CPP26_TYPE_TRAITS_STRING_LIKE_TYPES_HPP

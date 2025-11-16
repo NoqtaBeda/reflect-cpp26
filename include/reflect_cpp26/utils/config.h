@@ -31,47 +31,39 @@
 #else
 #error "<meta> for C++26 Reflection is missing!"
 #endif
-#endif // __cplusplus
+#endif  // __cplusplus
 
-#if __cplusplus
-#define REFLECT_CPP26_BOOL bool
-#define REFLECT_CPP26_EXTERN_C_BEGIN extern "C" {
-#define REFLECT_CPP26_EXTERN_C_END }
+#ifdef __clang__
+#define REFLECT_CPP26_ALWAYS_INLINE __attribute__((always_inline))
+#define REFLECT_CPP26_ALWAYS_INLINE_CALL [[clang::always_inline]]
+#elifdef __GNUC__
+#define REFLECT_CPP26_ALWAYS_INLINE __attribute__((always_inline))
+#define REFLECT_CPP26_ALWAYS_INLINE_CALL
+#error "???"
 #else
-#define REFLECT_CPP26_BOOL _Bool
-#define REFLECT_CPP26_EXTERN_C_BEGIN
-#define REFLECT_CPP26_EXTERN_C_END
-#endif
+#define REFLECT_CPP26_ALWAYS_INLINE
+#define REFLECT_CPP26_ALWAYS_INLINE_CALL
+#endif  // __cplusplus
 
 #if __cplusplus
 namespace reflect_cpp26 {
 [[noreturn]] int compile_error(const char* msg) noexcept;
+}  // namespace reflect_cpp26
 
-template <class... Args>
-[[noreturn]] int debug_compile_error_impl(Args... args) noexcept;
-
-/**
- * Compile-time debug helper to dump args... in error stacktrace.
- */
-template <class... Args>
-consteval int debug_compile_error(Args... args) noexcept {
-  return debug_compile_error_impl(args...);
-}
-} // namespace reflect_cpp26
 #define REFLECT_CPP26_ERROR_IF_CONSTEVAL(msg) \
   do {                                        \
     if consteval {                            \
       ::reflect_cpp26::compile_error(msg);    \
     }                                         \
   } while (false)
-#define REFLECT_CPP26_UNREACHABLE(msg)      \
-  do {                                      \
-    REFLECT_CPP26_ERROR_IF_CONSTEVAL(msg);  \
-    __builtin_unreachable();                \
+#define REFLECT_CPP26_UNREACHABLE(msg)     \
+  do {                                     \
+    REFLECT_CPP26_ERROR_IF_CONSTEVAL(msg); \
+    __builtin_unreachable();               \
   } while (false)
 #else
-#define REFLECT_CPP26_ERROR_IF_CONSTEVAL(msg) // No-op
+#define REFLECT_CPP26_ERROR_IF_CONSTEVAL(msg)  // No-op
 #define REFLECT_CPP26_UNREACHABLE(msg) __builtin_unreachable()
-#endif
+#endif  // __cplusplus
 
-#endif // REFLECT_CPP26_UTILS_CONFIG_H
+#endif  // REFLECT_CPP26_UTILS_CONFIG_H

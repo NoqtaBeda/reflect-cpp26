@@ -20,11 +20,11 @@
  * SOFTWARE.
  **/
 
-#include "tests/lookup/lookup_test_options.hpp"
 #include <reflect_cpp26/lookup/lookup_table.hpp>
 
-#define LOOKUP_TABLE(...) \
-  REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
+#include "tests/lookup/lookup_test_options.hpp"
+
+#define LOOKUP_TABLE(...) REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
 
 namespace rfl = reflect_cpp26;
 
@@ -52,13 +52,14 @@ struct foo_2_t {
   }
 };
 
-TEST(ClassLookupTableByName, NonStaticDataMembersOnly)
-{
-  constexpr auto table_nv = LOOKUP_TABLE(foo_2_t, "value_*", {
-    .category = rfl::class_member_category::nonstatic_data_members,
-  });
-  static_assert(std::is_same_v<
-    double foo_2_t::*, decltype(table_nv)::value_type>);
+TEST(ClassLookupTableByName, NonStaticDataMembersOnly) {
+  constexpr auto table_nv =
+      LOOKUP_TABLE(foo_2_t,
+                   "value_*",
+                   {
+                       .category = rfl::class_member_category::nonstatic_data_members,
+                   });
+  static_assert(std::is_same_v<double foo_2_t::*, decltype(table_nv)::value_type>);
   static_assert(table_nv.size() == 3);
 
   constexpr auto foo = foo_2_t{.value_x = 11, .value_y = 22, .value_z = 33};
@@ -70,13 +71,14 @@ TEST(ClassLookupTableByName, NonStaticDataMembersOnly)
   EXPECT_EQ_STATIC(nullptr, table_nv["A"]);
 }
 
-TEST(ClassLookupTableByName, StaticDataMembersOnly)
-{
-  constexpr auto table_nf = LOOKUP_TABLE(foo_2_t, "value_*", {
-    .category = rfl::class_member_category::nonstatic_member_functions,
-  });
-  static_assert(std::is_same_v<
-    double (foo_2_t::*)() const, decltype(table_nf)::value_type>);
+TEST(ClassLookupTableByName, StaticDataMembersOnly) {
+  constexpr auto table_nf =
+      LOOKUP_TABLE(foo_2_t,
+                   "value_*",
+                   {
+                       .category = rfl::class_member_category::nonstatic_member_functions,
+                   });
+  static_assert(std::is_same_v<double (foo_2_t::*)() const, decltype(table_nf)::value_type>);
   static_assert(table_nf.size() == 3);
 
   constexpr auto foo = foo_2_t{.value_x = 11, .value_y = 22, .value_z = 33};
@@ -89,11 +91,13 @@ TEST(ClassLookupTableByName, StaticDataMembersOnly)
   EXPECT_EQ_STATIC(nullptr, table_nf["valueProduct"]);
 }
 
-TEST(ClassLookupTableByName, NonStaticMemberFunctionsOnly)
-{
-  constexpr auto table_sv = LOOKUP_TABLE(foo_2_t, "value_*", {
-    .category = rfl::class_member_category::static_data_members,
-  });
+TEST(ClassLookupTableByName, NonStaticMemberFunctionsOnly) {
+  constexpr auto table_sv =
+      LOOKUP_TABLE(foo_2_t,
+                   "value_*",
+                   {
+                       .category = rfl::class_member_category::static_data_members,
+                   });
   static_assert(std::is_same_v<double*, decltype(table_sv)::value_type>);
   static_assert(table_sv.size() == 2);
 
@@ -105,13 +109,14 @@ TEST(ClassLookupTableByName, NonStaticMemberFunctionsOnly)
   EXPECT_EQ_STATIC(nullptr, table_sv["_a"]);
 }
 
-TEST(ClassLookupTableByName, StaticMemberFunctionsOnly)
-{
-  constexpr auto table_sf = LOOKUP_TABLE(foo_2_t, "value_*", {
-    .category = rfl::class_member_category::static_member_functions,
-  });
-  static_assert(std::is_same_v<
-    double (*)(double, double), decltype(table_sf)::value_type>);
+TEST(ClassLookupTableByName, StaticMemberFunctionsOnly) {
+  constexpr auto table_sf =
+      LOOKUP_TABLE(foo_2_t,
+                   "value_*",
+                   {
+                       .category = rfl::class_member_category::static_member_functions,
+                   });
+  static_assert(std::is_same_v<double (*)(double, double), decltype(table_sf)::value_type>);
   static_assert(table_sf.size() == 2);
 
   constexpr auto foo = foo_2_t{.value_x = 11, .value_y = 22, .value_z = 33};

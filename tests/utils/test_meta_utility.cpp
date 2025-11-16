@@ -20,8 +20,9 @@
  * SOFTWARE.
  **/
 
-#include "tests/test_options.hpp"
 #include <reflect_cpp26/utils/meta_utility.hpp>
+
+#include "tests/test_options.hpp"
 
 namespace rfl = reflect_cpp26;
 
@@ -31,8 +32,8 @@ struct A {
 
 struct B : A {
   int b;
-  unsigned x: 4;
-  unsigned y: 4;
+  unsigned x : 4;
+  unsigned y : 4;
 };
 
 struct C : B {
@@ -42,12 +43,10 @@ struct C : B {
   int c;
   const int& d;
 
-  explicit constexpr C(const int& d): d(d) {}
+  explicit constexpr C(const int& d) : d(d) {}
   constexpr ~C() {}
 
-  static constexpr auto make(
-    int a, int b, int c, const int& d, unsigned x, unsigned y) -> C
-  {
+  static constexpr auto make(int a, int b, int c, const int& d, unsigned x, unsigned y) -> C {
     auto res = C{d};
     std::tie(res.a, res.b, res.c) = std::tuple(a, b, c);
     res.x = x;
@@ -56,8 +55,7 @@ struct C : B {
   }
 
   template <size_t I>
-  constexpr int get()
-  {
+  constexpr int get() {
     if constexpr (I == 0) {
       return this->a;
     } else if constexpr (I == 1) {
@@ -76,8 +74,7 @@ struct C : B {
   void dump() = delete;
 };
 
-TEST(UtilsMetaUtility, ReflectPointerToMember)
-{
+TEST(UtilsMetaUtility, ReflectPointerToMember) {
   static constexpr auto d = 42;
   constexpr auto obj = C::make(1, 2, 3, d, 4, 5);
   EXPECT_EQ_STATIC(1, obj.[:rfl::reflect_pointer_to_member(&C::a):]);
@@ -85,8 +82,7 @@ TEST(UtilsMetaUtility, ReflectPointerToMember)
   EXPECT_EQ_STATIC(3, obj.[:rfl::reflect_pointer_to_member(&C::c):]);
 }
 
-TEST(UtilsMetaUtility, IsAddressableNonStaticMember)
-{
+TEST(UtilsMetaUtility, IsAddressableNonStaticMember) {
   static constexpr auto d = 42;
   constexpr auto obj = C::make(1, 2, 3, d, 4, 5);
 

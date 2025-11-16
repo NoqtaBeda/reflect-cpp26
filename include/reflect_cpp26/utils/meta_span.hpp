@@ -53,8 +53,7 @@ struct meta_span {
   constexpr meta_span() = default;
 
   template <size_t N>
-  static consteval auto from_array(const T (&arr)[N]) -> meta_span
-  {
+  static consteval auto from_array(const T (&arr)[N]) -> meta_span {
     auto res = meta_span{};
     res.head = arr;
     res.tail = arr + N;
@@ -62,16 +61,14 @@ struct meta_span {
   }
 
   template <size_t N>
-  static consteval auto from_array(const std::array<T, N>& arr) -> meta_span
-  {
+  static consteval auto from_array(const std::array<T, N>& arr) -> meta_span {
     auto res = meta_span{};
     res.head = arr.data();
     res.tail = arr.data() + N;
     return res;
   }
 
-  static consteval auto from_std_span(std::span<const T> span) -> meta_span
-  {
+  static consteval auto from_std_span(std::span<const T> span) -> meta_span {
     auto res = meta_span{};
     res.head = span.data();
     res.tail = span.data() + span.size();
@@ -122,9 +119,7 @@ struct meta_span {
     return subspan(size() - n);
   }
 
-  constexpr auto subspan(
-    size_t offset, size_t count = std::dynamic_extent) const -> meta_span
-  {
+  constexpr auto subspan(size_t offset, size_t count = std::dynamic_extent) const -> meta_span {
     auto res = meta_span{};
     res.head = this->head + offset;
     if (count == std::dynamic_extent) {
@@ -135,6 +130,6 @@ struct meta_span {
     return res;
   }
 };
-} // namespace reflect_cpp26
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_UTILS_META_SPAN_HPP
+#endif  // REFLECT_CPP26_UTILS_META_SPAN_HPP

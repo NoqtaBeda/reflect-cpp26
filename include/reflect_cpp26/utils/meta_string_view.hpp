@@ -24,6 +24,7 @@
 #define REFLECT_CPP26_UTILS_META_STRING_VIEW_HPP
 
 #include <reflect_cpp26/utils/config.h>
+
 #include <algorithm>
 #include <compare>
 #include <concepts>
@@ -59,8 +60,7 @@ private:
   // Note: Customized char traits is disabled to prevent ambiguity
   // with sementics of different traits.
   template <class Alloc>
-  using std_string_of_alloc =
-    std::basic_string<CharT, std::char_traits<CharT>, Alloc>;
+  using std_string_of_alloc = std::basic_string<CharT, std::char_traits<CharT>, Alloc>;
 
 public:
   const CharT* head = nullptr;
@@ -68,8 +68,7 @@ public:
 
   constexpr meta_basic_string_view() = default;
 
-  static consteval auto from_literal(const CharT* literal)
-  {
+  static consteval auto from_literal(const CharT* literal) {
     if (literal == nullptr) {
       compile_error("String literal must not be null pointer.");
     }
@@ -80,9 +79,7 @@ public:
   }
 
   template <size_t N>
-  static consteval auto from_literal(const CharT (&literal)[N])
-    -> meta_basic_string_view
-  {
+  static consteval auto from_literal(const CharT (&literal)[N]) -> meta_basic_string_view {
     if (literal[N - 1] != '\0') {
       compile_error("String literal must be null-terminated.");
     }
@@ -90,16 +87,12 @@ public:
   }
 
   template <size_t N>
-  static consteval auto from_array(const CharT (&arr)[N])
-    -> meta_basic_string_view
-  {
+  static consteval auto from_array(const CharT (&arr)[N]) -> meta_basic_string_view {
     return from_literal(arr);
   }
 
   template <size_t N>
-  static consteval auto from_array(const std::array<CharT, N>& arr)
-    -> meta_basic_string_view
-  {
+  static consteval auto from_array(const std::array<CharT, N>& arr) -> meta_basic_string_view {
     if (arr[N - 1] != '\0') {
       compile_error("String literal must be null-terminated.");
     }
@@ -107,8 +100,7 @@ public:
   }
 
   static consteval auto from_std_string_view(std::basic_string_view<CharT> sv)
-    -> meta_basic_string_view
-  {
+      -> meta_basic_string_view {
     if (*sv.end() != '\0') {
       compile_error("String literal must be null-terminated.");
     }
@@ -158,8 +150,7 @@ public:
 
   // Note: remove_suffix(n) is not provided since we need to ensure
   // the constraint *tail == '\0' is always satisfied.
-  constexpr auto remove_prefix(size_t n) const -> meta_basic_string_view
-  {
+  constexpr auto remove_prefix(size_t n) const -> meta_basic_string_view {
     auto res = meta_basic_string_view{};
     res.head = this->head + n;
     res.tail = this->tail;
@@ -167,11 +158,8 @@ public:
   }
 
   template <std::same_as<meta_basic_string_view<CharT>> RhsType>
-  constexpr auto operator<=>(RhsType rhs) const
-    -> std::strong_ordering
-  {
-    return std::lexicographical_compare_three_way(
-      head, tail, rhs.head, rhs.tail);
+  constexpr auto operator<=>(RhsType rhs) const -> std::strong_ordering {
+    return std::lexicographical_compare_three_way(head, tail, rhs.head, rhs.tail);
   }
 
   template <std::same_as<meta_basic_string_view<CharT>> RhsType>
@@ -180,11 +168,8 @@ public:
   }
 
   template <class Alloc>
-  constexpr auto operator<=>(const std_string_of_alloc<Alloc>& rhs) const
-    -> std::strong_ordering
-  {
-    return std::lexicographical_compare_three_way(
-      head, tail, rhs.begin(), rhs.end());
+  constexpr auto operator<=>(const std_string_of_alloc<Alloc>& rhs) const -> std::strong_ordering {
+    return std::lexicographical_compare_three_way(head, tail, rhs.begin(), rhs.end());
   }
 
   template <class Alloc>
@@ -192,28 +177,23 @@ public:
     return std::ranges::equal(head, tail, rhs.begin(), rhs.end());
   }
 
-  constexpr auto operator<=>(const CharT* rhs) const -> std::strong_ordering
-  {
+  constexpr auto operator<=>(const CharT* rhs) const -> std::strong_ordering {
     if (rhs == nullptr) {
-      return size() <=> 0; // nullptr as empty string
+      return size() <=> 0;  // nullptr as empty string
     }
     if (head == nullptr) {
-      return (rhs == nullptr) || (*rhs == '\0')
-        ? std::strong_ordering::equal
-        : std::strong_ordering::less;
+      return (rhs == nullptr) || (*rhs == '\0') ? std::strong_ordering::equal
+                                                : std::strong_ordering::less;
     }
-    const auto* rhs_tail = std::ranges::find(
-      rhs, std::unreachable_sentinel, '\0');
+    const auto* rhs_tail = std::ranges::find(rhs, std::unreachable_sentinel, '\0');
     return std::lexicographical_compare_three_way(head, tail, rhs, rhs_tail);
   }
 
-  constexpr bool operator==(const CharT* rhs) const
-  {
+  constexpr bool operator==(const CharT* rhs) const {
     if (rhs == nullptr) {
-      return size() == 0; // nullptr as empty string
+      return size() == 0;  // nullptr as empty string
     }
-    const auto* rhs_tail = std::ranges::find(
-      rhs, std::unreachable_sentinel, '\0');
+    const auto* rhs_tail = std::ranges::find(rhs, std::unreachable_sentinel, '\0');
     return std::ranges::equal(head, tail, rhs, rhs_tail);
   }
 };
@@ -224,20 +204,17 @@ using meta_u8string_view = meta_basic_string_view<char8_t>;
 using meta_u16string_view = meta_basic_string_view<char16_t>;
 using meta_u32string_view = meta_basic_string_view<char32_t>;
 
-} // namespace reflect_cpp26
+}  // namespace reflect_cpp26
 
 template <class CharT>
 struct std::formatter<reflect_cpp26::meta_basic_string_view<CharT>, CharT>
-  : std::formatter<std::basic_string_view<CharT>, CharT>
-{
+    : std::formatter<std::basic_string_view<CharT>, CharT> {
   using self_type = reflect_cpp26::meta_basic_string_view<CharT>;
 
   template <class FormatContext>
-  auto format(self_type str, FormatContext& ctx) const
-    -> FormatContext::iterator
-  {
+  auto format(self_type str, FormatContext& ctx) const -> FormatContext::iterator {
     return std::ranges::copy(str, ctx.out()).out;
   }
 };
 
-#endif // REFLECT_CPP26_UTILS_META_STRING_VIEW_HPP
+#endif  // REFLECT_CPP26_UTILS_META_STRING_VIEW_HPP

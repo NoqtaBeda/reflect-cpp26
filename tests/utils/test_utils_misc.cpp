@@ -20,13 +20,13 @@
  * SOFTWARE.
  **/
 
-#include "tests/test_options.hpp"
 #include <reflect_cpp26/utils/debug_helper.hpp>
+
+#include "tests/test_options.hpp"
 
 namespace rfl = reflect_cpp26;
 
-TEST(UtilsMisc, DebugHelper)
-{
+TEST(UtilsMisc, DebugHelper) {
   EXPECT_THAT(rfl::type_name_of(0), testing::HasSubstr("int"));
   EXPECT_THAT(rfl::type_name_of<std::string>(), testing::HasSubstr("string"));
   auto sv = std::string_view{"abcde"};
@@ -34,5 +34,5 @@ TEST(UtilsMisc, DebugHelper)
 
   EXPECT_EQ("int", rfl::type_description_of<int>());
   EXPECT_THAT(rfl::type_description_of(sv),
-    testing::ContainsRegex(R"(string_view.*\(defined in.*:[0-9]+\))"));
+              testing::ContainsRegex(R"(string_view.*\(defined in.*:[0-9]+\))"));
 }

@@ -23,8 +23,9 @@
 #ifndef REFLECT_CPP26_UTILS_META_UTILITY_HPP
 #define REFLECT_CPP26_UTILS_META_UTILITY_HPP
 
-#include <reflect_cpp26/utils/concepts.hpp>
 #include <reflect_cpp26/utils/config.h>
+
+#include <reflect_cpp26/utils/concepts.hpp>
 #include <reflect_cpp26/utils/ranges.hpp>
 
 #define REFLECT_CPP26_CURRENT_CONTEXT std::meta::access_context::current()
@@ -45,46 +46,42 @@ consteval auto unchecked_context() {
   return std::meta::access_context::unchecked();
 }
 
-#define REFLECT_CPP26_DEFINE_QUERY_FN_WITH_ACCESS_CONTEXT(fn)             \
-  /** Gets all direct members that are accessible in global scope */      \
-  consteval auto public_direct_##fn##_of(std::meta::info a) {             \
-    return std::meta::fn##_of(a, reflect_cpp26::unprivileged_context());  \
-  }                                                                       \
-  /* Gets all direct members regardless of their accessibility */         \
-  consteval auto all_direct_##fn##_of(std::meta::info a) {                \
-    return std::meta::fn##_of(a, reflect_cpp26::unchecked_context());     \
-  }                                                                       \
-  /* Gets all direct members of specified access mode */                  \
-  consteval auto direct_##fn##_of(access_mode mode, std::meta::info a)    \
-  {                                                                       \
-    if (mode == access_mode::unprivileged) {                              \
-      return public_direct_##fn##_of(a);                                  \
-    } else if (mode == access_mode::unchecked) {                          \
-      return all_direct_##fn##_of(a);                                     \
-    } else {                                                              \
-      compile_error("Invalid access mode.");                              \
-    }                                                                     \
+#define REFLECT_CPP26_DEFINE_QUERY_FN_WITH_ACCESS_CONTEXT(fn)            \
+  /** Gets all direct members that are accessible in global scope */     \
+  consteval auto public_direct_##fn##_of(std::meta::info a) {            \
+    return std::meta::fn##_of(a, reflect_cpp26::unprivileged_context()); \
+  }                                                                      \
+  /* Gets all direct members regardless of their accessibility */        \
+  consteval auto all_direct_##fn##_of(std::meta::info a) {               \
+    return std::meta::fn##_of(a, reflect_cpp26::unchecked_context());    \
+  }                                                                      \
+  /* Gets all direct members of specified access mode */                 \
+  consteval auto direct_##fn##_of(access_mode mode, std::meta::info a) { \
+    if (mode == access_mode::unprivileged) {                             \
+      return public_direct_##fn##_of(a);                                 \
+    } else if (mode == access_mode::unchecked) {                         \
+      return all_direct_##fn##_of(a);                                    \
+    } else {                                                             \
+      compile_error("Invalid access mode.");                             \
+    }                                                                    \
   }
 
-#define REFLECT_CPP26_DEFINE_QUERY_V_WITH_ACCESS_CONTEXT(fn)  \
-  template <class_or_union_type T>                            \
-  constexpr auto public_direct_##fn##_v =                     \
-    std::define_static_array(public_direct_##fn##_of(^^T));   \
-                                                              \
-  template <class_or_union_type T>                            \
-  constexpr auto all_direct_##fn##_v =                        \
-    std::define_static_array(all_direct_##fn##_of(^^T));      \
-                                                              \
-  template <access_mode Mode, class_or_union_type T>          \
-  constexpr auto direct_##fn##_v = []() consteval             \
-  {                                                           \
-    if constexpr (Mode == access_mode::unprivileged) {        \
-      return public_direct_##fn##_v<T>;                       \
-    } else if constexpr (Mode == access_mode::unchecked) {    \
-      return all_direct_##fn##_v<T>;                          \
-    } else {                                                  \
-      return compile_error("Invalid mode.");                  \
-    }                                                         \
+#define REFLECT_CPP26_DEFINE_QUERY_V_WITH_ACCESS_CONTEXT(fn)                                      \
+  template <class_or_union_type T>                                                                \
+  constexpr auto public_direct_##fn##_v = std::define_static_array(public_direct_##fn##_of(^^T)); \
+                                                                                                  \
+  template <class_or_union_type T>                                                                \
+  constexpr auto all_direct_##fn##_v = std::define_static_array(all_direct_##fn##_of(^^T));       \
+                                                                                                  \
+  template <access_mode Mode, class_or_union_type T>                                              \
+  constexpr auto direct_##fn##_v = []() consteval {                                               \
+    if constexpr (Mode == access_mode::unprivileged) {                                            \
+      return public_direct_##fn##_v<T>;                                                           \
+    } else if constexpr (Mode == access_mode::unchecked) {                                        \
+      return all_direct_##fn##_v<T>;                                                              \
+    } else {                                                                                      \
+      return compile_error("Invalid mode.");                                                      \
+    }                                                                                             \
   };
 
 /**
@@ -127,8 +124,7 @@ REFLECT_CPP26_DEFINE_QUERY_V_WITH_ACCESS_CONTEXT(nonstatic_data_members)
  * Whether m is a class member (data member or member function, either static
  * or not) that supports addressing, i.e. &[:m:] is a valid expression.
  */
-consteval bool is_addressable_class_member(std::meta::info m)
-{
+consteval bool is_addressable_class_member(std::meta::info m) {
   if (!is_class_member(m) || is_template(m) || is_type(m)) {
     return false;
   }
@@ -147,8 +143,7 @@ consteval bool is_addressable_class_member(std::meta::info m)
  * Whether m is a non-class member that supports addressing, i.e.
  * &[:m:] is a valid expression.
  */
-consteval bool is_addressable_non_class_member(std::meta::info m)
-{
+consteval bool is_addressable_non_class_member(std::meta::info m) {
   if (is_type(m) || is_namespace(m) || is_template(m)) {
     return false;
   }
@@ -176,26 +171,25 @@ consteval bool is_addressable_non_class_member(std::meta::info m)
  * constexpr auto m = reflect_pointer_to_member(&Derived::x);
  */
 template <class T, class Member>
-consteval auto reflect_pointer_to_member(Member T::*mptr)
-  -> std::meta::info
-{
+consteval auto reflect_pointer_to_member(Member T::* mptr) -> std::meta::info {
   // todo: Is O(1) lookup possible?
   auto target = std::meta::reflect_constant(mptr);
-  template for (constexpr auto cur: all_direct_members_v<T>) {
+  template for (constexpr auto cur : all_direct_members_v<T>) {
     if constexpr (is_addressable_class_member(cur)) {
       auto cur_refl = std::meta::reflect_constant(&[:cur:]);
-      if (cur_refl == target) { return cur; }
+      if (cur_refl == target) {
+        return cur;
+      }
     }
   }
   compile_error("Not found.");
-  return {}; // Dummy
+  return {};  // Dummy
 }
 
 // -------- Extration helpers --------
 
 template <std::meta::info V>
-consteval auto extract()
-{
+consteval auto extract() {
   using T = [:type_of(V):];
   return std::meta::extract<T>(V);
 }
@@ -204,10 +198,8 @@ consteval auto extract()
  * Equivalent to extract<T>(substitute(templ, {templ_params})).
  */
 template <class T, std::same_as<std::meta::info>... Args>
-consteval T extract(std::meta::info templ, Args... templ_params)
-{
-  return std::meta::extract<T>(
-    std::meta::substitute(templ, {templ_params...}));
+consteval T extract(std::meta::info templ, Args... templ_params) {
+  return std::meta::extract<T>(std::meta::substitute(templ, {templ_params...}));
 }
 
 /**
@@ -215,10 +207,8 @@ consteval T extract(std::meta::info templ, Args... templ_params)
  * Frequently used with type traits and concepts.
  */
 template <std::same_as<std::meta::info>... Args>
-consteval bool extract_bool(std::meta::info templ, Args... templ_params)
-{
-  return std::meta::extract<bool>(
-    std::meta::substitute(templ, {templ_params...}));
+consteval bool extract_bool(std::meta::info templ, Args... templ_params) {
+  return std::meta::extract<bool>(std::meta::substitute(templ, {templ_params...}));
 }
 
 // -------- Substitution helpers --------
@@ -227,8 +217,7 @@ consteval bool extract_bool(std::meta::info templ, Args... templ_params)
  * Equivalent to substitute(templ, {templ_params}).
  */
 template <std::same_as<std::meta::info>... Args>
-consteval auto substitute(std::meta::info templ, Args... templ_params)
-  -> std::meta::info {
+consteval auto substitute(std::meta::info templ, Args... templ_params) -> std::meta::info {
   return std::meta::substitute(templ, {templ_params...});
 }
 
@@ -240,11 +229,11 @@ consteval auto substitute(std::meta::info templ, Args... templ_params)
  */
 struct identifier_of_t {
   static consteval auto operator()(std::meta::info m, std::string_view alt = "")
-    -> std::string_view {
+      -> std::string_view {
     return has_identifier(m) ? std::meta::identifier_of(m) : alt;
   }
 };
 constexpr auto identifier_of = identifier_of_t{};
-} // namespace reflect_cpp26
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_UTILS_META_UTILITY_HPP
+#endif  // REFLECT_CPP26_UTILS_META_UTILITY_HPP

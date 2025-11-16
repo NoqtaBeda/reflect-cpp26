@@ -20,8 +20,9 @@
  * SOFTWARE.
  **/
 
-#include "tests/test_options.hpp"
 #include <reflect_cpp26/utils/to_string.hpp>
+
+#include "tests/test_options.hpp"
 
 #ifdef ENABLE_FULL_HEADER_TEST
 #include <reflect_cpp26/type_operations.hpp>
@@ -34,20 +35,20 @@ namespace rfl = reflect_cpp26;
 struct foo_t {
 private:
   int a;
+
 public:
   int x;
   int y;
   int z;
 
   explicit constexpr foo_t(int base)
-    : a(base), x(base + 1), y(base + 2), z(base + 3), b(base + 4) {}
+      : a(base), x(base + 1), y(base + 2), z(base + 3), b(base + 4) {}
 
 protected:
   int b;
 };
 
-TEST(TypeOperationsMemberAccess, NoInheritance)
-{
+TEST(TypeOperationsMemberAccess, NoInheritance) {
   constexpr auto foo = foo_t{10};
   EXPECT_EQ_STATIC(10, rfl::get_ith_direct_nonstatic_data_member<0>(foo));
   EXPECT_EQ_STATIC(11, rfl::get_ith_direct_nonstatic_data_member<1>(foo));
@@ -55,12 +56,9 @@ TEST(TypeOperationsMemberAccess, NoInheritance)
   EXPECT_EQ_STATIC(13, rfl::get_ith_direct_nonstatic_data_member<3>(foo));
   EXPECT_EQ_STATIC(14, rfl::get_ith_direct_nonstatic_data_member<4>(foo));
 
-  EXPECT_EQ_STATIC(11,
-    rfl::get_ith_public_direct_nonstatic_data_member<0>(foo));
-  EXPECT_EQ_STATIC(12,
-    rfl::get_ith_public_direct_nonstatic_data_member<1>(foo));
-  EXPECT_EQ_STATIC(13,
-    rfl::get_ith_public_direct_nonstatic_data_member<2>(foo));
+  EXPECT_EQ_STATIC(11, rfl::get_ith_public_direct_nonstatic_data_member<0>(foo));
+  EXPECT_EQ_STATIC(12, rfl::get_ith_public_direct_nonstatic_data_member<1>(foo));
+  EXPECT_EQ_STATIC(13, rfl::get_ith_public_direct_nonstatic_data_member<2>(foo));
 
   EXPECT_EQ_STATIC(10, rfl::get_first_direct_nonstatic_data_member(foo));
   EXPECT_EQ_STATIC(14, rfl::get_last_direct_nonstatic_data_member(foo));
@@ -72,20 +70,23 @@ TEST(TypeOperationsMemberAccess, NoInheritance)
 struct bar_t : public foo_t {
 private:
   std::string s1;
+
 public:
   std::string s2;
   std::string s3;
 
   explicit bar_t(int base)
-    : foo_t(base), s1(rfl::to_string(base + 10)), s2(rfl::to_string(base + 11))
-    , s3(rfl::to_string(base + 12)), s4(rfl::to_string(base + 13)) {}
+      : foo_t(base),
+        s1(rfl::to_string(base + 10)),
+        s2(rfl::to_string(base + 11)),
+        s3(rfl::to_string(base + 12)),
+        s4(rfl::to_string(base + 13)) {}
 
 private:
   std::string s4;
 };
 
-TEST(TypeOperationsMemberAccess, WithInheritance1)
-{
+TEST(TypeOperationsMemberAccess, WithInheritance1) {
   auto bar = bar_t{10};
   EXPECT_EQ("20", rfl::get_ith_direct_nonstatic_data_member<0>(bar));
   EXPECT_EQ("21", rfl::get_ith_direct_nonstatic_data_member<1>(bar));
@@ -129,15 +130,17 @@ struct baz_t : protected std::pair<double, double>, public bar_t {
   double beta;
 
   explicit baz_t(int base)
-    : std::pair<double, double>{1.0 * base, 1.0 / base}, bar_t{base + 10}
-    , alpha(base + 30.25), beta(base + 31.5), gamma(base + 32.75) {}
+      : std::pair<double, double>{1.0 * base, 1.0 / base},
+        bar_t{base + 10},
+        alpha(base + 30.25),
+        beta(base + 31.5),
+        gamma(base + 32.75) {}
 
 protected:
   double gamma;
 };
 
-TEST(TypeOperationsMemberAccess, WithInheritance2)
-{
+TEST(TypeOperationsMemberAccess, WithInheritance2) {
   auto baz = baz_t{4};
   EXPECT_EQ(34.25, rfl::get_ith_direct_nonstatic_data_member<0>(baz));
   EXPECT_EQ(35.50, rfl::get_ith_direct_nonstatic_data_member<1>(baz));
@@ -194,53 +197,57 @@ struct qux_t {
   const volatile int& r4;
 };
 
-TEST(TypeOperationsMemberAccess, WithBitFieldsAndReferences)
-{
+TEST(TypeOperationsMemberAccess, WithBitFieldsAndReferences) {
   auto ints = std::array{21, 42, 63, 84};
   auto qux = qux_t{
-    .bf1 = 5, .bf2 = 6, .bf3 = 7, .bf4 = 8,
-    .r1 = ints[0], .r2 = ints[1], .r3 = ints[2], .r4 = ints[3],
+      .bf1 = 5,
+      .bf2 = 6,
+      .bf3 = 7,
+      .bf4 = 8,
+      .r1 = ints[0],
+      .r2 = ints[1],
+      .r3 = ints[2],
+      .r4 = ints[3],
   };
   // Bit-field access: cv-qualifiers of bit-field members are discarded
   auto&& v1 = rfl::get_ith_direct_nonstatic_data_member<0>(qux);
-  static_assert(std::is_same_v<decltype(v1), unsigned &&>);
+  static_assert(std::is_same_v<decltype(v1), unsigned&&>);
   EXPECT_EQ(5, v1);
-  auto&& v2 = rfl::get_ith_direct_nonstatic_data_member<1>(
-    static_cast<qux_t &&>(qux));
-  static_assert(std::is_same_v<decltype(v2), unsigned &&>);
+  auto&& v2 = rfl::get_ith_direct_nonstatic_data_member<1>(static_cast<qux_t&&>(qux));
+  static_assert(std::is_same_v<decltype(v2), unsigned&&>);
   EXPECT_EQ(6, v2);
   auto&& v3 = rfl::get_ith_direct_nonstatic_data_member<2>(qux);
-  static_assert(std::is_same_v<decltype(v3), unsigned &&>);
+  static_assert(std::is_same_v<decltype(v3), unsigned&&>);
   EXPECT_EQ(7, v3);
-  auto&& v4 = rfl::get_ith_direct_nonstatic_data_member<3>(
-    static_cast<qux_t &&>(qux));
-  static_assert(std::is_same_v<decltype(v4), unsigned &&>);
+  auto&& v4 = rfl::get_ith_direct_nonstatic_data_member<3>(static_cast<qux_t&&>(qux));
+  static_assert(std::is_same_v<decltype(v4), unsigned&&>);
   EXPECT_EQ(8, v4);
 
   // Const reference access:
   rfl::get_ith_direct_nonstatic_data_member<4>(qux) += 100;
   EXPECT_EQ(121, ints[0]);
-  rfl::get_ith_direct_nonstatic_data_member<6>(
-    static_cast<const qux_t &&>(qux)) += 100;
+  rfl::get_ith_direct_nonstatic_data_member<6>(static_cast<const qux_t&&>(qux)) += 100;
   EXPECT_EQ(163, ints[2]);
 
   // Non-const reference access
-  auto&& v5 = rfl::get_ith_direct_nonstatic_data_member<5>(
-    static_cast<volatile qux_t &&>(qux));
-  static_assert(std::is_same_v<decltype(v5), const int &>);
+  auto&& v5 = rfl::get_ith_direct_nonstatic_data_member<5>(static_cast<volatile qux_t&&>(qux));
+  static_assert(std::is_same_v<decltype(v5), const int&>);
   EXPECT_EQ(42, v5);
   auto&& v6 = rfl::get_ith_direct_nonstatic_data_member<7>(qux);
-  static_assert(std::is_same_v<decltype(v6), const volatile int &>);
+  static_assert(std::is_same_v<decltype(v6), const volatile int&>);
   EXPECT_EQ(84, v6);
 }
 
 union union_t {
 private:
   const char as_char;
+
 public:
   short as_short;
+
 protected:
   int as_int;
+
 public:
   explicit union_t(long x) : as_long(x) {}
 
@@ -249,12 +256,11 @@ public:
   int as_bf_2 : 12;
 };
 
-TEST(TypeOperationsMemberAccess, WithUnion)
-{
+TEST(TypeOperationsMemberAccess, WithUnion) {
   auto u = union_t{0x40'41'42'43'44'45'46'47};
   if (std::endian::native == std::endian::little) {
     auto&& v1 = rfl::get_ith_direct_nonstatic_data_member<0>(u);
-    static_assert(std::is_same_v<decltype(v1), const char &>);
+    static_assert(std::is_same_v<decltype(v1), const char&>);
     EXPECT_EQ(0x47, v1);
 
     rfl::get_ith_direct_nonstatic_data_member<1>(u) += 0x10'10;
@@ -262,8 +268,7 @@ TEST(TypeOperationsMemberAccess, WithUnion)
 
     rfl::get_ith_direct_nonstatic_data_member<2>(u) += 0x30'20'00'00;
     EXPECT_EQ(0x74'65'56'57, rfl::get_ith_direct_nonstatic_data_member<2>(u));
-    EXPECT_EQ(0x40'41'42'43'74'65'56'57,
-      rfl::get_ith_direct_nonstatic_data_member<3>(u));
+    EXPECT_EQ(0x40'41'42'43'74'65'56'57, rfl::get_ith_direct_nonstatic_data_member<3>(u));
 
     // For bit-fields: assumes that every bit-field member starts from the
     // least significant bit.
@@ -271,11 +276,8 @@ TEST(TypeOperationsMemberAccess, WithUnion)
     EXPECT_EQ(0x56'57 & 0xFFF, rfl::get_ith_direct_nonstatic_data_member<5>(u));
 
     EXPECT_EQ(0x56'57, rfl::get_ith_public_direct_nonstatic_data_member<0>(u));
-    EXPECT_EQ(0x40'41'42'43'74'65'56'57,
-      rfl::get_ith_public_direct_nonstatic_data_member<1>(u));
-    EXPECT_EQ(0x57 & 0xF,
-      rfl::get_ith_public_direct_nonstatic_data_member<2>(u));
-    EXPECT_EQ(0x56'57 & 0xFFF,
-      rfl::get_ith_public_direct_nonstatic_data_member<3>(u));
+    EXPECT_EQ(0x40'41'42'43'74'65'56'57, rfl::get_ith_public_direct_nonstatic_data_member<1>(u));
+    EXPECT_EQ(0x57 & 0xF, rfl::get_ith_public_direct_nonstatic_data_member<2>(u));
+    EXPECT_EQ(0x56'57 & 0xFFF, rfl::get_ith_public_direct_nonstatic_data_member<3>(u));
   }
 }

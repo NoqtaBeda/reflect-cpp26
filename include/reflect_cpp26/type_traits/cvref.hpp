@@ -23,8 +23,9 @@
 #ifndef REFLECT_CPP26_TYPE_TRAITS_CVREF_HPP
 #define REFLECT_CPP26_TYPE_TRAITS_CVREF_HPP
 
-#include <reflect_cpp26/utils/concepts.hpp>
 #include <reflect_cpp26/utils/config.h>
+
+#include <reflect_cpp26/utils/concepts.hpp>
 
 namespace reflect_cpp26 {
 /**
@@ -33,8 +34,7 @@ namespace reflect_cpp26 {
  * Both dest and src must be reflection of types and dest shall not be a
  * reference type.
  */
-consteval auto add_cvref_like(std::meta::info dest, std::meta::info src)
-{
+consteval auto add_cvref_like(std::meta::info dest, std::meta::info src) {
   if (!is_type(dest)) {
     compile_error("dest must be a type.");
   }
@@ -47,10 +47,8 @@ consteval auto add_cvref_like(std::meta::info dest, std::meta::info src)
 
   auto is_lref = is_lvalue_reference_type(src);
   auto is_rref = is_rvalue_reference_type(src);
-  auto has_const = is_const(remove_reference(dest)) ||
-    is_const(remove_reference(src));
-  auto has_volatile = is_volatile(remove_reference(dest)) ||
-    is_volatile(remove_reference(src));
+  auto has_const = is_const(remove_reference(dest)) || is_const(remove_reference(src));
+  auto has_volatile = is_volatile(remove_reference(dest)) || is_volatile(remove_reference(src));
 
   dest = remove_cv(dest);
   if (has_const) {
@@ -72,7 +70,7 @@ consteval auto add_cvref_like(std::meta::info dest, std::meta::info src)
  * See add_cvref_like() above for details.
  */
 template <non_reference_type Dest, class Src>
-using add_cvref_like_t = [: add_cvref_like(^^Dest, ^^Src) :];
-} // namespace reflect_cpp26
+using add_cvref_like_t = [:add_cvref_like(^^Dest, ^^Src):];
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_TYPE_TRAITS_CVREF_HPP
+#endif  // REFLECT_CPP26_TYPE_TRAITS_CVREF_HPP

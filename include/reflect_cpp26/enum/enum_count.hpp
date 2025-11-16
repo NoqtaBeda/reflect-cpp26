@@ -23,39 +23,31 @@
 #ifndef REFLECT_CPP26_ENUM_ENUM_COUNT_HPP
 #define REFLECT_CPP26_ENUM_ENUM_COUNT_HPP
 
-#include <reflect_cpp26/utils/concepts.hpp>
 #include <reflect_cpp26/utils/config.h>
+
 #include <ranges>
+#include <reflect_cpp26/utils/concepts.hpp>
 #include <utility>
 
 namespace reflect_cpp26 {
 namespace impl {
 template <class E>
-consteval auto enum_unique_count_impl() -> size_t
-{
-  auto values = enumerators_of(^^E)
-    | std::views::transform([](std::meta::info e) {
-        return std::to_underlying(extract<E>(e));
-      })
-    | std::ranges::to<std::vector>();
+consteval auto enum_unique_count_impl() -> size_t {
+  auto values =
+      enumerators_of(^^E)
+      | std::views::transform([](std::meta::info e) { return std::to_underlying(extract<E>(e)); })
+      | std::ranges::to<std::vector>();
   std::ranges::sort(values);
   auto [pos, _] = std::ranges::unique(values);
   return pos - values.begin();
 }
-} // namespace impl
+}  // namespace impl
 
-/**
- * Gets the number of entries of enum type E.
- */
 template <enum_type E>
 constexpr auto enum_count_v = enumerators_of(^^E).size();
 
-/**
- * Gets the number of entries of enum type E with unique value.
- */
 template <enum_type E>
-constexpr auto enum_unique_count_v =
-  impl::enum_unique_count_impl<std::remove_cv_t<E>>();
-} // namespace reflect_cpp26
+constexpr auto enum_unique_count_v = impl::enum_unique_count_impl<std::remove_cv_t<E>>();
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_ENUM_ENUM_COUNT_HPP
+#endif  // REFLECT_CPP26_ENUM_ENUM_COUNT_HPP

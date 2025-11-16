@@ -31,8 +31,7 @@
 
 using namespace reflect_cpp26;
 
-TEST(EnumUniqueCount, All)
-{
+TEST(EnumUniqueCount, All) {
   EXPECT_EQ_STATIC(9, enum_unique_count_v<foo_signed>);
   EXPECT_EQ_STATIC(9, enum_unique_count_v<const foo_signed_reorder>);
   EXPECT_EQ_STATIC(9, enum_unique_count_v<volatile foo_signed_rep>);

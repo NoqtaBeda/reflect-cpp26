@@ -20,11 +20,11 @@
  * SOFTWARE.
  **/
 
-#include "tests/lookup/lookup_test_options.hpp"
 #include <reflect_cpp26/lookup/lookup_table.hpp>
 
-#define LOOKUP_TABLE(...) \
-  REFLECT_CPP26_NAMESPACE_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
+#include "tests/lookup/lookup_test_options.hpp"
+
+#define LOOKUP_TABLE(...) REFLECT_CPP26_NAMESPACE_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
 
 namespace rfl = reflect_cpp26;
 
@@ -35,14 +35,14 @@ constexpr int get_negative(int value) {
   return value >= 0 ? -1 : value;
 }
 volatile double value_w = -1.0;
-} // namespace get_options
+}  // namespace get_options
 
 namespace {
 constexpr int get_incremented(int value) {
   return value + 1;
 }
 volatile double value_v = -2.0;
-} // namespace
+}  // namespace
 class get_dummy {};
 
 constexpr int get_odd(int value) {
@@ -56,15 +56,14 @@ constexpr int get_abs(int value) {
 }
 volatile double value_x = 1.0;
 volatile double value_y = 2.0;
-} // namespace bar
+}  // namespace bar
 constexpr int get_non_zero(int value) {
   return value == 0 ? 1 : value;
 }
 volatile double value_z = 3.0;
-} // namespace foo
+}  // namespace foo
 
-TEST(NamespaceLookupTableByName, Basic)
-{
+TEST(NamespaceLookupTableByName, Basic) {
   constexpr auto table_f = LOOKUP_TABLE(foo::bar, "get_*");
   static_assert(std::is_same_v<int (*)(int), decltype(table_f)::value_type>);
   static_assert(table_f.size() == 3);
@@ -80,8 +79,7 @@ TEST(NamespaceLookupTableByName, Basic)
   EXPECT_EQ_STATIC(nullptr, table_f["non_zero"]);
 
   constexpr auto table_v = LOOKUP_TABLE(foo::bar, "value_*");
-  static_assert(std::is_same_v<
-    volatile double*, decltype(table_v)::value_type>);
+  static_assert(std::is_same_v<volatile double*, decltype(table_v)::value_type>);
   static_assert(table_v.size() == 2);
 
   CHECK_VARIABLE(1.0, table_v["x"]);

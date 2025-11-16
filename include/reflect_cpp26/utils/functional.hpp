@@ -23,10 +23,10 @@
 #ifndef REFLECT_CPP26_UTILS_FUNCTIONAL_HPP
 #define REFLECT_CPP26_UTILS_FUNCTIONAL_HPP
 
+#include <functional>
 #include <reflect_cpp26/type_traits/tuple_like_types.hpp>
 #include <reflect_cpp26/utils/compare.hpp>
 #include <reflect_cpp26/utils/utility.hpp>
-#include <functional>
 #include <type_traits>
 
 namespace reflect_cpp26 {
@@ -47,9 +47,8 @@ constexpr auto is_less_comparable_v = is_operator_lt_comparable_v<T, U>;
  */
 struct less_t {
   template <class T, class U>
-    requires (is_less_comparable_v<T, U>)
-  static constexpr bool operator()(const T& t, const U& u) noexcept
-  {
+    requires(is_less_comparable_v<T, U>)
+  static constexpr bool operator()(const T& t, const U& u) noexcept {
     if constexpr (std::is_integral_v<T> && std::is_integral_v<U>) {
       return cmp_less(t, u);
     } else {
@@ -63,7 +62,7 @@ struct less_t {
  */
 template <class T, class U>
 constexpr auto is_greater_comparable_v =
-  is_operator_gt_comparable_v<T, U> || is_operator_lt_comparable_v<U, T>;
+    is_operator_gt_comparable_v<T, U> || is_operator_lt_comparable_v<U, T>;
 
 /**
  * Generic greater-comparison.
@@ -75,9 +74,8 @@ constexpr auto is_greater_comparable_v =
  */
 struct greater_t {
   template <class T, class U>
-    requires (is_greater_comparable_v<T, U>)
-  static constexpr bool operator()(const T& t, const U& u) noexcept
-  {
+    requires(is_greater_comparable_v<T, U>)
+  static constexpr bool operator()(const T& t, const U& u) noexcept {
     if constexpr (std::is_integral_v<T> && std::is_integral_v<U>) {
       return cmp_greater(t, u);
     } else if constexpr (is_operator_gt_comparable_v<T, U>) {
@@ -94,8 +92,8 @@ struct greater_t {
  */
 template <class T, class U>
 constexpr auto is_less_equal_comparable_v =
-  is_operator_le_comparable_v<T, U> ||
-  (is_operator_lt_comparable_v<T, U> && is_operator_eq_comparable_v<T, U>);
+    is_operator_le_comparable_v<T, U>
+    || (is_operator_lt_comparable_v<T, U> && is_operator_eq_comparable_v<T, U>);
 
 /**
  * Generic less-equal-comparison.
@@ -107,9 +105,8 @@ constexpr auto is_less_equal_comparable_v =
 struct less_equal_t {
   // Note: !(u < t) may be incorrect behavior for partial ordering.
   template <class T, class U>
-    requires (is_less_equal_comparable_v<T, U>)
-  static constexpr bool operator()(const T& t, const U& u) noexcept
-  {
+    requires(is_less_equal_comparable_v<T, U>)
+  static constexpr bool operator()(const T& t, const U& u) noexcept {
     if constexpr (std::is_integral_v<T> && std::is_integral_v<U>) {
       return cmp_less_equal(t, u);
     } else if constexpr (is_operator_le_comparable_v<T, U>) {
@@ -126,10 +123,9 @@ struct less_equal_t {
  */
 template <class T, class U>
 constexpr auto is_greater_equal_comparable_v =
-  is_operator_ge_comparable_v<T, U> ||
-  is_operator_le_comparable_v<U, T> ||
-  (is_operator_gt_comparable_v<T, U> && is_operator_eq_comparable_v<T, U>) ||
-  (is_operator_lt_comparable_v<U, T> && is_operator_eq_comparable_v<U, T>);
+    is_operator_ge_comparable_v<T, U> || is_operator_le_comparable_v<U, T>
+    || (is_operator_gt_comparable_v<T, U> && is_operator_eq_comparable_v<T, U>)
+    || (is_operator_lt_comparable_v<U, T> && is_operator_eq_comparable_v<U, T>);
 
 /**
  * Generic less-equal-comparison.
@@ -144,17 +140,15 @@ constexpr auto is_greater_equal_comparable_v =
 struct greater_equal_t {
   // Note: !(t < u) may be incorrect behavior for partial ordering
   template <class T, class U>
-    requires (is_greater_equal_comparable_v<T, U>)
-  static constexpr bool operator()(const T& t, const U& u) noexcept
-  {
+    requires(is_greater_equal_comparable_v<T, U>)
+  static constexpr bool operator()(const T& t, const U& u) noexcept {
     if constexpr (std::is_integral_v<T> && std::is_integral_v<U>) {
       return cmp_greater_equal(t, u);
     } else if constexpr (is_operator_ge_comparable_v<T, U>) {
       return t >= u;
     } else if constexpr (is_operator_le_comparable_v<U, T>) {
       return u <= t;
-    } else if constexpr (is_operator_gt_comparable_v<T, U> &&
-                         is_operator_eq_comparable_v<T, U>) {
+    } else if constexpr (is_operator_gt_comparable_v<T, U> && is_operator_eq_comparable_v<T, U>) {
       return t > u || t == u;
     } else {
       return u < t || u == t;
@@ -175,9 +169,8 @@ constexpr auto is_equal_comparable_v = is_operator_eq_comparable_v<T, U>;
  */
 struct equal_t {
   template <class T, class U>
-    requires (is_equal_comparable_v<T, U>)
-  static constexpr bool operator()(const T& t, const U& u) noexcept
-  {
+    requires(is_equal_comparable_v<T, U>)
+  static constexpr bool operator()(const T& t, const U& u) noexcept {
     if constexpr (std::is_integral_v<T> && std::is_integral_v<U>) {
       return cmp_equal(t, u);
     } else {
@@ -191,7 +184,7 @@ struct equal_t {
  */
 template <class T, class U>
 constexpr auto is_not_equal_comparable_v =
-  is_operator_ne_comparable_v<T, U> || is_operator_eq_comparable_v<T, U>;
+    is_operator_ne_comparable_v<T, U> || is_operator_eq_comparable_v<T, U>;
 
 /**
  * Generic not-equal-comparison.
@@ -201,9 +194,8 @@ constexpr auto is_not_equal_comparable_v =
  */
 struct not_equal_t {
   template <class T, class U>
-    requires (is_not_equal_comparable_v<T, U>)
-  static constexpr bool operator()(const T& t, const U& u) noexcept
-  {
+    requires(is_not_equal_comparable_v<T, U>)
+  static constexpr bool operator()(const T& t, const U& u) noexcept {
     if constexpr (std::is_integral_v<T> && std::is_integral_v<U>) {
       return cmp_not_equal(t, u);
     } else if constexpr (is_operator_ne_comparable_v<T, U>) {
@@ -220,11 +212,8 @@ struct not_equal_t {
  */
 template <class T, class U>
 constexpr auto is_compare_three_way_comparable_v =
-  (std::is_integral_v<T> && std::is_integral_v<U>) ||
-  is_operator_3way_comparable_v<T, U> ||
-  (is_less_comparable_v<T, U> &&
-    is_greater_comparable_v<T, U> &&
-    is_equal_comparable_v<T, U>);
+    (std::is_integral_v<T> && std::is_integral_v<U>) || is_operator_3way_comparable_v<T, U>
+    || (is_less_comparable_v<T, U> && is_greater_comparable_v<T, U> && is_equal_comparable_v<T, U>);
 
 /**
  * Generic three-way-comparison.
@@ -238,8 +227,7 @@ struct compare_three_way_t {
 private:
   template <class T, class U>
   static constexpr auto do_indirect_compare(const T& t, const U& u) noexcept
-    -> std::partial_ordering
-  {
+      -> std::partial_ordering {
     if (less_t::operator()(t, u)) {
       return std::partial_ordering::less;
     }
@@ -254,9 +242,8 @@ private:
 
 public:
   template <class T, class U>
-    requires (is_compare_three_way_comparable_v<T, U>)
-  static constexpr auto operator()(const T& t, const U& u) noexcept
-  {
+    requires(is_compare_three_way_comparable_v<T, U>)
+  static constexpr auto operator()(const T& t, const U& u) noexcept {
     if constexpr (std::is_integral_v<T> && std::is_integral_v<U>) {
       return cmp_three_way(t, u);
     } else if constexpr (is_operator_3way_comparable_v<T, U>) {
@@ -293,14 +280,10 @@ REFLECT_CPP26_COMPARISON_CONCEPT(compare_three_way)
 template <size_t I>
 struct get_ith_element_t {
   template <class T>
-    requires (tuple_like<std::remove_cvref_t<T>> &&
-              I < std::tuple_size_v<std::remove_cvref_t<T>>)
-  static constexpr decltype(auto) operator()(T&& tuple)
-  {
-    constexpr auto has_free_get =
-      requires { get<I>(std::forward<T>(tuple)); };
-    constexpr auto has_member_get =
-      requires { std::forward<T>(tuple).template get<I>(); };
+    requires(tuple_like<std::remove_cvref_t<T>> && I < std::tuple_size_v<std::remove_cvref_t<T>>)
+  static constexpr decltype(auto) operator()(T&& tuple) {
+    constexpr auto has_free_get = requires { get<I>(std::forward<T>(tuple)); };
+    constexpr auto has_member_get = requires { std::forward<T>(tuple).template get<I>(); };
 
     if constexpr (has_free_get) {
       return get<I>(std::forward<T>(tuple));
@@ -338,37 +321,46 @@ template <class T>
 concept bind_placeholder = static_cast<bool>(std::is_placeholder_v<T>);
 
 template <class T>
-concept bind_expression_or_placeholder =
-  bind_expression<T> || bind_placeholder<T>;
+concept bind_expression_or_placeholder = bind_expression<T> || bind_placeholder<T>;
+
+namespace impl {
+consteval bool has_bind_expression_or_placeholder(std::initializer_list<std::meta::info> Ts) {
+  return std::ranges::any_of(Ts, [](std::meta::info T) {
+    auto params = {T};
+    return extract<bool>(substitute(^^bind_expression_or_placeholder, params));
+  });
+}
+}  // namespace impl
+
+// Equivalent to (bind_expression_or_placeholder<Ts> || ...)
+// This constexpr variable is used to truncate compiler error message if neither of Ts...
+// is bind expression or placeholder.
+template <class... Ts>
+constexpr bool has_bind_expression_or_placeholder_v =
+    impl::has_bind_expression_or_placeholder({^^Ts...});
 
 // Used internally
-#define REFLECT_CPP26_FUNCTOR_BIND_UNARY(functor)                         \
-  template <class Expr>                                                   \
-    requires (bind_expression_or_placeholder<std::remove_cvref_t<Expr>>)  \
-  static constexpr auto operator()(Expr&& expr)                           \
-  {                                                                       \
-    return std::bind(functor{}, std::forward<Expr>(expr));                \
+#define REFLECT_CPP26_FUNCTOR_BIND_UNARY(functor)          \
+  template <bind_expression_or_placeholder Expr>           \
+  static constexpr auto operator()(Expr&& expr) {          \
+    return std::bind(functor{}, std::forward<Expr>(expr)); \
   }
 
 // Used internally
-#define REFLECT_CPP26_FUNCTOR_BIND_BINARY(functor)                          \
-  template <class Expr1, class Expr2>                                       \
-    requires (bind_expression_or_placeholder<std::remove_cvref_t<Expr1>> || \
-              bind_expression_or_placeholder<std::remove_cvref_t<Expr2>>)   \
-  static constexpr auto operator()(Expr1&& expr1, Expr2&& expr2)            \
-  {                                                                         \
-    return std::bind(                                                       \
-      functor{}, std::forward<Expr1>(expr1), std::forward<Expr2>(expr2));   \
+#define REFLECT_CPP26_FUNCTOR_BIND_BINARY(functor)                                       \
+  template <class Expr1, class Expr2>                                                    \
+    requires(has_bind_expression_or_placeholder_v<Expr1, Expr2>)                         \
+  static constexpr auto operator()(Expr1&& expr1, Expr2&& expr2) {                       \
+    return std::bind(functor{}, std::forward<Expr1>(expr1), std::forward<Expr2>(expr2)); \
   }
 
 // Used internally
-#define REFLECT_CPP26_FUNCTOR_BIND_VARIADIC(functor)                          \
-  template <class... Es>                                                      \
-    requires (bind_expression_or_placeholder<std::remove_cvref_t<Es>> || ...) \
-  static constexpr auto operator()(Es&&... exprs)                             \
-  {                                                                           \
-    return std::bind(functor{}, std::forward<Es>(exprs)...);                  \
+#define REFLECT_CPP26_FUNCTOR_BIND_VARIADIC(functor)            \
+  template <class... Exprs>                                     \
+    requires(has_bind_expression_or_placeholder_v<Exprs...>)    \
+  static constexpr auto operator()(Exprs&&... exprs) {          \
+    return std::bind(functor{}, std::forward<Exprs>(exprs)...); \
   }
-} // namespace reflect_cpp26
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_UTILS_FUNCTIONAL_HPP
+#endif  // REFLECT_CPP26_UTILS_FUNCTIONAL_HPP

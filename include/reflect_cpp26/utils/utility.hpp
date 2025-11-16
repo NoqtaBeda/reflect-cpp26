@@ -23,11 +23,11 @@
 #ifndef REFLECT_CPP26_UTILS_UTILITY_HPP
 #define REFLECT_CPP26_UTILS_UTILITY_HPP
 
-#include <reflect_cpp26/type_traits/arithmetic_types.hpp>
-#include <reflect_cpp26/utils/concepts.hpp>
 #include <compare>
 #include <functional>
 #include <limits>
+#include <reflect_cpp26/type_traits/arithmetic_types.hpp>
+#include <reflect_cpp26/utils/concepts.hpp>
 #include <vector>
 
 namespace reflect_cpp26 {
@@ -36,8 +36,7 @@ namespace reflect_cpp26 {
 
 struct cmp_equal_t {
   template <std::integral T, std::integral U>
-  static constexpr bool operator()(T t, U u) noexcept
-  {
+  static constexpr bool operator()(T t, U u) noexcept {
     if constexpr (std::is_signed_v<T> == std::is_signed_v<U>)
       return t == u;
     else if constexpr (std::is_signed_v<T>)
@@ -63,8 +62,7 @@ struct cmp_less_t {
 
 private:
   template <class T, class U>
-  static constexpr bool do_compare(T t, U u) noexcept
-  {
+  static constexpr bool do_compare(T t, U u) noexcept {
     if constexpr (std::is_signed_v<T> == std::is_signed_v<U>)
       return t < u;
     else if constexpr (std::is_signed_v<T>)
@@ -106,15 +104,18 @@ struct cmp_three_way_t {
 
 private:
   template <class T, class U>
-  static constexpr auto do_compare(T t, U u) noexcept -> std::strong_ordering
-  {
+  static constexpr auto do_compare(T t, U u) noexcept -> std::strong_ordering {
     if constexpr (std::is_signed_v<T> == std::is_signed_v<U>) {
       return t <=> u;
     } else if constexpr (std::is_signed_v<T>) {
-      if (t < 0) { return std::strong_ordering::less; }
+      if (t < 0) {
+        return std::strong_ordering::less;
+      }
       return std::make_unsigned_t<T>(t) <=> u;
     } else {
-      if (u < 0) { return std::strong_ordering::greater; }
+      if (u < 0) {
+        return std::strong_ordering::greater;
+      }
       return t <=> std::make_unsigned_t<U>(u);
     }
   }
@@ -125,11 +126,10 @@ struct in_range_t {
   static constexpr auto limit_min = std::numeric_limits<R>::min();
   static constexpr auto limit_max = std::numeric_limits<R>::max();
 
-  template<std::integral T>
-  static constexpr bool operator()(T t) noexcept
-  {
+  template <std::integral T>
+  static constexpr bool operator()(T t) noexcept {
     return cmp_greater_equal_t::operator()(t, limit_min)
-      && cmp_less_equal_t::operator()(t, limit_max);
+        && cmp_less_equal_t::operator()(t, limit_max);
   }
 };
 
@@ -160,8 +160,7 @@ struct to_underlying_t {
 constexpr auto to_underlying = to_underlying_t{};
 
 template <std::unsigned_integral To, std::integral From>
-constexpr auto zero_extend(From from)
-{
+constexpr auto zero_extend(From from) {
   if constexpr (std::is_signed_v<From>) {
     auto u = std::make_unsigned_t<From>(from);
     return static_cast<To>(u);
@@ -171,8 +170,7 @@ constexpr auto zero_extend(From from)
 }
 
 template <std::signed_integral To, std::integral From>
-constexpr auto sign_extend(From from)
-{
+constexpr auto sign_extend(From from) {
   if constexpr (std::is_signed_v<From>) {
     return static_cast<To>(from);
   } else {
@@ -182,22 +180,20 @@ constexpr auto sign_extend(From from)
 }
 
 template <class T, class Allocator = std::allocator<T>>
-constexpr auto make_reserved_vector(size_t n) -> std::vector<T, Allocator>
-{
+constexpr auto make_reserved_vector(size_t n) -> std::vector<T, Allocator> {
   auto res = std::vector<T, Allocator>{};
   res.reserve(n);
   return res;
 }
 
-template <class CharT = char, class Traits = std::char_traits<CharT>,
+template <class CharT = char,
+          class Traits = std::char_traits<CharT>,
           class Allocator = std::allocator<CharT>>
-constexpr auto make_reserved_string(size_t n)
-  -> std::basic_string<CharT, Traits, Allocator>
-{
+constexpr auto make_reserved_string(size_t n) -> std::basic_string<CharT, Traits, Allocator> {
   auto res = std::basic_string<CharT, Traits, Allocator>{};
   res.reserve(n);
   return res;
 }
-} // namespace reflect_cpp26
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_UTILS_UTILITY_HPP
+#endif  // REFLECT_CPP26_UTILS_UTILITY_HPP

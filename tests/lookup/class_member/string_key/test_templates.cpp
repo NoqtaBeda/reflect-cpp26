@@ -20,12 +20,12 @@
  * SOFTWARE.
  **/
 
-#include "tests/lookup/lookup_test_options.hpp"
 #include <reflect_cpp26/lookup/lookup_table.hpp>
 #include <reflect_cpp26/utils/to_string.hpp>
 
-#define LOOKUP_TABLE(...) \
-  REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
+#include "tests/lookup/lookup_test_options.hpp"
+
+#define LOOKUP_TABLE(...) REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
 
 namespace rfl = reflect_cpp26;
 
@@ -37,8 +37,7 @@ struct with_templates_simple_t {
   static constexpr size_t count_second = 84;
 };
 
-TEST(ClassLookupTableByName, WithTemplates1)
-{
+TEST(ClassLookupTableByName, WithTemplates1) {
   constexpr auto table_sv = LOOKUP_TABLE(with_templates_simple_t, "*");
   static_assert(std::is_same_v<const size_t*, decltype(table_sv)::value_type>);
   static_assert(table_sv.size() == 2);
@@ -85,14 +84,15 @@ struct with_templates_t : with_templates_simple_t {
   }
 };
 
-TEST(ClassLookupTableByName, WithTemplates2)
-{
-  constexpr auto table_nf = LOOKUP_TABLE(with_templates_t, "*", {
-    .category = rfl::class_member_category::nonstatic_member_functions,
-  });
-  static_assert(std::is_same_v<
-    size_t (with_templates_t::*)(size_t) const,
-    decltype(table_nf)::value_type>);
+TEST(ClassLookupTableByName, WithTemplates2) {
+  constexpr auto table_nf =
+      LOOKUP_TABLE(with_templates_t,
+                   "*",
+                   {
+                       .category = rfl::class_member_category::nonstatic_member_functions,
+                   });
+  static_assert(
+      std::is_same_v<size_t (with_templates_t::*)(size_t) const, decltype(table_nf)::value_type>);
   static_assert(table_nf.size() == 2);
 
   constexpr auto foo = with_templates_t{.x = 4, .y = 5};
@@ -100,9 +100,12 @@ TEST(ClassLookupTableByName, WithTemplates2)
   CHECK_MEMBER_FUNCTION_STATIC(120, foo, table_nf["get_product"], 6);
   EXPECT_EQ_STATIC(nullptr, table_nf["get_max"]);
 
-  constexpr auto table_sv = LOOKUP_TABLE(with_templates_t, "*", {
-    .category = rfl::class_member_category::static_data_members,
-  });
+  constexpr auto table_sv =
+      LOOKUP_TABLE(with_templates_t,
+                   "*",
+                   {
+                       .category = rfl::class_member_category::static_data_members,
+                   });
   static_assert(std::is_same_v<const size_t*, decltype(table_sv)::value_type>);
   static_assert(table_sv.size() == 4);
 
@@ -112,11 +115,13 @@ TEST(ClassLookupTableByName, WithTemplates2)
   CHECK_VARIABLE(168, table_sv["count_fourth"]);
   EXPECT_EQ_STATIC(nullptr, table_sv["identifier_size"]);
 
-  constexpr auto table_sf = LOOKUP_TABLE(with_templates_t, "*", {
-    .category = rfl::class_member_category::static_member_functions,
-  });
-  static_assert(std::is_same_v<
-    std::string (*)(size_t, size_t), decltype(table_sf)::value_type>);
+  constexpr auto table_sf =
+      LOOKUP_TABLE(with_templates_t,
+                   "*",
+                   {
+                       .category = rfl::class_member_category::static_member_functions,
+                   });
+  static_assert(std::is_same_v<std::string (*)(size_t, size_t), decltype(table_sf)::value_type>);
   static_assert(table_sf.size() == 2);
 
   CHECK_FUNCTION_STATIC("5", table_sf["sum_to_string"], 2, 3);

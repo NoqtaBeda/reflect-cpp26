@@ -38,7 +38,7 @@
   F(terminal_color)                 \
   F(hash_collision)
 
-enum class foo_signed: int32_t {
+enum class foo_signed : int32_t {
   zero = 0,
   one = 1,
   two = 2,
@@ -50,7 +50,7 @@ enum class foo_signed: int32_t {
   error = -2,
 };
 
-enum class foo_signed_reorder: int32_t {
+enum class foo_signed_reorder : int32_t {
   Two = 2,
   Five = 5,
   Zero = 0,
@@ -62,7 +62,7 @@ enum class foo_signed_reorder: int32_t {
   Error = -2,
 };
 
-enum class foo_signed_rep: int32_t {
+enum class foo_signed_rep : int32_t {
   ZERO = 0,
   ONE = 1,
   TWO = 2,
@@ -76,7 +76,7 @@ enum class foo_signed_rep: int32_t {
   ERROR = -2,
 };
 
-enum class bar_unsigned: uint32_t {
+enum class bar_unsigned : uint32_t {
   ZeRo = 0,
   OnE = 1,
   TwO = 2,
@@ -90,7 +90,7 @@ enum class bar_unsigned: uint32_t {
   ErRoR = -2u,
 };
 
-enum class baz_signed: int16_t {
+enum class baz_signed : int16_t {
   LInG = 0,
   yI = 1,
   eR = 2,
@@ -98,7 +98,7 @@ enum class baz_signed: int16_t {
   fUyI = -1,
 };
 
-enum class qux_unsigned: uint16_t {
+enum class qux_unsigned : uint16_t {
   ling = 0,
   YI = 1,
   ER = 2,
@@ -107,7 +107,8 @@ enum class qux_unsigned: uint16_t {
   fuYi = static_cast<uint16_t>(-1u),
 };
 
-enum empty {};
+enum empty {
+};
 
 enum single {
   Value = 233,
@@ -265,7 +266,7 @@ enum class color : uint32_t {
   white_smoke = 0xF5F5F5,              // rgb(245,245,245)
   yellow = 0xFFFF00,                   // rgb(255,255,0)
   yellow_green = 0x9ACD32              // rgb(154,205,50)
-}; // enum class color
+};  // enum class color
 
 // From: https://github.com/fmtlib/fmt/blob/master/include/fmt/color.h
 enum class terminal_color : uint8_t {

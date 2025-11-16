@@ -36,16 +36,12 @@ struct general_integral_key_map {
   using value_type = std::tuple_element_t<1, kv_pair_type>;
   using result_type = std::invoke_result_t<get_second_t, const kv_pair_type&>;
 
-  constexpr size_t size() const
-  {
-    return _dense_part.size()
-      + _left_sparse_part.size() + _right_sparse_part.size();
+  constexpr size_t size() const {
+    return _dense_part.size() + _left_sparse_part.size() + _right_sparse_part.size();
   }
 
-  constexpr key_type min_key() const
-  {
-    constexpr auto left_is_empty =
-      template_instance_of<LeftSparseMap, empty_integral_key_map>;
+  constexpr key_type min_key() const {
+    constexpr auto left_is_empty = template_instance_of<LeftSparseMap, empty_integral_key_map>;
     if constexpr (left_is_empty) {
       return _dense_part.min_key();
     } else {
@@ -53,10 +49,8 @@ struct general_integral_key_map {
     }
   }
 
-  constexpr key_type max_key() const
-  {
-    constexpr auto right_is_empty =
-      template_instance_of<RightSparseMap, empty_integral_key_map>;
+  constexpr key_type max_key() const {
+    constexpr auto right_is_empty = template_instance_of<RightSparseMap, empty_integral_key_map>;
     if constexpr (^^RightSparseMap == ^^empty_integral_key_map) {
       return _dense_part.max_key();
     } else {
@@ -64,8 +58,7 @@ struct general_integral_key_map {
     }
   }
 
-  constexpr auto get(key_type key) const -> std::pair<result_type, bool>
-  {
+  constexpr auto get(key_type key) const -> std::pair<result_type, bool> {
     if (key < _dense_part._min_key) {
       return _left_sparse_part.get(key);
     }
@@ -79,11 +72,10 @@ struct general_integral_key_map {
   REFLECT_CPP26_INTEGRAL_KEY_MAP_COMMON_INTERFACE
 
   // Constructor
-  constexpr general_integral_key_map(
-    DenseMap dense, LeftSparseMap left_sparse, RightSparseMap right_sparse)
-    : _dense_part(dense),
-      _left_sparse_part(left_sparse),
-      _right_sparse_part(right_sparse) {}
+  constexpr general_integral_key_map(DenseMap dense,
+                                     LeftSparseMap left_sparse,
+                                     RightSparseMap right_sparse)
+      : _dense_part(dense), _left_sparse_part(left_sparse), _right_sparse_part(right_sparse) {}
 
   // Internal members (Note: keep them public for structured-ness).
   DenseMap _dense_part;
@@ -94,8 +86,8 @@ struct general_integral_key_map {
 // -------- Factory --------
 
 template <auto Dense, auto LeftSparse, auto RightSparse>
-constexpr auto general_integral_key_map_factory_v = std::meta::reflect_constant(
-  general_integral_key_map{Dense, LeftSparse, RightSparse});
+constexpr auto general_integral_key_map_factory_v =
+    std::meta::reflect_constant(general_integral_key_map{Dense, LeftSparse, RightSparse});
 
 // -------- Builder --------
 
@@ -107,30 +99,29 @@ struct general_integral_key_fixed_map_options {
 
 // Requires: [first, last) is already sorted.
 template <class KVPairIter>
-consteval auto make_general_integral_key_map(
-  KVPairIter first, KVPairIter dense_first, KVPairIter dense_last,
-  KVPairIter last, general_integral_key_fixed_map_options options) -> std::meta::info
-{
+consteval auto make_general_integral_key_map(KVPairIter first,
+                                             KVPairIter dense_first,
+                                             KVPairIter dense_last,
+                                             KVPairIter last,
+                                             general_integral_key_fixed_map_options options)
+    -> std::meta::info {
   auto dense_options = dense_integral_key_fixed_map_options{
-    .adjusts_alignment = options.adjusts_alignment,
-    .default_value_is_always_invalid = options.default_value_is_always_invalid,
+      .adjusts_alignment = options.adjusts_alignment,
+      .default_value_is_always_invalid = options.default_value_is_always_invalid,
   };
   auto sparse_options = sparse_integral_key_fixed_map_options{
-    .adjusts_alignment = options.adjusts_alignment,
-    .binary_search_threshold = options.binary_search_threshold,
+      .adjusts_alignment = options.adjusts_alignment,
+      .binary_search_threshold = options.binary_search_threshold,
   };
 
-  auto dense = make_dense_integral_key_map(
-    dense_first, dense_last, dense_options);
-  auto left_sparse = make_sparse_integral_key_map(
-    first, dense_first, sparse_options);
-  auto right_sparse = make_sparse_integral_key_map(
-    dense_last, last, sparse_options);
+  auto dense = make_dense_integral_key_map(dense_first, dense_last, dense_options);
+  auto left_sparse = make_sparse_integral_key_map(first, dense_first, sparse_options);
+  auto right_sparse = make_sparse_integral_key_map(dense_last, last, sparse_options);
 
-  return extract<std::meta::info>(
-    substitute(^^general_integral_key_map_factory_v,
-      {dense, left_sparse, right_sparse}));
+  return extract<std::meta::info>(substitute(^^general_integral_key_map_factory_v,
+                                             {
+                                                 dense, left_sparse, right_sparse}));
 }
-} // namespace reflect_cpp26::impl
+}  // namespace reflect_cpp26::impl
 
-#endif // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_INTEGRAL_GENERAL_HPP
+#endif  // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_INTEGRAL_GENERAL_HPP

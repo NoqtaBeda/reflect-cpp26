@@ -29,6 +29,6 @@ enum class enum_entry_order {
   by_value,
   by_name,
 };
-} // namespace reflect_cpp26
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_ENUM_ENUM_ENTRY_ORDER_HPP
+#endif  // REFLECT_CPP26_ENUM_ENUM_ENTRY_ORDER_HPP

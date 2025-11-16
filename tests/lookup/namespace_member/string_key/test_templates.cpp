@@ -20,11 +20,11 @@
  * SOFTWARE.
  **/
 
-#include "tests/lookup/lookup_test_options.hpp"
 #include <reflect_cpp26/lookup/lookup_table.hpp>
 
-#define LOOKUP_TABLE(...) \
-  REFLECT_CPP26_NAMESPACE_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
+#include "tests/lookup/lookup_test_options.hpp"
+
+#define LOOKUP_TABLE(...) REFLECT_CPP26_NAMESPACE_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
 
 namespace rfl = reflect_cpp26;
 
@@ -47,13 +47,14 @@ constexpr T get_sum_generic(T x, T y) {
 constexpr long get_product(long x, long y) {
   return x * y;
 }
-} // namespace test_template
+}  // namespace test_template
 
-TEST(NamespaceLookupTableByName, WithTemplates)
-{
-  constexpr auto table_v = LOOKUP_TABLE(test_template, "*", {
-    .category = rfl::namespace_member_category::variables,
-  });
+TEST(NamespaceLookupTableByName, WithTemplates) {
+  constexpr auto table_v = LOOKUP_TABLE(test_template,
+                                        "*",
+                                        {
+                                            .category = rfl::namespace_member_category::variables,
+                                        });
   static_assert(std::is_same_v<int*, decltype(table_v)::value_type>);
   static_assert(table_v.size() == 2);
 
@@ -62,8 +63,7 @@ TEST(NamespaceLookupTableByName, WithTemplates)
   EXPECT_EQ_STATIC(nullptr, table_v["count_of"]);
 
   constexpr auto table_f = LOOKUP_TABLE(test_template, "get_*");
-  static_assert(std::is_same_v<
-    long (*)(long, long), decltype(table_f)::value_type>);
+  static_assert(std::is_same_v<long (*)(long, long), decltype(table_f)::value_type>);
   static_assert(table_f.size() == 2);
 
   CHECK_FUNCTION(5, table_f["sum"], 2, 3);

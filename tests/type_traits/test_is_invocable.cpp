@@ -20,8 +20,9 @@
  * SOFTWARE.
  **/
 
-#include "tests/test_options.hpp"
 #include <cstdio>
+
+#include "tests/test_options.hpp"
 
 #ifdef ENABLE_FULL_HEADER_TEST
 #include <reflect_cpp26/type_traits.hpp>
@@ -43,10 +44,8 @@ struct bar_t {
 
 // ---- is_invocable_exactly_r_v ----
 
-static_assert(rfl::is_invocable_exactly_r_v<
-  double, decltype(foo_2), int, int>);
-static_assert(NOT rfl::is_invocable_exactly_r_v<
-  float, decltype(foo_2), int, int>);
+static_assert(rfl::is_invocable_exactly_r_v<double, decltype(foo_2), int, int>);
+static_assert(NOT rfl::is_invocable_exactly_r_v<float, decltype(foo_2), int, int>);
 static_assert(NOT rfl::is_invocable_exactly_r_v<bar_t*, bar_t, int>);
 static_assert(rfl::is_invocable_exactly_r_v<bar_t*, bar_t, int, int>);
 static_assert(rfl::is_invocable_exactly_r_v<bar_t*, bar_t, short, int, long>);
@@ -55,18 +54,15 @@ static_assert(NOT rfl::is_invocable_exactly_r_v<void*, bar_t, int, int, int>);
 
 // ---- is_nothrow_invocable_exactly_r_v
 
-static_assert(NOT rfl::is_nothrow_invocable_exactly_r_v<
-  double, decltype(foo_2), int, int>);
-static_assert(NOT rfl::is_nothrow_invocable_exactly_r_v<
-  float, decltype(foo_2), int, int>); // Implicit conversion
-static_assert(NOT rfl::is_nothrow_invocable_exactly_r_v<
-  bar_t*, bar_t, int, int>); // Not noexcept
-static_assert(rfl::is_nothrow_invocable_exactly_r_v<
-  bar_t*, bar_t, int, int, int>);
-static_assert(rfl::is_nothrow_invocable_exactly_r_v<
-  bar_t*, bar_t, short, int, long>);
-static_assert(NOT rfl::is_nothrow_invocable_exactly_r_v<
-  void*, bar_t, int, int, int>); // Implicit conversion
+static_assert(NOT rfl::is_nothrow_invocable_exactly_r_v<double, decltype(foo_2), int, int>);
+static_assert(
+    NOT rfl::is_nothrow_invocable_exactly_r_v<float, decltype(foo_2), int, int>);   // Implicit
+                                                                                    // conversion
+static_assert(NOT rfl::is_nothrow_invocable_exactly_r_v<bar_t*, bar_t, int, int>);  // Not noexcept
+static_assert(rfl::is_nothrow_invocable_exactly_r_v<bar_t*, bar_t, int, int, int>);
+static_assert(rfl::is_nothrow_invocable_exactly_r_v<bar_t*, bar_t, short, int, long>);
+static_assert(
+    NOT rfl::is_nothrow_invocable_exactly_r_v<void*, bar_t, int, int, int>);  // Implicit conversion
 
 // ---- is_invocable_n_v ----
 
@@ -105,7 +101,7 @@ static_assert(rfl::is_nothrow_invocable_n_v<decltype(bar_va), int, 2>);
 
 static_assert(NOT rfl::is_nothrow_invocable_n_v<bar_t, int, 1>);
 static_assert(NOT rfl::is_nothrow_invocable_n_v<bar_t, int, 2>);
-static_assert(rfl::is_nothrow_invocable_n_v<bar_t, int, 3>); // noexcept
+static_assert(rfl::is_nothrow_invocable_n_v<bar_t, int, 3>);  // noexcept
 static_assert(NOT rfl::is_nothrow_invocable_n_v<bar_t, int, 4>);
 
 // ---- is_invocable_r_n_v ----
@@ -118,10 +114,8 @@ static_assert(NOT rfl::is_nothrow_invocable_r_n_v<char*, bar_t, int, 3>);
 
 // ---- is_invocable_exactly_r_n_v ----
 
-static_assert(rfl::is_invocable_exactly_r_n_v<
-  double, decltype(foo_2), int, 2>);
-static_assert(NOT rfl::is_invocable_exactly_r_n_v<
-  float, decltype(foo_2), int, 2>);
+static_assert(rfl::is_invocable_exactly_r_n_v<double, decltype(foo_2), int, 2>);
+static_assert(NOT rfl::is_invocable_exactly_r_n_v<float, decltype(foo_2), int, 2>);
 static_assert(NOT rfl::is_invocable_exactly_r_n_v<bar_t*, bar_t, int, 1>);
 static_assert(rfl::is_invocable_exactly_r_n_v<bar_t*, bar_t, int, 2>);
 static_assert(rfl::is_invocable_exactly_r_n_v<bar_t*, bar_t, long, 3>);
@@ -130,17 +124,15 @@ static_assert(NOT rfl::is_invocable_exactly_r_n_v<void*, bar_t, int, 3>);
 
 // ---- is_nothrow_invocable_exactly_r_n_v
 
-static_assert(NOT rfl::is_nothrow_invocable_exactly_r_n_v<
-  double, decltype(foo_2), int, 2>);
-static_assert(NOT rfl::is_nothrow_invocable_exactly_r_n_v<
-  float, decltype(foo_2), int, 2>); // Implicit conversion
-static_assert(NOT rfl::is_nothrow_invocable_exactly_r_n_v<
-  bar_t*, bar_t, int, 2>); // Not noexcept
-static_assert(rfl::is_nothrow_invocable_exactly_r_n_v<
-  bar_t*, bar_t, long, 3>);
-static_assert(NOT rfl::is_nothrow_invocable_exactly_r_n_v<
-  void*, bar_t, int, 3>); // Implicit conversion
+static_assert(NOT rfl::is_nothrow_invocable_exactly_r_n_v<double, decltype(foo_2), int, 2>);
+static_assert(
+    NOT rfl::is_nothrow_invocable_exactly_r_n_v<float, decltype(foo_2), int, 2>);   // Implicit
+                                                                                    // conversion
+static_assert(NOT rfl::is_nothrow_invocable_exactly_r_n_v<bar_t*, bar_t, int, 2>);  // Not noexcept
+static_assert(rfl::is_nothrow_invocable_exactly_r_n_v<bar_t*, bar_t, long, 3>);
+static_assert(
+    NOT rfl::is_nothrow_invocable_exactly_r_n_v<void*, bar_t, int, 3>);  // Implicit conversion
 
 TEST(TypeTraits, IsInvocable) {
-  EXPECT_TRUE(true); // All test cases done with static-asserts above
+  EXPECT_TRUE(true);  // All test cases done with static-asserts above
 }

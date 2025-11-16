@@ -20,13 +20,14 @@
  * SOFTWARE.
  **/
 
-#include "tests/test_options.hpp"
+#include <cstdio>
 #include <reflect_cpp26/utils/constant.hpp>
 #include <reflect_cpp26/utils/meta_span.hpp>
 #include <reflect_cpp26/utils/meta_string_view.hpp>
 #include <reflect_cpp26/utils/meta_tuple.hpp>
-#include <cstdio>
 #include <system_error>
+
+#include "tests/test_options.hpp"
 
 #ifdef ENABLE_FULL_HEADER_TEST
 #include <reflect_cpp26/type_traits.hpp>
@@ -63,7 +64,7 @@ static_assert(rfl::structured_type<volatile double*>);
 static_assert(rfl::structured_type<volatile double* volatile>);
 static_assert(rfl::structured_type<const volatile std_array_int_4*>);
 static_assert(rfl::structured_type<const std_vector_int*>);
-static_assert(rfl::structured_type<void(*)(int)>);
+static_assert(rfl::structured_type<void (*)(int)>);
 static_assert(rfl::structured_type<decltype(printf_fptr)>);
 static_assert(rfl::structured_type<std::nullptr_t>);
 static_assert(rfl::structured_type<const volatile std::nullptr_t>);
@@ -83,25 +84,20 @@ static_assert(NOT rfl::structured_type<const int&&>);
 
 // pointer-to-members
 using std_pair_double = std::pair<double, double>;
-static_assert(rfl::structured_type<
-  double std_pair_double::*>);
-static_assert(rfl::structured_type<
-  const char* rfl::meta_string_view::* volatile>);
+static_assert(rfl::structured_type<double std_pair_double::*>);
+static_assert(rfl::structured_type<const char * rfl::meta_string_view::* volatile>);
 
 // enumerators
 static_assert(rfl::structured_type<std::errc>);
 static_assert(rfl::structured_type<volatile std::errc>);
 
 // lambdas with no capture
-void test_lambdas()
-{
+void test_lambdas() {
   auto some_value = 0;
   auto some_lambda = [](int, float, std::string, std::vector<std::string>) {};
   auto some_lambda_with_capture = [&some_value](int) {};
-  static_assert(rfl::structured_type<
-    decltype(some_lambda)>);
-  static_assert(NOT rfl::structured_type<
-    decltype(some_lambda_with_capture)>);
+  static_assert(rfl::structured_type<decltype(some_lambda)>);
+  static_assert(NOT rfl::structured_type<decltype(some_lambda_with_capture)>);
 }
 
 // C-style arrays are not structured types
@@ -152,16 +148,15 @@ static_assert(NOT rfl::structured_type<bar_with_volatile_t>);
 static_assert(NOT rfl::structured_type<bar_with_mutable_t>);
 
 union baz_union_1_t {
-  bar_with_volatile_t as_bar; // not literal type due to its volatile members
-  foo_t as_foo;               //  is literal type
+  bar_with_volatile_t as_bar;  // not literal type due to its volatile members
+  foo_t as_foo;                //  is literal type
 };
 constexpr auto baz_union_1_constant_1 = rfl::constant_v<baz_union_1_t{}>;
-constexpr auto baz_union_1_constant_2 =
-  rfl::constant_v<baz_union_1_t{.as_foo = {}}>;
+constexpr auto baz_union_1_constant_2 = rfl::constant_v<baz_union_1_t{.as_foo = {}}>;
 
 // Not structured since no literal type member.
 union baz_union_2_t {
-  bar_with_volatile_t as_bar; // not literal type due to its volatile members
+  bar_with_volatile_t as_bar;  // not literal type due to its volatile members
 };
 
 struct baz_struct_1_t {
@@ -197,7 +192,7 @@ struct has_array_3_t {
 
 struct has_array_4_t {
   int sum;
-  baz_union_2_t baz_items[16]; // Not literal type
+  baz_union_2_t baz_items[16];  // Not literal type
 };
 
 // class types: with C-style array members
@@ -218,7 +213,7 @@ struct struct_not_trivially_destructible_t {
   const int& some_ref;
 
   constexpr struct_not_trivially_destructible_t(int x, int y, const int& r)
-    : x(x), y(y), some_ref(r) {}
+      : x(x), y(y), some_ref(r) {}
 
   constexpr ~struct_not_trivially_destructible_t() {
     if !consteval {
@@ -226,11 +221,11 @@ struct struct_not_trivially_destructible_t {
     }
   }
 };
-static_assert(NOT std::is_trivially_destructible_v<
-  struct_not_trivially_destructible_t>, "Incorrect test case.");
+static_assert(NOT std::is_trivially_destructible_v<struct_not_trivially_destructible_t>,
+              "Incorrect test case.");
 constexpr auto some_global_int = 42;
 constexpr auto struct_not_trivially_destructible_constant =
-  rfl::constant_v<struct_not_trivially_destructible_t{10, 20, some_global_int}>;
+    rfl::constant_v<struct_not_trivially_destructible_t{10, 20, some_global_int}>;
 
 union union_not_destructible_1_t {
   struct_not_destructible_t as_struct;
@@ -258,9 +253,7 @@ struct derived_structured_2_t : derived_structured_1_t, foo_t {
   baz_union_1_t some_union;
 };
 
-struct derived_not_structured_1_t
-  : protected struct_not_trivially_destructible_t
-{
+struct derived_not_structured_1_t : protected struct_not_trivially_destructible_t {
   int rating;
   int usage_count;
   std::byte byte_data[256];
@@ -300,18 +293,18 @@ struct default_ctor_not_constexpr_t {
   default_ctor_not_constexpr_t() {
     std::println("default_ctor_not_constexpr_t() is non-constexpr.");
   }
-  constexpr default_ctor_not_constexpr_t(int value): x(value), y(-value) {
+  constexpr default_ctor_not_constexpr_t(int value) : x(value), y(-value) {
     if !consteval {
       std::println("default_ctor_not_constexpr_t(int) is constexpr instead.");
     }
   }
 };
 constexpr auto default_ctor_not_constexpr_constant_2 =
-  rfl::constant_v<default_ctor_not_constexpr_t{42}>;
+    rfl::constant_v<default_ctor_not_constexpr_t{42}>;
 
 // class types: default constructor is not constexpr-constructible
 static_assert(rfl::structured_type<default_ctor_not_constexpr_t>);
 
 TEST(TypeTraitsClassTypes, IsStructuredType) {
-  EXPECT_TRUE(true); // All test cases done with static assertions above
+  EXPECT_TRUE(true);  // All test cases done with static assertions above
 }

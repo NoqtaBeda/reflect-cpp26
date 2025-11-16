@@ -39,9 +39,8 @@ template <class T, template <auto...> class Templ>
 struct is_nontype_template_instance_of : std::false_type {};
 
 template <template <auto...> class Templ, auto... Args>
-struct is_nontype_template_instance_of<Templ<Args...>, Templ>
-  : std::true_type {};
-} // namespace impl
+struct is_nontype_template_instance_of<Templ<Args...>, Templ> : std::true_type {};
+}  // namespace impl
 
 /**
  * Whether std::remove_cvref_t<T> is a template instance of given type template.
@@ -54,8 +53,7 @@ struct is_nontype_template_instance_of<Templ<Args...>, Templ>
  *   std::vector>)
  */
 template <class T, template <class...> class Templ>
-concept template_instance_of =
-  impl::is_template_instance_of<std::remove_cvref_t<T>, Templ>::value;
+concept template_instance_of = impl::is_template_instance_of<std::remove_cvref_t<T>, Templ>::value;
 
 /**
  * Whether std::remove_cvref_t<T> is a template instance of given
@@ -70,7 +68,7 @@ concept template_instance_of =
  */
 template <class T, template <auto...> class Templ>
 concept nontype_template_instance_of =
-  impl::is_nontype_template_instance_of<std::remove_cvref_t<T>, Templ>::value;
-} // namespace reflect_cpp26
+    impl::is_nontype_template_instance_of<std::remove_cvref_t<T>, Templ>::value;
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_TYPE_TRAITS_TEMPLATE_INSTANCE_HPP
+#endif  // REFLECT_CPP26_TYPE_TRAITS_TEMPLATE_INSTANCE_HPP

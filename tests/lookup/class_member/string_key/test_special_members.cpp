@@ -20,11 +20,11 @@
  * SOFTWARE.
  **/
 
-#include "tests/lookup/lookup_test_options.hpp"
 #include <reflect_cpp26/lookup/lookup_table.hpp>
 
-#define LOOKUP_TABLE(...) \
-  REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
+#include "tests/lookup/lookup_test_options.hpp"
+
+#define LOOKUP_TABLE(...) REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
 
 namespace rfl = reflect_cpp26;
 
@@ -46,9 +46,7 @@ struct test_special_members_t {
   }
 
   template <class T>
-  auto assign_by_enum(const test_special_members_t& rhs)
-    -> test_special_members_t&
-  {
+  auto assign_by_enum(const test_special_members_t& rhs) -> test_special_members_t& {
     x = static_cast<T>(rhs.x);
     y = static_cast<T>(rhs.y);
     return *this;
@@ -57,29 +55,24 @@ struct test_special_members_t {
   bool operator==(const test_special_members_t& rhs) const = default;
 };
 
-TEST(ClassLookupTableByName, WithSpecialMembers)
-{
-  using fn_signature = test_special_members_t& (const test_special_members_t&);
+TEST(ClassLookupTableByName, WithSpecialMembers) {
+  using fn_signature = test_special_members_t&(const test_special_members_t&);
   constexpr auto table_fn = LOOKUP_TABLE(
-    test_special_members_t,
-    [](std::meta::info member) -> std::optional<std::string> {
-      if (!is_same_type(type_of(member), ^^fn_signature)) {
-        return std::nullopt;
-      }
-      if (has_identifier(member)) {
-        return std::string{std::meta::identifier_of(member)};
-      }
-      if (is_operator_function(member)
-          && operator_of(member) == std::meta::op_equals) {
-        return "operator=";
-      }
-      return "<invalid>";
-    });
+      test_special_members_t, [](std::meta::info member) -> std::optional<std::string> {
+        if (!is_same_type(type_of(member), ^^fn_signature)) {
+          return std::nullopt;
+        }
+        if (has_identifier(member)) {
+          return std::string{std::meta::identifier_of(member)};
+        }
+        if (is_operator_function(member) && operator_of(member) == std::meta::op_equals) {
+          return "operator=";
+        }
+        return "<invalid>";
+      });
   using expected_value_type =
-    test_special_members_t& (test_special_members_t::*)(
-      const test_special_members_t&);
-  static_assert(std::is_same_v<
-    expected_value_type, decltype(table_fn)::value_type>);
+      test_special_members_t& (test_special_members_t::*)(const test_special_members_t&);
+  static_assert(std::is_same_v<expected_value_type, decltype(table_fn)::value_type>);
   static_assert(table_fn.size() == 2);
 
   auto foo = test_special_members_t{.x = 1, .y = 2};

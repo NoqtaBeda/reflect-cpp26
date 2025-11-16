@@ -29,22 +29,15 @@
 namespace reflect_cpp26 {
 namespace impl {
 template <class E>
-constexpr uint64_t enum_hash()
-{
+constexpr uint64_t enum_hash() {
   constexpr auto Order = enum_entry_order::by_name;
   auto repr_str = reflect_cpp26::enum_json<E, Order>();
   return bkdr_hash64(repr_str);
 }
-} // namespace impl
+}  // namespace impl
 
-/**
- * Gets the 64-bit hash value of enum type E.
- * Any change to the entry set (including insertion, deletion and
- * modification to name or value) will change the hash value.
- * But only changing entry order will not.
- */
 template <enum_type E>
 constexpr uint64_t enum_hash_v = impl::enum_hash<std::remove_cv_t<E>>();
-} // namespace reflect_cpp26
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_ENUM_ENUM_HASH_HPP
+#endif  // REFLECT_CPP26_ENUM_ENUM_HASH_HPP

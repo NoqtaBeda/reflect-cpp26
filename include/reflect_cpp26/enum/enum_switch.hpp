@@ -31,9 +31,8 @@
 namespace reflect_cpp26 {
 namespace impl {
 template <class R, class E, class Func>
-constexpr auto enum_switch_is_invocable_r() -> bool
-{
-  template for (constexpr auto entry: enum_meta_entries_v<E>) {
+constexpr auto enum_switch_is_invocable_r() -> bool {
+  template for (constexpr auto entry : enum_meta_entries_v<E>) {
     constexpr auto ev = extract<E>(entry);
     if (!std::is_invocable_r_v<R, Func, constant_t<ev>>) {
       return false;
@@ -46,39 +45,37 @@ template <class R, class E, class Func>
 concept enum_switch_invocable_r = enum_switch_is_invocable_r<R, E, Func>();
 
 template <class E, class Func>
-constexpr auto enum_switch_invoke_result() -> std::meta::info
-{
-  auto results = make_reserved_vector<std::meta::info>(enum_count_v<E>);
-  template for (constexpr auto entry: enum_meta_entries_v<E>) {
-    constexpr auto ev = extract<E>(entry);
-    results.push_back(^^std::invoke_result_t<Func, constant_t<ev>>);
-  }
-  return substitute(^^std::common_type_t, results);
-}
-
-template <class E, class Func>
-using enum_switch_invoke_result_t = [: enum_switch_invoke_result<E, Func>() :];
-
-template <class E, class Func>
-constexpr auto enum_switch_void(Func&& func, E value) -> void
-{
-  template for (constexpr auto entry: enum_meta_entries_v<E>) {
+REFLECT_CPP26_ALWAYS_INLINE constexpr auto enum_switch_void(Func&& func, E value) -> void {
+  template for (constexpr auto entry : enum_meta_entries_v<E>) {
     constexpr auto ev = extract<E>(entry);
     if (ev == value) {
-      func(constant_v<ev>);
+      REFLECT_CPP26_ALWAYS_INLINE_CALL func(constant_v<ev>);
       return;
     }
   }
 }
 
-template <class T, class E, class Func>
-constexpr auto enum_switch_optional(Func&& func, E value) -> std::optional<T>
-{
-  auto res = std::optional<T>{};
-  template for (constexpr auto entry: enum_meta_entries_v<E>) {
+template <class E, class Func, class FallbackFunc>
+REFLECT_CPP26_ALWAYS_INLINE constexpr auto enum_switch_void_with_fallback_func(
+    Func&& func, FallbackFunc&& fallback, E value) -> void {
+  template for (constexpr auto entry : enum_meta_entries_v<E>) {
     constexpr auto ev = extract<E>(entry);
     if (ev == value) {
-      res = func(constant_v<ev>);
+      REFLECT_CPP26_ALWAYS_INLINE_CALL func(constant_v<ev>);
+      return;
+    }
+  }
+  REFLECT_CPP26_ALWAYS_INLINE_CALL fallback(value);
+}
+
+template <class T, class E, class Func>
+REFLECT_CPP26_ALWAYS_INLINE constexpr auto enum_switch_optional(Func&& func, E value)
+    -> std::optional<T> {
+  auto res = std::optional<T>{};
+  template for (constexpr auto entry : enum_meta_entries_v<E>) {
+    constexpr auto ev = extract<E>(entry);
+    if (ev == value) {
+      REFLECT_CPP26_ALWAYS_INLINE_CALL res = func(constant_v<ev>);
       break;
     }
   }
@@ -86,80 +83,43 @@ constexpr auto enum_switch_optional(Func&& func, E value) -> std::optional<T>
 }
 
 template <class R, class T, class E, class Func>
-constexpr auto enum_switch_value(Func&& func, E value, T&& init) -> R
-{
-  template for (constexpr auto entry: enum_meta_entries_v<E>) {
+REFLECT_CPP26_ALWAYS_INLINE constexpr auto enum_switch_value(Func&& func, E value, T&& init) -> R {
+  template for (constexpr auto entry : enum_meta_entries_v<E>) {
     constexpr auto ev = extract<E>(entry);
     if (ev == value) {
-      return func(constant_v<ev>);
+      REFLECT_CPP26_ALWAYS_INLINE_CALL return func(constant_v<ev>);
     }
   }
   return init;
 }
-} // namespace impl
+}  // namespace impl
 
-/**
- * Enum switch-case. Equivalent to:
- * case E::value1:
- *   return func(constant_v<E::value1>); // Or return nothing if T is void
- * case E::value2:
- *   return func(constant_v<E::value2>); // Or return nothing if T is void
- * ...
- * default:
- *   return std::nullopt; // Or no-op if T is void
- * where constant_v<V> is std::integral_constant<E, V>{}.
- */
+template <enum_type E, class Func, class FallbackFunc>
+  requires(impl::enum_switch_invocable_r<void, E, Func>
+           && std::is_invocable_r_v<void, FallbackFunc, E>)
+REFLECT_CPP26_ALWAYS_INLINE constexpr auto enum_switch(Func&& func,
+                                                       FallbackFunc&& fallback,
+                                                       E value) {
+  return impl::enum_switch_void_with_fallback_func(
+      std::forward<Func>(func), std::forward<FallbackFunc>(fallback), value);
+}
+
 template <non_reference_type T = void, enum_type E, class Func>
-  requires (impl::enum_switch_invocable_r<T, E, Func>)
-constexpr auto enum_switch(Func&& func, E value)
-{
-  if constexpr (std::is_same_v<T, void>) {
+  requires(impl::enum_switch_invocable_r<T, E, Func>)
+REFLECT_CPP26_ALWAYS_INLINE constexpr auto enum_switch(Func&& func, E value) {
+  if constexpr (std::is_void_v<T>) {
     return impl::enum_switch_void(std::forward<Func>(func), value);
   } else {
     return impl::enum_switch_optional<T>(std::forward<Func>(func), value);
   }
 }
 
-/**
- * Enum switch-case with default value. Equivalent to:
- * case E::value1:
- *   return func(constant_v<E::value1>) as decay(T);
- * case E::value2:
- *   return func(constant_v<E::value2>) as decay(T);
- * ...
- * default:
- *   return default_value;
- * where constant_v<V> is std::integral_constant<E, V>{}.
- */
 template <class T, enum_type E, class Func>
-  requires (impl::enum_switch_invocable_r<std::decay_t<T>, E, Func>)
-constexpr auto enum_switch(Func&& func, E value, T&& default_value)
-{
+  requires(impl::enum_switch_invocable_r<std::decay_t<T>, E, Func>)
+REFLECT_CPP26_ALWAYS_INLINE constexpr auto enum_switch(Func&& func, E value, T&& default_value) {
   return impl::enum_switch_value<std::decay_t<T>>(
-    std::forward<Func>(func), value, std::forward<T>(default_value));
+      std::forward<Func>(func), value, std::forward<T>(default_value));
 }
+}  // namespace reflect_cpp26
 
-/**
- * Enum switch-case with default value. Equivalent to:
- * case E::value1:
- *   return func(constant_v<E::value1>) as ResultT;
- * case E::value2:
- *   return func(constant_v<E::value2>) as ResultT;
- * ...
- * default:
- *   return default_value as ResultT;
- * ResultT is common type of default_value and func(constant_v<E::valueN>)...
- * constant_v<V> is std::integral_constant<E, V>{}.
- */
-template <class T, enum_type E, class Func>
-  requires (impl::enum_switch_invocable_r<void, E, Func>)
-constexpr auto enum_switch_to_common(Func&& func, E value, T&& default_value)
-{
-  using ResultT = std::common_type_t<
-    impl::enum_switch_invoke_result_t<E, Func>, std::decay_t<T>>;
-  return impl::enum_switch_value<ResultT>(
-    std::forward<Func>(func), value, std::forward<T>(default_value));
-}
-} // namespace reflect_cpp26
-
-#endif // REFLECT_CPP26_ENUM_ENUM_SWITCH_HPP
+#endif  // REFLECT_CPP26_ENUM_ENUM_SWITCH_HPP

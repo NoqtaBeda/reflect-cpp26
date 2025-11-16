@@ -20,22 +20,22 @@
  * SOFTWARE.
  **/
 
-#include "tests/fixed_map/string_key/string_key_test_options.hpp"
 #include <reflect_cpp26/fixed_map/string_key.hpp>
+
+#include "tests/fixed_map/string_key/string_key_test_options.hpp"
 
 namespace rfl = reflect_cpp26;
 
 template <class CharT>
-void test_empty_common()
-{
+void test_empty_common() {
   using KVPair = std::pair<std::basic_string<CharT>, wrapper_t<int>>;
   constexpr auto map_empty = FIXED_MAP(std::vector<KVPair>{});
-  constexpr auto ci_map_empty = FIXED_MAP(std::vector<KVPair>{}, {
-    .ascii_case_insensitive = true,
-  });
+  constexpr auto ci_map_empty = FIXED_MAP(std::vector<KVPair>{},
+                                          {
+                                              .ascii_case_insensitive = true,
+                                          });
 
-  EXPECT_THAT(display_string_of(^^decltype(map_empty)),
-              testing::HasSubstr("empty_string_key_map"));
+  EXPECT_THAT(display_string_of(^^decltype(map_empty)), testing::HasSubstr("empty_string_key_map"));
   EXPECT_THAT(display_string_of(^^decltype(ci_map_empty)),
               testing::HasSubstr("empty_string_key_map"));
 
@@ -48,11 +48,11 @@ void test_empty_common()
   EXPECT_NOT_FOUND_STATIC(magic_value, ci_map_empty, to<CharT>("hello"));
 }
 
-#define FOR_EACH_CHARACTER_TYPE(F)  \
-  F(char, Char)                     \
-  F(wchar_t, WChar)                 \
-  F(char8_t, Char8)                 \
-  F(char16_t, Char16)               \
+#define FOR_EACH_CHARACTER_TYPE(F) \
+  F(char, Char)                    \
+  F(wchar_t, WChar)                \
+  F(char8_t, Char8)                \
+  F(char16_t, Char16)              \
   F(char32_t, Char32)
 
 #define MAKE_EMPTY_MAP_TESTS(char_type, CharTypeName) \

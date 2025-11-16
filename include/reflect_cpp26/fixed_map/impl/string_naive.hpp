@@ -38,9 +38,8 @@ struct naive_string_key_map {
   }
 
   constexpr auto get(std::basic_string_view<character_type> key) const
-    -> std::pair<result_type, bool>
-  {
-    for (const auto& cur: _entries) {
+      -> std::pair<result_type, bool> {
+    for (const auto& cur : _entries) {
       if (Policy::equals(get_first(cur), key)) {
         return {get_second(cur), true};
       }
@@ -57,9 +56,7 @@ struct naive_string_key_map {
 // -------- Factory --------
 
 template <class Policy, class KVPair>
-constexpr auto naive_string_key_map_factory(meta_span<KVPair> entries)
-  -> std::meta::info
-{
+constexpr auto naive_string_key_map_factory(meta_span<KVPair> entries) -> std::meta::info {
   auto res = naive_string_key_map<Policy, KVPair>{._entries = entries};
   return std::meta::reflect_constant(res);
 }
@@ -67,17 +64,16 @@ constexpr auto naive_string_key_map_factory(meta_span<KVPair> entries)
 // -------- Builder --------
 
 template <class KVPair>
-consteval auto make_naive_string_key_map(
-  const std::vector<KVPair>& kv_pairs, bool case_insensitive) -> std::meta::info
-{
+consteval auto make_naive_string_key_map(const std::vector<KVPair>& kv_pairs, bool case_insensitive)
+    -> std::meta::info {
   using factory_fn_type = std::meta::info (*)(meta_span<KVPair>);
   auto policy = string_key_policy_type(case_insensitive);
-  auto factory_fn = extract<factory_fn_type>(
-    substitute(^^naive_string_key_map_factory, policy, ^^KVPair));
+  auto factory_fn =
+      extract<factory_fn_type>(substitute(^^naive_string_key_map_factory, policy, ^^KVPair));
 
   auto entries = reflect_cpp26::define_static_array(kv_pairs);
   return factory_fn(entries);
 }
-} // namespace reflect_cpp26::impl
+}  // namespace reflect_cpp26::impl
 
-#endif // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_NAIVE_HPP
+#endif  // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_NAIVE_HPP

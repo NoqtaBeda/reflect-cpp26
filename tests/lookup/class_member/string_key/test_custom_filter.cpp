@@ -20,11 +20,11 @@
  * SOFTWARE.
  **/
 
-#include "tests/lookup/lookup_test_options.hpp"
 #include <reflect_cpp26/lookup/lookup_table.hpp>
 
-#define LOOKUP_TABLE(...) \
-  REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
+#include "tests/lookup/lookup_test_options.hpp"
+
+#define LOOKUP_TABLE(...) REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
 
 namespace rfl = reflect_cpp26;
 
@@ -38,15 +38,14 @@ struct foo_3_t {
   volatile int64_t a6;
 };
 
-TEST(ClassLookupTableByName, CustomFilter)
-{
-  constexpr auto table_sv = LOOKUP_TABLE(foo_3_t,
-    [](std::string_view identifier) -> std::optional<std::string> {
-      if (identifier[1] <= '2') {
-        return std::string{identifier};
-      }
-      return std::nullopt;
-    });
+TEST(ClassLookupTableByName, CustomFilter) {
+  constexpr auto table_sv =
+      LOOKUP_TABLE(foo_3_t, [](std::string_view identifier) -> std::optional<std::string> {
+        if (identifier[1] <= '2') {
+          return std::string{identifier};
+        }
+        return std::nullopt;
+      });
   static_assert(std::is_same_v<const int32_t*, decltype(table_sv)::value_type>);
   static_assert(table_sv.size() == 2);
 
@@ -56,21 +55,20 @@ TEST(ClassLookupTableByName, CustomFilter)
   EXPECT_EQ_STATIC(nullptr, table_sv["1"]);
   EXPECT_EQ_STATIC(nullptr, table_sv["a4"]);
 
-  constexpr auto table_nv = LOOKUP_TABLE(foo_3_t,
-    [](std::meta::info member) -> std::optional<std::string> {
-      // Note: you don't need to test whether member is non-addressable
-      // (constructors, destructors, deleted, etc.) as they are already filtered
-      // out by the internal implementation of reflect_cpp26.
-      if (is_static_member(member) || is_volatile_type(type_of(member))) {
-        return std::nullopt;
-      }
-      if (!has_identifier(member)) {
-        return std::nullopt;
-      }
-      return std::string{std::meta::identifier_of(member).substr(1)};
-    });
-  static_assert(std::is_same_v<
-    const int32_t foo_3_t::*, decltype(table_nv)::value_type>);
+  constexpr auto table_nv =
+      LOOKUP_TABLE(foo_3_t, [](std::meta::info member) -> std::optional<std::string> {
+        // Note: you don't need to test whether member is non-addressable
+        // (constructors, destructors, deleted, etc.) as they are already filtered
+        // out by the internal implementation of reflect_cpp26.
+        if (is_static_member(member) || is_volatile_type(type_of(member))) {
+          return std::nullopt;
+        }
+        if (!has_identifier(member)) {
+          return std::nullopt;
+        }
+        return std::string{std::meta::identifier_of(member).substr(1)};
+      });
+  static_assert(std::is_same_v<const int32_t foo_3_t::*, decltype(table_nv)::value_type>);
   static_assert(table_nv.size() == 3);
 
   auto foo = foo_3_t{.a3 = 1, .a4 = 3, .a5 = 6, .a6 = 10};

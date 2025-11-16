@@ -66,8 +66,7 @@ struct string_key_fixed_map_options {
 };
 
 namespace impl {
-constexpr bool has_hash_collision(std::vector<uint64_t> hash_values)
-{
+constexpr bool has_hash_collision(std::vector<uint64_t> hash_values) {
   std::ranges::sort(hash_values);
   return std::ranges::adjacent_find(hash_values) != hash_values.end();
 }
@@ -75,10 +74,9 @@ constexpr bool has_hash_collision(std::vector<uint64_t> hash_values)
 // Precondition: All keys in kv_pairs are lower case
 // if options.ascii_case_insensitive is true.
 template <class KVPair>
-consteval auto make_string_key_fixed_map_impl(
-  std::vector<KVPair> kv_pairs, string_key_fixed_map_options options)
-  -> std::meta::info
-{
+consteval auto make_string_key_fixed_map_impl(std::vector<KVPair> kv_pairs,
+                                              string_key_fixed_map_options options)
+    -> std::meta::info {
   if (!options.already_unique) {
     std::ranges::sort(kv_pairs, {}, get_first);
     auto dup_pos = std::ranges::adjacent_find(kv_pairs, {}, get_first);
@@ -87,8 +85,10 @@ consteval auto make_string_key_fixed_map_impl(
     }
   }
   if (options.ascii_case_insensitive && !options.already_ascii_only) {
-    for (const auto& [k, _]: kv_pairs) {
-      if (is_ascii_string(k)) { continue; }
+    for (const auto& [k, _] : kv_pairs) {
+      if (is_ascii_string(k)) {
+        continue;
+      }
       compile_error("Only ASCII strings allowed.");
     }
   }
@@ -103,54 +103,52 @@ consteval auto make_string_key_fixed_map_impl(
 
   // (2) Length-based
   auto options_for_underlying = integral_key_fixed_map_options{
-    .adjusts_alignment = options.adjusts_alignment,
-    .min_load_factor = options.min_load_factor,
-    .dense_lookup_threshold = options.dense_lookup_threshold,
-    .binary_search_threshold = options.binary_search_threshold,
+      .adjusts_alignment = options.adjusts_alignment,
+      .min_load_factor = options.min_load_factor,
+      .dense_lookup_threshold = options.dense_lookup_threshold,
+      .binary_search_threshold = options.binary_search_threshold,
   };
   auto by_length_opt = try_make_string_key_map_by_length(
-    kv_pairs, options_for_underlying, options.ascii_case_insensitive);
+      kv_pairs, options_for_underlying, options.ascii_case_insensitive);
   if (by_length_opt) {
     return *by_length_opt;
   }
 
   auto hash_values = make_reserved_vector<uint64_t>(kv_pairs.size());
-  for (const auto& [k, _]: kv_pairs) {
+  for (const auto& [k, _] : kv_pairs) {
     hash_values.push_back(bkdr_hash64(k));
   }
   // (3) Hash binary search: slow path due to hash collision
   if (has_hash_collision(hash_values)) {
     auto sub_options = string_key_map_with_hash_collision_options{
-      .case_insensitive = options.ascii_case_insensitive,
-      .adjusts_alignment = options.adjusts_alignment,
+        .case_insensitive = options.ascii_case_insensitive,
+        .adjusts_alignment = options.adjusts_alignment,
     };
-    return make_string_key_map_with_hash_collision(
-      kv_pairs, hash_values, sub_options);
+    return make_string_key_map_with_hash_collision(kv_pairs, hash_values, sub_options);
   }
 
   // (4) Hash-table-based (hash collision is excluded)
   auto hash_table_options = string_key_map_by_hash_table_options{
-    .case_insensitive = options.ascii_case_insensitive,
-    .adjusts_alignment = options.adjusts_alignment,
-    .min_load_factor = options.min_load_factor,
-    .max_n_iterations = options.max_n_iterations,
+      .case_insensitive = options.ascii_case_insensitive,
+      .adjusts_alignment = options.adjusts_alignment,
+      .min_load_factor = options.min_load_factor,
+      .max_n_iterations = options.max_n_iterations,
   };
-  auto by_hash_table_opt = try_make_string_key_map_by_hash_table(
-    kv_pairs, hash_values, hash_table_options);
+  auto by_hash_table_opt =
+      try_make_string_key_map_by_hash_table(kv_pairs, hash_values, hash_table_options);
   if (by_hash_table_opt) {
     return *by_hash_table_opt;
   }
 
   // (5) Hash linear or binary search: fast path without hash collision
   auto hash_search_options = string_key_map_by_hash_search_options{
-    .case_insensitive = options.ascii_case_insensitive,
-    .adjusts_alignment = options.adjusts_alignment,
-    .binary_search_threshold = options.binary_search_threshold,
+      .case_insensitive = options.ascii_case_insensitive,
+      .adjusts_alignment = options.adjusts_alignment,
+      .binary_search_threshold = options.binary_search_threshold,
   };
-  return make_string_key_map_by_hash_search(
-    kv_pairs, hash_values, hash_search_options);
+  return make_string_key_map_by_hash_search(kv_pairs, hash_values, hash_search_options);
 }
-} // namespace impl
+}  // namespace impl
 
 /**
  * Generates a fixed map in compile-time whose key is of string type.
@@ -169,39 +167,36 @@ consteval auto make_string_key_fixed_map_impl(
  * For most cases, value is returned as a const-reference.
  */
 template <std::ranges::input_range KVPairRange>
-  requires (impl::string_key_kv_pair<std::ranges::range_value_t<KVPairRange>>)
-consteval auto make_string_key_fixed_map(
-  KVPairRange&& kv_pairs, string_key_fixed_map_options options = {})
-  -> std::meta::info
-{
+  requires(impl::string_key_kv_pair<std::ranges::range_value_t<KVPairRange>>)
+consteval auto make_string_key_fixed_map(KVPairRange&& kv_pairs,
+                                         string_key_fixed_map_options options = {})
+    -> std::meta::info {
   if (options.ascii_case_insensitive) {
-    auto converted = kv_pairs
-      | std::views::transform([](const auto& kv_pair) {
-          const auto& [k, v] = kv_pair;
-          auto k_lower = reflect_cpp26::define_static_string(ascii_tolower(k));
-          return std::pair{k_lower, to_structured(v)};
-        })
-      | std::ranges::to<std::vector>();
+    auto converted = kv_pairs | std::views::transform([](const auto& kv_pair) {
+                       const auto& [k, v] = kv_pair;
+                       auto k_lower = reflect_cpp26::define_static_string(ascii_tolower(k));
+                       return std::pair{k_lower, to_structured(v)};
+                     })
+                   | std::ranges::to<std::vector>();
     return impl::make_string_key_fixed_map_impl(converted, options);
   } else {
-    auto converted = kv_pairs
-      | std::views::transform([](const auto& kv_pair) {
-          const auto& [k, v] = kv_pair;
-          auto k_static = reflect_cpp26::define_static_string(k);
-          return std::pair{k_static, to_structured(v)};
-        })
-      | std::ranges::to<std::vector>();
+    auto converted = kv_pairs | std::views::transform([](const auto& kv_pair) {
+                       const auto& [k, v] = kv_pair;
+                       auto k_static = reflect_cpp26::define_static_string(k);
+                       return std::pair{k_static, to_structured(v)};
+                     })
+                   | std::ranges::to<std::vector>();
     return impl::make_string_key_fixed_map_impl(converted, options);
   }
 }
-} // namespace reflect_cpp26
+}  // namespace reflect_cpp26
 
 /**
  * Generates a fixed map in compile-time whose key is of string type and then
  * extracts it immediately.
  * Details see above.
  */
-#define REFLECT_CPP26_STRING_KEY_FIXED_MAP(kv_pairs, ...)                 \
-  [: reflect_cpp26::make_string_key_fixed_map(kv_pairs, ##__VA_ARGS__) :]
+#define REFLECT_CPP26_STRING_KEY_FIXED_MAP(kv_pairs, ...) \
+  [:reflect_cpp26::make_string_key_fixed_map(kv_pairs, ##__VA_ARGS__):]
 
-#endif // REFLECT_CPP26_UTILS_FIXED_MAP_STRING_KEY_HPP
+#endif  // REFLECT_CPP26_UTILS_FIXED_MAP_STRING_KEY_HPP

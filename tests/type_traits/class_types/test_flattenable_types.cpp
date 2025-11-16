@@ -20,8 +20,9 @@
  * SOFTWARE.
  **/
 
-#include "tests/test_options.hpp"
 #include <system_error>
+
+#include "tests/test_options.hpp"
 
 #ifdef ENABLE_FULL_HEADER_TEST
 #include <reflect_cpp26/type_traits.hpp>
@@ -155,8 +156,7 @@ struct my_pair_with_ctor_extended : my_pair_with_ctor {
   std::string third;
   std::string fourth;
 };
-static_assert(std::is_aggregate_v<my_pair_with_ctor_extended>,
-  "Incorrect test case.");
+static_assert(std::is_aggregate_v<my_pair_with_ctor_extended>, "Incorrect test case.");
 
 // Class types: Non-aggregate base class
 static_assert(rfl::partially_flattenable<my_pair_with_ctor_extended>);
@@ -177,10 +177,10 @@ static_assert(rfl::flattenable<references_t>);
 static_assert(rfl::flattenable_aggregate<references_t>);
 
 struct bit_fields_t {
-  int16_t flag: 1;
-  int16_t x: 4;
-  int16_t y: 8;
-  int16_t z: 12;
+  int16_t flag : 1;
+  int16_t x : 4;
+  int16_t y : 8;
+  int16_t z : 12;
 };
 static_assert(std::is_aggregate_v<bit_fields_t>, "Incorrect test case.");
 
@@ -205,18 +205,14 @@ struct struct_not_trivially_destructible_t {
 };
 
 // Class types: Not (trivially) destructible
-static_assert(rfl::partially_flattenable<
-  struct_not_destructible_t>);
-static_assert(rfl::partially_flattenable<
-  struct_not_trivially_destructible_t>);
+static_assert(rfl::partially_flattenable<struct_not_destructible_t>);
+static_assert(rfl::partially_flattenable<struct_not_trivially_destructible_t>);
 
 static_assert(rfl::flattenable<struct_not_destructible_t>);
 static_assert(rfl::flattenable<struct_not_trivially_destructible_t>);
 
-static_assert(rfl::flattenable_aggregate<
-  struct_not_destructible_t>);
-static_assert(rfl::flattenable_aggregate<
-  struct_not_trivially_destructible_t>);
+static_assert(rfl::flattenable_aggregate<struct_not_destructible_t>);
+static_assert(rfl::flattenable_aggregate<struct_not_trivially_destructible_t>);
 
 struct my_pair_extended_A : my_pair {
   size_t index;
@@ -224,12 +220,12 @@ struct my_pair_extended_A : my_pair {
 
 struct my_pair_extended_B : my_pair_extended_A {
   double values[16];
-  size_t index; // Shadows my_pair_extended_A::index
+  size_t index;  // Shadows my_pair_extended_A::index
   size_t size;
 };
 
 struct my_pair_extended_C : my_pair_extended_B, std::to_chars_result {
-  const double* ptr; // Shadows std::to_chars_result::ptr
+  const double* ptr;  // Shadows std::to_chars_result::ptr
 };
 
 // Class types: Inheritance
@@ -255,8 +251,7 @@ struct my_pair_extended_D : my_pair {
 struct my_pair_extended_E : my_pair_extended_D, std::to_chars_result {
   double e[12];
   void dump() override {
-    std::println("{} {} {}\n",
-      this->first, this->second, static_cast<const void*>(this->ptr));
+    std::println("{} {} {}\n", this->first, this->second, static_cast<const void*>(this->ptr));
   }
 };
 
@@ -348,6 +343,7 @@ static_assert(NOT rfl::flattenable_aggregate<baz_C_t>);
 
 struct with_non_public_members_1_t {
   int a;
+
 private:
   int b;
 };
@@ -380,7 +376,7 @@ struct with_union_member_2_t {
     int as_int;
     unsigned as_unsigned;
     float as_float;
-  }; // Anonymous union member
+  };  // Anonymous union member
 };
 
 static_assert(std::is_aggregate_v<with_union_member_1_t>);
@@ -395,5 +391,5 @@ static_assert(rfl::flattenable<const with_union_member_2_t>);
 static_assert(rfl::flattenable_aggregate<volatile with_union_member_2_t>);
 
 TEST(TypeTraitsClassTypes, FlattenableTypes) {
-  EXPECT_TRUE(true); // All test cases done with static-asserts above
+  EXPECT_TRUE(true);  // All test cases done with static-asserts above
 }

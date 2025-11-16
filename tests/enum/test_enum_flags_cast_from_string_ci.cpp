@@ -42,8 +42,7 @@ constexpr auto enum_flags_cast_ci(std::string_view str, Delim delim) {
   return rfl::enum_flags_cast<E>(rfl::ascii_case_insensitive, str, delim);
 }
 
-TEST(EnumFlagsCastFromStringCI, D1)
-{
+TEST(EnumFlagsCastFromStringCI, D1) {
   using namespace rfl::enum_bitwise_operators;
   EXPECT_EQ_STATIC(D1::one, enum_flags_cast_ci<D1>("One"));
   EXPECT_EQ_STATIC(D1::two, enum_flags_cast_ci<D1>("TWO"));
@@ -52,12 +51,11 @@ TEST(EnumFlagsCastFromStringCI, D1)
 
   EXPECT_EQ_STATIC(D1::one | D1::two, enum_flags_cast_ci<D1>("one|TWO"));
   EXPECT_EQ_STATIC(D1::one | D1::four, enum_flags_cast_ci<D1>("one | Four"));
-  EXPECT_EQ_STATIC(D1::two | D1::four,
-    enum_flags_cast_ci<D1>("tWO, Four", ','));
+  EXPECT_EQ_STATIC(D1::two | D1::four, enum_flags_cast_ci<D1>("tWO, Four", ','));
   EXPECT_EQ_STATIC(D1::two | D1::four | D1::eight,
-    enum_flags_cast_ci<D1>(" | tWo | fOUr |      | eiGhT | ", " | "));
+                   enum_flags_cast_ci<D1>(" | tWo | fOUr |      | eiGhT | ", " | "));
   EXPECT_EQ_STATIC(D1::one | D1::four | D1::eight,
-    enum_flags_cast_ci<D1>("oNe\nFour  \neIgHt\n", '\n'));
+                   enum_flags_cast_ci<D1>("oNe\nFour  \neIgHt\n", '\n'));
 
   EXPECT_EQ_STATIC(static_cast<D1>(0), enum_flags_cast_ci<D1>(""));
   EXPECT_EQ_STATIC(static_cast<D1>(0), enum_flags_cast_ci<D1>(" ||  || "));
@@ -68,12 +66,10 @@ TEST(EnumFlagsCastFromStringCI, D1)
   EXPECT_EQ_STATIC(std::nullopt, enum_flags_cast_ci<D1>("one|two|four", ','));
   EXPECT_EQ_STATIC(std::nullopt, enum_flags_cast_ci<D1>("1|2|4"));
   EXPECT_EQ_STATIC(std::nullopt, enum_flags_cast_ci<D1>("one|two", " | "));
-  EXPECT_EQ_STATIC(std::nullopt,
-    enum_flags_cast_ci<D1>("one \n two\nfour", ' '));
+  EXPECT_EQ_STATIC(std::nullopt, enum_flags_cast_ci<D1>("one \n two\nfour", ' '));
 }
 
-TEST(EnumFlagsCastFromStringCI, D2)
-{
+TEST(EnumFlagsCastFromStringCI, D2) {
   using namespace rfl::enum_bitwise_operators;
   EXPECT_EQ_STATIC(D2::Zero, enum_flags_cast_ci<D2>("zero"));
   EXPECT_EQ_STATIC(D2::LING, enum_flags_cast_ci<D2>("ling"));
@@ -91,20 +87,17 @@ TEST(EnumFlagsCastFromStringCI, D2)
   EXPECT_EQ_STATIC(D2::Qi, enum_flags_cast_ci<D2>("qI"));
   EXPECT_EQ_STATIC(D2::Eight, enum_flags_cast_ci<D2>("EIGHT"));
 
-  EXPECT_EQ_STATIC(D2::Eight | D2::Five,
-    enum_flags_cast_ci<D2>(" eight | five"));
+  EXPECT_EQ_STATIC(D2::Eight | D2::Five, enum_flags_cast_ci<D2>(" eight | five"));
   EXPECT_EQ_STATIC(D2::Eight | D2::Four | D2::ER,
-    enum_flags_cast_ci<D2>(" EIGHt | FoUr | Er  | ", " | "));
+                   enum_flags_cast_ci<D2>(" EIGHt | FoUr | Er  | ", " | "));
   EXPECT_EQ_STATIC(D2::Eight | D2::Four | D2::ER | D2::YI,
-    enum_flags_cast_ci<D2>(" EighT,FoUr\n,er\t,YI\n ,,,", ','));
-  EXPECT_EQ_STATIC(D2::Five,
-    enum_flags_cast_ci<D2>("five four wu yi\n one\n zero LiNG\n", ' '));
+                   enum_flags_cast_ci<D2>(" EighT,FoUr\n,er\t,YI\n ,,,", ','));
+  EXPECT_EQ_STATIC(D2::Five, enum_flags_cast_ci<D2>("five four wu yi\n one\n zero LiNG\n", ' '));
 
   EXPECT_EQ_STATIC(D2::Zero, enum_flags_cast_ci<D2>(""));
   EXPECT_EQ_STATIC(D2::Zero, enum_flags_cast_ci<D2>(" ||  || "));
   EXPECT_EQ_STATIC(D2::Zero, enum_flags_cast_ci<D2>(" ,, ,,", ','));
-  EXPECT_EQ_STATIC(D2::Zero,
-    enum_flags_cast_ci<D2>("\tZero\n\n\t\n\nLING\t", '\n'));
+  EXPECT_EQ_STATIC(D2::Zero, enum_flags_cast_ci<D2>("\tZero\n\n\t\n\nLING\t", '\n'));
 
   EXPECT_EQ_STATIC(std::nullopt, enum_flags_cast_ci<D2>("Oné|two"));
   EXPECT_EQ_STATIC(std::nullopt, enum_flags_cast_ci<D2>("On|To"));
@@ -113,15 +106,12 @@ TEST(EnumFlagsCastFromStringCI, D2)
   EXPECT_EQ_STATIC(std::nullopt, enum_flags_cast_ci<D2>("Two Four"));
 }
 
-TEST(EnumFlagsCastFromStringCI, Empty)
-{
+TEST(EnumFlagsCastFromStringCI, Empty) {
   EXPECT_EQ_STATIC(static_cast<empty>(0), enum_flags_cast_ci<empty>(""));
+  EXPECT_EQ_STATIC(static_cast<empty>(0), enum_flags_cast_ci<empty>(" ||  || "));
+  EXPECT_EQ_STATIC(static_cast<empty>(0), enum_flags_cast_ci<empty>(" ,, \n ,, \t ,,", ','));
   EXPECT_EQ_STATIC(static_cast<empty>(0),
-    enum_flags_cast_ci<empty>(" ||  || "));
-  EXPECT_EQ_STATIC(static_cast<empty>(0),
-    enum_flags_cast_ci<empty>(" ,, \n ,, \t ,,", ','));
-  EXPECT_EQ_STATIC(static_cast<empty>(0),
-    enum_flags_cast_ci<empty>("ABABABABABABABABABABABABABAB", "AB"));
+                   enum_flags_cast_ci<empty>("ABABABABABABABABABABABABABAB", "AB"));
 
   EXPECT_EQ_STATIC(std::nullopt, enum_flags_cast_ci<empty>("0"));
   EXPECT_EQ_STATIC(std::nullopt, enum_flags_cast_ci<empty>("empty"));

@@ -23,12 +23,12 @@
 #ifndef REFLECT_CPP26_UTILS_FIXED_MAP_INTEGRAL_KEY_HPP
 #define REFLECT_CPP26_UTILS_FIXED_MAP_INTEGRAL_KEY_HPP
 
-#include <reflect_cpp26/type_operations/to_structured.hpp>
 #include <reflect_cpp26/fixed_map/impl/integral_dense.hpp>
 #include <reflect_cpp26/fixed_map/impl/integral_empty.hpp>
 #include <reflect_cpp26/fixed_map/impl/integral_fully_dense.hpp>
 #include <reflect_cpp26/fixed_map/impl/integral_general.hpp>
 #include <reflect_cpp26/fixed_map/impl/integral_sparse.hpp>
+#include <reflect_cpp26/type_operations/to_structured.hpp>
 
 namespace reflect_cpp26 {
 struct integral_key_fixed_map_options {
@@ -93,18 +93,17 @@ struct integral_key_map_enum_wrapper {
 };
 
 template <enum_type E, auto Nested>
-constexpr auto integral_key_map_enum_wrapper_factory_v =
-  std::meta::reflect_constant(
+constexpr auto integral_key_map_enum_wrapper_factory_v = std::meta::reflect_constant(
     integral_key_map_enum_wrapper<E, decltype(Nested)>{._nested = Nested});
 
 template <class KVPairRange>
-consteval auto find_longest_dense_subrange(
-  const KVPairRange& sorted_kv_pairs, double min_load_factor)
-  /* -> std::pair<KVPairIter, KVPairIter> */
+consteval auto find_longest_dense_subrange(const KVPairRange& sorted_kv_pairs,
+                                           double min_load_factor)
+/* -> std::pair<KVPairIter, KVPairIter> */
 {
   auto is_dense_closed_range = [min_load_factor](auto head, auto tail) {
-    auto n_slots = static_cast<double>(get_first(*tail))
-                 - static_cast<double>(get_first(*head)) + 1.0;
+    auto n_slots =
+        static_cast<double>(get_first(*tail)) - static_cast<double>(get_first(*head)) + 1.0;
     auto n_non_hole_entries = static_cast<double>(tail - head + 1);
     return n_slots * min_load_factor <= n_non_hole_entries;
   };
@@ -118,7 +117,8 @@ consteval auto find_longest_dense_subrange(
   auto max_len_tail = begin;
   for (auto head = begin, tail = begin + 1; tail < end; ++tail) {
     // Finds longest [head, tail]
-    for (; head < tail && !is_dense_closed_range(head, tail); ++head) {}
+    for (; head < tail && !is_dense_closed_range(head, tail); ++head) {
+    }
     if (tail - head > max_len_tail - max_len_head) {
       max_len_head = head;
       max_len_tail = tail;
@@ -128,10 +128,9 @@ consteval auto find_longest_dense_subrange(
 }
 
 template <integral_key_kv_pair KVPair>
-consteval auto make_integral_key_fixed_map_impl(
-  std::vector<KVPair> kv_pairs, integral_key_fixed_map_options options)
-  -> std::meta::info
-{
+consteval auto make_integral_key_fixed_map_impl(std::vector<KVPair> kv_pairs,
+                                                integral_key_fixed_map_options options)
+    -> std::meta::info {
   // (1) Empty
   if (kv_pairs.empty()) {
     return make_empty_integral_key_map<KVPair>();
@@ -145,36 +144,33 @@ consteval auto make_integral_key_fixed_map_impl(
       compile_error("Duplicated keys are not allowed.");
     }
   }
-  auto [dense_begin, dense_end] =
-    find_longest_dense_subrange(kv_pairs, options.min_load_factor);
+  auto [dense_begin, dense_end] = find_longest_dense_subrange(kv_pairs, options.min_load_factor);
   // (2) Dense
   auto dense_options = dense_integral_key_fixed_map_options{
-    .adjusts_alignment = options.adjusts_alignment,
-    .default_value_is_always_invalid = options.default_value_is_always_invalid,
+      .adjusts_alignment = options.adjusts_alignment,
+      .default_value_is_always_invalid = options.default_value_is_always_invalid,
   };
   if (kv_pairs.size() == dense_end - dense_begin) {
     return make_dense_integral_key_map(dense_begin, dense_end, dense_options);
   }
   // (3) Sparse
   auto sparse_options = sparse_integral_key_fixed_map_options{
-    .adjusts_alignment = options.adjusts_alignment,
-    .binary_search_threshold = options.binary_search_threshold,
+      .adjusts_alignment = options.adjusts_alignment,
+      .binary_search_threshold = options.binary_search_threshold,
   };
   if (dense_end - dense_begin < options.dense_lookup_threshold) {
-    return make_sparse_integral_key_map(
-      kv_pairs.cbegin(), kv_pairs.cend(), sparse_options);
+    return make_sparse_integral_key_map(kv_pairs.cbegin(), kv_pairs.cend(), sparse_options);
   }
   // (4) General
   auto general_options = general_integral_key_fixed_map_options{
-    .adjusts_alignment = options.adjusts_alignment,
-    .default_value_is_always_invalid = options.default_value_is_always_invalid,
-    .binary_search_threshold = options.binary_search_threshold,
+      .adjusts_alignment = options.adjusts_alignment,
+      .default_value_is_always_invalid = options.default_value_is_always_invalid,
+      .binary_search_threshold = options.binary_search_threshold,
   };
   return make_general_integral_key_map(
-    kv_pairs.cbegin(), dense_begin, dense_end, kv_pairs.cend(),
-    general_options);
+      kv_pairs.cbegin(), dense_begin, dense_end, kv_pairs.cend(), general_options);
 }
-} // namespace impl
+}  // namespace impl
 
 /**
  * Generates a fixed map in compile-time whose key is of integral or enum type.
@@ -194,42 +190,38 @@ consteval auto make_integral_key_fixed_map_impl(
  * For most cases, value is returned as a const-reference.
  */
 template <std::ranges::input_range KVPairRange>
-  requires (impl::integral_key_kv_pair<std::ranges::range_value_t<KVPairRange>>)
-consteval auto make_integral_key_fixed_map(
-  KVPairRange kv_pairs, integral_key_fixed_map_options options = {})
-  -> std::meta::info
-{
+  requires(impl::integral_key_kv_pair<std::ranges::range_value_t<KVPairRange>>)
+consteval auto make_integral_key_fixed_map(KVPairRange kv_pairs,
+                                           integral_key_fixed_map_options options = {})
+    -> std::meta::info {
   using KVPair = std::ranges::range_value_t<KVPairRange>;
   using Key = std::tuple_element_t<0, KVPair>;
 
   if constexpr (std::is_enum_v<Key>) {
-    auto structured_kv_pairs = kv_pairs
-      | std::views::transform([](const auto& kv_pair) {
-          const auto& [k, v] = kv_pair;
-          return std::pair{std::to_underlying(k), to_structured(v)};
-        })
-      | std::ranges::to<std::vector>();
-    auto nested_res =
-      impl::make_integral_key_fixed_map_impl(structured_kv_pairs, options);
-    return extract<std::meta::info>(substitute(
-      ^^impl::integral_key_map_enum_wrapper_factory_v, {^^Key, nested_res}));
+    auto structured_kv_pairs = kv_pairs | std::views::transform([](const auto& kv_pair) {
+                                 const auto& [k, v] = kv_pair;
+                                 return std::pair{std::to_underlying(k), to_structured(v)};
+                               })
+                             | std::ranges::to<std::vector>();
+    auto nested_res = impl::make_integral_key_fixed_map_impl(structured_kv_pairs, options);
+    return extract<std::meta::info>(substitute(^^impl::integral_key_map_enum_wrapper_factory_v,
+                                               {
+                                                   ^^Key, nested_res}));
   } else {
-    auto structured_kv_pairs = kv_pairs
-      | std::views::transform([](const auto& kv_pair) {
-          return to_structured(kv_pair);
-        })
-      | std::ranges::to<std::vector>();
+    auto structured_kv_pairs =
+        kv_pairs | std::views::transform([](const auto& kv_pair) { return to_structured(kv_pair); })
+        | std::ranges::to<std::vector>();
     return impl::make_integral_key_fixed_map_impl(structured_kv_pairs, options);
   }
 }
-} // namespace reflect_cpp26
+}  // namespace reflect_cpp26
 
 /**
  * Generates a fixed map in compile-time whose key is of integral or enum type
  * and then extracts it immediately.
  * Details see above.
  */
-#define REFLECT_CPP26_INTEGRAL_KEY_FIXED_MAP(kv_pairs, ...)           \
-  [: reflect_cpp26::make_integral_key_fixed_map(kv_pairs, ##__VA_ARGS__) :]
+#define REFLECT_CPP26_INTEGRAL_KEY_FIXED_MAP(kv_pairs, ...) \
+  [:reflect_cpp26::make_integral_key_fixed_map(kv_pairs, ##__VA_ARGS__):]
 
-#endif // REFLECT_CPP26_UTILS_FIXED_MAP_INTEGRAL_KEY_HPP
+#endif  // REFLECT_CPP26_UTILS_FIXED_MAP_INTEGRAL_KEY_HPP

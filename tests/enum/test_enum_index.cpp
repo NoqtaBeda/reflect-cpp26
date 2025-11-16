@@ -33,8 +33,7 @@ using namespace reflect_cpp26;
 using enum enum_entry_order;
 
 template <class E>
-constexpr void test_foo_signed_common()
-{
+constexpr void test_foo_signed_common() {
   ASSERT_EQ_STATIC(2, enum_index_by<by_value>(E::zero));
   ASSERT_EQ_STATIC(3, enum_index_by<by_value>(E::one));
   ASSERT_EQ_STATIC(4, enum_index_by<by_value>(E::two));
@@ -60,8 +59,7 @@ constexpr void test_foo_signed_common()
   ASSERT_EQ_STATIC(npos, enum_index_by<by_name>(static_cast<E>(1 << 31)));
 }
 
-TEST(EnumIndex, FooSigned)
-{
+TEST(EnumIndex, FooSigned) {
   test_foo_signed_common<foo_signed>();
   ASSERT_EQ_STATIC(0, enum_index(foo_signed::zero));
   ASSERT_EQ_STATIC(1, enum_index(foo_signed::one));
@@ -74,8 +72,7 @@ TEST(EnumIndex, FooSigned)
   ASSERT_EQ_STATIC(8, enum_index(foo_signed::error));
 }
 
-TEST(EnumIndex, FooSignedReorder)
-{
+TEST(EnumIndex, FooSignedReorder) {
   test_foo_signed_common<foo_signed_reorder>();
   ASSERT_EQ_STATIC(0, enum_index(foo_signed_reorder::two));
   ASSERT_EQ_STATIC(1, enum_index(foo_signed_reorder::five));
@@ -88,8 +85,7 @@ TEST(EnumIndex, FooSignedReorder)
   ASSERT_EQ_STATIC(8, enum_index(foo_signed_reorder::error));
 }
 
-TEST(EnumIndex, FooSignedRep)
-{
+TEST(EnumIndex, FooSignedRep) {
   ASSERT_EQ_STATIC(0, enum_index(foo_signed_rep::zero));
   ASSERT_THAT(enum_index(foo_signed_rep::one), testing::AnyOf(1, 3));
   ASSERT_THAT(enum_index(foo_signed_rep::two), testing::AnyOf(2, 4));
@@ -115,21 +111,17 @@ TEST(EnumIndex, FooSignedRep)
   ASSERT_EQ_STATIC(2, enum_index_by<by_name>(foo_signed_rep::five));
   ASSERT_EQ_STATIC(3, enum_index_by<by_name>(foo_signed_rep::four));
   ASSERT_EQ_STATIC(4, enum_index_by<by_name>(foo_signed_rep::invalid));
-  ASSERT_THAT(enum_index_by<by_name>(foo_signed_rep::one),
-              testing::AnyOf(5, 9));
+  ASSERT_THAT(enum_index_by<by_name>(foo_signed_rep::one), testing::AnyOf(5, 9));
   ASSERT_EQ_STATIC(6, enum_index_by<by_name>(foo_signed_rep::seven));
   ASSERT_EQ_STATIC(7, enum_index_by<by_name>(foo_signed_rep::six));
   ASSERT_EQ_STATIC(10, enum_index_by<by_name>(foo_signed_rep::zero));
 
   ASSERT_EQ_STATIC(npos, enum_index(static_cast<foo_signed_rep>(-3)));
-  ASSERT_EQ_STATIC(npos,
-    enum_index_by<by_value>(static_cast<foo_signed_rep>(3)));
-  ASSERT_EQ_STATIC(npos,
-    enum_index_by<by_name>(static_cast<foo_signed_rep>(123)));
+  ASSERT_EQ_STATIC(npos, enum_index_by<by_value>(static_cast<foo_signed_rep>(3)));
+  ASSERT_EQ_STATIC(npos, enum_index_by<by_name>(static_cast<foo_signed_rep>(123)));
 }
 
-TEST(EnumIndex, BarUnsigned)
-{
+TEST(EnumIndex, BarUnsigned) {
   ASSERT_EQ_STATIC(0, enum_index(bar_unsigned::zero));
   ASSERT_EQ_STATIC(1, enum_index(bar_unsigned::one));
   ASSERT_EQ_STATIC(2, enum_index(bar_unsigned::two));
@@ -167,14 +159,11 @@ TEST(EnumIndex, BarUnsigned)
   ASSERT_EQ_STATIC(10, enum_index_by<by_name>(bar_unsigned::zero));
 
   ASSERT_EQ_STATIC(npos, enum_index(static_cast<bar_unsigned>(-3)));
-  ASSERT_EQ_STATIC(npos,
-    enum_index_by<by_value>(static_cast<bar_unsigned>(9)));
-  ASSERT_EQ_STATIC(npos,
-    enum_index_by<by_name>(static_cast<bar_unsigned>(1234)));
+  ASSERT_EQ_STATIC(npos, enum_index_by<by_value>(static_cast<bar_unsigned>(9)));
+  ASSERT_EQ_STATIC(npos, enum_index_by<by_name>(static_cast<bar_unsigned>(1234)));
 }
 
-TEST(EnumIndex, BazSigned)
-{
+TEST(EnumIndex, BazSigned) {
   ASSERT_EQ_STATIC(0, enum_index(baz_signed::ling));
   ASSERT_EQ_STATIC(1, enum_index(baz_signed::yi));
   ASSERT_EQ_STATIC(2, enum_index(baz_signed::er));
@@ -195,12 +184,10 @@ TEST(EnumIndex, BazSigned)
 
   ASSERT_EQ_STATIC(npos, enum_index(static_cast<baz_signed>(-2)));
   ASSERT_EQ_STATIC(npos, enum_index_by<by_value>(static_cast<baz_signed>(4)));
-  ASSERT_EQ_STATIC(npos,
-    enum_index_by<by_name>(static_cast<baz_signed>(1 << 15)));
+  ASSERT_EQ_STATIC(npos, enum_index_by<by_name>(static_cast<baz_signed>(1 << 15)));
 }
 
-TEST(EnumIndex, QuxUnsigned)
-{
+TEST(EnumIndex, QuxUnsigned) {
   ASSERT_EQ_STATIC(0, enum_index(qux_unsigned::ling));
   ASSERT_EQ_STATIC(1, enum_index(qux_unsigned::yi));
   ASSERT_EQ_STATIC(2, enum_index(qux_unsigned::er));
@@ -224,15 +211,13 @@ TEST(EnumIndex, QuxUnsigned)
 
   ASSERT_EQ_STATIC(npos, enum_index(static_cast<qux_unsigned>(-2)));
   ASSERT_EQ_STATIC(npos, enum_index_by<by_value>(static_cast<qux_unsigned>(5)));
-  ASSERT_EQ_STATIC(npos,
-    enum_index_by<by_name>(static_cast<qux_unsigned>(1 << 15)));
+  ASSERT_EQ_STATIC(npos, enum_index_by<by_name>(static_cast<qux_unsigned>(1 << 15)));
 }
 
 // Compilation error during static assertion since Clang 21:
 // integer value -1 is outside the valid range of values [0, 1] for the
 // enumeration type 'empty'
-TEST(EnumIndex, Empty)
-{
+TEST(EnumIndex, Empty) {
   ASSERT_EQ_STATIC(npos, enum_index(static_cast<empty>(0)));
   ASSERT_EQ_STATIC(npos, enum_index(static_cast<empty>(1)));
   ASSERT_EQ(npos, enum_index(static_cast<empty>(-1)));
@@ -244,8 +229,7 @@ TEST(EnumIndex, Empty)
   ASSERT_EQ(npos, enum_index_by<by_name>(static_cast<empty>(2)));
 }
 
-TEST(EnumIndex, Single)
-{
+TEST(EnumIndex, Single) {
   ASSERT_EQ_STATIC(0, enum_index(static_cast<single>(233)));
   ASSERT_EQ_STATIC(0, enum_index_by<by_value>(static_cast<single>(233)));
   ASSERT_EQ_STATIC(0, enum_index_by<by_name>(static_cast<single>(233)));
@@ -261,10 +245,9 @@ TEST(EnumIndex, Single)
   ASSERT_EQ(npos, enum_index_by<by_name>(static_cast<single>(-3)));
 }
 
-TEST(EnumIndex, SingleRep)
-{
+TEST(EnumIndex, SingleRep) {
   ASSERT_THAT(enum_index(static_cast<single_rep>(233)),
-    testing::AllOf(testing::Ge(0), testing::Le(5)));
+              testing::AllOf(testing::Ge(0), testing::Le(5)));
 
   ASSERT_EQ_STATIC(npos, enum_index(static_cast<single_rep>(0)));
   ASSERT_EQ_STATIC(npos, enum_index(static_cast<single_rep>(1)));
@@ -277,18 +260,13 @@ TEST(EnumIndex, SingleRep)
   ASSERT_EQ_STATIC(npos, enum_index_by<by_name>(static_cast<single_rep>(-1)));
 }
 
-TEST(EnumIndex, Color)
-{
+TEST(EnumIndex, Color) {
   ASSERT_EQ_STATIC(100, enum_index(color::orange_red));
-  ASSERT_EQ_STATIC(npos,
-    enum_index_by<by_value>(static_cast<color>(0x12345678)));
-  ASSERT_EQ_STATIC(npos,
-    enum_index_by<by_name>(static_cast<color>(0x98765432)));
+  ASSERT_EQ_STATIC(npos, enum_index_by<by_value>(static_cast<color>(0x12345678)));
+  ASSERT_EQ_STATIC(npos, enum_index_by<by_name>(static_cast<color>(0x98765432)));
 }
 
-
-TEST(EnumIndex, TerminalColor)
-{
+TEST(EnumIndex, TerminalColor) {
   ASSERT_EQ_STATIC(0, enum_index(terminal_color::black));
   ASSERT_EQ_STATIC(1, enum_index(terminal_color::red));
   ASSERT_EQ_STATIC(2, enum_index(terminal_color::green));
@@ -341,28 +319,40 @@ TEST(EnumIndex, TerminalColor)
   ASSERT_EQ_STATIC(15, enum_index_by<by_name>(terminal_color::yellow));
 
   ASSERT_EQ_STATIC(npos, enum_index(static_cast<terminal_color>(0)));
-  ASSERT_EQ_STATIC(npos,
-    enum_index_by<by_value>(static_cast<terminal_color>(1)));
-  ASSERT_EQ_STATIC(npos,
-    enum_index_by<by_name>(static_cast<terminal_color>(40)));
+  ASSERT_EQ_STATIC(npos, enum_index_by<by_value>(static_cast<terminal_color>(1)));
+  ASSERT_EQ_STATIC(npos, enum_index_by<by_name>(static_cast<terminal_color>(40)));
 }
 
-TEST(EnumIndex, HashCollision)
-{
+TEST(EnumIndex, HashCollision) {
   ASSERT_EQ_STATIC(0, enum_index(hash_collision::_wSYZDRpiQJf8Rfv));
   ASSERT_EQ_STATIC(1, enum_index(hash_collision::_cuFFJIHGp_jNJKS));
 
-  ASSERT_EQ_STATIC(0,
-    enum_index_by<by_value>(hash_collision::_wSYZDRpiQJf8Rfv));
-  ASSERT_EQ_STATIC(1,
-    enum_index_by<by_value>(hash_collision::_cuFFJIHGp_jNJKS));
+  ASSERT_EQ_STATIC(0, enum_index_by<by_value>(hash_collision::_wSYZDRpiQJf8Rfv));
+  ASSERT_EQ_STATIC(1, enum_index_by<by_value>(hash_collision::_cuFFJIHGp_jNJKS));
 
   ASSERT_EQ_STATIC(0, enum_index_by<by_name>(hash_collision::_cuFFJIHGp_jNJKS));
   ASSERT_EQ_STATIC(1, enum_index_by<by_name>(hash_collision::_wSYZDRpiQJf8Rfv));
 
   ASSERT_EQ_STATIC(npos, enum_index(static_cast<hash_collision>(-1)));
-  ASSERT_EQ_STATIC(npos,
-    enum_index_by<by_value>(static_cast<hash_collision>(2)));
-  ASSERT_EQ_STATIC(npos,
-    enum_index_by<by_name>(static_cast<hash_collision>(123)));
+  ASSERT_EQ_STATIC(npos, enum_index_by<by_value>(static_cast<hash_collision>(2)));
+  ASSERT_EQ_STATIC(npos, enum_index_by<by_name>(static_cast<hash_collision>(123)));
+}
+
+TEST(EnumIndex, BindExpression) {
+  using namespace std::placeholders;
+  constexpr auto f1 = enum_index_by<enum_entry_order::by_value>(_3);
+  ASSERT_EQ_STATIC(7, f1("ignore me", "ignore me too", foo_signed_rep::four));
+  ASSERT_EQ_STATIC(npos, f1("ignore me", "ignore me too", static_cast<foo_signed_rep>(42)));
+
+  constexpr auto f2 = enum_index_opt_by<enum_entry_order::by_name>(_2);
+  ASSERT_EQ_STATIC(3, f2("ignore me", foo_signed::invalid));
+  ASSERT_EQ_STATIC(std::nullopt, f2("ignore me", static_cast<foo_signed>(42)));
+
+  constexpr auto f3 = enum_unique_index(_3);
+  ASSERT_EQ_STATIC(5, f3("ignore me", "ignore me too", foo_signed_rep::four));
+  ASSERT_EQ_STATIC(npos, f3("ignore me", "ignore me too", static_cast<foo_signed_rep>(42)));
+
+  constexpr auto f4 = enum_unique_index_opt(_2);
+  ASSERT_EQ_STATIC(4, f4("ignore me", foo_signed::two));
+  ASSERT_EQ_STATIC(std::nullopt, f4("ignore me", static_cast<foo_signed>(42)));
 }

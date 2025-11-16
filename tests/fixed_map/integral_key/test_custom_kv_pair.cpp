@@ -20,9 +20,10 @@
  * SOFTWARE.
  **/
 
-#include "tests/fixed_map/integral_key/integral_key_test_options.hpp"
 #include <reflect_cpp26/fixed_map/integral_key.hpp>
 #include <reflect_cpp26/utils/type_tuple.hpp>
+
+#include "tests/fixed_map/integral_key/integral_key_test_options.hpp"
 
 namespace rfl = reflect_cpp26;
 using namespace std::literals;
@@ -33,8 +34,7 @@ struct string_wrapper {
 };
 
 template <size_t I>
-constexpr auto get(string_wrapper s)
-{
+constexpr auto get(string_wrapper s) {
   if constexpr (I == 0) {
     return s.string[0];
   } else if constexpr (I == 1) {
@@ -45,35 +45,32 @@ constexpr auto get(string_wrapper s)
 }
 
 template <rfl::integral_key_fixed_map_options Options>
-constexpr void test_custom_kv_pair_common()
-{
+constexpr void test_custom_kv_pair_common() {
   constexpr auto map = FIXED_MAP(std::vector<string_wrapper>({
-    { "Apple" },
-    { "Banana" },
-    { "Cat" },
-    { "Dog" },
-    { "Foo" },
-    { "Horse" },
-    { "Island" },
-    { "Rabbit" },
-    { "Snake" },
-    { "Zebra" },
-  }), Options);
+                                     {"Apple"},
+                                     {"Banana"},
+                                     {"Cat"},
+                                     {"Dog"},
+                                     {"Foo"},
+                                     {"Horse"},
+                                     {"Island"},
+                                     {"Rabbit"},
+                                     {"Snake"},
+                                     {"Zebra"},
+                                 }),
+                                 Options);
 
-  static_assert(rfl::same_as_one_of<
-    typename decltype(map)::kv_pair_type,
-    std::pair<char, rfl::meta_string_view>,
-    rfl::meta_tuple<char, rfl::meta_string_view>>);
+  static_assert(rfl::same_as_one_of<typename decltype(map)::kv_pair_type,
+                                    std::pair<char, rfl::meta_string_view>,
+                                    rfl::meta_tuple<char, rfl::meta_string_view>>);
   // to_structured_t<std::string_view> -> rfl::meta_string_view
-  static_assert(std::is_same_v<
-    typename decltype(map)::result_type, const rfl::meta_string_view&>);
+  static_assert(std::is_same_v<typename decltype(map)::result_type, const rfl::meta_string_view&>);
 
-  auto expected_regex = "general_integral_key_map"s
-    + ".*" + "dense_integral_key_map" // left_sparse_part
-    + ".*" + "empty_integral_key_map" // left_sparse_part
-    + ".*" + "linear_search_integral_key_map"; // right_sparse_part
-  EXPECT_THAT(display_string_of(^^decltype(map)),
-              testing::ContainsRegex(expected_regex));
+  auto expected_regex = "general_integral_key_map"s + ".*"
+                      + "dense_integral_key_map"                  // left_sparse_part
+                      + ".*" + "empty_integral_key_map"           // left_sparse_part
+                      + ".*" + "linear_search_integral_key_map";  // right_sparse_part
+  EXPECT_THAT(display_string_of(^^decltype(map)), testing::ContainsRegex(expected_regex));
   EXPECT_EQ_STATIC(10, map.size());
   EXPECT_EQ_STATIC(7, map._dense_part.size());
   EXPECT_EQ_STATIC(0, map._left_sparse_part.size());
@@ -96,28 +93,26 @@ constexpr void test_custom_kv_pair_common()
   EXPECT_NOT_FOUND_STATIC(nullptr, map, 'E');
 }
 
-TEST(FixedMap, IntegralKeyCustomKVPair1)
-{
+TEST(FixedMap, IntegralKeyCustomKVPair1) {
   constexpr auto options = rfl::integral_key_fixed_map_options{
-    .already_sorted = true,
-    .already_unique = true,
-    .adjusts_alignment = false,
-    .min_load_factor = 0.5,
-    .dense_lookup_threshold = 4,
-    .binary_search_threshold = 4,
+      .already_sorted = true,
+      .already_unique = true,
+      .adjusts_alignment = false,
+      .min_load_factor = 0.5,
+      .dense_lookup_threshold = 4,
+      .binary_search_threshold = 4,
   };
   test_custom_kv_pair_common<options>();
 }
 
-TEST(FixedMap, IntegralKeyCustomKVPair2)
-{
+TEST(FixedMap, IntegralKeyCustomKVPair2) {
   constexpr auto options = rfl::integral_key_fixed_map_options{
-    .already_sorted = true,
-    .already_unique = true,
-    .adjusts_alignment = true,
-    .min_load_factor = 0.5,
-    .dense_lookup_threshold = 4,
-    .binary_search_threshold = 4,
+      .already_sorted = true,
+      .already_unique = true,
+      .adjusts_alignment = true,
+      .min_load_factor = 0.5,
+      .dense_lookup_threshold = 4,
+      .binary_search_threshold = 4,
   };
   test_custom_kv_pair_common<options>();
 }

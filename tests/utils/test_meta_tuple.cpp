@@ -20,13 +20,13 @@
  * SOFTWARE.
  **/
 
-#include "tests/test_options.hpp"
 #include <reflect_cpp26/utils/meta_tuple.hpp>
+
+#include "tests/test_options.hpp"
 
 namespace rfl = reflect_cpp26;
 
-TEST(UtilsMetaTuple, Basic)
-{
+TEST(UtilsMetaTuple, Basic) {
   using tuple_type = rfl::meta_tuple<char, int, double>;
   static_assert(std::tuple_size_v<tuple_type> == 3);
   static_assert(std::is_same_v<std::tuple_element_t<0, tuple_type>, char>);
@@ -40,8 +40,7 @@ TEST(UtilsMetaTuple, Basic)
   EXPECT_EQ(2.5, get<2>(t));
 }
 
-TEST(UtilsMetaTuple, CTAD)
-{
+TEST(UtilsMetaTuple, CTAD) {
   constexpr auto x = 1;
   constexpr auto y = 2.0;
   auto t = rfl::meta_tuple{x, y};

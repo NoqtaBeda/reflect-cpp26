@@ -38,13 +38,10 @@ struct string_key_map_with_hash_collision {
   }
 
   constexpr auto get(std::basic_string_view<character_type> key) const
-    -> std::pair<result_type, bool>
-  {
+      -> std::pair<result_type, bool> {
     auto key_hash = Policy::hash(key);
-    auto pos = std::ranges::lower_bound(_entries, key_hash, {},
-      [](const auto& entry) {
-        return unwrap(entry).hash;
-      });
+    auto pos = std::ranges::lower_bound(
+        _entries, key_hash, {}, [](const auto& entry) { return unwrap(entry).hash; });
     for (; pos < _entries.end() && unwrap(*pos).hash == key_hash; ++pos) {
       const auto& cur = unwrap(*pos).underlying;
       if (Policy::equals(get_first(cur), key)) {
@@ -57,8 +54,8 @@ struct string_key_map_with_hash_collision {
   REFLECT_CPP26_STRING_KEY_MAP_COMMON_INTERFACE
 
   using span_element_type = std::conditional_t<AlignmentAdjusted,
-    alignment_adjusted_string_hash_wrapper<KVPair>,
-    string_hash_wrapper<KVPair>>;
+                                               alignment_adjusted_string_hash_wrapper<KVPair>,
+                                               string_hash_wrapper<KVPair>>;
 
   meta_span<span_element_type> _entries;
 };
@@ -66,23 +63,18 @@ struct string_key_map_with_hash_collision {
 // -------- Factory --------
 
 template <bool AlignmentAdjusted, class Policy, class KVPair>
-constexpr auto string_key_map_with_hash_collision_factory(
-  const std::vector<KVPair>& kv_pairs,
-  const std::vector<uint64_t>& hash_values) -> std::meta::info
-{
-  using dest_type =
-    string_key_map_with_hash_collision<AlignmentAdjusted, Policy, KVPair>;
+constexpr auto string_key_map_with_hash_collision_factory(const std::vector<KVPair>& kv_pairs,
+                                                          const std::vector<uint64_t>& hash_values)
+    -> std::meta::info {
+  using dest_type = string_key_map_with_hash_collision<AlignmentAdjusted, Policy, KVPair>;
   using span_element_type = typename dest_type::span_element_type;
 
   auto entries_vec = std::vector<string_hash_wrapper<KVPair>>{};
   entries_vec.reserve(kv_pairs.size());
   for (auto i = 0zU, n = kv_pairs.size(); i < n; i++) {
-    entries_vec.push_back(
-      {.hash = hash_values[i], .underlying = kv_pairs[i]});
+    entries_vec.push_back({.hash = hash_values[i], .underlying = kv_pairs[i]});
   }
-  std::ranges::sort(entries_vec, {}, [](const auto& v) {
-    return v.hash;
-  });
+  std::ranges::sort(entries_vec, {}, [](const auto& v) { return v.hash; });
 
   if constexpr (AlignmentAdjusted) {
     auto entries = span_element_type::make_static_array(entries_vec);
@@ -102,23 +94,20 @@ struct string_key_map_with_hash_collision_options {
 
 template <class KVPair>
 consteval auto make_string_key_map_with_hash_collision(
-  const std::vector<KVPair>& kv_pairs,
-  const std::vector<uint64_t>& hash_values,
-  string_key_map_with_hash_collision_options options) -> std::meta::info
-{
-  using factory_fn_type = std::meta::info (*)(
-    const std::vector<KVPair>&, const std::vector<uint64_t>&);
+    const std::vector<KVPair>& kv_pairs,
+    const std::vector<uint64_t>& hash_values,
+    string_key_map_with_hash_collision_options options) -> std::meta::info {
+  using factory_fn_type =
+      std::meta::info (*)(const std::vector<KVPair>&, const std::vector<uint64_t>&);
 
-  auto adjusts_alignment =
-    std::meta::reflect_constant(options.adjusts_alignment);
+  auto adjusts_alignment = std::meta::reflect_constant(options.adjusts_alignment);
   auto policy_type = string_key_policy_type(options.case_insensitive);
 
   auto factory_fn = extract<factory_fn_type>(
-    ^^string_key_map_with_hash_collision_factory,
-    adjusts_alignment, policy_type, ^^KVPair);
+      ^^string_key_map_with_hash_collision_factory, adjusts_alignment, policy_type, ^^KVPair);
 
   return factory_fn(kv_pairs, hash_values);
 }
-} // namespace reflect_cpp26::impl
+}  // namespace reflect_cpp26::impl
 
-#endif // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_WITH_HASH_COLLISION_HPP
+#endif  // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_WITH_HASH_COLLISION_HPP

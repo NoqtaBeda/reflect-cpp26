@@ -37,12 +37,11 @@ struct empty_string_key_map {
     return 0;
   }
   static constexpr auto get(std::basic_string_view<character_type>)
-    -> std::pair<result_type, bool> {
+      -> std::pair<result_type, bool> {
     return {map_null_value_v<value_type>, false};
   }
 
-  static constexpr auto operator[](std::basic_string_view<character_type>)
-    -> const value_type& {
+  static constexpr auto operator[](std::basic_string_view<character_type>) -> const value_type& {
     return map_null_value_v<value_type>;
   }
 };
@@ -53,6 +52,6 @@ template <class KVPair>
 consteval auto make_empty_string_key_map() -> std::meta::info {
   return std::meta::reflect_constant(empty_string_key_map<KVPair>{});
 }
-} // namespace reflect_cpp26::impl
+}  // namespace reflect_cpp26::impl
 
-#endif // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_EMPTY_HPP
+#endif  // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_EMPTY_HPP

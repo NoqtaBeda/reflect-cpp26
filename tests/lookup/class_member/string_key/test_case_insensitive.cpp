@@ -20,11 +20,11 @@
  * SOFTWARE.
  **/
 
-#include "tests/lookup/lookup_test_options.hpp"
 #include <reflect_cpp26/lookup/lookup_table.hpp>
 
-#define LOOKUP_TABLE(...) \
-  REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
+#include "tests/lookup/lookup_test_options.hpp"
+
+#define LOOKUP_TABLE(...) REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
 
 namespace rfl = reflect_cpp26;
 
@@ -48,16 +48,14 @@ struct foo_1_t {
   }
 };
 
-TEST(ClassLookupTableByName, CaseInsensitive)
-{
-  constexpr auto table_value = LOOKUP_TABLE(
-    foo_1_t, "value_*", {
-      .fixed_map_options = rfl::string_key_fixed_map_options{
-        .ascii_case_insensitive = true,
-      }});
+TEST(ClassLookupTableByName, CaseInsensitive) {
+  constexpr auto table_value = LOOKUP_TABLE(foo_1_t,
+                                            "value_*",
+                                            {.fixed_map_options = rfl::string_key_fixed_map_options{
+                                                 .ascii_case_insensitive = true,
+                                             }});
 
-  static_assert(std::is_same_v<
-    int foo_1_t::*, decltype(table_value)::value_type>);
+  static_assert(std::is_same_v<int foo_1_t::*, decltype(table_value)::value_type>);
   static_assert(table_value.size() == 3);
 
   constexpr auto foo = foo_1_t{1, 2, 3, 4};
@@ -69,13 +67,12 @@ TEST(ClassLookupTableByName, CaseInsensitive)
   EXPECT_EQ_STATIC(nullptr, table_value["size"]);
   EXPECT_EQ_STATIC(nullptr, table_value["value_x"]);
 
-  constexpr auto table_fn = LOOKUP_TABLE(
-    foo_1_t, "get_*_plus_a", {
-      .fixed_map_options = rfl::string_key_fixed_map_options{
-        .ascii_case_insensitive = true,
-      }});
-  static_assert(std::is_same_v<
-    int (foo_1_t::*)(int) const, decltype(table_fn)::value_type>);
+  constexpr auto table_fn = LOOKUP_TABLE(foo_1_t,
+                                         "get_*_plus_a",
+                                         {.fixed_map_options = rfl::string_key_fixed_map_options{
+                                              .ascii_case_insensitive = true,
+                                          }});
+  static_assert(std::is_same_v<int (foo_1_t::*)(int) const, decltype(table_fn)::value_type>);
   static_assert(table_fn.size() == 3);
 
   CHECK_MEMBER_FUNCTION_STATIC(11, foo, table_fn["X_SQUARED"], 10);

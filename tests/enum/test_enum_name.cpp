@@ -34,15 +34,13 @@ namespace rfl = reflect_cpp26;
 // Note: this wrapper is required to convert result to std::string
 // due to Google Test bug.
 template <class E>
-constexpr auto enum_name(E value, std::string_view alt = {}) -> std::string
-{
-  auto sv = reflect_cpp26::enum_name(value,alt);
+constexpr auto enum_name(E value) -> std::string {
+  auto sv = reflect_cpp26::enum_name(value);
   return std::string{sv};
 }
 
 template <class E>
-void test_foo_signed_common()
-{
+void test_foo_signed_common() {
   ASSERT_EQ_STATIC("six", enum_name(E::six));
   ASSERT_EQ_STATIC("zero", enum_name(E::zero));
   ASSERT_EQ_STATIC("seven", enum_name(E::seven));
@@ -52,34 +50,31 @@ void test_foo_signed_common()
   ASSERT_EQ_STATIC("invalid", enum_name(E::invalid));
 
   ASSERT_EQ_STATIC("", enum_name(static_cast<E>(-3)));
-  ASSERT_EQ_STATIC("<n/a>", enum_name(static_cast<E>(3), "<n/a>"));
+  ASSERT_EQ_STATIC("", enum_name(static_cast<E>(3)));
   ASSERT_EQ_STATIC("", enum_name(static_cast<E>(8)));
-  ASSERT_EQ_STATIC("<n/a>", enum_name(static_cast<E>(1 << 31), "<n/a>"));
+  ASSERT_EQ_STATIC("", enum_name(static_cast<E>(1 << 31)));
 }
 
-TEST(EnumName, FooSigned)
-{
+TEST(EnumName, FooSigned) {
   test_foo_signed_common<foo_signed>();
   ASSERT_EQ_STATIC("one", enum_name(foo_signed::one));
   ASSERT_EQ_STATIC("two", enum_name(foo_signed::two));
 }
 
-TEST(EnumName, FooSignedReorder)
-{
+TEST(EnumName, FooSignedReorder) {
   test_foo_signed_common<foo_signed_reorder>();
   ASSERT_EQ_STATIC("one", enum_name(foo_signed_reorder::one));
   ASSERT_EQ_STATIC("two", enum_name(foo_signed_reorder::two));
 }
 
-TEST(EnumName, FooSignedRep)
-{
+TEST(EnumName, FooSignedRep) {
   test_foo_signed_common<foo_signed_rep>();
-  ASSERT_THAT(enum_name(foo_signed_rep::one), testing::AnyOf("one", "yi"));
-  ASSERT_THAT(enum_name(foo_signed_rep::two), testing::AnyOf("two", "er"));
+  // 'one' and 'two' are defined before 'yi' and 'er'
+  ASSERT_EQ_STATIC("one", enum_name(foo_signed_rep::yi));
+  ASSERT_EQ_STATIC("two", enum_name(foo_signed_rep::er));
 }
 
-TEST(EnumName, BarUnsigned)
-{
+TEST(EnumName, BarUnsigned) {
   ASSERT_EQ_STATIC("three", enum_name(bar_unsigned::three));
   ASSERT_EQ_STATIC("twelve", enum_name(bar_unsigned::twelve));
   ASSERT_EQ_STATIC("fourteen", enum_name(bar_unsigned::fourteen));
@@ -93,13 +88,12 @@ TEST(EnumName, BarUnsigned)
   ASSERT_EQ_STATIC("error", enum_name(bar_unsigned::error));
 
   ASSERT_EQ_STATIC("", enum_name(static_cast<bar_unsigned>(-4)));
-  ASSERT_EQ_STATIC("/", enum_name(static_cast<bar_unsigned>(4), "/"));
+  ASSERT_EQ_STATIC("", enum_name(static_cast<bar_unsigned>(4)));
   ASSERT_EQ_STATIC("", enum_name(static_cast<bar_unsigned>(9)));
-  ASSERT_EQ_STATIC("/", enum_name(static_cast<bar_unsigned>(1 << 31), "/"));
+  ASSERT_EQ_STATIC("", enum_name(static_cast<bar_unsigned>(1 << 31)));
 }
 
-TEST(EnumName, BazSigned)
-{
+TEST(EnumName, BazSigned) {
   ASSERT_EQ_STATIC("fuyi", enum_name(static_cast<baz_signed>(-1)));
   ASSERT_EQ_STATIC("ling", enum_name(baz_signed::ling));
   ASSERT_EQ_STATIC("fuyi", enum_name(baz_signed::fuyi));
@@ -108,11 +102,10 @@ TEST(EnumName, BazSigned)
   ASSERT_EQ_STATIC("yi", enum_name(baz_signed::yi));
 
   ASSERT_EQ_STATIC("", enum_name(static_cast<baz_signed>(-2)));
-  ASSERT_EQ_STATIC("<n/a>", enum_name(static_cast<baz_signed>(4), "<n/a>"));
+  ASSERT_EQ_STATIC("", enum_name(static_cast<baz_signed>(4)));
 }
 
-TEST(EnumName, QuxUnsigned)
-{
+TEST(EnumName, QuxUnsigned) {
   ASSERT_EQ_STATIC("san", enum_name(qux_unsigned::san));
   ASSERT_EQ_STATIC("fuyi", enum_name(qux_unsigned::fuyi));
   ASSERT_EQ_STATIC("fuyi", enum_name(static_cast<qux_unsigned>(-1)));
@@ -122,48 +115,39 @@ TEST(EnumName, QuxUnsigned)
   ASSERT_EQ_STATIC("si", enum_name(qux_unsigned::si));
 
   ASSERT_EQ_STATIC("", enum_name(static_cast<qux_unsigned>(-2)));
-  ASSERT_EQ_STATIC("<n/a>", enum_name(static_cast<qux_unsigned>(5), "<n/a>"));
+  ASSERT_EQ_STATIC("", enum_name(static_cast<qux_unsigned>(5)));
 }
 
 // Compilation error during static assertion since Clang 21:
 // integer value -1 is outside the valid range of values [0, 1] for the
 // enumeration type 'empty'
-TEST(EnumName, Empty)
-{
+TEST(EnumName, Empty) {
   ASSERT_EQ("", enum_name(static_cast<empty>(-1)));
-  ASSERT_EQ_STATIC("<1>", enum_name(static_cast<empty>(0), "<1>"));
-  ASSERT_EQ_STATIC("<2>", enum_name(static_cast<empty>(1), "<2>"));
-  ASSERT_EQ("<3>", enum_name(static_cast<empty>(1 << 31), "<3>"));
+  ASSERT_EQ_STATIC("", enum_name(static_cast<empty>(0)));
+  ASSERT_EQ_STATIC("", enum_name(static_cast<empty>(1)));
+  ASSERT_EQ("", enum_name(static_cast<empty>(1 << 31)));
 }
 
-TEST(EnumName, Single)
-{
+TEST(EnumName, Single) {
   ASSERT_EQ_STATIC("value", enum_name(single::value));
   ASSERT_EQ_STATIC("value", enum_name(static_cast<single>(233)));
 
-  ASSERT_EQ_STATIC("<>", enum_name(static_cast<single>(0), "<>"));
-  ASSERT_EQ("<a>", enum_name(static_cast<single>(-1), "<a>"));
-  ASSERT_EQ_STATIC("<b>", enum_name(static_cast<single>(1), "<b>"));
-  ASSERT_EQ("<c>", enum_name(static_cast<single>(1 << 31), "<c>"));
+  ASSERT_EQ_STATIC("", enum_name(static_cast<single>(0)));
+  ASSERT_EQ("", enum_name(static_cast<single>(-1)));
+  ASSERT_EQ_STATIC("", enum_name(static_cast<single>(1)));
+  ASSERT_EQ("", enum_name(static_cast<single>(1 << 31)));
 }
 
-TEST(EnumName, SingleRep)
-{
-  ASSERT_THAT(enum_name(single_rep::laugh),
-    testing::AnyOf("laugh", "hahaha", "over",
-                   "and_over", "again", "unstoppable"));
-  ASSERT_EQ_STATIC("<no>",
-    enum_name(static_cast<single_rep>(0), "<no>"));
-  ASSERT_EQ_STATIC("<other>",
-    enum_name(static_cast<single_rep>(-1), "<other>"));
-  ASSERT_EQ_STATIC("<entries>",
-    enum_name(static_cast<single_rep>(1), "<entries>"));
-  ASSERT_EQ_STATIC("<inside>",
-    enum_name(static_cast<single_rep>(1 << 31), "<inside>"));
+TEST(EnumName, SingleRep) {
+  // 'hahaha' is defined first
+  ASSERT_EQ_STATIC("hahaha", enum_name(single_rep::again));
+  ASSERT_EQ_STATIC("", enum_name(static_cast<single_rep>(0)));
+  ASSERT_EQ_STATIC("", enum_name(static_cast<single_rep>(-1)));
+  ASSERT_EQ_STATIC("", enum_name(static_cast<single_rep>(1)));
+  ASSERT_EQ_STATIC("", enum_name(static_cast<single_rep>(1 << 31)));
 }
 
-TEST(EnumName, TerminalColor)
-{
+TEST(EnumName, TerminalColor) {
   ASSERT_EQ_STATIC("blue", enum_name(terminal_color::blue));
   ASSERT_EQ_STATIC("bright_white", enum_name(terminal_color::bright_white));
   ASSERT_EQ_STATIC("bright_blue", enum_name(terminal_color::bright_blue));
@@ -183,13 +167,12 @@ TEST(EnumName, TerminalColor)
 
   ASSERT_EQ_STATIC("", enum_name(static_cast<terminal_color>(0)));
   ASSERT_EQ_STATIC("", enum_name(static_cast<terminal_color>(18)));
-  ASSERT_EQ_STATIC("/", enum_name(static_cast<terminal_color>(72), "/"));
+  ASSERT_EQ_STATIC("", enum_name(static_cast<terminal_color>(72)));
   ASSERT_EQ_STATIC("", enum_name(static_cast<terminal_color>(108)));
-  ASSERT_EQ_STATIC("~", enum_name(static_cast<terminal_color>(216), "~"));
+  ASSERT_EQ_STATIC("", enum_name(static_cast<terminal_color>(216)));
 }
 
-TEST(EnumName, Color)
-{
+TEST(EnumName, Color) {
   ASSERT_EQ_STATIC("", enum_name(static_cast<color>(0x000001)));
   ASSERT_EQ_STATIC("", enum_name(static_cast<color>(0x000100)));
   ASSERT_EQ_STATIC("", enum_name(static_cast<color>(0x010000)));
@@ -295,8 +278,7 @@ TEST(EnumName, Color)
   ASSERT_EQ_STATIC("royal_blue", enum_name(color::royal_blue));
   ASSERT_EQ_STATIC("rosy_brown", enum_name(color::rosy_brown));
   ASSERT_EQ_STATIC("gray", enum_name(color::gray));
-  ASSERT_EQ_STATIC("medium_spring_green", 
-    enum_name(color::medium_spring_green));
+  ASSERT_EQ_STATIC("medium_spring_green", enum_name(color::medium_spring_green));
   ASSERT_EQ_STATIC("indigo", enum_name(color::indigo));
   ASSERT_EQ_STATIC("floral_white", enum_name(color::floral_white));
   ASSERT_EQ_STATIC("gold", enum_name(color::gold));
@@ -326,8 +308,7 @@ TEST(EnumName, Color)
   ASSERT_EQ_STATIC("saddle_brown", enum_name(color::saddle_brown));
   ASSERT_EQ_STATIC("rebecca_purple", enum_name(color::rebecca_purple));
   ASSERT_EQ_STATIC("lavender_blush", enum_name(color::lavender_blush));
-  ASSERT_EQ_STATIC("light_golden_rod_yellow",
-    enum_name(color::light_golden_rod_yellow));
+  ASSERT_EQ_STATIC("light_golden_rod_yellow", enum_name(color::light_golden_rod_yellow));
   ASSERT_EQ_STATIC("white", enum_name(color::white));
   ASSERT_EQ_STATIC("dark_golden_rod", enum_name(color::dark_golden_rod));
   ASSERT_EQ_STATIC("dark_green", enum_name(color::dark_green));
@@ -341,15 +322,12 @@ TEST(EnumName, Color)
   ASSERT_EQ_STATIC("dark_orchid", enum_name(color::dark_orchid));
 }
 
-TEST(EnumName, HashCollision)
-{
-  ASSERT_EQ_STATIC("_cuFFJIHGp_jNJKS",
-    enum_name(hash_collision::_cuFFJIHGp_jNJKS));
-  ASSERT_EQ_STATIC("_wSYZDRpiQJf8Rfv",
-    enum_name(hash_collision::_wSYZDRpiQJf8Rfv));
+TEST(EnumName, HashCollision) {
+  ASSERT_EQ_STATIC("_cuFFJIHGp_jNJKS", enum_name(hash_collision::_cuFFJIHGp_jNJKS));
+  ASSERT_EQ_STATIC("_wSYZDRpiQJf8Rfv", enum_name(hash_collision::_wSYZDRpiQJf8Rfv));
 
-  ASSERT_EQ_STATIC("/", enum_name(static_cast<hash_collision>(-1), "/"));
-  ASSERT_EQ_STATIC("", enum_name(static_cast<hash_collision>(1 << 31), ""));
+  ASSERT_EQ_STATIC("", enum_name(static_cast<hash_collision>(-1)));
+  ASSERT_EQ_STATIC("", enum_name(static_cast<hash_collision>(1 << 31)));
 }
 
 template <class E>
@@ -362,18 +340,16 @@ struct fma_to_enum_t {
 template <class E>
 constexpr auto fma_to_enum = fma_to_enum_t<E>{};
 
-TEST(EnumName, BindExpression)
-{
+TEST(EnumName, BindExpression) {
   using namespace std::placeholders;
-  constexpr auto F = rfl::enum_name_opt(
-    std::bind(fma_to_enum<foo_signed>, _1, _2, _3));
+  constexpr auto F = rfl::enum_name_opt(std::bind(fma_to_enum<foo_signed>, _1, _2, _3));
   EXPECT_EQ_STATIC("five", F(3, 4, -7));
   EXPECT_EQ_STATIC("error", F(2, -3, 4));
   EXPECT_EQ_STATIC("zero", F(2, -3, 6));
   EXPECT_EQ_STATIC(std::nullopt, F(3, 4, 5));
 
-  constexpr auto G = rfl::enum_name(
-    std::bind(fma_to_enum<foo_signed>, _3, _4, _2), _1);
+  // arg _1 is ignored
+  constexpr auto G = rfl::enum_name(std::bind(fma_to_enum<foo_signed>, _3, _4, _2));
   EXPECT_EQ_STATIC("six", G("<invalid>", -6, 3, 4));
-  EXPECT_EQ_STATIC("<invalid>", G("<invalid>", 3, 4, -6));
+  EXPECT_EQ_STATIC("", G("<invalid>", 3, 4, -6));
 }

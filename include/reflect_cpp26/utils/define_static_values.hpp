@@ -23,19 +23,20 @@
 #ifndef REFLECT_CPP26_UTILS_DEFINE_STATIC_VALUES_HPP
 #define REFLECT_CPP26_UTILS_DEFINE_STATIC_VALUES_HPP
 
-#include <reflect_cpp26/type_traits/arithmetic_types.hpp>
-#include <reflect_cpp26/type_traits/type_comparison.hpp>
 #include <reflect_cpp26/utils/config.h>
-#include <reflect_cpp26/utils/meta_span.hpp>
-#include <reflect_cpp26/utils/meta_string_view.hpp>
+
 #include <iterator>
 #include <ranges>
+#include <reflect_cpp26/type_traits/arithmetic_types.hpp>
+#include <reflect_cpp26/type_traits/type_comparison.hpp>
+#include <reflect_cpp26/utils/meta_span.hpp>
+#include <reflect_cpp26/utils/meta_string_view.hpp>
 
 namespace reflect_cpp26 {
 namespace impl {
 template <class T, auto... Vs>
 inline constexpr T fixed_array_impl[sizeof...(Vs)] = {Vs...};
-} // namespace impl
+}  // namespace impl
 
 /**
  * Alternative to C++26 std::meta::define_static_array.
@@ -67,14 +68,13 @@ consteval auto define_static_array(meta_span<T> range) {
  * (3) Input is const CharT*.
  */
 template <std::ranges::input_range Range>
-  requires (char_type<std::ranges::range_value_t<Range>>)
-consteval auto reflect_constant_string(Range&& range) -> std::meta::info
-{
+  requires(char_type<std::ranges::range_value_t<Range>>)
+consteval auto reflect_constant_string(Range&& range) -> std::meta::info {
   using CharT = std::ranges::range_value_t<Range>;
   auto args = std::vector{^^CharT};
   auto null_found = false;
 
-  for (auto c: range) {
+  for (auto c : range) {
     if (null_found) {
       compile_error("Characters after '\\0' are disallowed.");
     }
@@ -91,18 +91,15 @@ consteval auto reflect_constant_string(Range&& range) -> std::meta::info
 
 // Overload (2), which has higher priority than overload (1) above.
 template <char_type CharT, size_t N>
-consteval auto reflect_constant_string(const CharT (&str)[N]) -> std::meta::info
-{
+consteval auto reflect_constant_string(const CharT (&str)[N]) -> std::meta::info {
   auto span = std::span{str};
   return reflect_cpp26::reflect_constant_string(span);
 }
 
 // Overload (3), disambiguation with overload (2).
 template <class CStringT>
-  requires (std::is_pointer_v<CStringT> &&
-            char_type<std::remove_pointer_t<CStringT>>)
-consteval auto reflect_constant_string(CStringT str) -> std::meta::info
-{
+  requires(std::is_pointer_v<CStringT> && char_type<std::remove_pointer_t<CStringT>>)
+consteval auto reflect_constant_string(CStringT str) -> std::meta::info {
   if (str == nullptr) {
     compile_error("nullptr is disallowed.");
   }
@@ -120,31 +117,27 @@ consteval auto reflect_constant_string(CStringT str) -> std::meta::info
  * (3) Input is const CharT*.
  */
 template <std::ranges::input_range Range>
-  requires (char_type<std::ranges::range_value_t<Range>>)
+  requires(char_type<std::ranges::range_value_t<Range>>)
 consteval auto define_static_string(Range&& range)
-  /* -> meta_basic_string_view<CharT> */
+/* -> meta_basic_string_view<CharT> */
 {
   using CharT = std::ranges::range_value_t<Range>;
   auto arr_refl = reflect_constant_string(std::forward<Range>(range));
-  return meta_basic_string_view<CharT>::from_literal(
-    extract<const CharT*>(arr_refl));
+  return meta_basic_string_view<CharT>::from_literal(extract<const CharT*>(arr_refl));
 }
 
 // Overload (2), which has higher priority than overload (1) above.
 template <char_type CharT, size_t N>
-consteval auto define_static_string(const CharT (&str)[N])
-  -> meta_basic_string_view<CharT>
-{
+consteval auto define_static_string(const CharT (&str)[N]) -> meta_basic_string_view<CharT> {
   auto span = std::span{str};
   return reflect_cpp26::define_static_string(span);
 }
 
 // Overload (3), disambiguation with overload (2).
 template <class CStringT>
-  requires (std::is_pointer_v<CStringT> &&
-            char_type<std::remove_pointer_t<CStringT>>)
+  requires(std::is_pointer_v<CStringT> && char_type<std::remove_pointer_t<CStringT>>)
 consteval auto define_static_string(CStringT str)
-  /* -> meta_basic_string_view<CharT> */
+/* -> meta_basic_string_view<CharT> */
 {
   if (str == nullptr) {
     compile_error("nullptr is disallowed.");
@@ -155,15 +148,13 @@ consteval auto define_static_string(CStringT str)
 
 // Specialization to prevent repeated meta-definition.
 template <class T>
-consteval auto define_static_string(meta_basic_string_view<T> range)
-  -> meta_basic_string_view<T>
-{
+consteval auto define_static_string(meta_basic_string_view<T> range) -> meta_basic_string_view<T> {
   // Makes sure the resulted range is null-terminated
   if (*range.end() != '\0') {
     compile_error("Malformed meta_string_view: expects null-terminated.");
   }
   return range;
 }
-} // namespace reflect_cpp26
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_UTILS_DEFINE_STATIC_VALUES_HPP
+#endif  // REFLECT_CPP26_UTILS_DEFINE_STATIC_VALUES_HPP

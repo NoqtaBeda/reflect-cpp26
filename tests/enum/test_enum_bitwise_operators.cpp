@@ -41,8 +41,7 @@ enum class flags_1 {
   seven = 7,
 };
 
-TEST(EnumBitwiseOperators, OutOfBox)
-{
+TEST(EnumBitwiseOperators, OutOfBox) {
   using namespace rfl::enum_bitwise_operators;
   EXPECT_EQ_STATIC(flags_1::seven, flags_1::one | flags_1::two | flags_1::four);
   EXPECT_EQ_STATIC(flags_1::four, flags_1::five & flags_1::six);
@@ -74,10 +73,9 @@ enum class flags_2 {
   SEVEN = 7,
 };
 REFLECT_CPP26_DEFINE_ENUM_BITWISE_OPERATORS(flags_2)
-} // namespace foo_2
+}  // namespace foo_2
 
-TEST(EnumBitwiseOperators, DefinedViaMacro)
-{
+TEST(EnumBitwiseOperators, DefinedViaMacro) {
   using enum foo_2::flags_2;
   EXPECT_EQ_STATIC(SEVEN, ONE | TWO | FOUR);
   EXPECT_EQ_STATIC(FOUR, FIVE & SIX);

@@ -20,11 +20,11 @@
  * SOFTWARE.
  **/
 
-#include "tests/lookup/lookup_test_options.hpp"
 #include <reflect_cpp26/lookup/lookup_table.hpp>
 
-#define LOOKUP_TABLE(...) \
-  REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
+#include "tests/lookup/lookup_test_options.hpp"
+
+#define LOOKUP_TABLE(...) REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
 
 namespace rfl = reflect_cpp26;
 
@@ -45,13 +45,14 @@ struct test_deleted_t {
   int max_with(int z) const = delete;
 };
 
-TEST(ClassLookupTableByName, WithDeleted)
-{
-  constexpr auto table_fn = LOOKUP_TABLE(test_deleted_t, "*", {
-    .category = rfl::class_member_category::nonstatic_member_functions,
-  });
-  static_assert(std::is_same_v<
-    int (test_deleted_t::*)() const, decltype(table_fn)::value_type>);
+TEST(ClassLookupTableByName, WithDeleted) {
+  constexpr auto table_fn =
+      LOOKUP_TABLE(test_deleted_t,
+                   "*",
+                   {
+                       .category = rfl::class_member_category::nonstatic_member_functions,
+                   });
+  static_assert(std::is_same_v<int (test_deleted_t::*)() const, decltype(table_fn)::value_type>);
   static_assert(table_fn.size() == 2);
 
   constexpr auto foo = test_deleted_t{.x = 12, .y = 34};

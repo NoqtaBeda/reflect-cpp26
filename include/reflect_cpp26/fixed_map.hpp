@@ -25,4 +25,4 @@
 
 #include <reflect_cpp26/fixed_map/all.hpp>
 
-#endif // REFLECT_CPP26_FIXED_MAP_HPP
+#endif  // REFLECT_CPP26_FIXED_MAP_HPP

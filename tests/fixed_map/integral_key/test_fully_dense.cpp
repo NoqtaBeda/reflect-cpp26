@@ -20,22 +20,19 @@
  * SOFTWARE.
  **/
 
-#include "tests/fixed_map/integral_key/integral_key_test_options.hpp"
 #include <reflect_cpp26/fixed_map/integral_key.hpp>
+
+#include "tests/fixed_map/integral_key/integral_key_test_options.hpp"
 
 namespace rfl = reflect_cpp26;
 
-TEST(FixedMap, SignedIntegralKeyFullyContinuous)
-{
+TEST(FixedMap, SignedIntegralKeyFullyContinuous) {
   using KVPair = std::pair<int32_t, int32_t>;
   constexpr auto make_kv_pairs = []() constexpr {
-    return std::vector<KVPair>{
-      {-1, 123}, {1, 456}, {3, 789}, {-2, 12}, {0, 34}, {2, 56}
-    };
+    return std::vector<KVPair>{{-1, 123}, {1, 456}, {3, 789}, {-2, 12}, {0, 34}, {2, 56}};
   };
   constexpr auto map = FIXED_MAP(make_kv_pairs() /* with default options */);
-  static_assert(std::is_same_v<
-    typename decltype(map)::result_type, const int32_t&>);
+  static_assert(std::is_same_v<typename decltype(map)::result_type, const int32_t&>);
   // Elements in _entries are expected to be int32_t (value type of KVPair),
   // no is_valid flag.
   EXPECT_EQ_STATIC(4, sizeof(typename decltype(map._entries)::value_type));
@@ -65,41 +62,39 @@ struct point_t {
   double z = 0.0;
 
   constexpr point_t() = default;
-  constexpr point_t(double x, double y, double z): x(x), y(y), z(z) {}
+  constexpr point_t(double x, double y, double z) : x(x), y(y), z(z) {}
 
   constexpr auto operator<=>(const point_t&) const = default;
   constexpr bool operator==(const point_t&) const = default;
 };
 
 template <rfl::integral_key_fixed_map_options Options>
-constexpr void test_unsigned_integral_key_common()
-{
+constexpr void test_unsigned_integral_key_common() {
   using Value = point_t;
   using KVPair = std::pair<uint64_t, Value>;
   constexpr auto make_kv_pairs = []() constexpr {
     return std::vector<KVPair>{
-      {10, {1.25, -1.25, 2.0}},
-      {12, {2.5, -2.5, 3.0}},
-      {11, {3.75, -3.75, 4.0}},
-      {14, {5.0, -5.0, 5.0}},
-      {13, {6.25, -6.25, 6.0}},
+        {10, {1.25, -1.25, 2.0}},
+        {12, {2.5, -2.5, 3.0}},
+        {11, {3.75, -3.75, 4.0}},
+        {14, {5.0, -5.0, 5.0}},
+        {13, {6.25, -6.25, 6.0}},
     };
   };
   constexpr auto map = FIXED_MAP(make_kv_pairs(), Options);
-  static_assert(std::is_same_v<
-    typename decltype(map)::result_type, const Value&>);
+  static_assert(std::is_same_v<typename decltype(map)::result_type, const Value&>);
 
   using UnderlyingElement = typename decltype(map._entries)::value_type;
   if constexpr (Options.adjusts_alignment) {
     EXPECT_EQ(32, sizeof(UnderlyingElement))
-      << "Expects sizeof(" << display_string_of(dealias(^^UnderlyingElement))
-      << ") to be 32 bytes after adjusting alignment, with map type = "
-      << display_string_of(^^decltype(map));
+        << "Expects sizeof(" << display_string_of(dealias(^^UnderlyingElement))
+        << ") to be 32 bytes after adjusting alignment, with map type = "
+        << display_string_of(^^decltype(map));
   } else {
     EXPECT_EQ(24, sizeof(UnderlyingElement))
-      << "Expects sizeof(" << display_string_of(dealias(^^UnderlyingElement))
-      << ") to be 24 bytes without adjusting alignment, with map type = "
-      << display_string_of(^^decltype(map));
+        << "Expects sizeof(" << display_string_of(dealias(^^UnderlyingElement))
+        << ") to be 24 bytes without adjusting alignment, with map type = "
+        << display_string_of(^^decltype(map));
   }
   EXPECT_THAT(display_string_of(^^decltype(map)),
               testing::HasSubstr("fully_dense_integral_key_map"));
@@ -119,18 +114,16 @@ constexpr void test_unsigned_integral_key_common()
   EXPECT_NOT_FOUND_STATIC(Value(0.0, 0.0, 0.0), map, 0x1'0000'000aULL);
 }
 
-TEST(FixedMap, UnsignedIntegralKeyFullyContinuous1)
-{
+TEST(FixedMap, UnsignedIntegralKeyFullyContinuous1) {
   constexpr auto options = rfl::integral_key_fixed_map_options{
-    .adjusts_alignment = false,
+      .adjusts_alignment = false,
   };
   test_unsigned_integral_key_common<options>();
 }
 
-TEST(FixedMap, UnsignedIntegralKeyFullyContinuous2)
-{
+TEST(FixedMap, UnsignedIntegralKeyFullyContinuous2) {
   constexpr auto options = rfl::integral_key_fixed_map_options{
-    .adjusts_alignment = true,
+      .adjusts_alignment = true,
   };
   test_unsigned_integral_key_common<options>();
 }

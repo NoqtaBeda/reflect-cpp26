@@ -20,13 +20,13 @@
  * SOFTWARE.
  **/
 
-#include "tests/lookup/lookup_test_options.hpp"
 #include <reflect_cpp26/enum/enum_cast.hpp>
 #include <reflect_cpp26/lookup/lookup_table.hpp>
 #include <reflect_cpp26/utils/identifier_naming.hpp>
 
-#define LOOKUP_TABLE(...) \
-  REFLECT_CPP26_NAMESPACE_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
+#include "tests/lookup/lookup_test_options.hpp"
+
+#define LOOKUP_TABLE(...) REFLECT_CPP26_NAMESPACE_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
 
 namespace rfl = reflect_cpp26;
 
@@ -50,16 +50,13 @@ constexpr unsigned HandleBitwiseAnd(unsigned x, unsigned y) {
 constexpr unsigned HandleBitwiseOr(unsigned x, unsigned y) {
   return x | y;
 }
-constexpr bool Handle(unsigned* dest, unsigned x, unsigned y, Opcode opcode)
-{
-  constexpr auto dispatch_table = LOOKUP_TABLE(
-    ops, "Handle*",
-    [](std::string_view sub) {
-      return rfl::enum_cast<Opcode>(rfl::to_all_caps_snake_case(sub));
-    });
+constexpr bool Handle(unsigned* dest, unsigned x, unsigned y, Opcode opcode) {
+  constexpr auto dispatch_table = LOOKUP_TABLE(ops, "Handle*", [](std::string_view sub) {
+    return rfl::enum_cast<Opcode>(rfl::to_all_caps_snake_case(sub));
+  });
 
-  static_assert(std::is_same_v<
-    unsigned (*)(unsigned, unsigned), decltype(dispatch_table)::value_type>);
+  static_assert(
+      std::is_same_v<unsigned (*)(unsigned, unsigned), decltype(dispatch_table)::value_type>);
   static_assert(dispatch_table.size() == 4);
 
   auto handle_fn = dispatch_table[opcode];
@@ -69,10 +66,9 @@ constexpr bool Handle(unsigned* dest, unsigned x, unsigned y, Opcode opcode)
   *dest = handle_fn(x, y);
   return true;
 }
-} // namespace ops
+}  // namespace ops
 
-TEST(NamespaceLookupTableByName, CustomTransform)
-{
+TEST(NamespaceLookupTableByName, CustomTransform) {
   auto dest = 0u;
   EXPECT_TRUE(ops::Handle(&dest, 15, 50, ops::Opcode::ADD));
   EXPECT_EQ(65u, dest);

@@ -31,14 +31,10 @@
 #ifdef ENABLE_STATIC_TEST
 #define CONSTEVAL_ON_STATIC_TEST consteval
 
-#define ASSERT_EQ_STATIC(expected, ...)       \
-  static_assert((expected) == (__VA_ARGS__))
-#define EXPECT_EQ_STATIC(expected, ...)       \
-  static_assert((expected) == (__VA_ARGS__))
-#define ASSERT_NE_STATIC(expected, ...)       \
-  static_assert((expected) != (__VA_ARGS__))
-#define EXPECT_NE_STATIC(expected, ...)       \
-  static_assert((expected) != (__VA_ARGS__))
+#define ASSERT_EQ_STATIC(expected, ...) static_assert((expected) == (__VA_ARGS__))
+#define EXPECT_EQ_STATIC(expected, ...) static_assert((expected) == (__VA_ARGS__))
+#define ASSERT_NE_STATIC(expected, ...) static_assert((expected) != (__VA_ARGS__))
+#define EXPECT_NE_STATIC(expected, ...) static_assert((expected) != (__VA_ARGS__))
 #define ASSERT_FALSE_STATIC(...) static_assert(!(__VA_ARGS__))
 #define EXPECT_FALSE_STATIC(...) static_assert(!(__VA_ARGS__))
 #define ASSERT_TRUE_STATIC(...) static_assert(__VA_ARGS__)

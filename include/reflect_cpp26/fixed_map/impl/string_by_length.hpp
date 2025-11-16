@@ -45,14 +45,12 @@ struct string_key_map_by_length {
   }
 
   constexpr auto get(std::basic_string_view<character_type> key) const
-    -> std::pair<result_type, bool>
-  {
+      -> std::pair<result_type, bool> {
     auto [kv_pair, found] = _underlying.get(key.length());
     if (!found) {
       return {map_null_value_v<value_type>, false};
     }
-    auto keys_are_equal =
-      Policy::equals(get_first(kv_pair), key, Policy::equal_length);
+    auto keys_are_equal = Policy::equals(get_first(kv_pair), key, Policy::equal_length);
     if (!keys_are_equal) {
       return {map_null_value_v<value_type>, false};
     }
@@ -68,16 +66,14 @@ struct string_key_map_by_length {
 
 template <class Policy, auto Underlying>
 constexpr auto string_key_map_by_length_factory_v =
-  std::meta::reflect_constant(
-    string_key_map_by_length<Policy, decltype(Underlying)>{Underlying});
+    std::meta::reflect_constant(string_key_map_by_length<Policy, decltype(Underlying)>{Underlying});
 
 // -------- Builder --------
 
 template <class KVPairRange>
-consteval bool key_lengths_are_all_distinct(const KVPairRange& kv_pairs)
-{
+consteval bool key_lengths_are_all_distinct(const KVPairRange& kv_pairs) {
   auto lengths = make_reserved_vector<size_t>(std::ranges::size(kv_pairs));
-  for (const auto& [k, _]: kv_pairs) {
+  for (const auto& [k, _] : kv_pairs) {
     lengths.push_back(k.length());
   }
   std::ranges::sort(lengths);
@@ -87,17 +83,16 @@ consteval bool key_lengths_are_all_distinct(const KVPairRange& kv_pairs)
 
 template <class KVPairRange>
 consteval auto try_make_string_key_map_by_length(
-  const KVPairRange& kv_pairs,
-  integral_key_fixed_map_options options_for_underlying,
-  bool case_insensitive) -> std::optional<std::meta::info>
-{
+    const KVPairRange& kv_pairs,
+    integral_key_fixed_map_options options_for_underlying,
+    bool case_insensitive) -> std::optional<std::meta::info> {
   using KVPair = std::ranges::range_value_t<KVPairRange>;
   if (!key_lengths_are_all_distinct(kv_pairs)) {
     return std::nullopt;
   }
   using KVPairWrapper = std::pair<size_t, KVPair>;
   auto wrapped = make_reserved_vector<KVPairWrapper>(kv_pairs.size());
-  for (const auto& kv_pair: kv_pairs) {
+  for (const auto& kv_pair : kv_pairs) {
     wrapped.emplace_back(get_first(kv_pair).length(), kv_pair);
   }
   options_for_underlying.already_unique = true;
@@ -105,9 +100,8 @@ consteval auto try_make_string_key_map_by_length(
   auto underlying = make_integral_key_fixed_map(wrapped, options_for_underlying);
 
   auto policy_type = string_key_policy_type(case_insensitive);
-  return extract<std::meta::info>(
-    ^^string_key_map_by_length_factory_v, policy_type, underlying);
+  return extract<std::meta::info>(^^string_key_map_by_length_factory_v, policy_type, underlying);
 }
-} // namespace reflect_cpp26::impl
+}  // namespace reflect_cpp26::impl
 
-#endif // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_BY_LENGTH_HPP
+#endif  // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_BY_LENGTH_HPP

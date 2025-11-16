@@ -34,18 +34,16 @@ namespace reflect_cpp26 {
 namespace impl {
 template <class LeafComparator, class T, class U>
 constexpr auto is_directly_comparable_with_v =
-  requires (const T& t, const U& u) { LeafComparator::operator()(t, u); };
+    requires(const T& t, const U& u) { LeafComparator::operator()(t, u); };
 
 template <class LeafComparator, class T, class U>
 constexpr bool is_generic_comparable_with();
 
 template <class LeafComparator, class T, class U>
-constexpr auto is_generic_comparable_with_v =
-  is_generic_comparable_with<LeafComparator, T, U>();
+constexpr auto is_generic_comparable_with_v = is_generic_comparable_with<LeafComparator, T, U>();
 
 template <class LeafComparator, class T, class U>
-constexpr bool is_generic_comparable_with()
-{
+constexpr bool is_generic_comparable_with() {
   if constexpr (std::is_array_v<T>) {
     // Case (1.1): For C-style arrays:
     // if one of T and U is C-style array, then the other must be a range
@@ -53,16 +51,18 @@ constexpr bool is_generic_comparable_with()
     // Case 1 is placed before direct comparison to disable the error-prone case
     // where one operand is array and the other is or converts to pointer.
     if constexpr (std::ranges::input_range<U>) {
-      return is_generic_comparable_with_v<
-        LeafComparator, std::remove_extent_t<T>, std::ranges::range_value_t<U>>;
+      return is_generic_comparable_with_v<LeafComparator,
+                                          std::remove_extent_t<T>,
+                                          std::ranges::range_value_t<U>>;
     } else {
       return false;
     }
   } else if constexpr (std::is_array_v<U>) {
     // Case (1.2): Similar to above.
     if constexpr (std::ranges::input_range<T>) {
-      return is_generic_comparable_with_v<
-        LeafComparator, std::ranges::range_value_t<T>, std::remove_extent_t<U>>;
+      return is_generic_comparable_with_v<LeafComparator,
+                                          std::ranges::range_value_t<T>,
+                                          std::remove_extent_t<U>>;
     } else {
       return false;
     }
@@ -95,7 +95,7 @@ constexpr bool is_generic_comparable_with()
   } else if constexpr (are_tuple_like_of_same_size_v<T, U>) {
     // Case (5): For tuple-like objects: elementwise comparison is performed.
     constexpr auto N = std::tuple_size_v<T>;
-    template for (constexpr auto I: std::views::iota(0zU, N)) {
+    template for (constexpr auto I : std::views::iota(0zU, N)) {
       using EIT = std::tuple_element_t<I, T>;
       using EIU = std::tuple_element_t<I, U>;
       if (!is_generic_comparable_with_v<LeafComparator, EIT, EIU>) {
@@ -113,21 +113,24 @@ struct generic_comparison_interface {
   static constexpr auto leaf_comp = LeafComparator{};
 
   template <class T, class U>
-    requires (is_generic_comparable_with_v<LeafComparator, T, U>)
-  static constexpr auto do_compare(const T& t, const U& u)
-  {
+    requires(is_generic_comparable_with_v<LeafComparator, T, U>)
+  static constexpr auto do_compare(const T& t, const U& u) {
     if constexpr (any_of_v<std::is_array, T, U>) {
       // Case (1): C-style arrays. The other operand is ensured to be range.
       return Derived::compare_range(t, u);
     } else if constexpr (c_style_string<T> && !c_style_string<U>) {
       // Case (3.1): C-style string comparison, where U is ensured to be range.
       auto sv = std::basic_string_view<char_type_t<T>>{};
-      if (t != nullptr) { sv = t; }
+      if (t != nullptr) {
+        sv = t;
+      }
       return Derived::compare_range(sv, u);
     } else if constexpr (c_style_string<U> && !c_style_string<T>) {
       // Case (3.2): C-style string comparison, where T is ensured to be range.
       auto sv = std::basic_string_view<char_type_t<U>>{};
-      if (u != nullptr) { sv = u; }
+      if (u != nullptr) {
+        sv = u;
+      }
       return Derived::compare_range(t, sv);
     } else if constexpr (requires { leaf_comp(t, u); }) {
       // Case (2): direct comparison
@@ -144,46 +147,35 @@ struct generic_comparison_interface {
   }
 
   template <class T, class U>
-    requires (is_generic_comparable_with_v<LeafComparator, T, U>)
-  static constexpr auto operator()(const T& t, const U& u)
-  {
+    requires(is_generic_comparable_with_v<LeafComparator, T, U>)
+  static constexpr auto operator()(const T& t, const U& u) {
     return do_compare(t, u);
   }
 
   template <class T, class U>
-    requires (is_generic_comparable_with_v<
-      LeafComparator, std::initializer_list<T>, U>)
-  static constexpr auto operator()(std::initializer_list<T> t, const U& u)
-  {
+    requires(is_generic_comparable_with_v<LeafComparator, std::initializer_list<T>, U>)
+  static constexpr auto operator()(std::initializer_list<T> t, const U& u) {
     return do_compare(t, u);
   }
 
   template <class T, class U>
-    requires (is_generic_comparable_with_v<
-      LeafComparator, T, std::initializer_list<U>>)
-  static constexpr auto operator()(const T& t, std::initializer_list<U> u)
-  {
+    requires(is_generic_comparable_with_v<LeafComparator, T, std::initializer_list<U>>)
+  static constexpr auto operator()(const T& t, std::initializer_list<U> u) {
     return do_compare(t, u);
   }
 
   template <class T, class U>
-    requires (is_generic_comparable_with_v<LeafComparator, T, U>)
-  static constexpr auto operator()(
-    std::initializer_list<T> t, std::initializer_list<U> u)
-  {
+    requires(is_generic_comparable_with_v<LeafComparator, T, U>)
+  static constexpr auto operator()(std::initializer_list<T> t, std::initializer_list<U> u) {
     return do_compare(t, u);
   }
 };
-} // namespace impl
+}  // namespace impl
 
-struct generic_equal_t
-  : impl::generic_comparison_interface<generic_equal_t, equal_t>
-{
+struct generic_equal_t : impl::generic_comparison_interface<generic_equal_t, equal_t> {
   template <class T, class U>
-  static constexpr auto compare_range(const T& t, const U& u) -> bool
-  {
-    if (are_forward_ranges_v<T, U>
-        && std::ranges::distance(t) != std::ranges::distance(u)) {
+  static constexpr auto compare_range(const T& t, const U& u) -> bool {
+    if (are_forward_ranges_v<T, U> && std::ranges::distance(t) != std::ranges::distance(u)) {
       return false;
     }
     auto [ti, t_end] = std::ranges::subrange(t);
@@ -201,10 +193,9 @@ struct generic_equal_t
   }
 
   template <class T, class U>
-  static constexpr auto compare_tuple_like(const T& t, const U& u) -> bool
-  {
+  static constexpr auto compare_tuple_like(const T& t, const U& u) -> bool {
     constexpr auto N = std::tuple_size_v<T>;
-    template for (constexpr auto I: std::views::iota(0zU, N)) {
+    template for (constexpr auto I : std::views::iota(0zU, N)) {
       if (!operator()(get_ith_element<I>(t), get_ith_element<I>(u))) {
         return false;
       }
@@ -213,14 +204,10 @@ struct generic_equal_t
   }
 };
 
-struct generic_not_equal_t
-  : impl::generic_comparison_interface<generic_not_equal_t, not_equal_t>
-{
+struct generic_not_equal_t : impl::generic_comparison_interface<generic_not_equal_t, not_equal_t> {
   template <class T, class U>
-  static constexpr auto compare_range(const T& t, const U& u) -> bool
-  {
-    if (are_forward_ranges_v<T, U>
-        && std::ranges::distance(t) != std::ranges::distance(u)) {
+  static constexpr auto compare_range(const T& t, const U& u) -> bool {
+    if (are_forward_ranges_v<T, U> && std::ranges::distance(t) != std::ranges::distance(u)) {
       return true;
     }
     auto [ti, t_end] = std::ranges::subrange(t);
@@ -238,12 +225,11 @@ struct generic_not_equal_t
   }
 
   template <class T, class U>
-  static constexpr auto compare_tuple_like(const T& t, const U& u) -> bool
-  {
+  static constexpr auto compare_tuple_like(const T& t, const U& u) -> bool {
     constexpr auto N = std::tuple_size_v<T>;
-    template for (constexpr auto I: std::views::iota(0zU, N)) {
+    template for (constexpr auto I : std::views::iota(0zU, N)) {
       if (operator()(get_ith_element<I>(t), get_ith_element<I>(u))) {
-        return true; // I-th elements are not equal
+        return true;  // I-th elements are not equal
       }
     }
     return false;
@@ -251,21 +237,17 @@ struct generic_not_equal_t
 };
 
 struct generic_compare_three_way_t
-  : impl::generic_comparison_interface<
-      generic_compare_three_way_t, compare_three_way_t>
-{
+    : impl::generic_comparison_interface<generic_compare_three_way_t, compare_three_way_t> {
 private:
   template <class T, class U>
   struct compare_tuple_like_result {
-    static consteval auto get_common_type() -> std::meta::info
-    {
+    static consteval auto get_common_type() -> std::meta::info {
       constexpr auto N = std::tuple_size_v<T>;
       auto results = std::vector<std::meta::info>();
       results.reserve(N);
-      template for (constexpr auto I: std::views::iota(0zU, N)) {
-        using R = decltype(operator()(
-          std::declval<std::tuple_element_t<I, T>>(),
-          std::declval<std::tuple_element_t<I, U>>()));
+      template for (constexpr auto I : std::views::iota(0zU, N)) {
+        using R = decltype(operator()(std::declval<std::tuple_element_t<I, T>>(),
+                                      std::declval<std::tuple_element_t<I, U>>()));
         results.push_back(^^R);
       }
       return substitute(^^std::common_type_t, results);
@@ -294,11 +276,11 @@ public:
 
   template <class T, class U>
   static constexpr auto compare_tuple_like(const T& t, const U& u)
-    /* -> ResultT */
+  /* -> ResultT */
   {
     using ResultT = typename compare_tuple_like_result<T, U>::type;
     constexpr auto N = std::tuple_size_v<T>;
-    template for (constexpr auto I: std::views::iota(0zU, N)) {
+    template for (constexpr auto I : std::views::iota(0zU, N)) {
       auto res = operator()(get_ith_element<I>(t), get_ith_element<I>(u));
       if (res != std::partial_ordering::equivalent) {
         return static_cast<ResultT>(res);
@@ -344,27 +326,21 @@ constexpr auto generic_compare_three_way = generic_compare_three_way_t{};
  */
 template <class T, class U>
 constexpr auto is_generic_equal_comparable_v =
-  requires (const T& t, const U& u) {
-    generic_equal(t, u);
-  };
+    requires(const T& t, const U& u) { generic_equal(t, u); };
 
 /**
  * Whether generic_not_equal(t, u) is well-defined (see above).
  */
 template <class T, class U>
 constexpr auto is_generic_not_equal_comparable_v =
-  requires (const T& t, const U& u) {
-    generic_not_equal(t, u);
-  };
+    requires(const T& t, const U& u) { generic_not_equal(t, u); };
 
 /**
  * Whether generic_compare_three_way(t, u) is well-defined (see above).
  */
 template <class T, class U>
 constexpr auto is_generic_three_way_comparable_v =
-  requires (const T& t, const U& u) {
-    generic_compare_three_way(t, u);
-  };
+    requires(const T& t, const U& u) { generic_compare_three_way(t, u); };
 
 /**
  * concept generic_equal_comparable_with<T, U>
@@ -374,6 +350,6 @@ constexpr auto is_generic_three_way_comparable_v =
 REFLECT_CPP26_COMPARISON_CONCEPT(generic_equal)
 REFLECT_CPP26_COMPARISON_CONCEPT(generic_not_equal)
 REFLECT_CPP26_COMPARISON_CONCEPT(generic_three_way)
-} // namespace reflect_cpp26
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_TYPE_OPERATIONS_COMPARISON_HPP
+#endif  // REFLECT_CPP26_TYPE_OPERATIONS_COMPARISON_HPP

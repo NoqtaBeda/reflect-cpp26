@@ -45,7 +45,7 @@ concept same_as_none_of = !same_as_one_of<T, Args...>;
  */
 template <class T, class... Args>
 concept same_as_one_of_without_cv =
-  (std::is_same_v<std::remove_cv_t<T>, std::remove_cv_t<Args>> || ...);
+    (std::is_same_v<std::remove_cv_t<T>, std::remove_cv_t<Args>> || ...);
 
 /**
  * Whether T is the same as neither of Args after removing cv-qualifiers.
@@ -58,14 +58,13 @@ concept same_as_none_of_without_cv = !same_as_one_of_without_cv<T, Args...>;
  */
 template <class T, class... Args>
 concept same_as_one_of_without_cvref =
-  (std::is_same_v<std::remove_cvref_t<T>, std::remove_cvref_t<Args>> || ...);
+    (std::is_same_v<std::remove_cvref_t<T>, std::remove_cvref_t<Args>> || ...);
 
 /**
  * Whether T is the same as neither of Args after removing cvref-qualifiers.
  */
 template <class T, class... Args>
-concept same_as_none_of_without_cvref =
-  !same_as_one_of_without_cvref<T, Args...>;
+concept same_as_none_of_without_cvref = !same_as_one_of_without_cvref<T, Args...>;
 
 /**
  * Whether T and Args... are all the exactly same.
@@ -79,23 +78,19 @@ template <class T, class U>
 concept same_as = std::is_same_v<T, U>;
 
 template <class T, class U>
-concept same_as_without_cv =
-  std::is_same_v<std::remove_cv_t<T>, std::remove_cv_t<U>>;
+concept same_as_without_cv = std::is_same_v<std::remove_cv_t<T>, std::remove_cv_t<U>>;
 
 template <class T, class U>
-concept same_as_without_cvref =
-  std::is_same_v<std::remove_cvref_t<T>, std::remove_cvref_t<U>>;
+concept same_as_without_cvref = std::is_same_v<std::remove_cvref_t<T>, std::remove_cvref_t<U>>;
 
 template <class T, class U>
 concept not_same_as = !std::is_same_v<T, U>;
 
 template <class T, class U>
-concept not_same_as_without_cv =
-  !std::is_same_v<std::remove_cv_t<T>, std::remove_cv_t<U>>;
+concept not_same_as_without_cv = !std::is_same_v<std::remove_cv_t<T>, std::remove_cv_t<U>>;
 
 template <class T, class U>
-concept not_same_as_without_cvref =
-  !std::is_same_v<std::remove_cvref_t<T>, std::remove_cvref_t<U>>;
-} // namespace reflect_cpp26
+concept not_same_as_without_cvref = !std::is_same_v<std::remove_cvref_t<T>, std::remove_cvref_t<U>>;
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_TYPE_TRAITS_TYPE_COMPARISON_HPP
+#endif  // REFLECT_CPP26_TYPE_TRAITS_TYPE_COMPARISON_HPP

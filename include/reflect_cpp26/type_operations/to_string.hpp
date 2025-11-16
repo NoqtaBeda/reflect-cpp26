@@ -34,7 +34,7 @@ namespace reflect_cpp26 {
 namespace impl {
 template <class T>
 consteval bool is_generic_to_string_invocable();
-} // namespace impl
+}  // namespace impl
 
 /**
  * Whether to_string(t) is well-defined.
@@ -42,7 +42,7 @@ consteval bool is_generic_to_string_invocable();
  * utils/to_string.hpp for details), or found via argument-depend lookup (ADL).
  */
 template <class T>
-concept has_to_string = requires (const T& t) {
+concept has_to_string = requires(const T& t) {
   { to_string(t) } -> std::convertible_to<std::string>;
 };
 
@@ -52,7 +52,7 @@ concept has_to_string = requires (const T& t) {
  * utils/to_string.hpp for details), or found via argument-depend lookup (ADL).
  */
 template <class T>
-concept has_to_display_string = requires (const T& t) {
+concept has_to_display_string = requires(const T& t) {
   { to_display_string(t) } -> std::convertible_to<std::string>;
 };
 
@@ -65,15 +65,14 @@ concept generic_to_string_invocable = impl::is_generic_to_string_invocable<T>();
 
 namespace impl {
 template <class T>
-consteval bool is_generic_to_string_invocable()
-{
+consteval bool is_generic_to_string_invocable() {
   if constexpr (has_to_string<T> || std::is_enum_v<T>) {
     return true;
   } else if constexpr (std::ranges::input_range<T>) {
     return generic_to_string_invocable<std::ranges::range_value_t<T>>;
   } else if constexpr (tuple_like<T>) {
     constexpr auto N = std::tuple_size_v<T>;
-    template for (constexpr auto I: std::views::iota(0zU, N)) {
+    template for (constexpr auto I : std::views::iota(0zU, N)) {
       if (!generic_to_string_invocable<std::tuple_element_t<I, T>>) {
         return false;
       }
@@ -85,16 +84,14 @@ consteval bool is_generic_to_string_invocable()
 }
 
 template <class T>
-constexpr auto generic_enum_to_string(T input) -> std::string
-{
-  constexpr auto is_flags_type =
-    std::is_scoped_enum_v<T> && requires (T x, T y) {
-      { x | y } -> std::same_as<T>;
-    };
+constexpr auto generic_enum_to_string(T input) -> std::string {
+  constexpr auto is_flags_type = std::is_scoped_enum_v<T> && requires(T x, T y) {
+    { x | y } -> std::same_as<T>;
+  };
   if constexpr (is_flags_type) {
     auto s = enum_flags_name(input);
-    if (!s.empty()) {
-      return s;
+    if (s.has_value()) {
+      return std::move(*s);
     }
   } else {
     auto sv = enum_name(input);
@@ -109,11 +106,10 @@ constexpr auto generic_enum_to_string(T input) -> std::string
 }
 
 template <class ToStringFn, class T>
-constexpr auto generic_range_to_string(const T& input) -> std::string
-{
+constexpr auto generic_range_to_string(const T& input) -> std::string {
   auto res = std::string{"["};
   auto index = 0zU;
-  for (const auto& cur: input) {
+  for (const auto& cur : input) {
     if (index++ != 0) {
       res += ", ";
     }
@@ -124,11 +120,10 @@ constexpr auto generic_range_to_string(const T& input) -> std::string
 }
 
 template <class ToStringFn, class T>
-constexpr auto generic_tuple_like_to_string(const T& input) -> std::string
-{
+constexpr auto generic_tuple_like_to_string(const T& input) -> std::string {
   constexpr auto N = std::tuple_size_v<T>;
   auto res = std::string{"{"};
-  template for (constexpr auto I: std::views::iota(0zU, N)) {
+  template for (constexpr auto I : std::views::iota(0zU, N)) {
     if constexpr (I != 0) {
       res += ", ";
     }
@@ -139,8 +134,7 @@ constexpr auto generic_tuple_like_to_string(const T& input) -> std::string
 }
 
 template <class ToStringFn, class T>
-constexpr auto generic_to_string(const T& input) -> std::string
-{
+constexpr auto generic_to_string(const T& input) -> std::string {
   if constexpr (has_to_string<T>) {
     // (1): Calls to_string(input) directly if supported.
     return to_string(input);
@@ -160,7 +154,7 @@ constexpr auto generic_to_string(const T& input) -> std::string
     static_assert(false, "Invalid type.");
   }
 }
-} // namespace impl
+}  // namespace impl
 
 struct generic_to_display_string_t {
   using self_type = generic_to_display_string_t;
@@ -172,8 +166,7 @@ struct generic_to_display_string_t {
    * (2) Otherwise, impl::generic_to_string() is used, details see above.
    */
   template <generic_to_string_invocable T>
-  static constexpr auto operator()(const T& input) -> std::string
-  {
+  static constexpr auto operator()(const T& input) -> std::string {
     if constexpr (has_to_display_string<T>) {
       return to_display_string(input);
     } else {
@@ -186,9 +179,7 @@ struct generic_to_display_string_t {
    * supported, or alt otherwise.
    */
   template <class T>
-  static constexpr auto operator()(const T& input, std::string_view alt)
-    -> std::string
-  {
+  static constexpr auto operator()(const T& input, std::string_view alt) -> std::string {
     if constexpr (generic_to_string_invocable<T>) {
       return operator()(input);
     } else {
@@ -217,12 +208,9 @@ struct generic_to_string_t {
    * above for details.
    */
   template <generic_to_string_invocable T>
-  static constexpr auto operator()(const T& input, bool displayed_style)
-    -> std::string
-  {
-    return displayed_style
-      ? generic_to_display_string_t::operator()(input)
-      : generic_to_string_t::operator()(input);
+  static constexpr auto operator()(const T& input, bool displayed_style) -> std::string {
+    return displayed_style ? generic_to_display_string_t::operator()(input)
+                           : generic_to_string_t::operator()(input);
   }
 
   /**
@@ -230,9 +218,7 @@ struct generic_to_string_t {
    * or alt otherwise.
    */
   template <class T>
-  static constexpr auto operator()(const T& input, std::string_view alt)
-    -> std::string
-  {
+  static constexpr auto operator()(const T& input, std::string_view alt) -> std::string {
     if constexpr (generic_to_string_invocable<T>) {
       return operator()(input);
     } else {
@@ -245,9 +231,8 @@ struct generic_to_string_t {
    * or alt otherwise.
    */
   template <class T>
-  static constexpr auto operator()(
-    const T& input, bool displayed_style, std::string_view alt) -> std::string
-  {
+  static constexpr auto operator()(const T& input, bool displayed_style, std::string_view alt)
+      -> std::string {
     if constexpr (generic_to_string_invocable<T>) {
       return operator()(input, displayed_style);
     } else {
@@ -257,6 +242,6 @@ struct generic_to_string_t {
 };
 // Predefined function object
 constexpr auto generic_to_string = generic_to_string_t{};
-};
+};  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_TYPE_OPERATIONS_TO_STRING_HPP
+#endif  // REFLECT_CPP26_TYPE_OPERATIONS_TO_STRING_HPP

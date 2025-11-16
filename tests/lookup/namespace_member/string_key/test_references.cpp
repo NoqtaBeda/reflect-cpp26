@@ -20,11 +20,11 @@
  * SOFTWARE.
  **/
 
-#include "tests/lookup/lookup_test_options.hpp"
 #include <reflect_cpp26/lookup/lookup_table.hpp>
 
-#define LOOKUP_TABLE(...) \
-  REFLECT_CPP26_NAMESPACE_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
+#include "tests/lookup/lookup_test_options.hpp"
+
+#define LOOKUP_TABLE(...) REFLECT_CPP26_NAMESPACE_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
 
 namespace rfl = reflect_cpp26;
 
@@ -35,10 +35,9 @@ int v3 = 30;
 int& ref1 = v1;
 int& ref2 = v2;
 int& ref3 = v3;
-} // namespace test_refs
+}  // namespace test_refs
 
-TEST(NamespaceLookupTableByName, WithReferences)
-{
+TEST(NamespaceLookupTableByName, WithReferences) {
   constexpr auto table = LOOKUP_TABLE(test_refs, "*");
   EXPECT_EQ_STATIC(6, table.size());
   CHECK_VARIABLE(10, table["v1"]);

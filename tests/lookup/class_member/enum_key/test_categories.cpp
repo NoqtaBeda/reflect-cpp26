@@ -20,12 +20,12 @@
  * SOFTWARE.
  **/
 
-#include "tests/lookup/lookup_test_options.hpp"
 #include <reflect_cpp26/enum/enum_cast.hpp>
 #include <reflect_cpp26/lookup/lookup_table.hpp>
 
-#define LOOKUP_TABLE(...) \
-  REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
+#include "tests/lookup/lookup_test_options.hpp"
+
+#define LOOKUP_TABLE(...) REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
 
 namespace rfl = reflect_cpp26;
 
@@ -53,10 +53,14 @@ struct foo_2_t {
   }
 };
 
-enum class foo_2_value_key: unsigned {
-  a = 0, b = 1, c = 4, x = 9, y = 16,
+enum class foo_2_value_key : unsigned {
+  a = 0,
+  b = 1,
+  c = 4,
+  x = 9,
+  y = 16,
 };
-enum class foo_2_fn_key: unsigned {
+enum class foo_2_fn_key : unsigned {
   sum = 0,
   product = 10,
   min = 1000,
@@ -64,14 +68,15 @@ enum class foo_2_fn_key: unsigned {
   fma = std::numeric_limits<unsigned>::max(),
 };
 
-TEST(ClassLookupTableByEnum, NonStaticDataMembersOnly)
-{
-  constexpr auto table_nv = LOOKUP_TABLE(
-    foo_2_t, "value_*", rfl::enum_cast<foo_2_value_key>, {
-      .category = rfl::class_member_category::nonstatic_data_members,
-    });
-  static_assert(std::is_same_v<
-    double foo_2_t::*, decltype(table_nv)::value_type>);
+TEST(ClassLookupTableByEnum, NonStaticDataMembersOnly) {
+  constexpr auto table_nv =
+      LOOKUP_TABLE(foo_2_t,
+                   "value_*",
+                   rfl::enum_cast<foo_2_value_key>,
+                   {
+                       .category = rfl::class_member_category::nonstatic_data_members,
+                   });
+  static_assert(std::is_same_v<double foo_2_t::*, decltype(table_nv)::value_type>);
   static_assert(table_nv.size() == 2);
 
   constexpr auto foo = foo_2_t{.value_x = 1.5, .value_y = 2.5, .value_z = 3.5};
@@ -83,12 +88,14 @@ TEST(ClassLookupTableByEnum, NonStaticDataMembersOnly)
   EXPECT_EQ_STATIC(nullptr, table_nv[static_cast<foo_2_value_key>(5)]);
 }
 
-TEST(ClassLookupTableByEnum, StaticDataMembersOnly)
-{
-  constexpr auto table_sv = LOOKUP_TABLE(
-    foo_2_t, "value_*", rfl::enum_cast<foo_2_value_key>, {
-      .category = rfl::class_member_category::static_data_members,
-    });
+TEST(ClassLookupTableByEnum, StaticDataMembersOnly) {
+  constexpr auto table_sv =
+      LOOKUP_TABLE(foo_2_t,
+                   "value_*",
+                   rfl::enum_cast<foo_2_value_key>,
+                   {
+                       .category = rfl::class_member_category::static_data_members,
+                   });
   static_assert(std::is_same_v<double*, decltype(table_sv)::value_type>);
   static_assert(table_sv.size() == 2);
 
@@ -101,14 +108,15 @@ TEST(ClassLookupTableByEnum, StaticDataMembersOnly)
   EXPECT_EQ_STATIC(nullptr, table_sv[static_cast<foo_2_value_key>(-5)]);
 }
 
-TEST(ClassLookupTableByEnum, NonStaticMemberFunctionsOnly)
-{
-  constexpr auto table_nf = LOOKUP_TABLE(
-    foo_2_t, "value_*", rfl::enum_cast<foo_2_fn_key>, {
-      .category = rfl::class_member_category::nonstatic_member_functions,
-    });
-  static_assert(std::is_same_v<
-    double (foo_2_t::*)() const, decltype(table_nf)::value_type>);
+TEST(ClassLookupTableByEnum, NonStaticMemberFunctionsOnly) {
+  constexpr auto table_nf =
+      LOOKUP_TABLE(foo_2_t,
+                   "value_*",
+                   rfl::enum_cast<foo_2_fn_key>,
+                   {
+                       .category = rfl::class_member_category::nonstatic_member_functions,
+                   });
+  static_assert(std::is_same_v<double (foo_2_t::*)() const, decltype(table_nf)::value_type>);
   static_assert(table_nf.size() == 3);
 
   constexpr auto foo = foo_2_t{.value_x = 1.5, .value_y = 2.5, .value_z = 3.5};
@@ -120,14 +128,15 @@ TEST(ClassLookupTableByEnum, NonStaticMemberFunctionsOnly)
   EXPECT_EQ_STATIC(nullptr, table_nf[static_cast<foo_2_fn_key>(5)]);
 }
 
-TEST(ClassLookupTableByEnum, StaticMemberFunctionsOnly)
-{
-  constexpr auto table_sf = LOOKUP_TABLE(
-    foo_2_t, "value_*", rfl::enum_cast<foo_2_fn_key>, {
-      .category = rfl::class_member_category::static_member_functions,
-    });
-  static_assert(std::is_same_v<
-    double (*)(double, double), decltype(table_sf)::value_type>);
+TEST(ClassLookupTableByEnum, StaticMemberFunctionsOnly) {
+  constexpr auto table_sf =
+      LOOKUP_TABLE(foo_2_t,
+                   "value_*",
+                   rfl::enum_cast<foo_2_fn_key>,
+                   {
+                       .category = rfl::class_member_category::static_member_functions,
+                   });
+  static_assert(std::is_same_v<double (*)(double, double), decltype(table_sf)::value_type>);
   static_assert(table_sf.size() == 2);
 
   constexpr auto foo = foo_2_t{.value_x = 1.5, .value_y = 2.5, .value_z = 3.5};

@@ -41,6 +41,6 @@ constexpr bool any_of_v = (UnaryPredicate<Args>::value || ...);
  */
 template <template <class> class UnaryPredicate, class... Args>
 constexpr bool none_of_v = !any_of_v<UnaryPredicate, Args...>;
-} // namespace reflect_cpp26
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_TYPE_TRAITS_REDUCTION_HPP
+#endif  // REFLECT_CPP26_TYPE_TRAITS_REDUCTION_HPP

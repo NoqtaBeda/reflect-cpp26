@@ -32,8 +32,7 @@
 using namespace reflect_cpp26;
 
 template <class E>
-constexpr bool test_foo_signed_common()
-{
+constexpr bool test_foo_signed_common() {
   static_assert(E::four == enum_cast<E>(4));
   static_assert(E::invalid == enum_cast<E>(-1));
   static_assert(E::six == enum_cast<E>(6));
@@ -79,21 +78,14 @@ static_assert(bar_unsigned::thirteen == enum_cast<bar_unsigned>(13));
 static_assert(bar_unsigned::fourteen == enum_cast<bar_unsigned>(14));
 static_assert(bar_unsigned::zero == enum_cast<bar_unsigned>(0));
 
-static_assert(std::nullopt
-  == enum_cast<bar_unsigned>(static_cast<uint8_t>(-1)));
-static_assert(std::nullopt
-  == enum_cast<bar_unsigned>(static_cast<uint16_t>(-1)));
-static_assert(std::nullopt
-  == enum_cast<bar_unsigned>(static_cast<uint64_t>(-1)));
+static_assert(std::nullopt == enum_cast<bar_unsigned>(static_cast<uint8_t>(-1)));
+static_assert(std::nullopt == enum_cast<bar_unsigned>(static_cast<uint16_t>(-1)));
+static_assert(std::nullopt == enum_cast<bar_unsigned>(static_cast<uint64_t>(-1)));
 
-static_assert(std::nullopt
-  == enum_cast<bar_unsigned>(static_cast<int8_t>(-1)));
-static_assert(std::nullopt
-  == enum_cast<bar_unsigned>(static_cast<int16_t>(-1)));
-static_assert(std::nullopt
-  == enum_cast<bar_unsigned>(static_cast<int32_t>(-1)));
-static_assert(std::nullopt
-  == enum_cast<bar_unsigned>(static_cast<int64_t>(-1)));
+static_assert(std::nullopt == enum_cast<bar_unsigned>(static_cast<int8_t>(-1)));
+static_assert(std::nullopt == enum_cast<bar_unsigned>(static_cast<int16_t>(-1)));
+static_assert(std::nullopt == enum_cast<bar_unsigned>(static_cast<int32_t>(-1)));
+static_assert(std::nullopt == enum_cast<bar_unsigned>(static_cast<int64_t>(-1)));
 
 static_assert(std::nullopt == enum_cast<bar_unsigned>(4));
 static_assert(std::nullopt == enum_cast<bar_unsigned>(15u));
@@ -119,8 +111,7 @@ static_assert(std::nullopt == enum_cast<baz_signed>(5uL));
 static_assert(std::nullopt == enum_cast<baz_signed>(u'6'));
 
 static_assert(qux_unsigned::ling == enum_cast<qux_unsigned>(0));
-static_assert(qux_unsigned::fuyi
-  == enum_cast<qux_unsigned>(static_cast<uint16_t>(-1)));
+static_assert(qux_unsigned::fuyi == enum_cast<qux_unsigned>(static_cast<uint16_t>(-1)));
 static_assert(qux_unsigned::yi == enum_cast<qux_unsigned>(1));
 static_assert(qux_unsigned::san == enum_cast<qux_unsigned>(3));
 static_assert(qux_unsigned::si == enum_cast<qux_unsigned>(4));
@@ -131,12 +122,9 @@ static_assert(std::nullopt == enum_cast<qux_unsigned>(int16_t{-1}));
 static_assert(std::nullopt == enum_cast<qux_unsigned>(int32_t{-1}));
 static_assert(std::nullopt == enum_cast<qux_unsigned>(int64_t{-1}));
 
-static_assert(std::nullopt
-  == enum_cast<qux_unsigned>(static_cast<uint8_t>(-1)));
-static_assert(std::nullopt
-  == enum_cast<qux_unsigned>(static_cast<uint32_t>(-1)));
-static_assert(std::nullopt
-  == enum_cast<qux_unsigned>(static_cast<uint64_t>(-1)));
+static_assert(std::nullopt == enum_cast<qux_unsigned>(static_cast<uint8_t>(-1)));
+static_assert(std::nullopt == enum_cast<qux_unsigned>(static_cast<uint32_t>(-1)));
+static_assert(std::nullopt == enum_cast<qux_unsigned>(static_cast<uint64_t>(-1)));
 
 static_assert(std::nullopt == enum_cast<qux_unsigned>(5LL));
 static_assert(std::nullopt == enum_cast<qux_unsigned>(U'6'));
@@ -341,5 +329,5 @@ static_assert(hash_collision::_cuFFJIHGp_jNJKS == enum_cast<hash_collision>(1));
 static_assert(std::nullopt == enum_cast<hash_collision>(-1));
 
 TEST(EnumCastFromInteger, StaticAll) {
-  EXPECT_TRUE(true); // All test cases done by static assertions above.
+  EXPECT_TRUE(true);  // All test cases done by static assertions above.
 }

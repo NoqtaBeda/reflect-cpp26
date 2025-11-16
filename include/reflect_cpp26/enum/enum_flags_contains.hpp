@@ -24,34 +24,34 @@
 #define REFLECT_CPP26_ENUM_ENUM_FLAGS_CONTAINS_HPP
 
 #include <reflect_cpp26/enum/enum_contains.hpp>
-#include <reflect_cpp26/utils/tags.hpp>
 #include <reflect_cpp26/enum/impl/enum_flags.hpp>
 #include <reflect_cpp26/utils/concepts.hpp>
 #include <reflect_cpp26/utils/ctype.hpp>
 #include <reflect_cpp26/utils/functional.hpp>
+#include <reflect_cpp26/utils/tags.hpp>
 #include <reflect_cpp26/utils/utility.hpp>
 
 namespace reflect_cpp26 {
 namespace impl {
 template <class E>
-constexpr bool regular_enum_flags_contains_impl(uint64_t input_underlying)
-{
+constexpr bool regular_enum_flags_contains_impl(uint64_t input_underlying) {
   constexpr const auto& decomp = enum_flags_decomposer_v<E>;
   if ((input_underlying & decomp.full_set) != input_underlying) {
     return false;
   }
-  template for (constexpr auto u: decomp.units) {
+  template for (constexpr auto u : decomp.units) {
     if constexpr (u.popcount > 1) {
       auto i = u.underlying & input_underlying;
-      if (i != 0 && i != u.underlying) { return false; }
+      if (i != 0 && i != u.underlying) {
+        return false;
+      }
     }
   }
   return true;
 }
 
 template <class E>
-constexpr bool irregular_enum_flags_contains_impl(uint64_t input_underlying)
-{
+constexpr bool irregular_enum_flags_contains_impl(uint64_t input_underlying) {
   constexpr const auto& decomp = enum_flags_decomposer_v<E>;
   if (input_underlying == 0) {
     return true;
@@ -60,18 +60,19 @@ constexpr bool irregular_enum_flags_contains_impl(uint64_t input_underlying)
     return false;
   }
   auto covered = uint64_t{0};
-  template for (constexpr auto u: decomp.units) {
+  template for (constexpr auto u : decomp.units) {
     if ((u.underlying & input_underlying) == u.underlying) {
       covered |= u.underlying;
-      if (covered == input_underlying) { return true; }
+      if (covered == input_underlying) {
+        return true;
+      }
     }
   }
   return false;
 }
 
 template <class E>
-constexpr bool enum_flags_contains_impl(uint64_t underlying)
-{
+constexpr bool enum_flags_contains_impl(uint64_t underlying) {
   if constexpr (enum_flags_is_empty_v<E>) {
     return underlying == 0;
   } else if constexpr (enum_flags_is_regular_v<E>) {
@@ -82,19 +83,19 @@ constexpr bool enum_flags_contains_impl(uint64_t underlying)
 }
 
 template <class E, class Delim>
-constexpr bool enum_flags_contains_impl(std::string_view str, Delim delim)
-{
-  for (auto token: std::views::split(str, delim)) {
+constexpr bool enum_flags_contains_impl(std::string_view str, Delim delim) {
+  for (auto token : std::views::split(str, delim)) {
     auto trimmed = ascii_trim(token);
-    if (!trimmed.empty() && !enum_contains<E>(trimmed)) { return false; }
+    if (!trimmed.empty() && !enum_contains<E>(trimmed)) {
+      return false;
+    }
   }
   return true;
 }
 
 template <class E, class Delim>
-constexpr bool enum_flags_contains_ci_impl(std::string_view str, Delim delim)
-{
-  for (auto token: std::views::split(str, delim)) {
+constexpr bool enum_flags_contains_ci_impl(std::string_view str, Delim delim) {
+  for (auto token : std::views::split(str, delim)) {
     auto trimmed = ascii_trim(token);
     if (trimmed.empty()) {
       continue;
@@ -105,7 +106,7 @@ constexpr bool enum_flags_contains_ci_impl(std::string_view str, Delim delim)
   }
   return true;
 }
-} // namespace impl
+}  // namespace impl
 
 template <enum_type E>
 struct enum_flags_contains_t {
@@ -116,8 +117,7 @@ public:
   /**
    * Whether value can be decomposed as disjunction of enum entries in E.
    */
-  static constexpr bool operator()(E flags)
-  {
+  static constexpr bool operator()(E flags) {
     auto u = zero_extend<uint64_t>(std::to_underlying(flags));
     return impl::enum_flags_contains_impl<ENoCV>(u);
   }
@@ -125,8 +125,7 @@ public:
   /**
    * Whether value can be decomposed as disjunction of enum entries in E.
    */
-  static constexpr bool operator()(std::integral auto flags)
-  {
+  static constexpr bool operator()(std::integral auto flags) {
     auto u = zero_extend<uint64_t>(flags);
     return impl::enum_flags_contains_impl<ENoCV>(u);
   }
@@ -140,8 +139,7 @@ public:
    *   str = "first | second | third\n", delim = '|', then
    *   segments = ["first", "second", "third"].
    */
-  static constexpr bool operator()(std::string_view str, char delim = '|')
-  {
+  static constexpr bool operator()(std::string_view str, char delim = '|') {
     return impl::enum_flags_contains_impl<ENoCV>(str, delim);
   }
 
@@ -149,8 +147,7 @@ public:
    * Whether the input string can be decomposed as enum entry names split by
    * given delimiter.
    */
-  static constexpr bool operator()(std::string_view str, std::string_view delim)
-  {
+  static constexpr bool operator()(std::string_view str, std::string_view delim) {
     return impl::enum_flags_contains_impl<ENoCV>(str, delim);
   }
 
@@ -158,9 +155,9 @@ public:
    * Whether the input string can be decomposed as enum entry names split by
    * given delimiter. ASCII case-insensitive string comparison is applied.
    */
-  static constexpr bool operator()(
-    ascii_case_insensitive_tag_t, std::string_view str, char delim = '|')
-  {
+  static constexpr bool operator()(ascii_case_insensitive_tag_t,
+                                   std::string_view str,
+                                   char delim = '|') {
     return impl::enum_flags_contains_ci_impl<ENoCV>(str, delim);
   }
 
@@ -168,10 +165,9 @@ public:
    * Whether the input string can be decomposed as enum entry names split by
    * given delimiter. ASCII case-insensitive string comparison is applied.
    */
-  static constexpr bool operator()(
-    ascii_case_insensitive_tag_t, std::string_view str,
-    std::string_view delim)
-  {
+  static constexpr bool operator()(ascii_case_insensitive_tag_t,
+                                   std::string_view str,
+                                   std::string_view delim) {
     return impl::enum_flags_contains_ci_impl<ENoCV>(str, delim);
   }
 
@@ -184,8 +180,7 @@ public:
 };
 
 template <enum_type E>
-constexpr auto enum_flags_contains =
-  enum_flags_contains_t<std::remove_cv_t<E>>{};
-} // namespace reflect_cpp26
+constexpr auto enum_flags_contains = enum_flags_contains_t<std::remove_cv_t<E>>{};
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_ENUM_ENUM_FLAGS_CONTAINS_HPP
+#endif  // REFLECT_CPP26_ENUM_ENUM_FLAGS_CONTAINS_HPP

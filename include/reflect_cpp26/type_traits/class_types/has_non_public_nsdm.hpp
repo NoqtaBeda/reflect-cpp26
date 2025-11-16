@@ -29,7 +29,7 @@
 namespace reflect_cpp26 {
 namespace impl {
 consteval bool is_class_type_with_non_public_nsdm(std::meta::info T);
-} // namespace impl
+}  // namespace impl
 
 /**
  * Checks whether a non-union class T has inaccessible non-static data members,
@@ -43,7 +43,7 @@ consteval bool is_class_type_with_non_public_nsdm(std::meta::info T);
  */
 template <class T>
 constexpr auto has_non_public_nonstatic_data_members_v =
-  impl::is_class_type_with_non_public_nsdm(^^std::remove_cv_t<T>);
+    impl::is_class_type_with_non_public_nsdm(^^std::remove_cv_t<T>);
 
 /**
  * Whether T is a class type without non-static data members of non-public
@@ -51,29 +51,26 @@ constexpr auto has_non_public_nonstatic_data_members_v =
  */
 template <class T>
 concept class_without_non_public_nonstatic_data_members =
-  std::is_class_v<T> && !has_non_public_nonstatic_data_members_v<T>;
+    std::is_class_v<T> && !has_non_public_nonstatic_data_members_v<T>;
 
 namespace impl {
-consteval bool is_class_type_with_non_public_nsdm(std::meta::info T)
-{
+consteval bool is_class_type_with_non_public_nsdm(std::meta::info T) {
   if (!is_class_type(T)) {
     return false;
   }
-  auto has_direct_non_public_nsdm = !std::ranges::all_of(
-    all_direct_nonstatic_data_members_of(T), std::meta::is_public);
+  auto has_direct_non_public_nsdm =
+      !std::ranges::all_of(all_direct_nonstatic_data_members_of(T), std::meta::is_public);
   if (has_direct_non_public_nsdm) {
     return true;
   }
-  return std::ranges::any_of(all_direct_bases_of(T),
-    [](std::meta::info base) {
-      if (is_public(base)) {
-        return extract_bool(
-          ^^has_non_public_nonstatic_data_members_v, type_of(base));
-      }
-      return !is_empty_type(type_of(base));
-    });
+  return std::ranges::any_of(all_direct_bases_of(T), [](std::meta::info base) {
+    if (is_public(base)) {
+      return extract_bool(^^has_non_public_nonstatic_data_members_v, type_of(base));
+    }
+    return !is_empty_type(type_of(base));
+  });
 }
-} // namespace impl
-} // namespace reflect_cpp26
+}  // namespace impl
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_HAS_NON_PUBLIC_NSDM_HPP
+#endif  // REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_HAS_NON_PUBLIC_NSDM_HPP

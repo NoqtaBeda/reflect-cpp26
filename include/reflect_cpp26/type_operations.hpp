@@ -29,4 +29,4 @@
 #include <reflect_cpp26/type_operations/to_string.hpp>
 #include <reflect_cpp26/type_operations/to_structured.hpp>
 
-#endif // REFLECT_CPP26_TYPE_OPERATIONS_HPP
+#endif  // REFLECT_CPP26_TYPE_OPERATIONS_HPP

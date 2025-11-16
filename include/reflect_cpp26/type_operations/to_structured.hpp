@@ -35,15 +35,13 @@ consteval auto to_structured(const T& value);
 
 namespace impl {
 template <class InputRange>
-consteval auto range_to_structured(const InputRange& range)
-{
+consteval auto range_to_structured(const InputRange& range) {
   using ValueT = std::ranges::range_value_t<InputRange>;
   if constexpr (char_type<ValueT>) {
     return reflect_cpp26::define_static_string(range);
   } else {
-    auto converted = range | std::views::transform([](const auto& elem) {
-      return to_structured(elem);
-    });
+    auto converted =
+        range | std::views::transform([](const auto& elem) { return to_structured(elem); });
     return reflect_cpp26::define_static_array(converted);
   }
 }
@@ -54,28 +52,23 @@ consteval auto tuple_like_ith_to_structured(const TupleLike& tuple) {
 }
 
 template <size_t... Is, class TupleLike>
-consteval auto tuple_like_to_structured(
-  const TupleLike& tuple, std::index_sequence<Is...>)
-{
+consteval auto tuple_like_to_structured(const TupleLike& tuple, std::index_sequence<Is...>) {
   return meta_tuple{tuple_like_ith_to_structured<Is>(tuple)...};
 }
 
 template <class TupleLike>
-consteval auto tuple_like_to_structured(const TupleLike& tuple)
-{
+consteval auto tuple_like_to_structured(const TupleLike& tuple) {
   constexpr auto N = std::tuple_size_v<TupleLike>;
   return tuple_like_to_structured(tuple, std::make_index_sequence<N>{});
 }
 
 template <class Pointer>
-  requires (std::is_pointer_v<Pointer>)
-consteval auto pointer_to_structured(Pointer ptr)
-{
+  requires(std::is_pointer_v<Pointer>)
+consteval auto pointer_to_structured(Pointer ptr) {
   using T = std::remove_pointer_t<Pointer>;
   if constexpr (char_type<T>) {
     auto tail = std::ranges::find(ptr, std::unreachable_sentinel, '\0');
-    return reflect_cpp26::define_static_string(
-      std::basic_string_view{ptr, tail});
+    return reflect_cpp26::define_static_string(std::basic_string_view{ptr, tail});
   } else {
     return ptr;
   }
@@ -84,7 +77,7 @@ consteval auto pointer_to_structured(Pointer ptr)
 consteval auto pointer_to_structured(std::nullptr_t) {
   return nullptr;
 }
-} // namespace impl
+}  // namespace impl
 
 /**
  * Converts value to compile-time static constant with structured storage type.
@@ -100,8 +93,7 @@ consteval auto pointer_to_structured(std::nullptr_t) {
  * (4) Otherwise, result is T identity.
  */
 template <class T>
-consteval auto to_structured(const T& value)
-{
+consteval auto to_structured(const T& value) {
   if constexpr (std::ranges::input_range<T>) {
     return impl::range_to_structured(value);
   } else if constexpr (tuple_like<T>) {
@@ -129,6 +121,6 @@ consteval auto to_structured(std::initializer_list<T> values) {
  */
 template <class T>
 using to_structured_t = decltype(to_structured(std::declval<T>()));
-} // namespace reflect_cpp26
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_TYPE_OPERATIONS_TO_STRUCTURED_HPP
+#endif  // REFLECT_CPP26_TYPE_OPERATIONS_TO_STRUCTURED_HPP

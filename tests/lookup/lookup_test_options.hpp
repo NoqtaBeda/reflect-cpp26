@@ -23,10 +23,11 @@
 #pragma once
 
 #include <reflect_cpp26/utils/config.h>
+
 #include "tests/test_options.hpp"
 
-#define CHECK_MEMBER_VARIABLE(expected, obj, mptr)  \
-  ASSERT_NE(nullptr, (mptr));                       \
+#define CHECK_MEMBER_VARIABLE(expected, obj, mptr) \
+  ASSERT_NE(nullptr, (mptr));                      \
   EXPECT_EQ((expected), (obj).*(mptr))
 
 #ifdef ENABLE_STATIC_TEST
@@ -34,44 +35,42 @@
   static_assert((mptr) != nullptr);                       \
   static_assert((expected) == (obj).*(mptr))
 #else
-#define CHECK_MEMBER_VARIABLE_STATIC(expected, obj, mptr) \
-  CHECK_MEMBER_VARIABLE(expected, obj, mptr)
+#define CHECK_MEMBER_VARIABLE_STATIC(expected, obj, mptr) CHECK_MEMBER_VARIABLE(expected, obj, mptr)
 #endif
 
-#define CHECK_MEMBER_FUNCTION(expected, obj, mptr, ...)   \
-  ASSERT_NE(nullptr, (mptr));                             \
+#define CHECK_MEMBER_FUNCTION(expected, obj, mptr, ...) \
+  ASSERT_NE(nullptr, (mptr));                           \
   EXPECT_EQ((expected), ((obj).*(mptr))(__VA_ARGS__));
 
 #ifdef ENABLE_STATIC_TEST
-#define CHECK_MEMBER_FUNCTION_STATIC(expected, obj, mptr, ...)  \
-  static_assert((mptr) != nullptr);                             \
+#define CHECK_MEMBER_FUNCTION_STATIC(expected, obj, mptr, ...) \
+  static_assert((mptr) != nullptr);                            \
   static_assert((expected) == ((obj).*(mptr))(__VA_ARGS__))
 #else
-#define CHECK_MEMBER_FUNCTION_STATIC(expected, obj, mptr, ...)  \
+#define CHECK_MEMBER_FUNCTION_STATIC(expected, obj, mptr, ...) \
   CHECK_MEMBER_FUNCTION(expected, obj, mptr, __VA_ARGS__)
 #endif
 
-#define CHECK_VARIABLE(expected, ptr)   \
-  ASSERT_NE(nullptr, (ptr));            \
+#define CHECK_VARIABLE(expected, ptr) \
+  ASSERT_NE(nullptr, (ptr));          \
   EXPECT_EQ((expected), *(ptr))
 
 #ifdef ENABLE_STATIC_TEST
-#define CHECK_VARIABLE_STATIC(expected, ptr)  \
-  static_assert((ptr) != nullptr);            \
+#define CHECK_VARIABLE_STATIC(expected, ptr) \
+  static_assert((ptr) != nullptr);           \
   static_assert((expected) == *(ptr))
 #else
 #define CHECK_VARIABLE_STATIC(expected, ptr) CHECK_VARIABLE(expected, ptr);
 #endif
 
-#define CHECK_FUNCTION(expected, fptr, ...)   \
-  ASSERT_NE(nullptr, (fptr));                 \
+#define CHECK_FUNCTION(expected, fptr, ...) \
+  ASSERT_NE(nullptr, (fptr));               \
   EXPECT_EQ((expected), (fptr)(__VA_ARGS__))
 
 #ifdef ENABLE_STATIC_TEST
-#define CHECK_FUNCTION_STATIC(expected, fptr, ...)  \
-  static_assert((fptr) != nullptr);                 \
+#define CHECK_FUNCTION_STATIC(expected, fptr, ...) \
+  static_assert((fptr) != nullptr);                \
   static_assert((expected) == (fptr)(__VA_ARGS__))
 #else
-#define CHECK_FUNCTION_STATIC(expected, fptr, ...)  \
-  CHECK_FUNCTION(expected, fptr, __VA_ARGS__)
+#define CHECK_FUNCTION_STATIC(expected, fptr, ...) CHECK_FUNCTION(expected, fptr, __VA_ARGS__)
 #endif

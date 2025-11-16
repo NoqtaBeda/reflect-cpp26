@@ -28,8 +28,7 @@
 
 namespace reflect_cpp26 {
 namespace impl {
-consteval auto has_ambiguous_base(std::meta::info T)
-{
+consteval auto has_ambiguous_base(std::meta::info T) {
   if (!is_class_type(T)) {
     return false;
   }
@@ -37,9 +36,9 @@ consteval auto has_ambiguous_base(std::meta::info T)
   auto head = 0zU;
   for (; head < bases.size(); ++head) {
     auto cur_candidate_bases = all_direct_bases_of(type_of(bases[head]));
-    for (auto c: cur_candidate_bases) {
+    for (auto c : cur_candidate_bases) {
       auto is_unique = true;
-      for (auto b: bases) {
+      for (auto b : bases) {
         if (is_empty_type(type_of(b)) || type_of(c) != type_of(b)) {
           continue;
         }
@@ -56,7 +55,7 @@ consteval auto has_ambiguous_base(std::meta::info T)
   }
   return false;
 }
-} // namespace impl
+}  // namespace impl
 
 /**
  * Whether type T is a class type with ambiguous non-empty base, i.e. some
@@ -68,15 +67,13 @@ consteval auto has_ambiguous_base(std::meta::info T)
  *     they make no effect on member layout.
  */
 template <class T>
-constexpr auto has_ambiguous_inheritance_v =
-  impl::has_ambiguous_base(^^std::remove_cv_t<T>);
+constexpr auto has_ambiguous_inheritance_v = impl::has_ambiguous_base(^^std::remove_cv_t<T>);
 
 /**
  * Whether T is a class type without ambiguous non-empty base class.
  */
 template <class T>
-concept class_without_ambiguous_inheritance =
-  std::is_class_v<T> && !has_ambiguous_inheritance_v<T>;
-} // namespace reflect_cpp26
+concept class_without_ambiguous_inheritance = std::is_class_v<T> && !has_ambiguous_inheritance_v<T>;
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_HAS_AMBIGUOUS_INHERITANCE_HPP
+#endif  // REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_HAS_AMBIGUOUS_INHERITANCE_HPP

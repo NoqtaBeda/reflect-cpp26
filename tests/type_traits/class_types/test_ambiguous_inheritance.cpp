@@ -20,9 +20,10 @@
  * SOFTWARE.
  **/
 
-#include "tests/test_options.hpp"
 #include <system_error>
 #include <variant>
+
+#include "tests/test_options.hpp"
 
 #ifdef ENABLE_FULL_HEADER_TEST
 #include <reflect_cpp26/type_traits.hpp>
@@ -74,45 +75,83 @@ static_assert(rfl::has_ambiguous_inheritance_v<const qux_t>);
 static_assert(NOT rfl::has_ambiguous_inheritance_v<const qux_t&>);
 static_assert(NOT rfl::has_ambiguous_inheritance_v<volatile qux_t*>);
 
-struct A { int x; };
-struct B : A { int y; };
-struct C : A { int z; };
+struct A {
+  int x;
+};
+struct B : A {
+  int y;
+};
+struct C : A {
+  int z;
+};
 struct D : B, C {};
 
 // Diamond inheritance: A is inherited twice indirectly.
 static_assert(rfl::has_ambiguous_inheritance_v<D>);
 static_assert(rfl::has_ambiguous_inheritance_v<const volatile D>);
 
-struct E : std::monostate { int e; };
-struct F : std::monostate { int f; };
-struct G : E, F, std::monostate { int g; };
+struct E : std::monostate {
+  int e;
+};
+struct F : std::monostate {
+  int f;
+};
+struct G : E, F, std::monostate {
+  int g;
+};
 
 // Empty base class has no effect.
 static_assert(NOT rfl::has_ambiguous_inheritance_v<G>);
 
-struct H : public C, private G { int h; };
-struct I : protected H { int i; };
-struct J : private A, public G { int j; };
-struct K : public I { int k; };
-struct L : public K, protected J { int l; };
-struct M : private F { int m; };
-struct N : protected K, public M { int n; };
+struct H : public C, private G {
+  int h;
+};
+struct I : protected H {
+  int i;
+};
+struct J : private A, public G {
+  int j;
+};
+struct K : public I {
+  int k;
+};
+struct L : public K, protected J {
+  int l;
+};
+struct M : private F {
+  int m;
+};
+struct N : protected K, public M {
+  int n;
+};
 
 // More complex cases.
 static_assert(NOT rfl::has_ambiguous_inheritance_v<H>);
 static_assert(NOT rfl::has_ambiguous_inheritance_v<I>);
 static_assert(NOT rfl::has_ambiguous_inheritance_v<J>);
 static_assert(NOT rfl::has_ambiguous_inheritance_v<K>);
-static_assert(rfl::has_ambiguous_inheritance_v<L>); // A inherited twice
+static_assert(rfl::has_ambiguous_inheritance_v<L>);  // A inherited twice
 static_assert(NOT rfl::has_ambiguous_inheritance_v<M>);
-static_assert(rfl::has_ambiguous_inheritance_v<N>); // F inherited twice
+static_assert(rfl::has_ambiguous_inheritance_v<N>);  // F inherited twice
 
-struct AA { int a; };
-struct BB : virtual AA { int b; };
-struct CC : virtual AA { int c; };
-struct DD : BB, CC { int d; };
-struct EE : virtual AA, BB, CC { int e; };
-struct FF : AA, BB, CC { int f; };
+struct AA {
+  int a;
+};
+struct BB : virtual AA {
+  int b;
+};
+struct CC : virtual AA {
+  int c;
+};
+struct DD : BB, CC {
+  int d;
+};
+struct EE : virtual AA, BB, CC {
+  int e;
+};
+struct FF : AA, BB, CC {
+  int f;
+};
 
 // With virtual inheritance
 static_assert(NOT rfl::has_ambiguous_inheritance_v<DD>);
@@ -120,5 +159,5 @@ static_assert(NOT rfl::has_ambiguous_inheritance_v<EE>);
 static_assert(rfl::has_ambiguous_inheritance_v<FF>);
 
 TEST(TypeTraitsClassTypes, HasAmbiguousInheritance) {
-  EXPECT_TRUE(true); // All test cases done with static-asserts above
+  EXPECT_TRUE(true);  // All test cases done with static-asserts above
 }

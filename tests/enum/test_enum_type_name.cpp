@@ -32,12 +32,9 @@
 using namespace reflect_cpp26;
 
 static_assert("foo_signed" == enum_type_name_v<foo_signed>);
-static_assert("foo_signed_reorder"
-  == enum_type_name_v<const foo_signed_reorder>);
-static_assert("foo_signed_rep"
-  == enum_type_name_v<volatile foo_signed_rep>);
-static_assert("bar_unsigned"
-  == enum_type_name_v<const volatile bar_unsigned>);
+static_assert("foo_signed_reorder" == enum_type_name_v<const foo_signed_reorder>);
+static_assert("foo_signed_rep" == enum_type_name_v<volatile foo_signed_rep>);
+static_assert("bar_unsigned" == enum_type_name_v<const volatile bar_unsigned>);
 
 template <size_t I>
 struct indirect {};
@@ -63,14 +60,12 @@ struct indirect<3> {
 };
 
 static_assert("baz_signed" == enum_type_name_v<indirect<0>::type>);
-static_assert("baz_signed"
-  == enum_type_name_v<const volatile indirect<0>::type>);
+static_assert("baz_signed" == enum_type_name_v<const volatile indirect<0>::type>);
 static_assert("qux_unsigned" == enum_type_name_v<indirect<1>::type>);
-static_assert("qux_unsigned"
-  == enum_type_name_v<const volatile indirect<1>::type>);
+static_assert("qux_unsigned" == enum_type_name_v<const volatile indirect<1>::type>);
 static_assert("empty" == enum_type_name_v<indirect<2>::type>);
 static_assert("single" == enum_type_name_v<indirect<3>::type>);
 
 TEST(EnumTypeName, StaticAll) {
-  EXPECT_TRUE(true); // All test cases done by static assertions above.
+  EXPECT_TRUE(true);  // All test cases done by static assertions above.
 }

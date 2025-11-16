@@ -25,19 +25,19 @@
 
 #include <type_traits>
 
-#define REFLECT_CPP26_DEFINE_ENUM_ASSIGNMENT_OPERATOR(E, op)  \
-  constexpr E& operator op##=(E& x, E y) {                    \
-    using U = std::underlying_type_t<E>;                      \
-    auto u = static_cast<U>(x) op static_cast<U>(y);          \
-    x = static_cast<E>(u);                                    \
-    return x;                                                 \
+#define REFLECT_CPP26_DEFINE_ENUM_ASSIGNMENT_OPERATOR(E, op) \
+  constexpr E& operator op## = (E & x, E y) {                \
+    using U = std::underlying_type_t<E>;                     \
+    auto u = static_cast<U>(x) op static_cast<U>(y);         \
+    x = static_cast<E>(u);                                   \
+    return x;                                                \
   }
 
-#define REFLECT_CPP26_DEFINE_ENUM_BINARY_OPERATOR(E, op)      \
-  constexpr E operator op(E x, E y) {                         \
-    using U = std::underlying_type_t<E>;                      \
-    auto u = static_cast<U>(x) op static_cast<U>(y);          \
-    return static_cast<E>(u);                                 \
+#define REFLECT_CPP26_DEFINE_ENUM_BINARY_OPERATOR(E, op) \
+  constexpr E operator op(E x, E y) {                    \
+    using U = std::underlying_type_t<E>;                 \
+    auto u = static_cast<U>(x) op static_cast<U>(y);     \
+    return static_cast<E>(u);                            \
   }
 
 #define REFLECT_CPP26_DEFINE_ENUM_BINARY_OPERATOR_R(E, R, op) \
@@ -45,13 +45,13 @@
     using U = std::underlying_type_t<E>;                      \
     auto u = static_cast<U>(x) op static_cast<U>(y);          \
     return static_cast<R>(u);                                 \
-  }                                                           \
-
-#define REFLECT_CPP26_DEFINE_ENUM_UNARY_OPERATOR(E, R, op)  \
-  constexpr R operator op(E x) {                            \
-    using U = std::underlying_type_t<E>;                    \
-    auto u = op static_cast<U>(x);                          \
-    return static_cast<R>(u);                               \
   }
 
-#endif // REFLECT_CPP26_ENUM_IMPL_ENUM_OPERATOR_MACROS_HPP
+#define REFLECT_CPP26_DEFINE_ENUM_UNARY_OPERATOR(E, R, op) \
+  constexpr R operator op(E x) {                           \
+    using U = std::underlying_type_t<E>;                   \
+    auto u = op static_cast<U>(x);                         \
+    return static_cast<R>(u);                              \
+  }
+
+#endif  // REFLECT_CPP26_ENUM_IMPL_ENUM_OPERATOR_MACROS_HPP

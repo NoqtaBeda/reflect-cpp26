@@ -31,11 +31,9 @@
 
 using namespace reflect_cpp26;
 
-TEST(EnumHash, All)
-{
+TEST(EnumHash, All) {
   EXPECT_EQ_STATIC(enum_hash_v<foo_signed>, enum_hash_v<foo_signed_reorder>);
-  EXPECT_EQ_STATIC(enum_hash_v<const foo_signed>,
-                   enum_hash_v<volatile foo_signed_reorder>);
+  EXPECT_EQ_STATIC(enum_hash_v<const foo_signed>, enum_hash_v<volatile foo_signed_reorder>);
   EXPECT_NE_STATIC(enum_hash_v<foo_signed>, enum_hash_v<foo_signed_rep>);
   EXPECT_NE_STATIC(enum_hash_v<foo_signed>, enum_hash_v<bar_unsigned>);
   EXPECT_NE_STATIC(enum_hash_v<single>, enum_hash_v<empty>);

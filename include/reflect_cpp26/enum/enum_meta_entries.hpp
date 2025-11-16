@@ -23,11 +23,11 @@
 #ifndef REFLECT_CPP26_ENUM_ENUM_META_ENTRIES_HPP
 #define REFLECT_CPP26_ENUM_ENUM_META_ENTRIES_HPP
 
+#include <algorithm>
+#include <ranges>
 #include <reflect_cpp26/enum/enum_count.hpp>
 #include <reflect_cpp26/enum/enum_entry_order.hpp>
 #include <reflect_cpp26/utils/concepts.hpp>
-#include <algorithm>
-#include <ranges>
 #include <utility>
 
 namespace reflect_cpp26 {
@@ -37,7 +37,7 @@ constexpr auto enum_meta_entries_array_v = compile_error("Invalid Order.");
 
 template <class E>
 consteval auto make_enum_meta_entries_original_order()
-  /* -> std::array<std::meta::info, N> */
+/* -> std::array<std::meta::info, N> */
 {
   constexpr auto N = enum_count_v<E>;
   auto res = std::array<std::meta::info, N>{};
@@ -47,14 +47,13 @@ consteval auto make_enum_meta_entries_original_order()
 
 template <class E>
 constexpr auto enum_meta_entries_array_v<E, enum_entry_order::original> =
-  make_enum_meta_entries_original_order<E>();
+    make_enum_meta_entries_original_order<E>();
 
 template <class E>
 consteval auto make_enum_meta_entries_sorted_by_value()
-  /* -> std::array<std::meta::info, N> */
+/* -> std::array<std::meta::info, N> */
 {
-  constexpr auto orig_order =
-    enum_meta_entries_array_v<E, enum_entry_order::original>;
+  constexpr auto orig_order = enum_meta_entries_array_v<E, enum_entry_order::original>;
   constexpr auto N = orig_order.size();
 
   if constexpr (N == 0) {
@@ -63,7 +62,7 @@ consteval auto make_enum_meta_entries_sorted_by_value()
     using iv_pair_t = std::pair<size_t, std::underlying_type_t<E>>;
     auto iv_pairs = std::array<iv_pair_t, N>{};
     auto index = 0zU;
-    template for (constexpr auto e: orig_order) {
+    template for (constexpr auto e : orig_order) {
       iv_pairs[index] = {index, std::to_underlying([:e:])};
       index += 1;
     }
@@ -78,14 +77,13 @@ consteval auto make_enum_meta_entries_sorted_by_value()
 
 template <class E>
 constexpr auto enum_meta_entries_array_v<E, enum_entry_order::by_value> =
-  make_enum_meta_entries_sorted_by_value<E>();
+    make_enum_meta_entries_sorted_by_value<E>();
 
 template <class E>
 consteval auto make_enum_meta_entries_sorted_by_name()
-  /* -> std::array<std::meta::info, N> */
+/* -> std::array<std::meta::info, N> */
 {
-  constexpr auto orig_order =
-    enum_meta_entries_array_v<E, enum_entry_order::original>;
+  constexpr auto orig_order = enum_meta_entries_array_v<E, enum_entry_order::original>;
   constexpr auto N = orig_order.size();
 
   if constexpr (N == 0) {
@@ -94,7 +92,7 @@ consteval auto make_enum_meta_entries_sorted_by_name()
     using iv_pair_t = std::pair<size_t, std::string_view>;
     auto iv_pairs = std::array<iv_pair_t, N>{};
     auto index = 0zU;
-    template for (constexpr auto e: orig_order) {
+    template for (constexpr auto e : orig_order) {
       iv_pairs[index] = {index, std::meta::identifier_of(e)};
       index += 1;
     }
@@ -109,15 +107,12 @@ consteval auto make_enum_meta_entries_sorted_by_name()
 
 template <class E>
 constexpr auto enum_meta_entries_array_v<E, enum_entry_order::by_name> =
-  make_enum_meta_entries_sorted_by_name<E>();
-} // namespace impl
+    make_enum_meta_entries_sorted_by_name<E>();
+}  // namespace impl
 
-/**
- * Gets the reflector list of enumerators in E with given order.
- */
 template <enum_type E, enum_entry_order Order = enum_entry_order::original>
 constexpr auto enum_meta_entries_v =
-  std::span{impl::enum_meta_entries_array_v<std::remove_cv_t<E>, Order>};
-} // namespace reflect_cpp26
+    std::span{impl::enum_meta_entries_array_v<std::remove_cv_t<E>, Order>};
+}  // namespace reflect_cpp26
 
-#endif // REFLECT_CPP26_ENUM_ENUM_META_ENTRIES_HPP
+#endif  // REFLECT_CPP26_ENUM_ENUM_META_ENTRIES_HPP

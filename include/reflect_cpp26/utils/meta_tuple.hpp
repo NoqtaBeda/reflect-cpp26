@@ -23,10 +23,10 @@
 #ifndef REFLECT_CPP26_UTILS_META_TUPLE_HPP
 #define REFLECT_CPP26_UTILS_META_TUPLE_HPP
 
+#include <ranges>
 #include <reflect_cpp26/type_traits/tuple_like_types.hpp>
 #include <reflect_cpp26/utils/functional.hpp>
 #include <reflect_cpp26/utils/meta_utility.hpp>
-#include <ranges>
 
 namespace reflect_cpp26 {
 template <class... Args>
@@ -35,7 +35,9 @@ struct meta_tuple {
 
   struct underlying_type;
   consteval {
-    define_aggregate(^^underlying_type, {data_member_spec(^^Args)...});
+    define_aggregate(^^underlying_type,
+                     {
+                         data_member_spec(^^Args)...});
   }
   // values are exposed as public data member to make meta_tuple
   // structured aggregate.
@@ -56,27 +58,27 @@ public:
    * Free get function of meta_tuple.
    */
   template <size_t I>
-    requires (I < tuple_size)
+    requires(I < tuple_size)
   friend constexpr auto& get(meta_tuple& tuple) {
-    return tuple.values.[: get_nth_field(I) :];
+    return tuple.values.[:get_nth_field(I):];
   }
 
   template <size_t I>
-    requires (I < tuple_size)
+    requires(I < tuple_size)
   friend constexpr const auto& get(const meta_tuple& tuple) {
-    return tuple.values.[: get_nth_field(I) :];
+    return tuple.values.[:get_nth_field(I):];
   }
 
   template <size_t I>
-    requires (I < tuple_size)
+    requires(I < tuple_size)
   friend constexpr auto&& get(meta_tuple&& tuple) {
-    return std::move(tuple.values.[: get_nth_field(I) :]);
+    return std::move(tuple.values.[:get_nth_field(I):]);
   }
 
   template <size_t I>
-    requires (I < tuple_size)
+    requires(I < tuple_size)
   friend constexpr const auto&& get(const meta_tuple&& tuple) {
-    return std::move(tuple.values.[: get_nth_field(I) :]);
+    return std::move(tuple.values.[:get_nth_field(I):]);
   }
 
   constexpr auto operator<=>(const meta_tuple&) const = default;
@@ -88,11 +90,10 @@ public:
 
 namespace impl {
 template <class Tuple1, class Tuple2>
-constexpr bool is_memberwise_eq_comparable()
-{
+constexpr bool is_memberwise_eq_comparable() {
   constexpr auto N = std::tuple_size_v<Tuple1>;
   if constexpr (std::tuple_size_v<Tuple2> == N) {
-    template for (constexpr auto I: std::views::iota(0zU, N)) {
+    template for (constexpr auto I : std::views::iota(0zU, N)) {
       using E1 = std::tuple_element_t<I, Tuple1>;
       using E2 = std::tuple_element_t<I, Tuple2>;
       if (!is_equal_comparable_v<E1, E2>) {
@@ -106,16 +107,14 @@ constexpr bool is_memberwise_eq_comparable()
 }
 
 template <class Tuple1, class Tuple2>
-constexpr auto is_memberwise_eq_comparable_v =
-  is_memberwise_eq_comparable<Tuple1, Tuple2>();
-} // namespace impl
+constexpr auto is_memberwise_eq_comparable_v = is_memberwise_eq_comparable<Tuple1, Tuple2>();
+}  // namespace impl
 
 template <tuple_like TupleLike, class... Args>
-  requires (impl::is_memberwise_eq_comparable_v<meta_tuple<Args...>, TupleLike>)
-constexpr bool operator==(const meta_tuple<Args...>& lhs, const TupleLike& rhs)
-{
+  requires(impl::is_memberwise_eq_comparable_v<meta_tuple<Args...>, TupleLike>)
+constexpr bool operator==(const meta_tuple<Args...>& lhs, const TupleLike& rhs) {
   constexpr auto N = sizeof...(Args);
-  template for (constexpr auto I: std::views::iota(0zU, N)) {
+  template for (constexpr auto I : std::views::iota(0zU, N)) {
     const auto& x = get_ith_element<I>(lhs);
     const auto& y = get_ith_element<I>(rhs);
     if (!(x == y)) {
@@ -128,15 +127,15 @@ constexpr bool operator==(const meta_tuple<Args...>& lhs, const TupleLike& rhs)
 // Deduction guide (cvref dropped, same behavior as std::tuple)
 template <class... Args>
 meta_tuple(Args...) -> meta_tuple<Args...>;
-} // namespace reflect_cpp26
+}  // namespace reflect_cpp26
 
 template <class... Args>
 struct std::tuple_size<reflect_cpp26::meta_tuple<Args...>>
-  : std::integral_constant<size_t, sizeof...(Args)> {};
+    : std::integral_constant<size_t, sizeof...(Args)> {};
 
 template <size_t I, class... Args>
 struct std::tuple_element<I, reflect_cpp26::meta_tuple<Args...>> {
   using type = Args...[I];
 };
 
-#endif // REFLECT_CPP26_UTILS_META_TUPLE_HPP
+#endif  // REFLECT_CPP26_UTILS_META_TUPLE_HPP

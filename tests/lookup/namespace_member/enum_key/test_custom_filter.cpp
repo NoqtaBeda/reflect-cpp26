@@ -20,13 +20,13 @@
  * SOFTWARE.
  **/
 
-#include "tests/lookup/lookup_test_options.hpp"
 #include <reflect_cpp26/enum/enum_cast.hpp>
 #include <reflect_cpp26/lookup/lookup_table.hpp>
 #include <reflect_cpp26/utils/identifier_naming.hpp>
 
-#define LOOKUP_TABLE(...) \
-  REFLECT_CPP26_NAMESPACE_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
+#include "tests/lookup/lookup_test_options.hpp"
+
+#define LOOKUP_TABLE(...) REFLECT_CPP26_NAMESPACE_MEMBER_LOOKUP_TABLE(__VA_ARGS__)
 
 namespace rfl = reflect_cpp26;
 
@@ -44,7 +44,7 @@ ANNOTATE(1) const long* p4 = values + 3;
 ANNOTATE(9) const long* p5 = values + 4;
 ANNOTATE(2) const long* p6 = values + 5;
 ANNOTATE(3) const long p_count = 6;
-} // namespace ptrs
+}  // namespace ptrs
 
 enum class ptrs_key {
   first = 0,
@@ -54,21 +54,19 @@ enum class ptrs_key {
   fifth = 4,
 };
 
-TEST(NamespaceLookupTableByEnum, CustomFilter)
-{
+TEST(NamespaceLookupTableByEnum, CustomFilter) {
   // (std::string_view identifier) -> std::optional<E>
-  constexpr auto table_s = LOOKUP_TABLE(
-    ptrs,
-    [](std::string_view identifier) -> std::optional<ptrs_key> {
-      if (identifier.length() != 2) {
-        return std::nullopt;
-      }
-      auto k = identifier[1] - '0';
-      if (k % 2 != 0) {
-        return std::nullopt; // -> {p2, p4, p6}
-      }
-      return rfl::enum_cast<ptrs_key>(k); // p2 -> third, p4 -> fifth
-    });
+  constexpr auto table_s =
+      LOOKUP_TABLE(ptrs, [](std::string_view identifier) -> std::optional<ptrs_key> {
+        if (identifier.length() != 2) {
+          return std::nullopt;
+        }
+        auto k = identifier[1] - '0';
+        if (k % 2 != 0) {
+          return std::nullopt;  // -> {p2, p4, p6}
+        }
+        return rfl::enum_cast<ptrs_key>(k);  // p2 -> third, p4 -> fifth
+      });
   static_assert(std::is_same_v<const long**, decltype(table_s)::value_type>);
   static_assert(table_s.size() == 2);
 
@@ -82,18 +80,17 @@ TEST(NamespaceLookupTableByEnum, CustomFilter)
   EXPECT_EQ_STATIC(nullptr, table_s[static_cast<ptrs_key>(123)]);
 
   // (std::meta::info member) -> std::optional<E>
-  constexpr auto table_m = LOOKUP_TABLE(
-    ptrs,
-    [](std::meta::info member) -> std::optional<ptrs_key> {
-      if (!is_pointer_type(type_of(member))) {
-        return std::nullopt; // Filters out 
-      }
-      if (annotations_of(member).empty()) {
-        return std::nullopt;
-      }
-      auto a = extract<int>(annotations_of(member)[0]);
-      return rfl::enum_cast<ptrs_key>(a);
-    });
+  constexpr auto table_m =
+      LOOKUP_TABLE(ptrs, [](std::meta::info member) -> std::optional<ptrs_key> {
+        if (!is_pointer_type(type_of(member))) {
+          return std::nullopt;  // Filters out
+        }
+        if (annotations_of(member).empty()) {
+          return std::nullopt;
+        }
+        auto a = extract<int>(annotations_of(member)[0]);
+        return rfl::enum_cast<ptrs_key>(a);
+      });
   static_assert(std::is_same_v<const long**, decltype(table_m)::value_type>);
   static_assert(table_m.size() == 3);
 

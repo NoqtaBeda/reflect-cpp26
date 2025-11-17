@@ -114,69 +114,35 @@ private:
   using ENoCV = std::remove_cv_t<E>;
 
 public:
-  /**
-   * Whether value can be decomposed as disjunction of enum entries in E.
-   */
   static constexpr bool operator()(E flags) {
     auto u = zero_extend<uint64_t>(std::to_underlying(flags));
     return impl::enum_flags_contains_impl<ENoCV>(u);
   }
 
-  /**
-   * Whether value can be decomposed as disjunction of enum entries in E.
-   */
   static constexpr bool operator()(std::integral auto flags) {
     auto u = zero_extend<uint64_t>(flags);
     return impl::enum_flags_contains_impl<ENoCV>(u);
   }
 
-  /**
-   * Whether the input string can be decomposed as enum entry names split by
-   * given delimiter.
-   *
-   * Input segments are trimmed such that leading and trailing ASCII space
-   * characters (' ', '\n', '\t', etc.) are removed. Example:
-   *   str = "first | second | third\n", delim = '|', then
-   *   segments = ["first", "second", "third"].
-   */
   static constexpr bool operator()(std::string_view str, char delim = '|') {
     return impl::enum_flags_contains_impl<ENoCV>(str, delim);
   }
 
-  /**
-   * Whether the input string can be decomposed as enum entry names split by
-   * given delimiter.
-   */
   static constexpr bool operator()(std::string_view str, std::string_view delim) {
     return impl::enum_flags_contains_impl<ENoCV>(str, delim);
   }
 
-  /**
-   * Whether the input string can be decomposed as enum entry names split by
-   * given delimiter. ASCII case-insensitive string comparison is applied.
-   */
   static constexpr bool operator()(ascii_case_insensitive_tag_t,
                                    std::string_view str,
                                    char delim = '|') {
     return impl::enum_flags_contains_ci_impl<ENoCV>(str, delim);
   }
 
-  /**
-   * Whether the input string can be decomposed as enum entry names split by
-   * given delimiter. ASCII case-insensitive string comparison is applied.
-   */
   static constexpr bool operator()(ascii_case_insensitive_tag_t,
                                    std::string_view str,
                                    std::string_view delim) {
     return impl::enum_flags_contains_ci_impl<ENoCV>(str, delim);
   }
-
-  /**
-   * Bind expression is supported.
-   * Example: enum_flags_contains<E>(_2) is equivalent to
-   * std::bind(enum_flags_contains<E>, _2).
-   */
-  REFLECT_CPP26_FUNCTOR_BIND_VARIADIC(enum_flags_contains_t<E>)
 };
 
 template <enum_type E>

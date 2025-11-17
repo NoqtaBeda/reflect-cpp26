@@ -329,27 +329,3 @@ TEST(EnumName, HashCollision) {
   ASSERT_EQ_STATIC("", enum_name(static_cast<hash_collision>(-1)));
   ASSERT_EQ_STATIC("", enum_name(static_cast<hash_collision>(1 << 31)));
 }
-
-template <class E>
-struct fma_to_enum_t {
-  static constexpr auto operator()(auto x, auto y, auto z) -> E {
-    return static_cast<E>(x * y + z);
-  }
-};
-
-template <class E>
-constexpr auto fma_to_enum = fma_to_enum_t<E>{};
-
-TEST(EnumName, BindExpression) {
-  using namespace std::placeholders;
-  constexpr auto F = rfl::enum_name_opt(std::bind(fma_to_enum<foo_signed>, _1, _2, _3));
-  EXPECT_EQ_STATIC("five", F(3, 4, -7));
-  EXPECT_EQ_STATIC("error", F(2, -3, 4));
-  EXPECT_EQ_STATIC("zero", F(2, -3, 6));
-  EXPECT_EQ_STATIC(std::nullopt, F(3, 4, 5));
-
-  // arg _1 is ignored
-  constexpr auto G = rfl::enum_name(std::bind(fma_to_enum<foo_signed>, _3, _4, _2));
-  EXPECT_EQ_STATIC("six", G("<invalid>", -6, 3, 4));
-  EXPECT_EQ_STATIC("", G("<invalid>", 3, 4, -6));
-}

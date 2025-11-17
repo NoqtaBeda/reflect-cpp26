@@ -35,11 +35,6 @@ struct enum_index_by_t {
     auto [indices, found] = impl::enum_index_map_v<E>.get(key);
     return found ? get<Order>(indices) : npos;
   }
-
-  template <bind_expression_or_placeholder Expr>
-  static constexpr auto operator()(Expr&& expr) {
-    return std::bind(enum_index_by_t<Order>{}, std::forward<Expr>(expr));
-  }
 };
 
 template <enum_entry_order Order>
@@ -53,11 +48,6 @@ struct enum_index_opt_by_t {
     }
     return std::nullopt;
   }
-
-  template <bind_expression_or_placeholder Expr>
-  static constexpr auto operator()(Expr&& expr) {
-    return std::bind(enum_index_opt_by_t<Order>{}, std::forward<Expr>(expr));
-  }
 };
 
 struct enum_unique_index_t {
@@ -66,11 +56,6 @@ struct enum_unique_index_t {
     auto key = impl::to_int64_or_uint64(value);
     auto [indices, found] = impl::enum_index_map_v<E>.get(key);
     return found ? indices.by_value_unique : npos;
-  }
-
-  template <bind_expression_or_placeholder Expr>
-  static constexpr auto operator()(Expr&& expr) {
-    return std::bind(enum_unique_index_t{}, std::forward<Expr>(expr));
   }
 };
 
@@ -83,11 +68,6 @@ struct enum_unique_index_opt_t {
       return indices.by_value_unique;
     }
     return std::nullopt;
-  }
-
-  template <bind_expression_or_placeholder Expr>
-  static constexpr auto operator()(Expr&& expr) {
-    return std::bind(enum_unique_index_opt_t{}, std::forward<Expr>(expr));
   }
 };
 

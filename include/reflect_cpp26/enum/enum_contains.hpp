@@ -57,16 +57,6 @@ public:
   static constexpr bool operator()(ascii_case_insensitive_tag_t, std::string_view str) {
     return impl::enum_from_ci_string_map_v<E>.get(str).second;
   }
-
-  template <bind_expression_or_placeholder BindExpr>
-  static constexpr auto operator()(BindExpr&& expr) {
-    return std::bind(enum_contains_t<E>{}, std::forward<BindExpr>(expr));
-  }
-
-  template <bind_expression_or_placeholder BindExpr>
-  static constexpr auto operator()(ascii_case_insensitive_tag_t tag, BindExpr&& expr) {
-    return std::bind(enum_contains_t<E>{}, tag, std::forward<BindExpr>(expr));
-  }
 };
 
 template <enum_type E>

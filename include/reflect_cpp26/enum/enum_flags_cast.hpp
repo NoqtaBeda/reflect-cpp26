@@ -87,8 +87,6 @@ public:
     }
     return std::nullopt;
   }
-
-  REFLECT_CPP26_FUNCTOR_BIND_VARIADIC(enum_flags_cast_t<E>)
 };
 
 template <enum_type E>

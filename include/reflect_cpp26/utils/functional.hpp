@@ -311,56 +311,6 @@ constexpr auto get_second = get_ith_element_t<1>{};
  */
 template <size_t I>
 constexpr auto get_ith_element = get_ith_element_t<I>{};
-
-// -------- Bind expression utilities --------
-
-template <class T>
-concept bind_expression = std::is_bind_expression_v<T>;
-
-template <class T>
-concept bind_placeholder = static_cast<bool>(std::is_placeholder_v<T>);
-
-template <class T>
-concept bind_expression_or_placeholder = bind_expression<T> || bind_placeholder<T>;
-
-namespace impl {
-consteval bool has_bind_expression_or_placeholder(std::initializer_list<std::meta::info> Ts) {
-  return std::ranges::any_of(Ts, [](std::meta::info T) {
-    auto params = {T};
-    return extract<bool>(substitute(^^bind_expression_or_placeholder, params));
-  });
-}
-}  // namespace impl
-
-// Equivalent to (bind_expression_or_placeholder<Ts> || ...)
-// This constexpr variable is used to truncate compiler error message if neither of Ts...
-// is bind expression or placeholder.
-template <class... Ts>
-constexpr bool has_bind_expression_or_placeholder_v =
-    impl::has_bind_expression_or_placeholder({^^Ts...});
-
-// Used internally
-#define REFLECT_CPP26_FUNCTOR_BIND_UNARY(functor)          \
-  template <bind_expression_or_placeholder Expr>           \
-  static constexpr auto operator()(Expr&& expr) {          \
-    return std::bind(functor{}, std::forward<Expr>(expr)); \
-  }
-
-// Used internally
-#define REFLECT_CPP26_FUNCTOR_BIND_BINARY(functor)                                       \
-  template <class Expr1, class Expr2>                                                    \
-    requires(has_bind_expression_or_placeholder_v<Expr1, Expr2>)                         \
-  static constexpr auto operator()(Expr1&& expr1, Expr2&& expr2) {                       \
-    return std::bind(functor{}, std::forward<Expr1>(expr1), std::forward<Expr2>(expr2)); \
-  }
-
-// Used internally
-#define REFLECT_CPP26_FUNCTOR_BIND_VARIADIC(functor)            \
-  template <class... Exprs>                                     \
-    requires(has_bind_expression_or_placeholder_v<Exprs...>)    \
-  static constexpr auto operator()(Exprs&&... exprs) {          \
-    return std::bind(functor{}, std::forward<Exprs>(exprs)...); \
-  }
 }  // namespace reflect_cpp26
 
 #endif  // REFLECT_CPP26_UTILS_FUNCTIONAL_HPP

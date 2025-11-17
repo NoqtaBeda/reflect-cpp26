@@ -28,25 +28,14 @@
 
 namespace reflect_cpp26 {
 struct enum_name_t {
-  /**
-   * Gets the enum name of value, or alt if fails.
-   */
   template <enum_type E>
   static constexpr auto operator()(E value) -> std::string_view {
     const auto& [name, found] = impl::enum_name_map_v<E>.get(impl::to_int64_or_uint64(value));
     return found ? static_cast<std::string_view>(name) : std::string_view{};
   }
-
-  template <bind_expression_or_placeholder BindExpr>
-  static constexpr auto operator()(BindExpr&& expr) {
-    return std::bind(enum_name_t{}, std::forward<BindExpr>(expr));
-  }
 };
 
 struct enum_name_opt_t {
-  /**
-   * Gets the enum name of value, or std::nullopt if fails.
-   */
   template <enum_type E>
   static constexpr auto operator()(E value) -> std::optional<std::string_view> {
     const auto& [name, found] = impl::enum_name_map_v<E>.get(impl::to_int64_or_uint64(value));
@@ -54,11 +43,6 @@ struct enum_name_opt_t {
       return static_cast<std::string_view>(name);
     }
     return std::nullopt;
-  }
-
-  template <bind_expression_or_placeholder BindExpr>
-  static constexpr auto operator()(BindExpr&& expr) {
-    return std::bind(enum_name_opt_t{}, std::forward<BindExpr>(expr));
   }
 };
 

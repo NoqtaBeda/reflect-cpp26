@@ -337,22 +337,3 @@ TEST(EnumIndex, HashCollision) {
   ASSERT_EQ_STATIC(npos, enum_index_by<by_value>(static_cast<hash_collision>(2)));
   ASSERT_EQ_STATIC(npos, enum_index_by<by_name>(static_cast<hash_collision>(123)));
 }
-
-TEST(EnumIndex, BindExpression) {
-  using namespace std::placeholders;
-  constexpr auto f1 = enum_index_by<enum_entry_order::by_value>(_3);
-  ASSERT_EQ_STATIC(7, f1("ignore me", "ignore me too", foo_signed_rep::four));
-  ASSERT_EQ_STATIC(npos, f1("ignore me", "ignore me too", static_cast<foo_signed_rep>(42)));
-
-  constexpr auto f2 = enum_index_opt_by<enum_entry_order::by_name>(_2);
-  ASSERT_EQ_STATIC(3, f2("ignore me", foo_signed::invalid));
-  ASSERT_EQ_STATIC(std::nullopt, f2("ignore me", static_cast<foo_signed>(42)));
-
-  constexpr auto f3 = enum_unique_index(_3);
-  ASSERT_EQ_STATIC(5, f3("ignore me", "ignore me too", foo_signed_rep::four));
-  ASSERT_EQ_STATIC(npos, f3("ignore me", "ignore me too", static_cast<foo_signed_rep>(42)));
-
-  constexpr auto f4 = enum_unique_index_opt(_2);
-  ASSERT_EQ_STATIC(4, f4("ignore me", foo_signed::two));
-  ASSERT_EQ_STATIC(std::nullopt, f4("ignore me", static_cast<foo_signed>(42)));
-}

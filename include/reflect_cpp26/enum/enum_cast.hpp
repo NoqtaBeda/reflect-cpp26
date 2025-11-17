@@ -58,16 +58,6 @@ public:
     }
     return std::nullopt;
   }
-
-  template <bind_expression_or_placeholder BindExpr>
-  static constexpr auto operator()(BindExpr&& expr) {
-    return std::bind(enum_cast_t<E>{}, std::forward<BindExpr>(expr));
-  }
-
-  template <bind_expression_or_placeholder BindExpr>
-  static constexpr auto operator()(ascii_case_insensitive_tag_t tag, BindExpr&& expr) {
-    return std::bind(enum_cast_t<E>{}, tag, std::forward<BindExpr>(expr));
-  }
 };
 
 template <enum_type E>

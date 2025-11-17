@@ -218,9 +218,6 @@ struct enum_flags_name_t {
   static constexpr auto operator()(E flags, std::string_view delim) -> std::optional<std::string> {
     return impl::enum_flags_name_impl(flags, delim);
   }
-
-  REFLECT_CPP26_FUNCTOR_BIND_UNARY(enum_flags_name_t)
-  REFLECT_CPP26_FUNCTOR_BIND_BINARY(enum_flags_name_t)
 };
 
 struct enum_flags_name_to_t {
@@ -250,8 +247,6 @@ struct enum_flags_name_to_t {
         std::ostreambuf_iterator<char>(out), std::unreachable_sentinel, value, delim);
     return ec;
   }
-
-  REFLECT_CPP26_FUNCTOR_BIND_VARIADIC(enum_flags_name_to_t)
 };
 
 constexpr auto enum_flags_name = enum_flags_name_t{};

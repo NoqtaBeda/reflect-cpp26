@@ -49,6 +49,36 @@ constexpr auto non_alpha_as_lower = non_alpha_as_lower_tag_t{};
 constexpr auto non_alpha_as_upper = non_alpha_as_upper_tag_t{};
 
 namespace impl {
+constexpr auto is_valid_identifier_char_table = []() {
+  auto res = std::array<bool, 128>{};
+  for (auto i = 'A'; i <= 'Z'; i++) res[i] = true;
+  for (auto i = 'a'; i <= 'z'; i++) res[i] = true;
+  for (auto i = '0'; i <= '9'; i++) res[i] = true;
+  for (auto i : {'_', '-', '$'}) res[i] = true;
+  return res;
+}();
+
+constexpr bool is_valid_identifier_char(char c) {
+  return c >= 0 && c <= 127 && is_valid_identifier_char_table[c];
+}
+
+constexpr bool is_identifier_delimiter_char(char c) {
+  return c == '-' || c == '_';
+}
+}  // namespace impl
+
+constexpr bool is_valid_identifier(std::string_view identifier) {
+  if (identifier.empty()) [[unlikely]] {
+    return false;
+  }
+  auto first_char = identifier[0];
+  if (ascii_isdigit(first_char)) [[unlikely]] {
+    return false;
+  }
+  return std::ranges::all_of(identifier, impl::is_valid_identifier_char);
+}
+
+namespace impl {
 enum class identifier_parsing_state_nal {
   init,
   lower_or_digit,
@@ -62,31 +92,6 @@ enum class identifier_parsing_state_nau {
   first_upper_or_digit,
   subsequent_upper_or_digit,
 };
-
-constexpr auto is_valid_identifier_char_table = []() {
-  auto res = std::array<bool, 128>{};
-  for (auto i = 'A'; i <= 'Z'; i++) {
-    res[i] = true;
-  }
-  for (auto i = 'a'; i <= 'z'; i++) {
-    res[i] = true;
-  }
-  for (auto i = '0'; i <= '9'; i++) {
-    res[i] = true;
-  }
-  for (auto i : {'_', '-', '$'}) {
-    res[i] = true;
-  }
-  return res;
-}();
-
-constexpr bool is_valid_identifier_char(char c) {
-  return c >= 0 && c <= 127 && is_valid_identifier_char_table[c];
-}
-
-constexpr bool is_identifier_delimiter_char(char c) {
-  return c == '-' || c == '_';
-}
 
 template <class Visitor>
 constexpr void visit_identifier_segments_inner(non_alpha_as_lower_tag_t,
@@ -167,24 +172,12 @@ constexpr void visit_identifier_segments_inner(non_alpha_as_upper_tag_t,
 }
 
 template <class Tag, class Visitor>
-constexpr bool visit_identifier_segments(Tag tag, std::string_view input, Visitor&& visitor) {
-  if (input.empty()) {
-    return false;
-  }
-  auto first_char = input.front();
-  if (ascii_isdigit(first_char) || !is_valid_identifier_char(first_char)) {
-    return false;
-  }
+constexpr void visit_identifier_segments(Tag tag, std::string_view input, Visitor&& visitor) {
   auto len = input.length();
   auto head = 0zU;
   for (auto tail = 0zU; tail < len; head = tail = tail + 1) {
     for (; tail < len; ++tail) {
-      if (!is_valid_identifier_char(input[tail])) {
-        return false;
-      }
-      if (is_identifier_delimiter_char(input[tail])) {
-        break;
-      }
+      if (is_identifier_delimiter_char(input[tail])) break;
     }
     if (head == tail) {
       visitor.visit_empty_word();
@@ -196,7 +189,6 @@ constexpr bool visit_identifier_segments(Tag tag, std::string_view input, Visito
   if (head == len) {
     visitor.visit_trailing_empty_word();
   }
-  return true;
 }
 
 constexpr auto make_snake_case_word(std::string_view non_empty_word,
@@ -239,18 +231,20 @@ struct snake_or_kebab_case_word_visitor_t {
 template <auto TransformFn, class Tag>
 constexpr auto to_snake_or_kebab_case_impl(Tag tag, std::string_view identifier, char delimiter)
     -> std::optional<std::string> {
+  if (!is_valid_identifier(identifier)) [[unlikely]] {
+    return std::nullopt;
+  }
   auto res = std::string{};
-  auto is_valid_identifier = true;
   auto reserved_size = identifier.size() * 2;
   res.resize_and_overwrite(reserved_size, [&](char* buffer_head, size_t) {
     auto visitor = snake_or_kebab_case_word_visitor_t<TransformFn>{
         .buffer = buffer_head,
         .delimiter = delimiter,
     };
-    is_valid_identifier = visit_identifier_segments(tag, identifier, visitor);
+    visit_identifier_segments(tag, identifier, visitor);
     return visitor.buffer - buffer_head;
   });
-  return is_valid_identifier ? std::optional{std::move(res)} : std::nullopt;
+  return {std::move(res)};
 }
 
 struct camel_case_word_visitor_t {
@@ -278,17 +272,19 @@ struct camel_case_word_visitor_t {
 template <class Tag>
 constexpr auto to_camel_case_impl(Tag tag, std::string_view identifier, bool first_is_lower)
     -> std::optional<std::string> {
+  if (!is_valid_identifier(identifier)) [[unlikely]] {
+    return std::nullopt;
+  }
   auto res = std::string{};
-  auto is_valid_identifier = true;
   res.resize_and_overwrite(identifier.size(), [&](char* buffer_head, size_t) {
     auto visitor = camel_case_word_visitor_t{
         .buffer = buffer_head,
         .first_is_lower = first_is_lower,
     };
-    is_valid_identifier = visit_identifier_segments(tag, identifier, visitor);
+    visit_identifier_segments(tag, identifier, visitor);
     return visitor.buffer - buffer_head;
   });
-  return is_valid_identifier ? std::optional{std::move(res)} : std::nullopt;
+  return {std::move(res)};
 }
 
 struct camel_snake_case_word_visitor_t {
@@ -319,8 +315,10 @@ constexpr auto to_camel_snake_or_kebab_case_impl(Tag tag,
                                                  char delimiter,
                                                  bool first_is_lower)
     -> std::optional<std::string> {
+  if (!is_valid_identifier(identifier)) [[unlikely]] {
+    return std::nullopt;
+  }
   auto res = std::string{};
-  auto is_valid_identifier = true;
   auto reserved_size = identifier.size() * 2;
   res.resize_and_overwrite(reserved_size, [&](char* buffer_head, size_t) {
     auto visitor = camel_snake_case_word_visitor_t{
@@ -328,10 +326,10 @@ constexpr auto to_camel_snake_or_kebab_case_impl(Tag tag,
         .delimiter = delimiter,
         .first_is_lower = first_is_lower,
     };
-    is_valid_identifier = visit_identifier_segments(tag, identifier, visitor);
+    visit_identifier_segments(tag, identifier, visitor);
     return visitor.buffer - buffer_head;
   });
-  return is_valid_identifier ? std::optional{std::move(res)} : std::nullopt;
+  return std::optional{std::move(res)};
 }
 }  // namespace impl
 

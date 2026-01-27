@@ -54,11 +54,8 @@ double get_y_count = 2.0;
 }  // namespace baz
 
 TEST(NamespaceLookupTableByName, FilterFlags) {
-  constexpr auto table_f = LOOKUP_TABLE(baz,
-                                        "get_*",
-                                        {
-                                            .category = rfl::namespace_member_category::functions,
-                                        });
+  constexpr auto table_f =
+      LOOKUP_TABLE(baz, "get_*", {.category = rfl::namespace_member_category::functions});
   static_assert(std::is_same_v<int (*)(int), decltype(table_f)::value_type>);
   static_assert(table_f.size() == 4);
 
@@ -73,11 +70,8 @@ TEST(NamespaceLookupTableByName, FilterFlags) {
   EXPECT_EQ_STATIC(nullptr, table_f["dummy_count"]);
   EXPECT_EQ_STATIC(nullptr, table_f["bit_one"]);
 
-  constexpr auto table_v = LOOKUP_TABLE(baz,
-                                        "*_count",
-                                        {
-                                            .category = rfl::namespace_member_category::variables,
-                                        });
+  constexpr auto table_v =
+      LOOKUP_TABLE(baz, "*_count", {.category = rfl::namespace_member_category::variables});
   static_assert(std::is_same_v<double*, decltype(table_v)::value_type>);
   static_assert(table_v.size() == 2);
 

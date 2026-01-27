@@ -76,10 +76,10 @@ end
 
 meta_test_cases = {
   -- Utility
+  "utils/test_addressable_member",
   "utils/test_ctype",
   "utils/test_identifier_naming",
   "utils/test_meta_tuple",
-  "utils/test_meta_utility",
   "utils/test_to_string",
   "utils/test_type_tuple",
   "utils/test_utils_misc",

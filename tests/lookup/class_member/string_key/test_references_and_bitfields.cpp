@@ -60,3 +60,26 @@ TEST(ClassLookupTableByName, WithReferencesAndBitFields) {
   EXPECT_EQ_STATIC(nullptr, table["bf2"]);
   EXPECT_EQ_STATIC(nullptr, table["bf3"]);
 }
+
+struct with_static_ref_t {
+  static inline int first_value = 1;
+  static inline int second_value = 2;
+
+  static inline int& first_ref = first_value;
+  static inline int& second_ref = second_value;
+
+  static inline int not_ref = 3;
+  static inline int& ref_to_not_ref = not_ref;
+};
+
+TEST(ClassLookupTableByName, WithStaticReferences) {
+  constexpr auto table = LOOKUP_TABLE(with_static_ref_t, "*_ref");
+  static_assert(std::is_same_v<int*, decltype(table)::value_type>);
+  EXPECT_EQ_STATIC(4, table.size());
+
+  CHECK_VARIABLE(1, table["first"]);
+  CHECK_VARIABLE(2, table["second"]);
+  CHECK_VARIABLE(3, table["not"]);
+  CHECK_VARIABLE(3, table["ref_to_not"]);
+  EXPECT_EQ(table["not"], table["ref_to_not"]);
+}

@@ -42,7 +42,7 @@ struct A {
     constexpr auto table_options = rfl::class_member_lookup_table_options{
         .category = rfl::class_member_category::nonstatic_data_members,
     };
-    constexpr auto table = LOOKUP_TABLE(A, "*", options);
+    constexpr auto table = LOOKUP_TABLE(A, "*", table_options);
     static_assert(std::is_same_v<double A::*, decltype(table)::value_type>);
     static_assert(table.size() == 6);
 
@@ -82,7 +82,7 @@ struct B : A {
     constexpr auto table_options = rfl::class_member_lookup_table_options{
         .category = rfl::class_member_category::nonstatic_data_members,
     };
-    constexpr auto table = LOOKUP_TABLE(B, "*", options);
+    constexpr auto table = LOOKUP_TABLE(B, "*", table_options);
     static_assert(std::is_same_v<double B::*, decltype(table)::value_type>);
     static_assert(table.size() == 9);
 
@@ -159,7 +159,7 @@ TEST(ClassLookupTableByName, AccessContext1) {
       .category = rfl::class_member_category::nonstatic_data_members,
   };
   // Only public non-static data members are accessible in current context.
-  constexpr auto table_public = LOOKUP_TABLE(B, "*", options);
+  constexpr auto table_public = LOOKUP_TABLE(B, "*", table_options);
   static_assert(std::is_same_v<double B::*, decltype(table_public)::value_type>);
   static_assert(table_public.size() == 5);
 
@@ -179,7 +179,7 @@ TEST(ClassLookupTableByName, AccessContext1) {
   EXPECT_EQ_STATIC(nullptr, table_public["priv_b1"]);
 
   // Manually specified access context.
-  constexpr auto table_all = LOOKUP_TABLE(B, "*", options, rfl::unchecked_context());
+  constexpr auto table_all = LOOKUP_TABLE(B, "*", table_options, rfl::unchecked_context());
   static_assert(std::is_same_v<double B::*, decltype(table_all)::value_type>);
   static_assert(table_all.size() == 10);
 

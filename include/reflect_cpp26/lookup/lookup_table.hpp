@@ -24,7 +24,7 @@
 #define REFLECT_CPP26_LOOKUP_LOOKUP_TABLE_HPP
 
 #include <reflect_cpp26/fixed_map/all.hpp>
-#include <reflect_cpp26/utils/meta_utility.hpp>
+#include <reflect_cpp26/utils/addressable_member.hpp>
 
 namespace reflect_cpp26 {
 enum class class_member_category {
@@ -173,23 +173,21 @@ consteval void lookup_class_members_by_optional(
 }
 
 template <class Ret, class FilterFn>
-consteval auto lookup_class_members_and_transform(
-    std::meta::info T,
-    std::meta::access_context ctx,
-    direct_members_query_fn get_direct_members_fn,
-    const FilterFn& filter_fn) /*-> std::vector<std::pair<Ret, std::meta::info>*/
-{
+consteval auto lookup_class_members_and_transform(std::meta::info T,
+                                                  std::meta::access_context ctx,
+                                                  direct_members_query_fn get_direct_members_fn,
+                                                  const FilterFn& filter_fn)
+    -> std::vector<std::pair<Ret, std::meta::info>> {
   auto member_items = std::vector<std::pair<Ret, std::meta::info>>{};
   lookup_class_members_by_optional(member_items, T, ctx, get_direct_members_fn, filter_fn);
   return member_items;
 }
 
 template <class Ret, class FilterFn>
-consteval auto lookup_namespace_members_and_transform(
-    std::meta::info ns,
-    std::meta::access_context ctx,
-    const FilterFn& filter_fn) /*-> std::vector<std::pair<Ret, std::meta::info>*/
-{
+consteval auto lookup_namespace_members_and_transform(std::meta::info ns,
+                                                      std::meta::access_context ctx,
+                                                      const FilterFn& filter_fn)
+    -> std::vector<std::pair<Ret, std::meta::info>> {
   auto member_items = std::vector<std::pair<Ret, std::meta::info>>{};
   for (auto member : std::meta::members_of(ns, ctx)) {
     auto res = filter_fn(member);

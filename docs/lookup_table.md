@@ -161,7 +161,7 @@ Each overload of `make_*_member_lookup_table()` has 2 trailing arguments in comm
 Members are added to the lookup table only if all the following common constraints are satisfied:
 * Its category matches `options.category`, or `options.category == unspecified`;
 * It is accessible under given context;
-* It is addressable (see section "Testing Addressable Members" of [document of utils](./utils.md) for details).
+* It is addressable (see [utils: section "Testing Addressable Members"](./utils.md) for details).
 
 Each overload of `make_*_member_lookup_table()` has its own additional constraints.
 

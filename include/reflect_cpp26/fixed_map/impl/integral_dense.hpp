@@ -79,7 +79,7 @@ struct dense_integral_key_map {
   using span_element_type = [:dense_integral_key_map_span_element_type(
                                   ValidityStored, AlignmentAdjusted, ^^value_type):];
 
-  // Internal members (Note: keep them public for structured-ness).
+  // Internal members (Note: keep them public for structural-ness).
   meta_span<span_element_type> _entries;
   size_t _actual_size;
   key_type _min_key;

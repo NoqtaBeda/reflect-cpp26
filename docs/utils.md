@@ -47,13 +47,13 @@ struct to_*_case_t {
 //     '*' refers to one of the 9 cases in enum class identifier_naming_rule: to_snake_case_t, etc.
 struct to_*_case_opt_t {
   // (3.1), equivalent to below
+  static constexpr auto operator()(std::string_view identifier) -> std::optional<std::string>;
+  // (3.1)
   static constexpr auto operator()(non_alpha_as_lower_tag_t tag, std::string_view identifier)
       -> std::optional<std::string>;
-  // (3.1)
+  // (3.2)
   static constexpr auto operator()(non_alpha_as_upper_tag_t tag, std::string_view identifier)
       -> std::optional<std::string>;
-  // (3.2)
-  static constexpr auto operator()(std::string_view identifier) -> std::optional<std::string>;
 };
 
 inline constexpr auto to_*_case = to_*_case_t{};
@@ -127,3 +127,5 @@ consteval bool is_addressable_non_class_member(std::meta::info member);
 * Function which is:
   * not template;
   * not deleted.
+
+Detailed examples are shown in [unit test cases](../tests/utils/test_addressable_member.cpp).

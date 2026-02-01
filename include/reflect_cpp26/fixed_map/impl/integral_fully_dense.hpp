@@ -59,7 +59,7 @@ struct fully_dense_integral_key_map {
   using span_element_type =
       std::conditional_t<AlignmentAdjusted, alignment_adjusted_wrapper<value_type>, value_type>;
 
-  // Internal members (Note: keep them public for structured-ness).
+  // Internal members (Note: keep them public for structural-ness).
   meta_span<span_element_type> _entries;
   key_type _min_key;
   key_type _max_key;

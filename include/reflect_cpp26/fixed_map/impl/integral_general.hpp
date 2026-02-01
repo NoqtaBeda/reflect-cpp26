@@ -77,7 +77,7 @@ struct general_integral_key_map {
                                      RightSparseMap right_sparse)
       : _dense_part(dense), _left_sparse_part(left_sparse), _right_sparse_part(right_sparse) {}
 
-  // Internal members (Note: keep them public for structured-ness).
+  // Internal members (Note: keep them public for structural-ness).
   DenseMap _dense_part;
   LeftSparseMap _left_sparse_part;
   RightSparseMap _right_sparse_part;

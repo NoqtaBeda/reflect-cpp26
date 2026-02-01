@@ -28,25 +28,31 @@
 #ifdef ENABLE_FULL_HEADER_TEST
 #include <reflect_cpp26/type_traits.hpp>
 #else
-#include <reflect_cpp26/type_traits/class_types/has_ambiguous_inheritance.hpp>
+#include <reflect_cpp26/type_traits/class_types/ambiguous_inheritance.hpp>
 #endif
 
 namespace rfl = reflect_cpp26;
 
-// Non-class types: no ambiguous base class by nature
-static_assert(NOT rfl::has_ambiguous_inheritance_v<int>);
-static_assert(NOT rfl::has_ambiguous_inheritance_v<int[]>);
-static_assert(NOT rfl::has_ambiguous_inheritance_v<const char*>);
-static_assert(NOT rfl::has_ambiguous_inheritance_v<const std::errc>);
+// Non-class types
+static_assert(NOT rfl::class_without_ambiguous_inheritance<int>);
+static_assert(NOT rfl::class_without_ambiguous_inheritance<int[]>);
+static_assert(NOT rfl::class_without_ambiguous_inheritance<const char*>);
+static_assert(NOT rfl::class_without_ambiguous_inheritance<const std::errc>);
 
 struct foo_t {
   int a;
   int b;
 };
 
-// Class types without base classes: no ambiguity by nature as well
-static_assert(NOT rfl::has_ambiguous_inheritance_v<foo_t>);
-static_assert(NOT rfl::has_ambiguous_inheritance_v<const volatile foo_t>);
+// Class types without base classes: no ambiguity by nature
+static_assert(rfl::class_without_ambiguous_inheritance<foo_t>);
+static_assert(rfl::class_without_ambiguous_inheritance<const volatile foo_t>);
+// References: NOT class types
+static_assert(NOT rfl::class_without_ambiguous_inheritance<foo_t&>);
+static_assert(NOT rfl::class_without_ambiguous_inheritance<const volatile foo_t&&>);
+// Pointers: NOT class types
+static_assert(NOT rfl::class_without_ambiguous_inheritance<foo_t*>);
+static_assert(NOT rfl::class_without_ambiguous_inheritance<const volatile foo_t**>);
 
 struct bar_t : foo_t {
   int a;
@@ -59,21 +65,17 @@ struct baz_t : bar_t {
 };
 
 // Single inheritance only: no ambiguity since the inheritance graph is
-// definitely a tree. Name collision does not matter.
-static_assert(NOT rfl::has_ambiguous_inheritance_v<bar_t>);
-static_assert(NOT rfl::has_ambiguous_inheritance_v<const bar_t>);
-static_assert(NOT rfl::has_ambiguous_inheritance_v<baz_t>);
-static_assert(NOT rfl::has_ambiguous_inheritance_v<volatile baz_t>);
+// definitely a tree. Name collision of data members does not matter.
+static_assert(rfl::class_without_ambiguous_inheritance<bar_t>);
+static_assert(rfl::class_without_ambiguous_inheritance<const bar_t>);
+static_assert(rfl::class_without_ambiguous_inheritance<baz_t>);
+static_assert(rfl::class_without_ambiguous_inheritance<volatile baz_t>);
 
 struct qux_t : baz_t, private foo_t {};
 
 // foo_t is inherited twice
-static_assert(rfl::has_ambiguous_inheritance_v<qux_t>);
-static_assert(rfl::has_ambiguous_inheritance_v<const qux_t>);
-// Pointers and references are always evaluated as false since they are not
-// considered as class type.
-static_assert(NOT rfl::has_ambiguous_inheritance_v<const qux_t&>);
-static_assert(NOT rfl::has_ambiguous_inheritance_v<volatile qux_t*>);
+static_assert(NOT rfl::class_without_ambiguous_inheritance<qux_t>);
+static_assert(NOT rfl::class_without_ambiguous_inheritance<const qux_t>);
 
 struct A {
   int x;
@@ -87,9 +89,13 @@ struct C : A {
 struct D : B, C {};
 
 // Diamond inheritance: A is inherited twice indirectly.
-static_assert(rfl::has_ambiguous_inheritance_v<D>);
-static_assert(rfl::has_ambiguous_inheritance_v<const volatile D>);
+// warning: direct base 'foo_t' is inaccessible due to ambiguity:
+//   struct qux_t -> baz_t -> bar_t -> foo_t
+//   struct qux_t -> foo_t [-Winaccessible-base]
+static_assert(NOT rfl::class_without_ambiguous_inheritance<D>);
+static_assert(NOT rfl::class_without_ambiguous_inheritance<const volatile D>);
 
+namespace empty_ambiguous_base {
 struct E : std::monostate {
   int e;
 };
@@ -100,9 +106,24 @@ struct G : E, F, std::monostate {
   int g;
 };
 
-// Empty base class has no effect.
-static_assert(NOT rfl::has_ambiguous_inheritance_v<G>);
+// std::monostate is inherited multiple times by struct G.
+// Ambiguity happens even if std::monostate is an empty class.
+// warning: direct base 'std::monostate' is inaccessible due to ambiguity:
+//   struct G -> E -> std::monostate
+//   struct G -> F -> std::monostate
+//   struct G -> std::monostate [-Winaccessible-base]
+static_assert(NOT rfl::class_without_ambiguous_inheritance<G>);
+}  // namespace empty_ambiguous_base
 
+struct E {
+  int e;
+};
+struct F {
+  int f;
+};
+struct G : E, F {
+  int g;
+};
 struct H : public C, private G {
   int h;
 };
@@ -126,13 +147,19 @@ struct N : protected K, public M {
 };
 
 // More complex cases.
-static_assert(NOT rfl::has_ambiguous_inheritance_v<H>);
-static_assert(NOT rfl::has_ambiguous_inheritance_v<I>);
-static_assert(NOT rfl::has_ambiguous_inheritance_v<J>);
-static_assert(NOT rfl::has_ambiguous_inheritance_v<K>);
-static_assert(rfl::has_ambiguous_inheritance_v<L>);  // A inherited twice
-static_assert(NOT rfl::has_ambiguous_inheritance_v<M>);
-static_assert(rfl::has_ambiguous_inheritance_v<N>);  // F inherited twice
+static_assert(rfl::class_without_ambiguous_inheritance<H>);
+static_assert(rfl::class_without_ambiguous_inheritance<I>);
+static_assert(rfl::class_without_ambiguous_inheritance<J>);
+static_assert(rfl::class_without_ambiguous_inheritance<K>);
+static_assert(rfl::class_without_ambiguous_inheritance<M>);
+// error: ambiguous conversion from derived class 'L' to base class 'A':
+//   struct L -> K -> I -> H -> C -> A
+//   struct L -> J -> A
+static_assert(NOT rfl::class_without_ambiguous_inheritance<L>);
+// error: ambiguous conversion from derived class 'N' to base class 'F':
+//   struct N -> K -> I -> H -> G -> F
+//   struct N -> M -> F
+static_assert(NOT rfl::class_without_ambiguous_inheritance<N>);
 
 struct AA {
   int a;
@@ -154,10 +181,13 @@ struct FF : AA, BB, CC {
 };
 
 // With virtual inheritance
-static_assert(NOT rfl::has_ambiguous_inheritance_v<DD>);
-static_assert(NOT rfl::has_ambiguous_inheritance_v<EE>);
-static_assert(rfl::has_ambiguous_inheritance_v<FF>);
+static_assert(rfl::class_without_ambiguous_inheritance<DD>);
+static_assert(rfl::class_without_ambiguous_inheritance<EE>);
+// warning: direct base 'AA' is inaccessible due to ambiguity:
+//   struct FF -> AA
+//   struct FF -> BB -> AA [-Winaccessible-base]
+static_assert(NOT rfl::class_without_ambiguous_inheritance<FF>);
 
-TEST(TypeTraitsClassTypes, HasAmbiguousInheritance) {
+TEST(TypeTraitsClassTypes, ClassWithoutAmbiguousInheritance) {
   EXPECT_TRUE(true);  // All test cases done with static-asserts above
 }

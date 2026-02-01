@@ -20,8 +20,8 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_HAS_VIRTUAL_INHERITANCE_HPP
-#define REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_HAS_VIRTUAL_INHERITANCE_HPP
+#ifndef REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_VIRTUAL_INHERITANCE_HPP
+#define REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_VIRTUAL_INHERITANCE_HPP
 
 #include <algorithm>
 #include <reflect_cpp26/utils/concepts.hpp>
@@ -30,49 +30,25 @@
 
 namespace reflect_cpp26 {
 namespace impl {
-consteval bool has_virtual_inheritance(std::meta::info T);
+consteval bool is_class_without_virtual_inheritance(std::meta::info T);
 }  // namespace impl
 
-/**
- * Checks whether a non-union class T has virtual base classes recursively, i.e.
- * (1) T has no direct virtual base class;
- * (2) has_virtual_inheritance_v<B> == true for every direct base class B of T
- *     (regardless of access specifier).
- *
- * Always false for non-class types:
- * scalar types, references, arrays, unions, etc.
- */
 template <class T>
-constexpr auto has_virtual_inheritance_v = impl::has_virtual_inheritance(^^std::remove_cv_t<T>);
-
-/**
- * Whether T is a class type with virtual inheritance, recursively.
- * Details see above.
- */
-template <class T>
-concept class_with_virtual_inheritance = std::is_class_v<T> && has_virtual_inheritance_v<T>;
-
-/**
- * Whether T is a class type without virtual inheritance, recursively.
- * Details see above.
- */
-template <class T>
-concept class_without_virtual_inheritance = std::is_class_v<T> && !has_virtual_inheritance_v<T>;
+concept class_without_virtual_inheritance =
+    impl::is_class_without_virtual_inheritance(remove_cv(^^T));
 
 namespace impl {
-consteval bool has_virtual_inheritance(std::meta::info T) {
+consteval bool is_class_without_virtual_inheritance(std::meta::info T) {
   if (!is_class_type(T)) {
     return false;
   }
   auto check_fn = [](std::meta::info base) {
-    if (is_virtual(base)) {
-      return true;
-    }
-    return extract_bool(^^has_virtual_inheritance_v, type_of(base));
+    if (is_virtual(base)) return false;
+    return extract_bool(^^class_without_virtual_inheritance, type_of(base));
   };
-  return std::ranges::any_of(all_direct_bases_of(T), check_fn);
+  return std::ranges::all_of(all_direct_bases_of(T), check_fn);
 }
 }  // namespace impl
 }  // namespace reflect_cpp26
 
-#endif  // REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_HAS_VIRTUAL_INHERITANCE_HPP
+#endif  // REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_VIRTUAL_INHERITANCE_HPP

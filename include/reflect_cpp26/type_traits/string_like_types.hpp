@@ -52,14 +52,12 @@ consteval bool is_string_like_impl() {
   }
 }
 
+// Precondition: T is ensured to be string-like type by the checks above.
 consteval auto get_char_type(std::meta::info T) {
-  auto is_range = extract<bool>(substitute(^^std::ranges::contiguous_range,
-                                           {
-                                               T}));
+  auto params_il = {T};
+  auto is_range = extract<bool>(substitute(^^std::ranges::contiguous_range, params_il));
   if (is_range) {
-    return substitute(^^std::ranges::range_value_t,
-                      {
-                          T});
+    return substitute(^^std::ranges::range_value_t, params_il);
   }
   auto D = decay(T);
   if (!is_pointer_type(D)) {
@@ -69,51 +67,22 @@ consteval auto get_char_type(std::meta::info T) {
 }
 }  // namespace impl
 
-/**
- * Whether T (possibly with cv qualifiers) is a string-like type:
- * T can be converted to std::basic_string_view<CharT> where CharT is a
- * character type, including (but not limited to):
- * (1) C-style non-volatile character arrays: CharT[], const CharT[N], etc.
- * (2) C-style string pointer: CharT*, const CharT*
- * (3) std::basic_string
- * (4) std::basic_string_view or meta_basic_string_view
- * (5) Contiguous range of characters: std::vector<CharT>, std::array<CharT, N>
- */
 template <class T>
 concept string_like = impl::is_string_like_impl<T>();
 
-/**
- * Extracts the character type of a string-like type.
- */
 template <string_like T>
 using char_type_t = [:impl::get_char_type(^^T):];
 
-/**
- * Whether T (possibly with cv qualifiers) is a string-like type whose
- * value type is exactly CharT.
- */
 template <class T, class CharT>
 concept string_like_of =
     string_like<T> && char_type<CharT> && std::is_same_v<char_type_t<T>, CharT>;
 
-/**
- * Whether T and Args... (possibly with cv qualifiers) are
- * string-like types of exactly the same character type.
- */
-template <class T, class... Args>
-constexpr auto are_string_like_of_same_char_type_v = false;
-
-template <string_like T, string_like... Args>
-constexpr auto are_string_like_of_same_char_type_v<T, Args...> =
-    are_all_same_v<char_type_t<T>, char_type_t<Args>...>;
-
-/**
- * Whether T is a C-style string, i.e. CharT* or const CharT*.
- * Note that volatile CharT* is disallowed.
- */
 template <class T>
-concept c_style_string = std::is_pointer_v<T> && char_type<std::remove_pointer_t<T>>
-                      && !std::is_volatile_v<std::remove_pointer_t<T>>;
+concept c_style_string =
+    !std::is_reference_v<T>                                          // (1) Non-reference
+    && std::is_pointer_v<std::decay_t<T>>                            // (2) Decays to T*
+    && char_type<std::remove_pointer_t<std::decay_t<T>>>             // (3) T is character type
+    && !std::is_volatile_v<std::remove_pointer_t<std::decay_t<T>>>;  // (4) T is non-volatile
 }  // namespace reflect_cpp26
 
 #endif  // REFLECT_CPP26_TYPE_TRAITS_STRING_LIKE_TYPES_HPP

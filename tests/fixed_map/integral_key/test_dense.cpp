@@ -41,7 +41,7 @@ constexpr void test_signed_integral_key_common() {
     };
   };
   constexpr auto map = FIXED_MAP(make_kv_pairs(), Options);
-  // to_structured_result_t<const char*> is rfl::meta_string_view
+  // to_structural_result_t<const char*> is rfl::meta_string_view
   static_assert(std::is_same_v<typename decltype(map)::result_type, const rfl::meta_string_view&>);
 
   constexpr auto pointer_size = sizeof(void*);  // 4 or 8
@@ -131,7 +131,7 @@ constexpr auto make_kv_pairs_for_unsigned_integral_key_continuous() {
 
 template <class FixedMap>
 void test_unsigned_integral_key_continuous_common(const FixedMap& map) {
-  // to_structured_result_t<std::string> is rfl::meta_string_view
+  // to_structural_result_t<std::string> is rfl::meta_string_view
   static_assert(std::is_same_v<typename FixedMap::result_type, const rfl::meta_string_view&>);
   EXPECT_EQ(6, map.size());
   EXPECT_EQ(126, map.min_key());

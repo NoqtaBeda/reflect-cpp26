@@ -29,7 +29,7 @@
 
 namespace reflect_cpp26 {
 /**
- * Structured alternative to std::span<const T>.
+ * structural alternative to std::span<const T>.
  * Semantic constraints: meta_span<T> is used for contiguous ranges
  * with static constant storage only.
  */

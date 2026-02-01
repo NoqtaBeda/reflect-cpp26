@@ -114,40 +114,20 @@ consteval bool sizes_are_equal(std::initializer_list<size_t> sizes) {
 }
 }  // namespace impl
 
-/**
- * Whether T (possible cv-qualified) is a tuple-like type.
- * See: https://en.cppreference.com/w/cpp/utility/tuple/tuple-like
- */
 template <class T>
 concept tuple_like =
     impl::has_tuple_size<std::remove_cv_t<T>> && impl::has_tuple_get<std::remove_cv_t<T>>;
 
-/**
- * Whether std::remove_cv_t<T> is a pair-like type, i.e. tuple-like type
- * with size == 2.
- */
 template <class T>
 concept pair_like = tuple_like<T> && std::tuple_size_v<std::remove_cv_t<T>> == 2;
 
-/**
- * Whether std::remove_cv_t<T> is a tuple-like type whose element types
- * are exactly Args... respectively.
- */
 template <class T, class... Args>
 concept tuple_like_of_exactly =
     tuple_like<T> && impl::is_tuple_like_of_exactly<std::remove_cv_t<T>, Args...>;
 
-/**
- * Whether std::remove_cv_t<T> is a tuple-like type whose elements types
- * can be converted to Args... respectively.
- */
 template <class T, class... Args>
 concept tuple_like_of = tuple_like<T> && impl::is_tuple_like_of<std::remove_cv_t<T>, Args...>;
 
-/**
- * Whether std::remove_cv_t<Args>... are tuple-like types
- * with the same tuple size.
- */
 template <class... Args>
 constexpr auto are_tuple_like_of_same_size_v = false;
 
@@ -155,10 +135,6 @@ template <tuple_like T, tuple_like... Args>
 constexpr auto are_tuple_like_of_same_size_v<T, Args...> = impl::sizes_are_equal(
     {std::tuple_size_v<std::remove_cv_t<T>>, std::tuple_size_v<std::remove_cv_t<Args>>...});
 
-/**
- * Whether std::remove_cv_t<T> and std::remove_cv_t<Tuple> are tuple-like
- * types with the same tuple size.
- */
 template <class T, class Tuple>
 concept tuple_like_of_same_size_with = are_tuple_like_of_same_size_v<T, Tuple>;
 }  // namespace reflect_cpp26

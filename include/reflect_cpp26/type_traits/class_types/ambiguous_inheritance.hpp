@@ -20,8 +20,8 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_HAS_AMBIGUOUS_INHERITANCE_HPP
-#define REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_HAS_AMBIGUOUS_INHERITANCE_HPP
+#ifndef REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_AMBIGUOUS_INHERITANCE_HPP
+#define REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_AMBIGUOUS_INHERITANCE_HPP
 
 #include <reflect_cpp26/utils/meta_utility.hpp>
 #include <reflect_cpp26/utils/utility.hpp>
@@ -39,7 +39,7 @@ consteval auto has_ambiguous_base(std::meta::info T) {
     for (auto c : cur_candidate_bases) {
       auto is_unique = true;
       for (auto b : bases) {
-        if (is_empty_type(type_of(b)) || type_of(c) != type_of(b)) {
+        if (type_of(c) != type_of(b)) {
           continue;
         }
         if (!is_virtual(c) || !is_virtual(b)) {
@@ -57,23 +57,9 @@ consteval auto has_ambiguous_base(std::meta::info T) {
 }
 }  // namespace impl
 
-/**
- * Whether type T is a class type with ambiguous non-empty base, i.e. some
- * non-virtual and non-empty base class B is inherited more than once,
- * either directly or indirectly.
- * Note:
- * (1) Non-class types (including references) are evaluated to false by nature;
- * (2) Empty base classes (typically tag types in practice) are ignored as
- *     they make no effect on member layout.
- */
 template <class T>
-constexpr auto has_ambiguous_inheritance_v = impl::has_ambiguous_base(^^std::remove_cv_t<T>);
-
-/**
- * Whether T is a class type without ambiguous non-empty base class.
- */
-template <class T>
-concept class_without_ambiguous_inheritance = std::is_class_v<T> && !has_ambiguous_inheritance_v<T>;
+concept class_without_ambiguous_inheritance =
+    std::is_class_v<T> && !impl::has_ambiguous_base(^^std::remove_cv_t<T>);
 }  // namespace reflect_cpp26
 
-#endif  // REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_HAS_AMBIGUOUS_INHERITANCE_HPP
+#endif  // REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_AMBIGUOUS_INHERITANCE_HPP

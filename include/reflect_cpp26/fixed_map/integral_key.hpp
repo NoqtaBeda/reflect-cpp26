@@ -28,7 +28,7 @@
 #include <reflect_cpp26/fixed_map/impl/integral_fully_dense.hpp>
 #include <reflect_cpp26/fixed_map/impl/integral_general.hpp>
 #include <reflect_cpp26/fixed_map/impl/integral_sparse.hpp>
-#include <reflect_cpp26/type_operations/to_structured.hpp>
+#include <reflect_cpp26/type_operations/to_structural.hpp>
 
 namespace reflect_cpp26 {
 struct integral_key_fixed_map_options {
@@ -180,8 +180,8 @@ consteval auto make_integral_key_fixed_map_impl(std::vector<KVPair> kv_pairs,
  *
  * Input kv_pairs should be a kv-pair list whose key is either integral type
  * or enum type (scoped or unscoped), and whose value can be converted to
- * structured type during compile-time
- * (see reflect_cpp26/type_operations/to_structured.hpp for details).
+ * structural type during compile-time
+ * (see reflect_cpp26/type_operations/to_structural.hpp for details).
  *
  * The generated fixed map supports the following operations:
  *   size() -> size_t
@@ -201,18 +201,18 @@ consteval auto make_integral_key_fixed_map(KVPairRange kv_pairs,
   if constexpr (std::is_enum_v<Key>) {
     auto transform_fn = [](const auto& kv_pair) {
       const auto& [k, v] = kv_pair;
-      return std::pair{std::to_underlying(k), to_structured(v)};
+      return std::pair{std::to_underlying(k), to_structural(v)};
     };
-    auto structured_kv_pairs =
+    auto structural_kv_pairs =
         kv_pairs | std::views::transform(transform_fn) | std::ranges::to<std::vector>();
-    auto nested_res = impl::make_integral_key_fixed_map_impl(structured_kv_pairs, options);
+    auto nested_res = impl::make_integral_key_fixed_map_impl(structural_kv_pairs, options);
     auto params_il = {^^Key, nested_res};
     return extract<std::meta::info>(
         substitute(^^impl::integral_key_map_enum_wrapper_factory_v, params_il));
   } else {
-    auto structured_kv_pairs =
-        kv_pairs | std::views::transform(to_structured) | std::ranges::to<std::vector>();
-    return impl::make_integral_key_fixed_map_impl(structured_kv_pairs, options);
+    auto structural_kv_pairs =
+        kv_pairs | std::views::transform(to_structural) | std::ranges::to<std::vector>();
+    return impl::make_integral_key_fixed_map_impl(structural_kv_pairs, options);
   }
 }
 }  // namespace reflect_cpp26

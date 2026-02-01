@@ -155,8 +155,8 @@ consteval auto make_string_key_fixed_map_impl(std::vector<KVPair> kv_pairs,
  * extracted via [: V :] or reflect_cpp26::extract<V>().
  *
  * Input kv_pairs should be a kv-pair list whose key is any string-like type,
- * and whose value can be converted to structured type during compile-time
- * (see reflect_cpp26/type_operations/to_structured.hpp for details).
+ * and whose value can be converted to structural type during compile-time
+ * (see reflect_cpp26/type_operations/to_structural.hpp for details).
  *
  * The generated fixed map supports the following operations:
  *   size() -> size_t
@@ -174,7 +174,7 @@ consteval auto make_string_key_fixed_map(KVPairRange&& kv_pairs,
     auto converted = kv_pairs | std::views::transform([](const auto& kv_pair) {
                        const auto& [k, v] = kv_pair;
                        auto k_lower = reflect_cpp26::define_static_string(ascii_tolower(k));
-                       return std::pair{k_lower, to_structured(v)};
+                       return std::pair{k_lower, to_structural(v)};
                      })
                    | std::ranges::to<std::vector>();
     return impl::make_string_key_fixed_map_impl(converted, options);
@@ -182,7 +182,7 @@ consteval auto make_string_key_fixed_map(KVPairRange&& kv_pairs,
     auto converted = kv_pairs | std::views::transform([](const auto& kv_pair) {
                        const auto& [k, v] = kv_pair;
                        auto k_static = reflect_cpp26::define_static_string(k);
-                       return std::pair{k_static, to_structured(v)};
+                       return std::pair{k_static, to_structural(v)};
                      })
                    | std::ranges::to<std::vector>();
     return impl::make_string_key_fixed_map_impl(converted, options);

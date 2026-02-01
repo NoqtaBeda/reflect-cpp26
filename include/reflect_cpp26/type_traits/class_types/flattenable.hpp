@@ -23,9 +23,9 @@
 #ifndef REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_FLATTENABLE_HPP
 #define REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_FLATTENABLE_HPP
 
-#include <reflect_cpp26/type_traits/class_types/has_ambiguous_inheritance.hpp>
-#include <reflect_cpp26/type_traits/class_types/has_non_public_nsdm.hpp>
-#include <reflect_cpp26/type_traits/class_types/has_virtual_inheritance.hpp>
+#include <reflect_cpp26/type_traits/class_types/ambiguous_inheritance.hpp>
+#include <reflect_cpp26/type_traits/class_types/virtual_inheritance.hpp>
+#include <reflect_cpp26/type_traits/class_types/non_public_nsdm.hpp>
 #include <reflect_cpp26/utils/meta_utility.hpp>
 
 namespace reflect_cpp26 {
@@ -53,7 +53,7 @@ consteval bool is_flattenable_aggregate(std::meta::info T);
  */
 template <class T>
 concept partially_flattenable_class =
-    std::is_class_v<T> && !has_virtual_inheritance_v<T> && !has_ambiguous_inheritance_v<T>;
+    class_without_virtual_inheritance<T> && class_without_ambiguous_inheritance<T>;
 
 /**
  * Whether T is a partially flattenable type.
@@ -79,7 +79,7 @@ concept partially_flattenable =
  */
 template <class T>
 concept flattenable_class =
-    partially_flattenable_class<T> && !has_non_public_nonstatic_data_members_v<T>;
+    partially_flattenable_class<T> && class_without_non_public_nonstatic_data_members<T>;
 
 /**
  * Whether T is a flattenable type.

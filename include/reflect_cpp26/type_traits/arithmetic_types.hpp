@@ -44,6 +44,7 @@ struct is_char_type_impl<char16_t> : std::true_type {};
 template <>
 struct is_char_type_impl<char32_t> : std::true_type {};
 
+// TODO: __int128_t if target platform is supported
 consteval auto integral_to_integer_impl(std::meta::info T) -> std::meta::info {
   switch (size_of(T)) {
     case 1:
@@ -61,34 +62,15 @@ consteval auto integral_to_integer_impl(std::meta::info T) -> std::meta::info {
 }
 }  // namespace impl
 
-/**
- * Whether T is a (possibly cv-qualified) character type.
- * All candidates character types are listed above.
- *
- * Note: signed char and unsigned char match integer_type instead of char_type
- * since their semantics are designed to be a character's
- * integral representation rather than the character itself
- * according to C++ standard.
- */
 template <class T>
 concept char_type = impl::is_char_type_impl<std::remove_cv_t<T>>::value;
 
-/**
- * Whether T is a (possibly cv-qualified) integral type which is not bool.
- */
 template <class T>
 concept non_bool_integral = std::is_integral_v<T> && !std::is_same_v<std::remove_cv_t<T>, bool>;
 
-/**
- * Whether T is a (possibly cv-qualified) integer type.
- */
 template <class T>
 concept integer_type = non_bool_integral<T> && !char_type<T>;
 
-/**
- * Transforms an arbitrary integral type (including bool and characters)
- * to integer type with the same size and signedness
- */
 template <std::integral T>
 using integral_to_integer_t = [:impl::integral_to_integer_impl(^^T):];
 }  // namespace reflect_cpp26

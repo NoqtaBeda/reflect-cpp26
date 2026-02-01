@@ -34,7 +34,7 @@
 
 namespace reflect_cpp26 {
 /**
- * Structured alternative to std::basic_string_view<CharT>.
+ * structural alternative to std::basic_string_view<CharT>.
  * It's ensured that the referenced string is always null-terminated, i.e.
  * the constraint *tail == '\0' always holds as long as meta_string_view is
  * not default-constructed.

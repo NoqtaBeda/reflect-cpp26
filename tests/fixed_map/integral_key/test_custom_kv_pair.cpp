@@ -63,7 +63,7 @@ constexpr void test_custom_kv_pair_common() {
   static_assert(rfl::same_as_one_of<typename decltype(map)::kv_pair_type,
                                     std::pair<char, rfl::meta_string_view>,
                                     rfl::meta_tuple<char, rfl::meta_string_view>>);
-  // to_structured_result_t<std::string_view> -> rfl::meta_string_view
+  // to_structural_result_t<std::string_view> -> rfl::meta_string_view
   static_assert(std::is_same_v<typename decltype(map)::result_type, const rfl::meta_string_view&>);
 
   auto expected_regex = "general_integral_key_map"s + ".*"

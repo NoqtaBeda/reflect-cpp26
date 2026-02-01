@@ -49,10 +49,6 @@ consteval bool is_invocable_r_n_generic(std::meta::info Predicate,
 }
 }  // namespace impl
 
-/**
- * Stronger constraint than std::is_invocable_r_v with implicit conversion
- * of result type disallowed. Usable if ambiguity is a concern.
- */
 template <class R, class Func, class... Args>
 constexpr auto is_invocable_exactly_r_v = []() consteval {
   if constexpr (std::is_invocable_v<Func, Args...>) {
@@ -62,10 +58,6 @@ constexpr auto is_invocable_exactly_r_v = []() consteval {
   }
 }();
 
-/**
- * Stronger constraint than std::is_nothrow_invocable_r_v with
- * implicit conversion of result type banned. Usable if ambiguity is a concern.
- */
 template <class R, class Func, class... Args>
 constexpr auto is_nothrow_invocable_exactly_r_v = []() consteval {
   if constexpr (std::is_nothrow_invocable_v<Func, Args...>) {
@@ -75,50 +67,26 @@ constexpr auto is_nothrow_invocable_exactly_r_v = []() consteval {
   }
 }();
 
-/**
- * Equivalent to std::is_invocable_v<Func, Arg...>
- * where Arg is repeated N times.
- */
 template <class Func, class Arg, size_t N>
 constexpr auto is_invocable_n_v =
     impl::is_invocable_n_generic(^^std::is_invocable_v, ^^Func, ^^Arg, N);
 
-/**
- * Equivalent to std::is_nothrow_invocable_v<Func, Arg...>
- * where Arg is repeated N times.
- */
 template <class Func, class Arg, size_t N>
 constexpr auto is_nothrow_invocable_n_v =
     impl::is_invocable_n_generic(^^std::is_nothrow_invocable_v, ^^Func, ^^Arg, N);
 
-/**
- * Equivalent to std::is_invocable_r_v<R, Func, Arg...>
- * where Arg is repeated N times.
- */
 template <class R, class Func, class Arg, size_t N>
 constexpr auto is_invocable_r_n_v =
     impl::is_invocable_r_n_generic(^^std::is_invocable_r_v, ^^R, ^^Func, ^^Arg, N);
 
-/**
- * Equivalent to is_invocable_exactly_r_v<R, Func, Args...>
- * where Arg is repeated N times.
- */
 template <class R, class Func, class Arg, size_t N>
 constexpr auto is_invocable_exactly_r_n_v =
     impl::is_invocable_r_n_generic(^^is_invocable_exactly_r_v, ^^R, ^^Func, ^^Arg, N);
 
-/**
- * Equivalent to std::is_nothrow_invocable_r_v<R, Func, Arg...>
- * where Arg is repeated N times.
- */
 template <class R, class Func, class Arg, size_t N>
 constexpr auto is_nothrow_invocable_r_n_v =
     impl::is_invocable_r_n_generic(^^std::is_nothrow_invocable_r_v, ^^R, ^^Func, ^^Arg, N);
 
-/**
- * Equivalent to is_nothrow_invocable_exactly_r_v<R, Func, Args...>
- * where Arg is repeated N times.
- */
 template <class R, class Func, class Arg, size_t N>
 constexpr auto is_nothrow_invocable_exactly_r_n_v =
     impl::is_invocable_r_n_generic(^^is_nothrow_invocable_exactly_r_v, ^^R, ^^Func, ^^Arg, N);

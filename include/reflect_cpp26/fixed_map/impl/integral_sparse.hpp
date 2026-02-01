@@ -56,7 +56,7 @@ struct linear_search_integral_key_map {
 
   REFLECT_CPP26_INTEGRAL_KEY_MAP_COMMON_INTERFACE
 
-  // Internal members (Note: keep them public for structured-ness).
+  // Internal members (Note: keep them public for structural-ness).
   meta_span<KVPair> _entries;
 };
 
@@ -96,7 +96,7 @@ struct binary_search_integral_key_map {
   using span_element_type =
       std::conditional_t<AlignmentAdjusted, alignment_adjusted_wrapper<KVPair>, KVPair>;
 
-  // Internal members (Note: keep them public for structured-ness).
+  // Internal members (Note: keep them public for structural-ness).
   meta_span<span_element_type> _entries;
 };
 

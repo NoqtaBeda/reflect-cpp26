@@ -87,13 +87,12 @@ meta_test_cases = {
   "type_traits/test_cvref",
   "type_traits/test_is_invocable",
   "type_traits/test_string_like_types",
-  "type_traits/test_tuple_like_types_1",
-  "type_traits/test_tuple_like_types_2",
+  "type_traits/test_structural_types",
+  "type_traits/test_tuple_like_types",
   "type_traits/class_types/test_ambiguous_inheritance",
   "type_traits/class_types/test_flattenable_types",
   "type_traits/class_types/test_flattened_nsdm",
   "type_traits/class_types/test_member_access",
-  "type_traits/class_types/test_structured_types",
   -- Enum
   "enum/impl/test_enum_flags_category",
   "enum/test_enum_bitwise_operators",
@@ -181,7 +180,7 @@ meta_test_cases = {
   "type_operations/test_member_access",
   "type_operations/test_member_name_access",
   "type_operations/test_to_string",
-  "type_operations/test_to_structured",
+  "type_operations/test_to_structural",
 }
 
 for i, path in ipairs(meta_test_cases) do

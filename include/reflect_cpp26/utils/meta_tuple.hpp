@@ -40,7 +40,7 @@ struct meta_tuple {
                          data_member_spec(^^Args)...});
   }
   // values are exposed as public data member to make meta_tuple
-  // structured aggregate.
+  // structural aggregate.
   underlying_type values;
 
 private:

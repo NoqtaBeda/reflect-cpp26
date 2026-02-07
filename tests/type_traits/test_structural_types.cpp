@@ -45,6 +45,7 @@ static_assert(NOT rfl::structural_type<const void>);
 static_assert(rfl::structural_type<int>);
 static_assert(rfl::structural_type<const char16_t>);
 static_assert(rfl::structural_type<volatile long long>);
+
 // floating-point type (since C++20)
 static_assert(rfl::structural_type<double>);
 static_assert(rfl::structural_type<const volatile long double>);
@@ -54,7 +55,8 @@ using std_array_int_4 = std::array<int, 4>;
 using std_vector_int = std::vector<int>;
 constexpr auto printf_constant = rfl::constant_v<std::printf>;
 constexpr auto printf_fptr = std::printf;
-// Note: decltype(printf) -> int (const char *, ...)
+
+// Note: decltype(printf) -> int (const char*, ...)
 static_assert(NOT rfl::structural_type<decltype(printf)>);
 
 static_assert(rfl::structural_type<void*>);
@@ -116,10 +118,16 @@ static_assert(rfl::structural_type<volatile std_array_int_4>);
 static_assert(NOT rfl::structural_type<std_vector_int>);
 
 using meta_tuple_cilfd = rfl::meta_tuple<char, int, long, float, double>;
+// meta_string_view is a structural replacement to std::string_view
+// as its internal data members are public.
 static_assert(rfl::structural_type<rfl::meta_string_view>);
 static_assert(NOT rfl::structural_type<std::string_view>);
+// meta_span is a structural replacement to std::span
+// as its internal data members are public.
 static_assert(rfl::structural_type<rfl::meta_span<int>>);
 static_assert(NOT rfl::structural_type<std::span<const int>>);
+// meta_tuple is a structural replacement to std::tuple
+// as its internal data members are public.
 static_assert(rfl::structural_type<meta_tuple_cilfd>);
 
 struct bar_with_const_t {
@@ -151,8 +159,6 @@ union baz_union_1_t {
   bar_with_volatile_t as_bar;  // not literal type due to its volatile members
   foo_t as_foo;                //  is literal type
 };
-constexpr auto baz_union_1_constant_1 = rfl::constant_v<baz_union_1_t{}>;
-constexpr auto baz_union_1_constant_2 = rfl::constant_v<baz_union_1_t{.as_foo = {}}>;
 
 // Not structural since no literal type member.
 union baz_union_2_t {
@@ -169,9 +175,10 @@ struct baz_struct_2_t {
   size_t index;
 };
 
-// union types
+// union types: is structural as long as at least 1 member of literal type exists.
 static_assert(rfl::structural_type<baz_union_1_t>);
 static_assert(NOT rfl::structural_type<baz_union_2_t>);
+// class types: is structural only if all its members are of literal types.
 static_assert(rfl::structural_type<baz_struct_1_t>);
 static_assert(NOT rfl::structural_type<baz_struct_2_t>);
 
@@ -222,10 +229,7 @@ struct struct_not_trivially_destructible_t {
   }
 };
 static_assert(NOT std::is_trivially_destructible_v<struct_not_trivially_destructible_t>,
-              "Incorrect test case.");
-constexpr auto some_global_int = 42;
-constexpr auto struct_not_trivially_destructible_constant =
-    rfl::constant_v<struct_not_trivially_destructible_t{10, 20, some_global_int}>;
+              "This class is not trivially destructible.");
 
 union union_not_destructible_1_t {
   struct_not_destructible_t as_struct;
@@ -237,11 +241,13 @@ union union_not_destructible_2_t {
   int as_int;
 };
 
-// class types: not (trivially) destructible
+// class or union types: not destructible
 static_assert(NOT rfl::structural_type<struct_not_destructible_t>);
-static_assert(rfl::structural_type<struct_not_trivially_destructible_t>);
 static_assert(NOT rfl::structural_type<union_not_destructible_1_t>);
 static_assert(NOT rfl::structural_type<union_not_destructible_2_t>);
+
+// class types: not trivially destructible
+static_assert(rfl::structural_type<struct_not_trivially_destructible_t>);
 
 struct derived_structural_1_t : struct_not_trivially_destructible_t {
   int rating;
@@ -266,7 +272,9 @@ struct derived_not_structural_2_t : derived_not_structural_1_t, foo_t {
 // class types: with inheritance
 static_assert(rfl::structural_type<derived_structural_1_t>);
 static_assert(rfl::structural_type<derived_structural_2_t>);
+// Not structural due to non-public members
 static_assert(NOT rfl::structural_type<derived_not_structural_1_t>);
+// Not structural due to base class being not structural
 static_assert(NOT rfl::structural_type<derived_not_structural_2_t>);
 
 struct foo_A_t : virtual foo_t {
@@ -299,12 +307,10 @@ struct default_ctor_not_constexpr_t {
     }
   }
 };
-constexpr auto default_ctor_not_constexpr_constant_2 =
-    rfl::constant_v<default_ctor_not_constexpr_t{42}>;
 
 // class types: default constructor is not constexpr-constructible
 static_assert(rfl::structural_type<default_ctor_not_constexpr_t>);
 
-TEST(TypeTraitsClassTypes, IsstructuralType) {
+TEST(TypeTraits, IsstructuralType) {
   EXPECT_TRUE(true);  // All test cases done with static assertions above
 }

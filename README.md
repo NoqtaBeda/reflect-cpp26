@@ -20,6 +20,9 @@ xmake build --group=tests/**
 LD_LIBRARY_PATH=<path-to-libc++> xmake run --group=tests/**
 ```
 
+# Possibly Redundant Components
+* `structural_type` can be replaced by [`std::is_structural_type_v` proposed by P3856](https://www.open-std.org/JTC1/SC22/WG21/docs/papers/2025/p3856r3.pdf) once it is adopted by C++ standard.
+
 # TODO
 * Type traits
   * Recursively flattenable

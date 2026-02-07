@@ -43,22 +43,6 @@ constexpr auto make_index_sequence(size_t n) -> std::vector<size_t> {
   return res;
 }
 
-template <rfl::access_mode Mode, class T>
-constexpr auto extract_indices() -> std::vector<size_t> {
-  constexpr auto indices =
-      std::define_static_array(rfl::flattened_nonstatic_data_members_v<Mode, T>
-                               | std::views::transform(&rfl::flattened_data_member_info::index));
-  return std::vector{std::from_range, indices};
-}
-
-template <rfl::access_mode Mode, class T>
-constexpr auto extract_public_indices() -> std::vector<size_t> {
-  constexpr auto indices = std::define_static_array(
-      rfl::flattened_nonstatic_data_members_v<Mode, T>
-      | std::views::transform(&rfl::flattened_data_member_info::public_index));
-  return std::vector{std::from_range, indices};
-}
-
 template <class T>
 void force_write_by_offset(void* base, uintptr_t offset, T value) {
   auto dest = reinterpret_cast<T*>(reinterpret_cast<uintptr_t>(base) + offset);
@@ -150,11 +134,6 @@ TEST(TypeTraitsClassTypes, PublicNSDMListFoo) {
   static_assert(foo_members[0].actual_offset_bytes() == 0z);
   static_assert(foo_members[1].actual_offset_bytes() == 4z);
 
-  EXPECT_EQ_STATIC(std::vector({0zU, 1zU}),
-                   extract_indices<rfl::access_mode::unprivileged, foo_t>());
-  EXPECT_EQ_STATIC(make_index_sequence(2),
-                   extract_public_indices<rfl::access_mode::unprivileged, foo_t>());
-
   auto foo = foo_t{};
   foo.[:foo_members[0].member:] = 21;
   foo.[:foo_members[1].member:] = 42;
@@ -167,10 +146,6 @@ TEST(TypeTraitsClassTypes, AllNSDMListFoo) {
   static_assert(foo_members[0].actual_offset_bytes() == 0z);
   static_assert(foo_members[1].actual_offset_bytes() == 4z);
   static_assert(foo_members[2].actual_offset_bytes() == 8z);
-
-  EXPECT_EQ_STATIC(make_index_sequence(3), extract_indices<rfl::access_mode::unchecked, foo_t>());
-  EXPECT_EQ_STATIC(std::vector({0zU, 1zU, rfl::npos}),
-                   extract_public_indices<rfl::access_mode::unchecked, foo_t>());
 
   auto foo = foo_t{};
   foo.[:foo_members[0].member:] = 2;
@@ -204,11 +179,6 @@ TEST(TypeTraitsClassTypes, PublicNSDMListBar1) {
   static_assert(bar_1_members[2].actual_offset_bytes() == 16z);
   static_assert(bar_1_members[3].actual_offset_bytes() == 20z);
 
-  EXPECT_EQ_STATIC(std::vector({0zU, 1zU, 3zU, 4zU}),
-                   extract_indices<rfl::access_mode::unprivileged, bar_1_t>());
-  EXPECT_EQ_STATIC(make_index_sequence(4),
-                   extract_public_indices<rfl::access_mode::unprivileged, bar_1_t>());
-
   auto bar_1 = bar_1_t{};
   // Inherited from foo_t
   bar_1.[:bar_1_members[0].member:] = 63;
@@ -228,10 +198,6 @@ TEST(TypeTraitsClassTypes, AllNSDMListBar1) {
   static_assert(bar_1_members[3].actual_offset_bytes() == 16z);
   static_assert(bar_1_members[4].actual_offset_bytes() == 20z);
   static_assert(bar_1_members[5].actual_offset_bytes() == 24z);
-
-  EXPECT_EQ_STATIC(make_index_sequence(6), extract_indices<rfl::access_mode::unchecked, bar_1_t>());
-  EXPECT_EQ_STATIC(std::vector({0zU, 1zU, rfl::npos, 2zU, 3zU, rfl::npos}),
-                   extract_public_indices<rfl::access_mode::unchecked, bar_1_t>());
 
   auto bar_1 = bar_1_t{};
   // Inherited from foo_t
@@ -266,11 +232,6 @@ TEST(TypeTraitsClassTypes, PublicNSDMListBar2) {
   constexpr auto bar_2_members = rfl::public_flattened_nonstatic_data_members_v<bar_2_t>;
   static_assert(bar_2_members.size() == 3);
 
-  EXPECT_EQ_STATIC(std::vector({0zU, 1zU, 8zU}),
-                   extract_indices<rfl::access_mode::unprivileged, bar_2_t>());
-  EXPECT_EQ_STATIC(make_index_sequence(3),
-                   extract_public_indices<rfl::access_mode::unprivileged, bar_2_t>());
-
   auto bar_2 = bar_2_t{};
   bar_2.[:bar_2_members[0].member:] = 100;
   bar_2.[:bar_2_members[1].member:] = 200;
@@ -290,22 +251,6 @@ TEST(TypeTraitsClassTypes, PublicNSDMListBar2) {
 TEST(TypeTraitsClassTypes, AllNSDMListBar2) {
   constexpr auto bar_2_members = rfl::all_flattened_nonstatic_data_members_v<bar_2_t>;
   static_assert(bar_2_members.size() == 10);
-
-  EXPECT_EQ_STATIC(make_index_sequence(10),
-                   extract_indices<rfl::access_mode::unchecked, bar_2_t>());
-  EXPECT_EQ_STATIC(std::vector({
-                       0zU,
-                       1zU,  // Inherited from std::pair
-                       rfl::npos,
-                       rfl::npos,
-                       rfl::npos,  // Inherited from bar_1_t -> foo_t
-                       rfl::npos,
-                       rfl::npos,
-                       rfl::npos,  // Inherited from bar_1_t
-                       2zU,
-                       rfl::npos,  // Direct members in bar_2_t
-                   }),
-                   extract_public_indices<rfl::access_mode::unchecked, bar_2_t>());
 
   auto bar_2 = bar_2_t{};
   // Inherited from std::pair<int32_t, int32_t>
@@ -376,11 +321,6 @@ TEST(TypeTraitsClassTypes, PublicNSDMListBar3) {
   constexpr auto bar_3_members = rfl::public_flattened_nonstatic_data_members_v<bar_3_t>;
   static_assert(bar_3_members.size() == 3);
 
-  EXPECT_EQ_STATIC(std::vector({1zU, 2zU, 4zU}),
-                   extract_indices<rfl::access_mode::unprivileged, bar_3_t>());
-  EXPECT_EQ_STATIC(make_index_sequence(3),
-                   extract_public_indices<rfl::access_mode::unprivileged, bar_3_t>());
-
   auto bar_3 = bar_3_t{};
   bar_3.[:bar_3_members[0].member:] = 1000;
   bar_3.[:bar_3_members[1].member:] = 2000;
@@ -404,17 +344,6 @@ TEST(TypeTraitsClassTypes, PublicNSDMListBar3) {
 TEST(TypeTraitsClassTypes, AllNSDMListBar3) {
   constexpr auto bar_3_members = rfl::all_flattened_nonstatic_data_members_v<bar_3_t>;
   static_assert(bar_3_members.size() == 6);
-
-  EXPECT_EQ_STATIC(make_index_sequence(6), extract_indices<rfl::access_mode::unchecked, bar_3_t>());
-  EXPECT_EQ_STATIC(std::vector({
-                       rfl::npos,  // Inherited from std::array
-                       0zU,
-                       1zU,  // Inherited from std::pair
-                       rfl::npos,
-                       2zU,
-                       rfl::npos,  // Inherited from bar_3_t
-                   }),
-                   extract_public_indices<rfl::access_mode::unchecked, bar_3_t>());
 
   auto bar_3 = bar_3_t{};
   // Derived from std::array<int16_t, 6>
@@ -470,21 +399,6 @@ TEST(TypeTraitsClassTypes, PublicNSDMListBaz1) {
   constexpr auto baz_1_members = rfl::public_flattened_nonstatic_data_members_v<baz_1_t>;
   static_assert(baz_1_members.size() == 9);
 
-  EXPECT_EQ_STATIC(std::vector({
-                       0zU,
-                       1zU,  // Inherited from foo_t -> bar_1_t
-                       3zU,
-                       4zU,  // Inherited from bar_1_t
-                       7zU,
-                       8zU,   // Inherited from std::pair -> bar_3_t
-                       10zU,  // Inherited from bar_3_t
-                       13zU,
-                       14zU,  // Direct members of baz_1_t
-                   }),
-                   extract_indices<rfl::access_mode::unprivileged, baz_1_t>());
-  EXPECT_EQ_STATIC(make_index_sequence(9),
-                   extract_public_indices<rfl::access_mode::unprivileged, baz_1_t>());
-
   auto baz_1 = baz_1_t{};
   // inherited from bar_1
   baz_1.[:baz_1_members[0].member:] = 123;
@@ -529,27 +443,6 @@ TEST(TypeTraitsClassTypes, PublicNSDMListBaz1) {
 TEST(TypeTraitsClassTypes, AllNSDMListBaz1) {
   constexpr auto baz_1_members = rfl::all_flattened_nonstatic_data_members_v<baz_1_t>;
   static_assert(baz_1_members.size() == 15);
-
-  EXPECT_EQ_STATIC(make_index_sequence(15),
-                   extract_indices<rfl::access_mode::unchecked, baz_1_t>());
-  EXPECT_EQ_STATIC(std::vector({
-                       0zU,
-                       1zU,
-                       rfl::npos,  // Inherited from foo_t -> bar_1_t
-                       2zU,
-                       3zU,
-                       rfl::npos,  // Inherited from bar_1_t
-                       rfl::npos,  // Inherited from std::array -> bar_3_t
-                       4zU,
-                       5zU,  // Inherited from std::pair -> bar_3_t
-                       rfl::npos,
-                       6zU,
-                       rfl::npos,  // Inherited from bar_3_t
-                       rfl::npos,
-                       7zU,
-                       8zU,  // Direct members of baz_1_t
-                   }),
-                   extract_public_indices<rfl::access_mode::unchecked, baz_1_t>());
 }
 
 class baz_2_t : protected bar_1_t, private bar_3_t {
@@ -564,37 +457,11 @@ public:
 TEST(TypeTraitsClassTypes, PublicNSDMListBaz2) {
   constexpr auto baz_2_members = rfl::public_flattened_nonstatic_data_members_v<baz_2_t>;
   static_assert(baz_2_members.size() == 2);
-
-  EXPECT_EQ_STATIC(std::vector({13zU, 14zU}),  // Direct members of baz_2_t
-                   extract_indices<rfl::access_mode::unprivileged, baz_2_t>());
-  EXPECT_EQ_STATIC(make_index_sequence(2),
-                   extract_public_indices<rfl::access_mode::unprivileged, baz_2_t>());
 }
 
 TEST(TypeTraitsClassTypes, AllNSDMListBaz2) {
   constexpr auto baz_2_members = rfl::all_flattened_nonstatic_data_members_v<baz_2_t>;
   static_assert(baz_2_members.size() == 15);
-
-  EXPECT_EQ_STATIC(make_index_sequence(15),
-                   extract_indices<rfl::access_mode::unchecked, baz_2_t>());
-  EXPECT_EQ_STATIC(std::vector({
-                       rfl::npos,
-                       rfl::npos,
-                       rfl::npos,  // Inherited from foo_t -> bar_1_t
-                       rfl::npos,
-                       rfl::npos,
-                       rfl::npos,  // Inherited from bar_1_t
-                       rfl::npos,  // Inherited from std::array -> bar_3_t
-                       rfl::npos,
-                       rfl::npos,  // Inherited from std::pair -> bar_3_t
-                       rfl::npos,
-                       rfl::npos,
-                       rfl::npos,  // Inherited from bar_3_t
-                       rfl::npos,
-                       0zU,
-                       1zU,  // Direct members of baz_2_t
-                   }),
-                   extract_public_indices<rfl::access_mode::unchecked, baz_2_t>());
 }
 
 struct references_t {
@@ -613,11 +480,6 @@ TEST(TypeTraitsClassTypes, NSDMListReferences) {
   static_assert(ref_members[1].actual_offset_bytes() == 1 * sizeof(void*));
   static_assert(ref_members[2].actual_offset_bytes() == 2 * sizeof(void*));
   static_assert(ref_members[3].actual_offset_bytes() == 3 * sizeof(void*));
-
-  EXPECT_EQ_STATIC(make_index_sequence(4),
-                   extract_indices<rfl::access_mode::unprivileged, references_t>());
-  EXPECT_EQ_STATIC(make_index_sequence(4),
-                   extract_public_indices<rfl::access_mode::unprivileged, references_t>());
 
   auto [i, ll, f, d] = std::tuple{1, 2LL, 3.5f, 4.75};
   auto foo = references_t{i, ll, f, d};
@@ -672,11 +534,6 @@ struct bit_fields_B_t : bit_fields_A_t {
 TEST(TypeTraitsClassTypes, NSDMListBitFields) {
   constexpr auto members = rfl::public_flattened_nonstatic_data_members_v<bit_fields_B_t>;
   static_assert(members.size() == 8);
-
-  EXPECT_EQ_STATIC(make_index_sequence(8),
-                   extract_indices<rfl::access_mode::unprivileged, bit_fields_B_t>());
-  EXPECT_EQ_STATIC(make_index_sequence(8),
-                   extract_public_indices<rfl::access_mode::unprivileged, bit_fields_B_t>());
 
   auto bf = bit_fields_B_t{};
   bf.[:members[0].member:] = true;
@@ -767,10 +624,6 @@ struct D : B, C {
 TEST(TypeTraitsClassTypes, NSDMListPolymorphic) {
   constexpr auto members = rfl::public_flattened_nonstatic_data_members_v<D>;
   static_assert(members.size() == 11);
-
-  EXPECT_EQ_STATIC(make_index_sequence(11), extract_indices<rfl::access_mode::unprivileged, D>());
-  EXPECT_EQ_STATIC(make_index_sequence(11),
-                   extract_public_indices<rfl::access_mode::unprivileged, D>());
 
   constexpr auto obj1 = D{10};
   EXPECT_EQ_STATIC(10, obj1.[:members[0].member:]);

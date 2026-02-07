@@ -2,7 +2,226 @@
 
 reflect_cpp26 provides functionality for advanced type traits useful in common cases, some of which are unable to be implemented without compiler magic in pre-C++26 era.
 
-## Components
+## Core Components
+
+### Structural Type
+
+Defined in header `<reflect_cpp26/type_traits/structural_types.hpp>`.
+
+```cpp
+template <class T>
+concept structural_type = /* ... */;
+```
+
+The concept `structural_type` tests whether `std::remove_cv_t<T>` is a [structural](https://en.cppreference.com/w/cpp/language/template_parameters) type, i.e. a type whose value can be used as a non-type template parameter. A structural type is one of the following types (optionally cv-qualified, qualifiers are ignored):
+* Lvalue reference type (to object or to function);
+* An integral type;
+* A pointer type (to object or to function);
+* A pointer to member type (to member object or to member function);
+* An enumeration type;
+* `std::nullptr_t`;
+* A floating-point type (since C++20);
+* A lambda closure type whose lambda expression has no capture (since C++20);
+* A non-closure literal class type with the following properties (since C++20):
+  * All base classes and non-static data members are public and non-mutable;
+  * Types of all base classes and non-static data members are structural types or (possibly multi-dimensional) array thereof.
+
+See [unit test](../tests/type_traits/test_structural_types.cpp) for examples and details.
+
+### Flattenable Type
+
+Defined in header `<reflect_cpp26/type_traits/class_types/flattenable.hpp>`.
+
+```cpp
+template <class T>
+concept partially_flattenable_class = /* ... */;
+
+template <class T>
+concept partially_flattenable = /* ... */;
+
+template <class T>
+concept flattenable_class = /* ... */;
+
+template <class T>
+concept flattenable = /* ... */;
+
+template <class T>
+concept flattenable_aggregate_class = /* ... */;
+
+template <class T>
+concept flattenable_aggregate = /* ... */;
+```
+
+This group of concepts tests whether a type can be "flattened", i.e. whether we can construct an aggregate type which contains all the non-static data members (or public ones only) without ambiguity or semantic loss. Flattening can be helpful during serialization or deserialization of C++ types.
+
+The concept `partially_flattenable_class` tests whether `std::remove_cv_t<T>` is a non-union class type that is partially flattenable. A class type is partially flattenable if it satisfies all the following:
+* No virtual base classes;
+* No ambiguous base classes;
+* Every direct base class is also partially flattenable, recursively.
+
+The concept `partially_flattenable` tests whether `std::remove_cv_t<T>` is a partially flattenable type. A type is partially flattenable if it can be classified as one of the following:
+* **Scalar types**: arithmetic types, enum types, pointers (including `std::nullptr_t` and function pointers), pointers to members, etc.;
+* **C-style array types**: including both bounded `U[N]` and unbounded `U[]`;
+* **Partially flattenable class types**: as described above.
+
+The concept `flattenable_class` tests whether `std::remove_cv_t<T>` is a non-union class type that is flattenable. A class type is flattenable if it is a partially flattenable class type that additionally satisfies the following conditions:
+* No private or protected non-static data members;
+* No private or protected direct base classes that are not empty;
+* Every direct base class is also flattenable, recursively.
+
+The concept `flattenable` tests whether `std::remove_cv_t<T>` is a flattenable type. A type is flattenable if it satisfies one of the following:
+* **Scalar types**: same as `partially_flattenable`;
+* **Array types**: same as `partially_flattenable`;
+* **Flattenable class types**: as described above.
+
+The concept `flattenable_aggregate_class` tests whether `std::remove_cv_t<T>` is a non-union class type that is a flattenable aggregate. A class type is a flattenable aggregate if it is a flattenable class type that additionally satisfies the following constraints:
+* The class is an aggregate;
+* Every direct base class is also a flattenable aggregate, recursively.
+
+The concept `flattenable_aggregate` tests whether `std::remove_cv_t<T>` is a flattenable aggregate type. A type is a flattenable aggregate if it satisfies one of the following:
+* **Array types**: both bounded `U[N]` and unbounded `U[]`;
+* **Flattenable aggregate class types**: as described above.
+
+Note that references, unions, and classes with virtual inheritance are never flattenable. Additionally, classes with private or protected members (non-static data members or non-empty base classes) are not `flattenable`, though they may be `partially_flattenable`.
+
+Example:
+
+```cpp
+namespace refl = reflect_cpp26;
+
+struct foo_t {
+  std::string first_name;
+  std::string last_name;
+};
+struct bar_t : foo_t {
+  int age;
+};
+
+// 1. Flattenable aggregate
+static_assert(refl::flattenable_aggregate_class<bar_t>);
+
+struct baz_t : foo_t {
+  virtual void introduce_myself() {
+    std::println("Hello. I am {} {}.", this->first_name, this->last_name);
+  }
+};
+
+// 2. Flattenable
+static_assert(refl::flattenable_class<baz_t>);
+// Not aggregate (due to existence of implicit v-table pointer)
+static_assert(! refl::flattenable_aggregate_class<baz_t>);
+
+class qux_t : foo_t {
+private:
+  uint64_t last_visit_timestamp_;
+};
+
+// 3. Partially flattenable (we can still try to flatten its public members)
+static_assert(refl::partially_flattenable_class<qux_t>);
+// Not flattenable (due to existance of private non-static data members)
+static_assert(! refl::flattenable_class<qux_t>);
+// Not flattenable aggregate (stronger constraints than flattenable concept)
+static_assert(! refl::flattenable_aggregate_class<qux_t>);
+
+// Hint: partially_flattenable has loose constraints that most class types in practice can satisfy.
+// A class type can be partially flattenable even if there's nothing public to be flattened.
+static_assert(refl::partially_flattenable_class<std::string>);
+static_assert(refl::partially_flattenable_class<std::vector<std::string>>);
+```
+
+See [unit test](../tests/type_traits/class_types/test_flattenable_types.cpp) for more examples and details.
+
+### Details of Flattened Class Types
+
+Defined in header `<reflect_cpp26/type_traits/class_types/flattened_nsdm.hpp>`.
+
+```cpp
+struct flattened_data_member_info {
+  std::meta::info member;
+  std::meta::member_offset actual_offset;
+
+  consteval auto type() const -> std::meta::info;
+  consteval auto direct_parent() const -> std::meta::info;
+  consteval auto offset_in_parent() const -> std::meta::member_offset;
+  consteval auto offset_bits_in_parent() const -> size_t;
+  consteval auto offset_bytes_in_parent() const -> size_t;
+  consteval auto actual_offset_bits() const -> size_t;
+  consteval auto actual_offset_bytes() const -> size_t;
+};
+
+template <partially_flattenable_class T>
+constexpr std::array<flattened_data_member_info, /*N*/> all_flattened_nonstatic_data_members_v;
+
+template <partially_flattenable_class T>
+constexpr std::array<flattened_data_member_info, /*N*/> public_flattened_nonstatic_data_members_v;
+```
+
+The struct `flattened_data_member_info` holds information about a non-static data member of class type `T`, which may be inherited from base classes of `T`. It contains the following members:
+* `member` - Reflection to a non-static data member of `T`, either defined by `T` directly or inherited from some base class;
+* `actual_offset` - Offset of the member relative to `T`;
+* `type()` - Returns the reflection to the member's type;
+* `direct_parent()` - Returns the reflection to the class that the member is directly defined in;
+* `offset_in_parent()` - Returns the offset of the member in its direct parent class;
+* `offset_bits_in_parent()` - Returns the offset in bits of the member in its direct parent class;
+* `offset_bytes_in_parent()` - Returns the offset in bytes of the member in its direct parent class (compile error if member is a bit-field);
+* `actual_offset_bits()` - Returns the actual offset in bits of the member relative to `T`;
+* `actual_offset_bytes()` - Returns the actual offset in bytes of the member relative to `T` (compile error if member is a bit-field).
+
+The following example shows the difference between "offset in parent" and "actual offset". Actual offsets are relative to `DemoStructC`.
+```cpp
+struct DemoStructA {
+  int64_t a1;
+  int32_t a2;
+};
+struct DemoStructB : DemoStructA {
+  int64_t b1;
+  std::array<int32_t, 4> b2;
+};
+struct DemoStructC : DemoStructB {
+private:
+  int32_t c1;
+public:
+  int32_t c2;
+}
+// Layout of class DemoStructC (each '*' represents one byte):
+// 0               8               16              24              32              40
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+// |---- a1 -----| |-a2--|         |---- b1 -----| |------------ b2 -------------| |-c1--| |-c2--|
+```
+| Data Member | Size | `actual_offset_bytes()` | `offset_bytes_in_parent()` |
+|:--:|:--:|:--:|:--:|
+| `DemoStructA::a1` | 8 | 0 | 0 |
+| `DemoStructA::a2` | 4 | 8 | 8 |
+| `DemoStructB::b1` | 8 | 16 | 0 |
+| `DemoStructB::b2` | 16 | 24 | 8 |
+| `DemoStructC::c1` | 4 | 40 | 0 |
+| `DemoStructC::c2` | 4 | 44 | 4 |
+
+The variable template `all_flattened_nonstatic_data_members_v` gets a full list of non-static data members of non-union class `T`, including direct and inherited ones. Members are sorted in ascending order by actual offset relative to `T`.
+
+The variable template `public_flattened_nonstatic_data_members_v` gets a full list of non-static data members with public access of non-union class `T` (i.e. each member in the list can be accessed globally via class `T`), including direct and inherited ones. Members are sorted in ascending order by actual offset relative to `T`.
+
+Example:
+```cpp
+namespace refl = reflect_cpp26;
+
+// | `DemoStructA::a1` | 8 | 0 | 0 |
+// | `DemoStructA::a2` | 4 | 8 | 8 |
+// | `DemoStructB::b1` | 8 | 16 | 0 |
+// | `DemoStructB::b2` | 16 | 24 | 8 |
+// | `DemoStructC::c1` | 4 | 40 | 0 |
+// | `DemoStructC::c2` | 4 | 44 | 4 |
+template for (constexpr auto M : refl::all_flattened_nonstatic_data_members_v<DemoStructC>) {
+  std::println("| `{}::{}` | {} | {} | {} |",
+               identifier_of(M.direct_parent()),
+               identifier_of(M.member),
+               size_of(M.member),
+               M.actual_offset_bytes(),
+               M.offset_bytes_in_parent());
+}
+```
+
+## Auxiliary Components
 
 ### Type Classification
 
@@ -310,25 +529,3 @@ The concept `class_without_non_public_nonstatic_data_members` tests whether `std
 
 The concept `class_without_virtual_inheritance` checks whether `std::remove_cv_t<T>` is a non-union class without virtual base classes (either directly or indirectly).
 * Always evaluates to `false` for non-class types: scalar types, references, arrays, unions, etc.
-
-### Structural Type
-
-Defined in header `<reflect_cpp26/type_traits/structural_types.hpp>`.
-
-```cpp
-template <class T>
-concept structural_type = /* ... */;
-```
-
-The concept `structural_type` tests whether `std::remove_cv_t<T>` is a [structural](https://en.cppreference.com/w/cpp/language/template_parameters) type, i.e. a type whose value can be used as a non-type template parameter. A structural type is one of the following types (optionally cv-qualified, qualifiers are ignored):
-* Lvalue reference type (to object or to function);
-* An integral type;
-* A pointer type (to object or to function);
-* A pointer to member type (to member object or to member function);
-* An enumeration type;
-* `std::nullptr_t`;
-* A floating-point type (since C++20);
-* A lambda closure type whose lambda expression has no capture (since C++20);
-* A non-closure literal class type with the following properties (since C++20):
-  * All base classes and non-static data members are public and non-mutable;
-  * Types of all base classes and non-static data members are structural types or (possibly multi-dimensional) array thereof.

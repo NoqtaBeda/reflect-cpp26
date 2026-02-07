@@ -32,11 +32,6 @@
 namespace reflect_cpp26 {
 // -------- Reflection with access control (P3547) --------
 
-enum class access_mode {
-  unprivileged,
-  unchecked,
-};
-
 consteval auto unprivileged_context() {
   return std::meta::access_context::unprivileged();
 }
@@ -53,16 +48,6 @@ consteval auto unchecked_context() {
   /* Gets all direct members regardless of their accessibility */        \
   consteval auto all_direct_##fn##_of(std::meta::info a) {               \
     return std::meta::fn##_of(a, reflect_cpp26::unchecked_context());    \
-  }                                                                      \
-  /* Gets all direct members of specified access mode */                 \
-  consteval auto direct_##fn##_of(access_mode mode, std::meta::info a) { \
-    if (mode == access_mode::unprivileged) {                             \
-      return public_direct_##fn##_of(a);                                 \
-    } else if (mode == access_mode::unchecked) {                         \
-      return all_direct_##fn##_of(a);                                    \
-    } else {                                                             \
-      compile_error("Invalid access mode.");                             \
-    }                                                                    \
   }
 
 #define REFLECT_CPP26_DEFINE_QUERY_V_WITH_ACCESS_CONTEXT(fn)                                      \
@@ -70,18 +55,7 @@ consteval auto unchecked_context() {
   constexpr auto public_direct_##fn##_v = std::define_static_array(public_direct_##fn##_of(^^T)); \
                                                                                                   \
   template <class_or_union_type T>                                                                \
-  constexpr auto all_direct_##fn##_v = std::define_static_array(all_direct_##fn##_of(^^T));       \
-                                                                                                  \
-  template <access_mode Mode, class_or_union_type T>                                              \
-  constexpr auto direct_##fn##_v = []() consteval {                                               \
-    if constexpr (Mode == access_mode::unprivileged) {                                            \
-      return public_direct_##fn##_v<T>;                                                           \
-    } else if constexpr (Mode == access_mode::unchecked) {                                        \
-      return all_direct_##fn##_v<T>;                                                              \
-    } else {                                                                                      \
-      return compile_error("Invalid mode.");                                                      \
-    }                                                                                             \
-  };
+  constexpr auto all_direct_##fn##_v = std::define_static_array(all_direct_##fn##_of(^^T));
 
 /**
  * public_direct_*_of(std::meta::info a) -> std::vector<std::meta::info>
@@ -89,9 +63,6 @@ consteval auto unchecked_context() {
  *
  * all_direct_*_of(std::meta::info a) -> std::vector<std::meta::info>
  *   Equivalent to std::meta::*_of(a, unchecked_context()).
- *
- * direct_*_of(access_mode mode, std::meta::info a)
- *   -> std::vector<std::meta::info>
  *
  * * is one of macro parameters below.
  */
@@ -105,8 +76,6 @@ REFLECT_CPP26_DEFINE_QUERY_FN_WITH_ACCESS_CONTEXT(nonstatic_data_members)
  *   Stores result of public_direct_*_v(^^T).
  * all_direct_*_v<T>
  *   Stores result of all_direct_*_v(^^T).
- * direct_*_v<Mode, T>
- *   Stores result of direct_*_v(Mode, ^^T).
  *
  * * is one of macro parameters below.
  */

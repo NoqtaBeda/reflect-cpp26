@@ -136,7 +136,7 @@ TEST(UtilsMetaUtility, IsAddressableClassMember) {
   // Non-static member functions (including implicitly defined ones): ✔️
   using P = std::pair<int, int>;
   constexpr auto copy_assignment_operator = [] consteval {
-    for (auto member : members_of(^^P)) {
+    for (auto member : members_of(^^P, std::meta::access_context::current())) {
       if (is_copy_assignment(member)) return member;
     }
     rfl::compile_error("Implementation error");

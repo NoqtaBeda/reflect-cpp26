@@ -141,7 +141,6 @@ meta_test_cases = {
   "fixed_map/string_key/test_by_hash_table_1",
   "fixed_map/string_key/test_by_hash_table_2",
   "fixed_map/string_key/test_by_hash_table_3",
-  "fixed_map/string_key/test_by_length",
   "fixed_map/string_key/test_empty",
   "fixed_map/string_key/test_naive",
   -- Lookup

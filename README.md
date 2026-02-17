@@ -26,13 +26,9 @@ LD_LIBRARY_PATH=<path-to-libc++> xmake run --group=tests/**
 # TODO
 * Type traits
   * Recursively flattenable
-* Type operations
-  * `member_named<fixed_string>`
 * `fixed_set`
 * utils:
-  * Fixed string
   * `to_string` for string types other than `char`
-  * String hash with different `p` for `char16_t` and `char32_t`
 * Missing UT for string-key fixed map (in utils):
   * Case-insensitive UT with `string_key_map_by_hash_binary_search_slow`;
   * Hash collision cases with every hash-related scenario.

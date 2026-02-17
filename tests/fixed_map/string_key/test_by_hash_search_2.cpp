@@ -55,6 +55,17 @@ constexpr void test_by_hash_search_common() {
                                     const std::pair<size_t, size_t>&>);
   EXPECT_EQ_STATIC(8, map.size());
 
+  constexpr auto pointer_size = sizeof(void*);
+  // Contents in each entry:
+  //   hash: uint64
+  //   key: {const CharT*, const CharT*}
+  //   value: {size_t, size_t}
+  constexpr auto expected_element_size =
+      Options.adjusts_alignment ? (pointer_size == 8 ? 64 : 32) : (pointer_size == 8 ? 40 : 24);
+  constexpr auto actual_element_size = sizeof(typename decltype(map._entries)::value_type);
+  EXPECT_EQ(expected_element_size, actual_element_size)
+      << "Unexpected element size with fixed map type " << display_string_of(^^decltype(map));
+
   EXPECT_EQ_STATIC(Value(0, 1), map[to<CharT>("Amiya")]);
   EXPECT_FOUND_STATIC(Value(1, 10), map, to<CharT>("Kal'tsit"));
   EXPECT_FOUND_STATIC(Value(2, 20), map, to<CharT>("Blaze"));

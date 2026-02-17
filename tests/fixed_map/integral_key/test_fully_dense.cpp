@@ -34,7 +34,7 @@ TEST(FixedMap, SignedIntegralKeyFullyContinuous) {
   constexpr auto map = FIXED_MAP(make_kv_pairs() /* with default options */);
   static_assert(std::is_same_v<typename decltype(map)::result_type, const int32_t&>);
   // Elements in _entries are expected to be int32_t (value type of KVPair),
-  // no is_valid flag.
+  // without is_valid flag.
   EXPECT_EQ_STATIC(4, sizeof(typename decltype(map._entries)::value_type));
   EXPECT_THAT(display_string_of(^^decltype(map)),
               testing::HasSubstr("fully_dense_integral_key_map"));

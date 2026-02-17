@@ -44,6 +44,11 @@ constexpr auto get(string_wrapper s) {
   }
 }
 
+// Accessible via ADL
+constexpr auto is_valid(string_wrapper s) {
+  return s.string.data() != nullptr;  // Not value-initialized
+}
+
 template <rfl::integral_key_fixed_map_options Options>
 constexpr void test_custom_kv_pair_common() {
   constexpr auto map = FIXED_MAP(std::vector<string_wrapper>({
@@ -65,6 +70,16 @@ constexpr void test_custom_kv_pair_common() {
                                     rfl::meta_tuple<char, rfl::meta_string_view>>);
   // to_structural_result_t<std::string_view> -> rfl::meta_string_view
   static_assert(std::is_same_v<typename decltype(map)::result_type, const rfl::meta_string_view&>);
+
+  using UnderlyingElement = typename decltype(map._dense_part._entries)::value_type;
+  constexpr auto pointer_size = sizeof(void*);  // 4 or 8
+  constexpr auto expected_element_size = Options.default_value_is_always_invalid ? 2 * pointer_size
+                                       : Options.adjusts_alignment               ? 4 * pointer_size
+                                                                                 : 3 * pointer_size;
+  constexpr auto actual_element_size = sizeof(UnderlyingElement);
+
+  EXPECT_EQ(expected_element_size, actual_element_size)
+      << "Unexpected element size with fixed map type " << display_string_of(^^decltype(map));
 
   auto expected_regex = "general_integral_key_map"s + ".*"
                       + "dense_integral_key_map"                  // left_sparse_part
@@ -110,6 +125,32 @@ TEST(FixedMap, IntegralKeyCustomKVPair2) {
       .already_sorted = true,
       .already_unique = true,
       .adjusts_alignment = true,
+      .min_load_factor = 0.5,
+      .dense_lookup_threshold = 4,
+      .binary_search_threshold = 4,
+  };
+  test_custom_kv_pair_common<options>();
+}
+
+TEST(FixedMap, IntegralKeyCustomKVPair3) {
+  constexpr auto options = rfl::integral_key_fixed_map_options{
+      .already_sorted = true,
+      .already_unique = true,
+      .adjusts_alignment = false,
+      .default_value_is_always_invalid = true,
+      .min_load_factor = 0.5,
+      .dense_lookup_threshold = 4,
+      .binary_search_threshold = 4,
+  };
+  test_custom_kv_pair_common<options>();
+}
+
+TEST(FixedMap, IntegralKeyCustomKVPair4) {
+  constexpr auto options = rfl::integral_key_fixed_map_options{
+      .already_sorted = true,
+      .already_unique = true,
+      .adjusts_alignment = true,
+      .default_value_is_always_invalid = true,
       .min_load_factor = 0.5,
       .dense_lookup_threshold = 4,
       .binary_search_threshold = 4,

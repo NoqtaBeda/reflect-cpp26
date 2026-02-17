@@ -61,15 +61,13 @@ consteval auto make_type_tuple_push_back_type(std::meta::info Tuple, std::meta::
 }
 
 consteval auto tuple_elements_to_type_tuple(std::meta::info T) {
-  auto n = extract<size_t>(substitute(^^std::tuple_size_v,
-                                      {
-                                          T}));
+  auto params_il_n = {T};
+  auto n = extract<size_t>(substitute(^^std::tuple_size_v, params_il_n));
   auto elements = std::vector<std::meta::info>{};
   for (auto i = 0zU; i < n; i++) {
     auto I = std::meta::reflect_constant(i);
-    elements.push_back(substitute(^^std::tuple_element_t,
-                                  {
-                                      I, T}));
+    auto params_il_elems = {I, T};
+    elements.push_back(substitute(^^std::tuple_element_t, params_il_elems));
   }
   return substitute(^^type_tuple, elements);
 }

@@ -24,6 +24,7 @@
 #define REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_WITH_HASH_COLLISION_HPP
 
 #include <reflect_cpp26/fixed_map/impl/string_policy.hpp>
+#include <reflect_cpp26/utils/meta_utility.hpp>
 
 namespace reflect_cpp26::impl {
 template <bool AlignmentAdjusted, class Policy, class KVPair>

@@ -141,7 +141,8 @@ consteval auto make_sparse_integral_key_map(KVPairIter sorted_first,
                                             sparse_integral_key_fixed_map_options options)
     -> std::meta::info {
   using KVPair = std::iter_value_t<KVPairIter>;
-  // (1) Empty
+  // (1) Empty. Note that emptiness check here is necessary when make_dense_integral_key_map()
+  //     is called by another fixed map maker function.
   if (sorted_first == sorted_last) {
     return std::meta::reflect_constant(empty_integral_key_map<KVPair>{});
   }

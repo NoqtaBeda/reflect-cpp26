@@ -5,6 +5,9 @@ reflect_cpp26 provides functionality to generate compile-time lookup table for c
 Lookup table utilizes [compile-time fixed map](./fixed_map.md) as the underlying data structures, which automatically selects the most suitable data structure (hash table, binary search, etc.). Read the document of fixed map for its implementation details.
 
 The primary usage is to replace hand-written dispatching patterns of selecting candidate member or function, which is lengthy, inefficient and error-prone. The following example shows how reflect_cpp26 library helps to simplify dispatching with an auto-generated lookup table:
+
+> Even in LLM era, reflect_cpp26 has its unique advantage that an efficient data structure can be applied automatically with your code kept clean. You don't have to worry that (1) you forget to instruct the agent to update all related components; (2) the agent generates flawed code for several items under illusion which is hard to be detected by human reviewing (especially when the number of items or related components is large); (3) the agent either fails to pick some good data structure, or generates a huge block of boilerplate code which harms the overall readability.
+
 ```cpp
 namespace binary_ops {
 int do_add(int x, int y);
@@ -14,7 +17,7 @@ int do_div(int x, int y);
 // A lot more ...
 }  // namespace binary_ops
 
-// Note: Don't forget to keep consistency with namespace binary_ops
+// ⚠️ You may forget to keep consistency with namespace binary_ops
 int do_binary_op_before(std::string_view key, int x, int y) {
   // Complexity: O(N) times of string comparison.
   if (key == "add") { return binary_ops::do_add(x, y); }
@@ -128,7 +131,7 @@ The two macros below are the interface of creating lookup tables. The wrapped `m
   [:reflect_cpp26::make_namespace_member_lookup_table(^^ns, ##__VA_ARGS__):]
 ```
 
-Key functions (both of below have a collection of overloads, see section "Components" for details):
+Core functions (both of below have a collection of overloads, see section "Components" for details):
 * `make_class_member_lookup_table()` generates a lookup table of members in class `T` at compile-time.
   * Members in its base classes (including indirect ones) can be **included**;
   * Members in its nested classes are **not included**.
@@ -139,6 +142,8 @@ Key type of the generated lookup tables can only be one of the following:
 * Integral types. In this case signedness-safe and narrowing-safe comparisons are performed on keys;
 * Enum types;
 * `std::string_view`.
+
+Duplicated keys are not allowed. This constraint inherits from the [undelying fixed map](./fixed_map.md).
 
 Value type of the generated lookup tables for class `T` can be one of the following:
 * For non-static data members: Let `M` be the member type (`M` may be cv-qualified). Value type of lookup table is `M T::*`;

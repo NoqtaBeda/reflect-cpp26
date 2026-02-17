@@ -47,7 +47,7 @@ void test_by_hash_table_common_3() {
                                  {
                                      .ascii_case_insensitive = false,
                                      .adjusts_alignment = AA,
-                                     .min_load_factor = 0.5,
+                                     .min_load_factor = 0.25,
                                  });
   static_assert(rfl::same_as_one_of<typename decltype(map)::result_type,
                                     const rfl::meta_tuple<size_t, size_t>&,
@@ -61,7 +61,9 @@ void test_by_hash_table_common_3() {
   EXPECT_THAT(display_string_of(^^decltype(map)),
               testing::HasSubstr("string_key_map_by_hash_table_slow"));
   EXPECT_EQ_STATIC(28, map.size());
-  EXPECT_EQ_STATIC(33, map._bucket_size);  // Modulo: 0 ~ 25, 31, 32
+  if constexpr (sizeof(CharT) == 1) {
+    EXPECT_EQ_STATIC(33, map._bucket_size);  // Modulo: 0 ~ 25, 31, 32
+  }
 
   EXPECT_FOUND_STATIC(Value('G', 'H'), map, to<CharT>("AG"));
   EXPECT_FOUND_STATIC(Value('T', 'U'), map, to<CharT>("AT"));
@@ -123,4 +125,7 @@ void test_by_hash_table_common_ci_3() {
   }
 
 MAKE_MAP_TESTS(char, Char)
+MAKE_MAP_TESTS(wchar_t, WChar)
 MAKE_MAP_TESTS(char8_t, Char8)
+MAKE_MAP_TESTS(char16_t, Char16)
+MAKE_MAP_TESTS(char32_t, Char32)

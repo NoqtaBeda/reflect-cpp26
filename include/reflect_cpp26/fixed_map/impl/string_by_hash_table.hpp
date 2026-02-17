@@ -166,9 +166,7 @@ constexpr bool test_bucket_size(const std::vector<uint64_t>& hash_values,
         break;
       }
     }
-    if (!ok) {
-      return false;
-    }
+    if (!ok) return false;
   }
   return true;
 }

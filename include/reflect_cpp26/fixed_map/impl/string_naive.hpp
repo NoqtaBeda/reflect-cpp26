@@ -68,8 +68,8 @@ consteval auto make_naive_string_key_map(const std::vector<KVPair>& kv_pairs, bo
     -> std::meta::info {
   using factory_fn_type = std::meta::info (*)(meta_span<KVPair>);
   auto policy = string_key_policy_type(case_insensitive);
-  auto factory_fn =
-      extract<factory_fn_type>(substitute(^^naive_string_key_map_factory, policy, ^^KVPair));
+  auto params_il = {policy, ^^KVPair};
+  auto factory_fn = extract<factory_fn_type>(substitute(^^naive_string_key_map_factory, params_il));
 
   auto entries = reflect_cpp26::define_static_array(kv_pairs);
   return factory_fn(entries);

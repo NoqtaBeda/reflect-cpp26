@@ -25,6 +25,7 @@
 
 #include <reflect_cpp26/fixed_map/all.hpp>
 #include <reflect_cpp26/utils/addressable_member.hpp>
+#include <reflect_cpp26/utils/constant.hpp>
 
 namespace reflect_cpp26 {
 enum class class_member_category {

@@ -26,7 +26,7 @@
 #include <reflect_cpp26/fixed_map/impl/integral_common.hpp>
 #include <reflect_cpp26/fixed_map/impl/integral_empty.hpp>
 #include <reflect_cpp26/fixed_map/impl/integral_fully_dense.hpp>
-#include <reflect_cpp26/fixed_map/is_null.hpp>
+#include <reflect_cpp26/fixed_map/is_valid.hpp>  // Predefined predicates
 
 namespace reflect_cpp26::impl {
 consteval auto dense_integral_key_map_span_element_type(bool validity_stored,
@@ -70,7 +70,7 @@ struct dense_integral_key_map {
       return {unwrap(p), p.is_valid};
     } else {
       const auto& v = unwrap(p);
-      return {v, !is_null(v)};
+      return {v, is_valid(v)};
     }
   }
 
@@ -141,6 +141,8 @@ consteval auto make_dense_integral_key_map(KVPairIter sorted_first,
   using KVPair = std::iter_value_t<KVPairIter>;
   using factory_fn_type = std::meta::info (*)(meta_span<KVPair>);
 
+  // Note: Emptiness check here is necessary when make_dense_integral_key_map() is called by
+  //       another fixed map maker function.
   if (sorted_first == sorted_last) {
     return make_empty_integral_key_map<KVPair>();
   }

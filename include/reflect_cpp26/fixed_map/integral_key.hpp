@@ -32,41 +32,12 @@
 
 namespace reflect_cpp26 {
 struct integral_key_fixed_map_options {
-  // Whether input key-value-pair range is already sorted.
-  // UB or wrong result may occur if this flag is set as true but the input
-  // range is not sorted actually.
   bool already_sorted = false;
-  // Whether input keys are already deduplicated.
-  // UB or wrong result may occur if this flag is set as true but the input
-  // keys are not deduplicated actually.
   bool already_unique = false;
-  // Whether alignment optimization is enabled.
-  // If enabled, then the elements of underlying ranges will be aligned to
-  // 2^n bytes for maximized random-access performance.
   bool adjusts_alignment = false;
-  // Whether the value-initialized default value is always regarded as invalid.
-  // Some underlying data structures (currently, dense flat map) may require an
-  // extra field 'is_valid' for each underlying element to check whether the
-  // element represents valid user input or a hole.
-  // To eliminate the 'is_valid' field to reduce memory usage, you need to:
-  // (1) set this option to true;
-  // (2) provide a user-defined predicate is_null(v) for the value type which
-  //     can be found via argument-depend lookup (ADL). For primitive types and
-  //     some frequently used C++ standard types, is_null(v) is predefined in
-  //     reflect_cpp26/fixed_map/is_null.hpp;
-  // (3) make sure that for each value v in input kv-pairs, v != T{} always
-  //     holds where T is input value type. UB or wrong result may occur
-  //     otherwise.
   bool default_value_is_always_invalid = false;
-  // Mimimum load factor for dense flat map.
   double min_load_factor = 0.5;
-  // Dense subrange length threshold. If the longest dense subrange in input
-  // kv-pair list has length no less than this threshold, then fast lookup is
-  // enabled for this dense subrange.
   size_t dense_lookup_threshold = 4;
-  // Sparse subrange length threshold. If the length of a sparse (sub-)range
-  // is no less than this threshold, binary search is applied during lookup.
-  // Linear search is applied otherwise.
   size_t binary_search_threshold = 8;
 };
 
@@ -173,23 +144,6 @@ consteval auto make_integral_key_fixed_map_impl(std::vector<KVPair> kv_pairs,
 }
 }  // namespace impl
 
-/**
- * Generates a fixed map in compile-time whose key is of integral or enum type.
- * Result V is the reflected constant of the fixed map generated, which can be
- * extracted via [: V :] or reflect_cpp26::extract<V>().
- *
- * Input kv_pairs should be a kv-pair list whose key is either integral type
- * or enum type (scoped or unscoped), and whose value can be converted to
- * structural type during compile-time
- * (see reflect_cpp26/type_operations/to_structural.hpp for details).
- *
- * The generated fixed map supports the following operations:
- *   size() -> size_t
- *   get(key) -> std::pair{value, found}
- *   operator[](key) -> value
- * If entry is not found for input key, returned value is value-initialized.
- * For most cases, value is returned as a const-reference.
- */
 template <std::ranges::input_range KVPairRange>
   requires(impl::integral_key_kv_pair<std::ranges::range_value_t<KVPairRange>>)
 consteval auto make_integral_key_fixed_map(KVPairRange kv_pairs,
@@ -203,25 +157,19 @@ consteval auto make_integral_key_fixed_map(KVPairRange kv_pairs,
       const auto& [k, v] = kv_pair;
       return std::pair{std::to_underlying(k), to_structural(v)};
     };
-    auto structural_kv_pairs =
-        kv_pairs | std::views::transform(transform_fn) | std::ranges::to<std::vector>();
-    auto nested_res = impl::make_integral_key_fixed_map_impl(structural_kv_pairs, options);
+    auto nested_res = impl::make_integral_key_fixed_map_impl(
+        kv_pairs | std::views::transform(transform_fn) | std::ranges::to<std::vector>(), options);
+
     auto params_il = {^^Key, nested_res};
     return extract<std::meta::info>(
         substitute(^^impl::integral_key_map_enum_wrapper_factory_v, params_il));
   } else {
-    auto structural_kv_pairs =
-        kv_pairs | std::views::transform(to_structural) | std::ranges::to<std::vector>();
-    return impl::make_integral_key_fixed_map_impl(structural_kv_pairs, options);
+    return impl::make_integral_key_fixed_map_impl(
+        kv_pairs | std::views::transform(to_structural) | std::ranges::to<std::vector>(), options);
   }
 }
 }  // namespace reflect_cpp26
 
-/**
- * Generates a fixed map in compile-time whose key is of integral or enum type
- * and then extracts it immediately.
- * Details see above.
- */
 #define REFLECT_CPP26_INTEGRAL_KEY_FIXED_MAP(kv_pairs, ...) \
   [:reflect_cpp26::make_integral_key_fixed_map(kv_pairs, ##__VA_ARGS__):]
 

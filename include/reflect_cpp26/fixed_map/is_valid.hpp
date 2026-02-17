@@ -20,54 +20,47 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_UTILS_IS_NULL_HPP
-#define REFLECT_CPP26_UTILS_IS_NULL_HPP
+#ifndef REFLECT_CPP26_UTILS_IS_VALID_HPP
+#define REFLECT_CPP26_UTILS_IS_VALID_HPP
 
 #include <reflect_cpp26/type_traits/arithmetic_types.hpp>
 #include <reflect_cpp26/utils/concepts.hpp>
 #include <reflect_cpp26/utils/meta_span.hpp>
 #include <reflect_cpp26/utils/meta_string_view.hpp>
-#include <reflect_cpp26/utils/meta_tuple.hpp>
 
 /**
- * Predefined null-check functions.
+ * Predefined validity-check functions.
  */
 
 namespace reflect_cpp26 {
-constexpr bool is_null(std::integral auto v) {
-  return v == 0;  // value initialization result is 0
+constexpr bool is_valid(std::integral auto v) {
+  return v != 0;  // value initialization result is 0
 }
 
-constexpr bool is_null(std::floating_point auto v) {
-  return v == 0.0;  // value initialization result is 0.0
+constexpr bool is_valid(std::floating_point auto v) {
+  return v != 0.0;  // value initialization result is 0.0
 }
 
-constexpr bool is_null(pointer_type auto v) {
-  return v == nullptr;
+constexpr bool is_valid(pointer_type auto v) {
+  return v != nullptr;
 }
 
 template <class T, class C>
-constexpr bool is_null(T C::* v) {
-  return v == nullptr;
+constexpr bool is_valid(T C::* v) {
+  return v != nullptr;
 }
 
 template <char_type CharT, class Traits>
-constexpr bool is_null(std::basic_string_view<CharT, Traits> v) {
+constexpr bool is_valid(std::basic_string_view<CharT, Traits> v) {
   // value initialization result is {nullptr, nullptr}
-  return v.data() == nullptr;
+  return v.data() != nullptr;
 }
 
 template <char_type CharT>
-constexpr bool is_null(meta_basic_string_view<CharT> v) {
+constexpr bool is_valid(meta_basic_string_view<CharT> v) {
   // value initialization result is {nullptr, nullptr}
-  return v.head == nullptr;
-}
-
-template <char_type CharT, class Value>
-constexpr bool is_null(const meta_tuple<meta_basic_string_view<CharT>, Value>& kv_pair) {
-  // value initialization result is {nullptr, nullptr}
-  return get<0>(kv_pair).head == nullptr;
+  return v.head != nullptr;
 }
 }  // namespace reflect_cpp26
 
-#endif  // REFLECT_CPP26_UTILS_IS_NULL_HPP
+#endif  // REFLECT_CPP26_UTILS_is_valid_HPP

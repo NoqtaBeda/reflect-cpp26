@@ -117,6 +117,76 @@ TEST(FixedMap, SignedIntegralKeyContinuousWithHoles4) {
   test_signed_integral_key_common<options>();
 }
 
+// Test for dense fixed map from signed integer to signed integer
+// where values can be 0. This case tests whether dense_integral_key_map
+// can distinguish between valid values which happen to be equal to 0
+// and holes value-initialized to 0.
+template <rfl::integral_key_fixed_map_options Options>
+constexpr void test_signed_to_signed_with_zero_value() {
+  using InputKVPair = std::pair<int8_t, int8_t>;
+  constexpr auto make_kv_pairs = []() constexpr {
+    return std::vector<InputKVPair>{
+        {-3, -10},
+        {-2, 0},  // Valid value is 0
+        {-1, 10},
+        {0, -20},  // Key is 0, value is non-zero
+        {1, 0},    // Valid value is 0
+        {3, 30},
+    };
+  };
+  constexpr auto map = FIXED_MAP(make_kv_pairs(), Options);
+
+  EXPECT_EQ_STATIC(6, map.size());
+  EXPECT_EQ_STATIC(-3, map.min_key());
+  EXPECT_EQ_STATIC(3, map.max_key());
+
+  // Valid entries with non-zero values
+  EXPECT_EQ_STATIC(-10, map[-3]);
+  EXPECT_FOUND_STATIC(10, map, int8_t{-1});
+  EXPECT_FOUND_STATIC(-20, map, int8_t{0});
+  EXPECT_FOUND_STATIC(30, map, int8_t{3});
+
+  // Valid entries with value 0 - must be distinguishable from holes
+  EXPECT_FOUND_STATIC(0, map, -2);
+  EXPECT_FOUND_STATIC(0, map, 1);
+
+  // Hole at key 2. The value-initialized is returned as placeholder
+  EXPECT_NOT_FOUND_STATIC(0, map, int8_t{2});
+
+  // Out of range
+  EXPECT_NOT_FOUND_STATIC(0, map, int8_t{-4});
+  EXPECT_NOT_FOUND_STATIC(0, map, int8_t{4});
+  // Signedness-safe and narrowing-safe comparison
+  // Key range: [-3, 3], querying with larger/narrower types
+  EXPECT_NOT_FOUND_STATIC(0, map, int16_t{-4});        // Signed, out of range
+  EXPECT_NOT_FOUND_STATIC(0, map, int16_t{4});         // Signed, out of range
+  EXPECT_NOT_FOUND_STATIC(0, map, uint8_t{253});       // Signedness-safe comparison
+  EXPECT_NOT_FOUND_STATIC(0, map, uint8_t{252});       // Signedness-safe comparison
+  EXPECT_NOT_FOUND_STATIC(0, map, uint16_t{256 + 3});  // Narrowing-safe comparison
+}
+
+TEST(FixedMap, SignedToSignedWithZeroValue1) {
+  constexpr auto options = rfl::integral_key_fixed_map_options{
+      .already_sorted = true,
+      .already_unique = true,
+      .adjusts_alignment = false,
+      .default_value_is_always_invalid = false,
+      .min_load_factor = 0.5,
+  };
+  test_signed_to_signed_with_zero_value<options>();
+}
+
+TEST(FixedMap, SignedToSignedWithZeroValue2) {
+  constexpr auto options = rfl::integral_key_fixed_map_options{
+      .already_sorted = true,
+      .already_unique = true,
+      .adjusts_alignment = true,
+      .default_value_is_always_invalid = false,
+      .min_load_factor = 0.5,
+  };
+  test_signed_to_signed_with_zero_value<options>();
+}
+
 constexpr auto make_kv_pairs_for_unsigned_integral_key_continuous() {
   using KVPair = std::pair<unsigned char, std::string>;
   return std::vector<KVPair>{

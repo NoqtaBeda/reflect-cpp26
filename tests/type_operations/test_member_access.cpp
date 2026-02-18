@@ -32,6 +32,43 @@
 
 namespace rfl = reflect_cpp26;
 
+namespace examples {
+struct foo_t : std::pair<int, int> {
+private:
+  int a;
+
+public:
+  int x, y, z;
+  explicit constexpr foo_t(int base)
+      : std::pair<int, int>{base - 2, base - 1},
+        a(base), x(base + 1), y(base + 2), z(base + 3), b(base + 4) {}
+
+protected:
+  int b;
+};
+
+void test_member_access_examples() {
+  constexpr auto foo = foo_t{10};
+  // Layout: base.first=8, base.second=9, a=10, x=11, y=12, z=13, b=14
+
+  // Direct access: only direct members of foo_t (not from base class)
+  static_assert(rfl::get_ith_direct_nonstatic_data_member<0>(foo) == 10);  // a
+  static_assert(rfl::get_ith_direct_nonstatic_data_member<1>(foo) == 11);  // x
+  static_assert(rfl::get_ith_direct_nonstatic_data_member<4>(foo) == 14);  // b
+
+  // Flattened access: base class members first, then direct members
+  static_assert(rfl::get_ith_nonstatic_data_member<0>(foo) == 8);   // first
+  static_assert(rfl::get_ith_nonstatic_data_member<1>(foo) == 9);   // second
+  static_assert(rfl::get_ith_nonstatic_data_member<2>(foo) == 10);  // a
+  static_assert(rfl::get_ith_nonstatic_data_member<6>(foo) == 14);  // b
+
+  // Public flattened access: only public members (first, second, x, y, z)
+  static_assert(rfl::get_ith_public_nonstatic_data_member<0>(foo) == 8);   // first
+  static_assert(rfl::get_ith_public_nonstatic_data_member<2>(foo) == 11);  // x
+  static_assert(rfl::get_ith_public_nonstatic_data_member<4>(foo) == 13);  // z
+}
+}  // namespace examples
+
 struct foo_t {
 private:
   int a;
@@ -59,12 +96,6 @@ TEST(TypeOperationsMemberAccess, NoInheritance) {
   EXPECT_EQ_STATIC(11, rfl::get_ith_public_direct_nonstatic_data_member<0>(foo));
   EXPECT_EQ_STATIC(12, rfl::get_ith_public_direct_nonstatic_data_member<1>(foo));
   EXPECT_EQ_STATIC(13, rfl::get_ith_public_direct_nonstatic_data_member<2>(foo));
-
-  EXPECT_EQ_STATIC(10, rfl::get_first_direct_nonstatic_data_member(foo));
-  EXPECT_EQ_STATIC(14, rfl::get_last_direct_nonstatic_data_member(foo));
-
-  EXPECT_EQ_STATIC(11, rfl::get_first_public_direct_nonstatic_data_member(foo));
-  EXPECT_EQ_STATIC(13, rfl::get_last_public_direct_nonstatic_data_member(foo));
 }
 
 struct bar_t : public foo_t {
@@ -96,12 +127,6 @@ TEST(TypeOperationsMemberAccess, WithInheritance1) {
   EXPECT_EQ("21", rfl::get_ith_public_direct_nonstatic_data_member<0>(bar));
   EXPECT_EQ("22", rfl::get_ith_public_direct_nonstatic_data_member<1>(bar));
 
-  EXPECT_EQ("20", rfl::get_first_direct_nonstatic_data_member(bar));
-  EXPECT_EQ("21", rfl::get_first_public_direct_nonstatic_data_member(bar));
-
-  EXPECT_EQ("23", rfl::get_last_direct_nonstatic_data_member(bar));
-  EXPECT_EQ("22", rfl::get_last_public_direct_nonstatic_data_member(bar));
-
   EXPECT_EQ(10, rfl::get_ith_nonstatic_data_member<0>(bar));
   EXPECT_EQ(11, rfl::get_ith_nonstatic_data_member<1>(bar));
   EXPECT_EQ(12, rfl::get_ith_nonstatic_data_member<2>(bar));
@@ -117,12 +142,6 @@ TEST(TypeOperationsMemberAccess, WithInheritance1) {
   EXPECT_EQ(13, rfl::get_ith_public_nonstatic_data_member<2>(bar));
   EXPECT_EQ("21", rfl::get_ith_public_nonstatic_data_member<3>(bar));
   EXPECT_EQ("22", rfl::get_ith_public_nonstatic_data_member<4>(bar));
-
-  EXPECT_EQ(10, rfl::get_first_nonstatic_data_member(bar));
-  EXPECT_EQ(11, rfl::get_first_public_nonstatic_data_member(bar));
-
-  EXPECT_EQ("23", rfl::get_last_nonstatic_data_member(bar));
-  EXPECT_EQ("22", rfl::get_last_public_nonstatic_data_member(bar));
 }
 
 struct baz_t : protected std::pair<double, double>, public bar_t {
@@ -149,12 +168,6 @@ TEST(TypeOperationsMemberAccess, WithInheritance2) {
   EXPECT_EQ(34.25, rfl::get_ith_public_direct_nonstatic_data_member<0>(baz));
   EXPECT_EQ(35.50, rfl::get_ith_public_direct_nonstatic_data_member<1>(baz));
 
-  EXPECT_EQ(34.25, rfl::get_first_direct_nonstatic_data_member(baz));
-  EXPECT_EQ(34.25, rfl::get_first_public_direct_nonstatic_data_member(baz));
-
-  EXPECT_EQ(36.75, rfl::get_last_direct_nonstatic_data_member(baz));
-  EXPECT_EQ(35.50, rfl::get_last_public_direct_nonstatic_data_member(baz));
-
   EXPECT_EQ(4.0, rfl::get_ith_nonstatic_data_member<0>(baz));
   EXPECT_EQ(0.25, rfl::get_ith_nonstatic_data_member<1>(baz));
   EXPECT_EQ(14, rfl::get_ith_nonstatic_data_member<2>(baz));
@@ -177,12 +190,6 @@ TEST(TypeOperationsMemberAccess, WithInheritance2) {
   EXPECT_EQ("26", rfl::get_ith_public_nonstatic_data_member<4>(baz));
   EXPECT_EQ(34.25, rfl::get_ith_public_nonstatic_data_member<5>(baz));
   EXPECT_EQ(35.50, rfl::get_ith_public_nonstatic_data_member<6>(baz));
-
-  EXPECT_EQ(4.0, rfl::get_first_nonstatic_data_member(baz));
-  EXPECT_EQ(15, rfl::get_first_public_nonstatic_data_member(baz));
-
-  EXPECT_EQ(36.75, rfl::get_last_nonstatic_data_member(baz));
-  EXPECT_EQ(35.50, rfl::get_last_public_nonstatic_data_member(baz));
 }
 
 struct qux_t {

@@ -177,7 +177,6 @@ meta_test_cases = {
   -- Type Operations
   "type_operations/test_comparison",
   "type_operations/test_member_access",
-  "type_operations/test_member_name_access",
   "type_operations/test_to_string",
   "type_operations/test_to_structural",
 }

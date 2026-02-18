@@ -1,6 +1,6 @@
 ## Introduction
 
-reflect_cpp26 provides functionality for advanced type traits useful in common cases, some of which are unable to be implemented without compiler magic in pre-C++26 era.
+reflect_cpp26 provides functionality for advanced type traits useful in common cases, some of which are unable to be implemented without compiler magic in the pre-C++26 era.
 
 ## Core Components
 
@@ -9,8 +9,12 @@ reflect_cpp26 provides functionality for advanced type traits useful in common c
 Defined in header `<reflect_cpp26/type_traits/structural_types.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
 template <class T>
 concept structural_type = /* ... */;
+
+}  // namespace reflect_cpp26
 ```
 
 The concept `structural_type` tests whether `std::remove_cv_t<T>` is a [structural](https://en.cppreference.com/w/cpp/language/template_parameters) type, i.e. a type whose value can be used as a non-type template parameter. A structural type is one of the following types (optionally cv-qualified, qualifiers are ignored):
@@ -33,61 +37,131 @@ See [unit test](../tests/type_traits/test_structural_types.cpp) for examples and
 Defined in header `<reflect_cpp26/type_traits/class_types/flattenable.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
+// ---- Group 1: Flattenable (by one level) ----
+
+// (1.1)
 template <class T>
 concept partially_flattenable_class = /* ... */;
-
+// (1.2)
 template <class T>
 concept partially_flattenable = /* ... */;
-
+// (1.3)
 template <class T>
 concept flattenable_class = /* ... */;
-
+// (1.4)
 template <class T>
 concept flattenable = /* ... */;
-
+// (1.5)
 template <class T>
 concept flattenable_aggregate_class = /* ... */;
-
+// (1.6)
 template <class T>
 concept flattenable_aggregate = /* ... */;
+
+// ---- Group 2: Recursively flattenable ----
+
+// (2.1)
+template <class T>
+concept recursively_partially_flattenable_class = /* ... */;
+// (2.2)
+template <class T>
+concept recursively_partially_flattenable = /* ... */;
+// (2.3)
+template <class T>
+concept recursively_flattenable_class = /* ... */;
+// (2.4)
+template <class T>
+concept recursively_flattenable = /* ... */;
+// (2.5)
+template <class T>
+concept recursively_flattenable_aggregate_class = /* ... */;
+// (2.6)
+template <class T>
+concept recursively_flattenable_aggregate = /* ... */;
+
+}  // namespace reflect_cpp26
 ```
 
-This group of concepts tests whether a type can be "flattened", i.e. whether we can construct an aggregate type which contains all the non-static data members (or public ones only) without ambiguity or semantic loss. Flattening can be helpful during serialization or deserialization of C++ types.
+Group 1 of concepts tests whether a type can be "flattened", i.e. whether we can construct an aggregate type which contains all the non-static data members (or public ones only) without ambiguity or loss of information. Flattening can be helpful during serialization or deserialization of C++ types.
 
-The concept `partially_flattenable_class` tests whether `std::remove_cv_t<T>` is a non-union class type that is partially flattenable. A class type is partially flattenable if it satisfies all the following:
-* No virtual base classes;
-* No ambiguous base classes;
-* Every direct base class is also partially flattenable, recursively.
+* **(1.1)** The concept `partially_flattenable_class` tests whether `std::remove_cv_t<T>` is a non-union class type that is partially flattenable. A class type is partially flattenable if it satisfies all the following:
+    * No virtual base classes;
+    * No ambiguous base classes;
+    * Every direct base class is also partially flattenable, recursively.
+* **(1.2)** The concept `partially_flattenable` tests whether `std::remove_cv_t<T>` is a partially flattenable type. A type is partially flattenable if it can be classified as one of the following:
+    * **Scalar types**: arithmetic types, enum types, pointers (including `std::nullptr_t` and function pointers), pointers to members, etc.;
+    * **C-style array types**: including bounded `U[N]`, unbounded `U[]`, multi-dimension `U[N][K]`, etc.;
+    * **Partially flattenable class types**: as described above.
+* **(1.3)** The concept `flattenable_class` tests whether `std::remove_cv_t<T>` is a non-union class type that is flattenable. A class type is flattenable if it is a partially flattenable class type that additionally satisfies the following conditions:
+    * No private or protected non-static data members;
+    * No private or protected direct base classes that are not empty;
+    * Every direct base class is also flattenable, recursively.
+* **(1.4)** The concept `flattenable` tests whether `std::remove_cv_t<T>` is a flattenable type, which is either scalar type, C-style array type, or flattenable class type as described above.
+* **(1.5)** The concept `flattenable_aggregate_class` tests whether `std::remove_cv_t<T>` is a non-union class type that is a flattenable aggregate. A class type is a flattenable aggregate if it is a flattenable class type that additionally satisfies the following constraints:
+    * The class is an aggregate;
+    * Every direct base class is also a flattenable aggregate, recursively.
+* **(1.6)** The concept `flattenable_aggregate` tests whether `std::remove_cv_t<T>` is a flattenable aggregate type, which is one of the following:
+    * **C-style array types**: including bounded `U[N]`, unbounded `U[]`, multi-dimension `U[N][K]`, etc.;
+    * **Flattenable aggregate class types**: as described above.
 
-The concept `partially_flattenable` tests whether `std::remove_cv_t<T>` is a partially flattenable type. A type is partially flattenable if it can be classified as one of the following:
-* **Scalar types**: arithmetic types, enum types, pointers (including `std::nullptr_t` and function pointers), pointers to members, etc.;
-* **C-style array types**: including both bounded `U[N]` and unbounded `U[]`;
-* **Partially flattenable class types**: as described above.
+Group 2 of concepts tests whether a type can be "recursively flattened", i.e. whether we can flatten all of its non-static data members (or public ones only) recursively.
 
-The concept `flattenable_class` tests whether `std::remove_cv_t<T>` is a non-union class type that is flattenable. A class type is flattenable if it is a partially flattenable class type that additionally satisfies the following conditions:
-* No private or protected non-static data members;
-* No private or protected direct base classes that are not empty;
-* Every direct base class is also flattenable, recursively.
+* **(2.1)** The concept `recursively_partially_flattenable_class` tests whether `std::remove_cv_t<T>` is a recursively partially flattenable non-union class type, which satisfies all the following constraints:
+    * `T` itself satisfies the concept `partially_flattenable_class`;
+    * For each *public* non-static data member of `T` (including inherited ones from its public base classes), type of the member should satisfy the concept `recursively_partially_flattenable`.
+* **(2.2)** The concept `recursively_partially_flattenable` tests whether `std::remove_cv_t<T>` is a recursively partially flattenable type, which is one of the following:
+    * **Scalar types**;
+    * **C-style array types**: including bounded `U[N]`, unbounded `U[]`, multi-dimension `U[N][K]`, etc. where `U` should satisfy the concept `recursively_partially_flattenable`;
+    * **Recursively partially flattenable class types**: as described above.
+* **(2.3)** The concept `recursively_flattenable_class` tests whether `std::remove_cv_t<T>` is a recursively flattenable non-union class type, which satisfies all the following constraints:
+    * `T` itself satisfies the concept `flattenable_class`;
+    * For each non-static data member of `T` (including non-public ones and inherited ones from its base classes), type of the member should satisfy the concept `recursively_flattenable`.
+* **(2.4)** The concept `recursively_flattenable` tests whether `std::remove_cv_t<T>` is a recursively flattenable type, which is either scalar type, C-style array type whose element type satisfies this concept recursively, or recursively flattenable class type as described above.
+* **(2.5)** The concept `recursively_flattenable_aggregate_class` tests whether `std::remove_cv_t<T>` is a recursively flattenable non-union aggregate class type, which satisfies all the following constraints:
+    * `T` itself satisfies the concept `flattenable_aggregate_class`;
+    * For each non-static data member of `T` (including non-public ones and inherited ones from its base classes), type of the member should either be scalar type, or satisfy the concept `recursively_flattenable_aggregate`.
+* **(2.6)** The concept `recursively_flattenable_aggregate` tests whether `std::remove_cv_t<T>` is a recursively flattenable aggregate type, which is either C-style array type whose element type either is scalar or satisfies this concept recursively, or recursively flattenable aggregate class type as described above.
 
-The concept `flattenable` tests whether `std::remove_cv_t<T>` is a flattenable type. A type is flattenable if it satisfies one of the following:
-* **Scalar types**: same as `partially_flattenable`;
-* **Array types**: same as `partially_flattenable`;
-* **Flattenable class types**: as described above.
-
-The concept `flattenable_aggregate_class` tests whether `std::remove_cv_t<T>` is a non-union class type that is a flattenable aggregate. A class type is a flattenable aggregate if it is a flattenable class type that additionally satisfies the following constraints:
-* The class is an aggregate;
-* Every direct base class is also a flattenable aggregate, recursively.
-
-The concept `flattenable_aggregate` tests whether `std::remove_cv_t<T>` is a flattenable aggregate type. A type is a flattenable aggregate if it satisfies one of the following:
-* **Array types**: both bounded `U[N]` and unbounded `U[]`;
-* **Flattenable aggregate class types**: as described above.
-
-Note that references, unions, and classes with virtual inheritance are never flattenable. Additionally, classes with private or protected members (non-static data members or non-empty base classes) are not `flattenable`, though they may be `partially_flattenable`.
+Note that references, unions, and classes with virtual inheritance are never flattenable. Additionally, classes with private or protected non-static data members (either defined directly or inherited from non-public base classes) are never `flattenable` but may be `partially_flattenable`.
 
 Example:
 
 ```cpp
 namespace refl = reflect_cpp26;
+
+template <class T, class U>
+struct my_pair_t {
+  T first;
+  U second;
+};
+
+struct std_pairs_t {
+  std::pair<int, long> pi;
+  std::pair<float, double> pf;
+};
+
+struct my_pairs_t {
+  my_pair_t<int, long> pi;
+  my_pair_t<float, double> pf;
+};
+
+// Recursively flattenable aggregate
+static_assert(refl::flattenable_aggregate_class<my_pairs_t>);
+// Recursively flattenable aggregate, which can be flattened as: {
+//   pi.first: int
+//   pi.second: long
+//   pf.first: float
+//   pf.second: double
+// }
+static_assert(refl::recursively_flattenable_aggregate_class<my_pairs_t>);
+
+static_assert(refl::flattenable_aggregate_class<std_pairs_t>);
+// Recursively flattenable. Similar to above.
+static_assert(refl::recursively_flattenable_class<std_pairs_t>);
+// NOT recursively flattenable aggregate (since std::pair is not aggregate).
+static_assert(! refl::recursively_flattenable_aggregate_class<std_pairs_t>);
 
 struct foo_t {
   std::string first_name;
@@ -97,8 +171,14 @@ struct bar_t : foo_t {
   int age;
 };
 
-// 1. Flattenable aggregate
+// Flattenable aggregate, which can be flattened as: {
+//   first_name: std::string
+//   last_name: std::string
+//   age: int
+// }
 static_assert(refl::flattenable_aggregate_class<bar_t>);
+// Recursive flattening blocked by std::string.
+static_assert(! refl::recursively_flattenable_aggregate_class<bar_t>);
 
 struct baz_t : foo_t {
   virtual void introduce_myself() {
@@ -106,8 +186,13 @@ struct baz_t : foo_t {
   }
 };
 
-// 2. Flattenable
+// Flattenable, which can be flattened as: {
+//   first_name: std::string
+//   last_name: std::string
+// }
 static_assert(refl::flattenable_class<baz_t>);
+// Recursive flattening blocked by std::string.
+static_assert(! refl::recursively_flattenable_class<baz_t>);
 // Not aggregate (due to existence of implicit v-table pointer)
 static_assert(! refl::flattenable_aggregate_class<baz_t>);
 
@@ -116,9 +201,14 @@ private:
   uint64_t last_visit_timestamp_;
 };
 
-// 3. Partially flattenable (we can still try to flatten its public members)
+// Partially flattenable (we can still try to flatten its public members): {
+//   first_name: std::string
+//   last_name: std::string
+//   /* non-public data members are filtered out */
+// }
 static_assert(refl::partially_flattenable_class<qux_t>);
-// Not flattenable (due to existance of private non-static data members)
+static_assert(refl::recursively_partially_flattenable_class<qux_t>);
+// Not flattenable (due to existence of private non-static data members)
 static_assert(! refl::flattenable_class<qux_t>);
 // Not flattenable aggregate (stronger constraints than flattenable concept)
 static_assert(! refl::flattenable_aggregate_class<qux_t>);
@@ -127,6 +217,9 @@ static_assert(! refl::flattenable_aggregate_class<qux_t>);
 // A class type can be partially flattenable even if there's nothing public to be flattened.
 static_assert(refl::partially_flattenable_class<std::string>);
 static_assert(refl::partially_flattenable_class<std::vector<std::string>>);
+
+static_assert(refl::recursively_partially_flattenable_class<std::string>);
+static_assert(refl::recursively_partially_flattenable_class<std::vector<std::string>>);
 ```
 
 See [unit test](../tests/type_traits/class_types/test_flattenable_types.cpp) for more examples and details.
@@ -136,6 +229,8 @@ See [unit test](../tests/type_traits/class_types/test_flattenable_types.cpp) for
 Defined in header `<reflect_cpp26/type_traits/class_types/flattened_nsdm.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
 struct flattened_data_member_info {
   std::meta::info member;
   std::meta::member_offset actual_offset;
@@ -154,6 +249,8 @@ constexpr std::array<flattened_data_member_info, /*N*/> all_flattened_nonstatic_
 
 template <partially_flattenable_class T>
 constexpr std::array<flattened_data_member_info, /*N*/> public_flattened_nonstatic_data_members_v;
+
+}  // namespace reflect_cpp26
 ```
 
 The struct `flattened_data_member_info` holds information about a non-static data member of class type `T`, which may be inherited from base classes of `T`. It contains the following members:
@@ -182,7 +279,7 @@ private:
   int32_t c1;
 public:
   int32_t c2;
-}
+};
 // Layout of class DemoStructC (each '*' represents one byte):
 // 0               8               16              24              32              40
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -230,6 +327,8 @@ template for (constexpr auto M : refl::all_flattened_nonstatic_data_members_v<De
 Defined in header `<reflect_cpp26/type_traits/arithmetic_types.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
 template <class T>
 concept char_type = /* ... */;
 
@@ -241,6 +340,8 @@ concept integer_type = /* ... */;
 
 template <std::integral T>
 using integral_to_integer_t = /* ... */;
+
+}  // namespace reflect_cpp26
 ```
 
 The concept `char_type` checks whether `T` is a (maybe cv-qualified) character type, i.e. one of `char`, `wchar_t`, `char8_t`, `char16_t` or `char32_t`.
@@ -258,6 +359,8 @@ Note that `signed char` and `unsigned char` are not `char_type`s as they are def
 Defined in header `<reflect_cpp26/type_traits/string_like_types.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
 template <class T>
 concept string_like = /* ... */;
 
@@ -269,6 +372,8 @@ concept c_style_string = /* ... */;
 
 template <string_like T>
 using char_type_t = /* ... */;
+
+}  // namespace reflect_cpp26
 ```
 
 The concept `string_like` tests whether `T` is a (maybe cv-qualified) string-like type. String-like types are those which can be converted to `std::basic_string_view<CharT>` for some character type `CharT` via the `std::basic_string_view` constructor, including but not limited to:
@@ -296,6 +401,8 @@ See [unit test](../tests/type_traits/test_string_like_types.cpp) for examples an
 Defined in header `<reflect_cpp26/type_traits/tuple_like_types.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
 template <class T>
 concept tuple_like = /* ... */;
 
@@ -312,7 +419,9 @@ template <class... Args>
 constexpr bool are_tuple_like_of_same_size_v;
 
 template <class T, class Tuple>
-concept tuple_like_of_same_size_with = are_tuple_like_of_same_size_v<T, Tuples>;
+concept tuple_like_of_same_size_with = are_tuple_like_of_same_size_v<T, Tuple>;
+
+}  // namespace reflect_cpp26
 ```
 
 The concept `tuple_like` tests whether `T` is a (maybe cv-qualified) [tuple-like](https://en.cppreference.com/w/cpp/utility/tuple/tuple-like) type. Tuple-like types are those whose `std::tuple_size` and `std::tuple_element` specializations are provided, and members can be accessed via either `std::get<I>(t)` or `t.get<I>()` for all valid indices. This includes but is not limited to:
@@ -334,6 +443,8 @@ The concept `tuple_like_of_same_size_with` tests whether `std::remove_cv_t<T>` a
 Defined in header `<reflect_cpp26/type_traits/cvref.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
 consteval auto add_cv_like(std::meta::info dest, std::meta::info src) -> std::meta::info;
 
 consteval auto add_cvref_like(std::meta::info dest, std::meta::info src) -> std::meta::info;
@@ -348,6 +459,8 @@ using add_cvref_like_t = [:add_cvref_like(^^Dest, ^^Src):];
 
 template <class Dest, class Src>
 using propagate_cv_like_t = [:propagate_cv_like(^^Dest, ^^Src):];
+
+}  // namespace reflect_cpp26
 ```
 
 The function `add_cv_like()` takes 2 reflections designating types `dest` and `src` as arguments. The function adds const-qualifier to `dest` if `remove_reference(src)` is const-qualified, and adds volatile-qualifier to `dest` if `remove_reference(src)` is volatile-qualified. Compilation error is raised on either of the following:
@@ -368,7 +481,7 @@ The type aliases `add_cv_like_t`, `add_cvref_like_t` and `propagate_cv_like_t` a
 
 Example (see [unit test](../tests/type_traits/test_cvref.cpp) for more examples):
 ```cpp
-using refl = reflect_cpp26;
+namespace refl = reflect_cpp26;
 
 // Adds const-qualifier to T = int*
 static_assert(std::is_same_v<refl::add_cv_like_t<int*, const double&>,
@@ -406,6 +519,8 @@ static_assert(std::is_same_v<refl::propagate_cv_like_t<const int***&&, volatile 
 Defined in header `<reflect_cpp26/type_traits/is_invocable.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
 // ---- Group 1.1: Exact result type testing ----
 
 template <class R, class Func, class... Args>
@@ -456,7 +571,7 @@ concept invocable_exactly_r = /* ... */;
 template <class F, class R, class... Args>
 concept nothrow_invocable_exactly_r = /* ... */;
 
-// ---- Group 2.3: Repetitive argument type testing
+// ---- Group 2.3: Repetitive argument type testing ----
 
 template <class F, class Arg, size_t N>
 concept invocable_n = /* ... */;
@@ -475,6 +590,8 @@ concept invocable_exactly_r_n = /* ... */;
 
 template <class F, class R, class Arg, size_t N>
 concept nothrow_invocable_exactly_r_n = /* ... */;
+
+}  // namespace reflect_cpp26
 ```
 
 Various concepts are provided for testing callable types:
@@ -506,6 +623,8 @@ Defined in header `<reflect_cpp26/type_traits/class_types.hpp>`, or the followin
 3. `<reflect_cpp26/type_traits/class_types/virtual_inheritance.hpp>`
 
 ```cpp
+namespace reflect_cpp26 {
+
 // 1.
 template <class T>
 concept class_without_ambiguous_inheritance = /* ... */;
@@ -515,10 +634,12 @@ concept class_without_non_public_nonstatic_data_members = /* ... */;
 // 3.
 template <class T>
 concept class_without_virtual_inheritance = /* ... */;
+
+}  // namespace reflect_cpp26
 ```
 
 The concept `class_without_ambiguous_inheritance` tests whether `std::remove_cv_t<T>` is a non-union class type without ambiguous non-empty base, i.e. no non-virtual base class `B` is inherited more than once, either directly or indirectly.
-* Empty base classes (typically tag types in practice) may cause ambiguity as well even if they make no effect on class layout.
+* Empty base classes (typically tag types in practice) may cause ambiguity as well even if they have no effect on class layout.
 * Always evaluates to `false` for non-class types (including references).
 
 The concept `class_without_non_public_nonstatic_data_members` tests whether `std::remove_cv_t<T>` is a non-union class without inaccessible non-static data members, i.e.:

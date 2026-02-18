@@ -53,6 +53,10 @@ array:
 |  value="A3"   |    value=""    |  value="B5"   |  value="C6"   |    value=""    |  value="D8"   |
 | is_valid=true | is_valid=false | is_valid=true | is_valid=true | is_valid=false | is_valid=true |
 +-------------------------------------------------------------------------------------------------+
+pseudo-code:
+if key < min_key or key > max_key or not array[key - min_key].is_valid:
+    return {value: None, is_valid: false}
+return {value: array[key - min_key].value, is_valid: true}
 
 3. Sparse
 kv-pairs: {1: "A1", 3: "B3", 9: "C9", 27: "D27", 81: "E81"}
@@ -60,6 +64,7 @@ kv-pairs: {1: "A1", 3: "B3", 9: "C9", 27: "D27", 81: "E81"}
 |   key=1    |   key=3    |   key=9    |   key=27    |   key=81    |
 | value="A1" | value="B3" | value="C9" | value="D27" | value="E81" |
 +------------------------------------------------------------------+
+algorithm: linear search or binary search, depending on the array length
 
 4. General
 +--------------------------------------------------------------------+
@@ -85,6 +90,8 @@ Let $n$ be the number of input entries, $L$ be the maximum length of input keys.
 Defined in header `<reflect_cpp26/fixed_map/integral_key.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
 struct integral_key_fixed_map_options {
   bool already_sorted = false;
   bool already_unique = false;
@@ -99,6 +106,8 @@ template <class KVPairRange>
 consteval auto make_integral_key_fixed_map(
     KVPairRange kv_pairs,
     integral_key_fixed_map_options options = {}) -> std::meta::info;
+
+}  // namespace reflect_cpp26
 
 #define REFLECT_CPP26_INTEGRAL_KEY_FIXED_MAP(kv_pairs, ...) \
   [:reflect_cpp26::make_integral_key_fixed_map(kv_pairs, ##__VA_ARGS__):]
@@ -152,6 +161,8 @@ static_assert(map2[color::green] == 0x00FF00);
 Defined in header `<reflect_cpp26/fixed_map/string_key.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
 struct string_key_fixed_map_options {
   bool already_ascii_only = false;
   bool already_unique = false;
@@ -167,6 +178,8 @@ template <std::ranges::input_range KVPairRange>
 consteval auto make_string_key_fixed_map(
     KVPairRange&& kv_pairs,
     string_key_fixed_map_options options = {}) -> std::meta::info;
+
+}  // namespace reflect_cpp26
 
 #define REFLECT_CPP26_STRING_KEY_FIXED_MAP(kv_pairs, ...) \
   [:reflect_cpp26::make_string_key_fixed_map(kv_pairs, ##__VA_ARGS__):]
@@ -189,7 +202,7 @@ The argument `options` contains parameters to fine-tune the behavior during fixe
 * `already_ascii_only` (default: `false`): Whether input keys contain ASCII characters only. This option has effect only if already_unique is true (see below), and helps to improve compile-time performance by skipping case conversion if it's ensured that keys only contain ASCII characters and are already lower-case. UB or wrong result may occur if this flag is set as true but the input keys are not ASCII-only actually.
 * `already_unique` (default: `false`): Whether input keys are already deduplicated. This option helps to improve compile-time performance by skipping key duplication check if it's ensured that keys are unique. UB or wrong result may occur if this flag is set as true but the input keys are not deduplicated actually.
 * `ascii_case_insensitive` (default: `false`): Whether the fixed map is built in a case-insensitive manner. Only ASCII characters are allowed in input keys when this option is enabled (since no locale data is available during compile-time).
-* `adjusts_alignment` (default: `false`): Whether alignment optimization is enabled. If enabled, then the elements of underlying arrays will be aligned to $2^n$ bytes for maximized random-access performance.
+* `adjusts_alignment` (default: `false`): Whether alignment optimization is enabled. If enabled, then the elements of underlying arrays will be aligned to $2^x$ bytes for maximized random-access performance.
 * `min_load_factor` (default: `0.5`): Minimum load factor for underlying data structures (hash table, etc.).
 * `max_n_iterations` (default: `64`): Maximum number of attempts to find suitable remainder $M$ for hash table structure, where hashed index = `string_hash(key) % M`.
 * `optimization_threshold` (default: `4`): Length threshold to enable optimized data structures. Naive linear list searching is used if the input length is less than this threshold.

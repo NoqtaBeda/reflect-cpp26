@@ -86,19 +86,6 @@ consteval auto pointer_to_structural(std::nullptr_t) {
 }
 }  // namespace impl
 
-/**
- * Converts value to compile-time static constant with structural storage type.
- * Conversion rule:
- * (1) If T is range whose value type is V, then result is:
- *     (a) meta_basic_string_view<V> if V is character type
- *     (b) meta_span<to_structural_result_t<V>> otherwise.
- * (2) if T is tuple-like type, then result is
- *     meta_tuple<to_structural_result_t<Vs>...> where Vs... are tuple elements of T
- * (3) if T is const CharT* where CharT is a character type,
- *     then result is meta_basic_string_view<CharT>, assuming T points to a
- *     null-terminated string.
- * (4) Otherwise, result is T identity.
- */
 template <class T>
 consteval auto to_structural_t::operator()(const T& value) {
   if constexpr (std::ranges::input_range<T>) {
@@ -115,17 +102,11 @@ consteval auto to_structural_t::operator()(const T& value) {
   }
 }
 
-/**
- * Specialization for std::initializer_list.
- */
 template <class T>
 consteval auto to_structural_t::operator()(std::initializer_list<T> values) {
   return impl::range_to_structural(values);
 }
 
-/**
- * Conversion result type of to_structural().
- */
 template <class T>
 using to_structural_result_t = decltype(to_structural(std::declval<T>()));
 }  // namespace reflect_cpp26

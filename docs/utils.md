@@ -4,11 +4,26 @@ reflect_cpp26 contains a series of utility components for various usages.
 
 ## Components
 
+### Structural Alternative Types
+
+Defined in headers:
+* `<reflect_cpp26/utils/meta_span.hpp>`;
+* `<reflect_cpp26/utils/meta_string_view.hpp>`;
+* `<reflect_cpp26/utils/meta_tuple.hpp>`.
+
+These headers define structural alternative types to `std::span`, `std::basic_string_view`, and `std::tuple` respectively. A structural type is a type whose value can be used as a non-type template parameter (see [cppreference](https://en.cppreference.com/w/cpp/language/template_parameters) for details).
+
+* `meta_span<T>` - A structural alternative to `std::span<const T>`, which stores two pointers `head` and `tail`. For default-constructed `meta_span` instances, both `head` and `tail` are null pointers denoting an empty range; Otherwise, these 2 pointers denote the range `[head, tail)`. It is designed for contiguous ranges with static constant storage only.
+* `meta_basic_string_view<CharT>` - A structural alternative to `std::basic_string_view<CharT>`, which stores two pointers (`head` and `tail`): For default-constructed `meta_basic_string_view` instances, both `head` and `tail` are null pointers denoting an empty string; Otherwise, these 2 pointers denote the character range `[head, tail)`. It is ensured that the referenced string is always null-terminated (i.e., `tail == nullptr || *tail == '\0'` always holds). Type aliases are provided for all character types: `meta_string_view`, `meta_u8string_view`, etc.
+* `meta_tuple<Args...>` - A structural alternative to `std::tuple<Args...>`, which uses `define_aggregate` to create an underlying aggregate type at compile time, making the tuple itself a structural type.
+
 ### Converting Identifier Naming
 
 Defined in header `<reflect_cpp26/utils/identifier_naming.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
 enum class identifier_naming_rule {
   snake_case,
   all_caps_snake_case,
@@ -58,6 +73,8 @@ struct to_*_case_opt_t {
 
 inline constexpr auto to_*_case = to_*_case_t{};
 inline constexpr auto to_*_case_opt = to_*_case_opt_t{};
+
+}  // namespace reflect_cpp26
 ```
 
 (1) `is_valid_identifier(std::string_view identifier)` checks whether `identifier` is valid by the following rules:
@@ -106,8 +123,12 @@ Example:
 Defined in header `<reflect_cpp26/utils/addressable_member.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
 consteval bool is_addressable_class_member(std::meta::info member);
 consteval bool is_addressable_non_class_member(std::meta::info member);
+
+}  // namespace reflect_cpp26
 ```
 
 `is_addressable_class_member(member)` checks whether `member` is some *class* member which is addressable, i.e. `&[:member:]` is a valid constant expression. Addressable class member is one of the following:

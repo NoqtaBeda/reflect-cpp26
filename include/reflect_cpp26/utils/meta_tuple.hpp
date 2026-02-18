@@ -35,9 +35,9 @@ struct meta_tuple {
 
   struct underlying_type;
   consteval {
-    define_aggregate(^^underlying_type,
-                     {
-                         data_member_spec(^^Args)...});
+    // clang-format off
+    define_aggregate(^^underlying_type, {data_member_spec(^^Args)...});
+    // clang-format on
   }
   // values are exposed as public data member to make meta_tuple
   // structural aggregate.
@@ -80,9 +80,6 @@ public:
   friend constexpr const auto&& get(const meta_tuple&& tuple) {
     return std::move(tuple.values.[:get_nth_field(I):]);
   }
-
-  constexpr auto operator<=>(const meta_tuple&) const = default;
-  constexpr bool operator==(const meta_tuple&) const = default;
 };
 
 // TODO: We need better way to implement operator == and <=>
@@ -96,9 +93,7 @@ constexpr bool is_memberwise_eq_comparable() {
     template for (constexpr auto I : std::views::iota(0zU, N)) {
       using E1 = std::tuple_element_t<I, Tuple1>;
       using E2 = std::tuple_element_t<I, Tuple2>;
-      if (!is_equal_comparable_v<E1, E2>) {
-        return false;
-      }
+      if (!is_equal_comparable_v<E1, E2>) return false;
     }
     return true;
   } else {

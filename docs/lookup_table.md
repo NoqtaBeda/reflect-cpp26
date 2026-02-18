@@ -124,6 +124,16 @@ int main() {
 The two macros below are the interface of creating lookup tables. The wrapped `make_*_member_lookup_table()` functions return the reflector of a compile-time constant object which is the lookup table instance generated, then the macros extract the instance with splice operator. Examples of usage are shown in "Quick Start" section.
 
 ```cpp
+namespace reflect_cpp26 {
+
+template <class T>
+consteval auto make_class_member_lookup_table(std::meta::info type, /* ... */) -> std::meta::info;
+
+template <class T>
+consteval auto make_namespace_member_lookup_table(std::meta::info ns, /* ... */) -> std::meta::info;
+
+}  // namespace reflect_cpp26
+
 #define REFLECT_CPP26_CLASS_MEMBER_LOOKUP_TABLE(T, ...) \
   [:reflect_cpp26::make_class_member_lookup_table(^^T, ##__VA_ARGS__):]
 
@@ -177,6 +187,8 @@ All the components shown below are defined in header `<reflect_cpp26/lookup/look
 ### Configuration Parameters
 
 ```cpp
+namespace reflect_cpp26 {
+
 enum class class_member_category {
   unspecified,
   nonstatic_data_members,
@@ -200,6 +212,8 @@ struct namespace_member_lookup_table_options {
   namespace_member_category category = namespace_member_category::unspecified;
   fixed_map_options_variant fixed_map_options;
 };
+
+}  // namespace reflect_cpp26
 ```
 
 `class_member_category` is used to specify which category of class members to include in the lookup table:
@@ -223,6 +237,8 @@ Configuration parameters are defined as `struct class_member_lookup_table_option
 ### Member Lookup by Identifier Pattern
 
 ```cpp
+namespace reflect_cpp26 {
+
 // (1.1)
 consteval auto make_class_member_lookup_table(
     std::meta::info T,
@@ -236,6 +252,8 @@ consteval auto make_namespace_member_lookup_table(
     std::string_view pattern,
     const namespace_member_lookup_table_options& options = {},
     std::meta::access_context ctx = REFLECT_CPP26_CURRENT_CONTEXT) -> std::meta::info;
+
+}  // namespace reflect_cpp26
 ```
 
 Members are added to the lookup table only if:
@@ -252,6 +270,8 @@ The `pattern` string is constrained to the format `"prefix*suffix"` where `'*'` 
 ### Member Lookup by Transformation Function
 
 ```cpp
+namespace reflect_cpp26 {
+
 // (2.1)
 template <class TransformFn>
 consteval auto make_class_member_lookup_table(
@@ -285,6 +305,8 @@ consteval auto make_class_member_lookup_table(
     const TransformFn& transform_fn,
     const class_member_lookup_table_options& options = {},
     std::meta::access_context ctx = REFLECT_CPP26_CURRENT_CONTEXT) -> std::meta::info;
+
+}  // namespace reflect_cpp26
 ```
 
 For overload (2), `transform_fn` is a callable which has one of the following call signatures (the result type `R` below should be either integral, enum or string-like type):

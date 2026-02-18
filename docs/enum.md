@@ -1,6 +1,6 @@
 ## Introduction
 
-reflect_cpp26 provides useful functionality for enum types, including but not limited to:
+reflect_cpp26 provides common functionality for enum types, including but not limited to:
 * enum metadata: `enum_entries`, `enum_names`, `enum_values`, `enum_type_name`, etc.;
 * conversion between enum value and string: `enum_name`, `enum_cast`, etc.;
 * enum flag value decomposition and string parsing: `enum_flags_name`, `enum_flags_cast`, etc.;
@@ -16,11 +16,15 @@ Part of API design resembles [magic_enum](https://github.com/Neargye/magic_enum)
 Defined in header `<reflect_cpp26/enum/enum_entry_order.hpp>` (implicitly included by its users).
 
 ```cpp
+namespace reflect_cpp26 {
+
 enum class enum_entry_order {
   original,
   by_value,
   by_name,
 };
+
+}  // namespace reflect_cpp26
 ```
 
 * `enum_entry_order` is used for customized ordering when accessing entry list of enum type:
@@ -35,11 +39,15 @@ enum class enum_entry_order {
 Define in header `<reflect_cpp26/enum/enum_type_name.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
 template <enum_type E>
 constexpr std::string_view enum_type_name_v;
 
 template <enum_type E>
 constexpr std::string_view enum_type_display_string_v;
+
+}  // namespace reflect_cpp26
 ```
 
 * `enum_type_name_v<E>` gets the type name (dealiased, cv-qualifiers discarded) of given enum type.
@@ -66,11 +74,15 @@ printf("%s\n", refl::enum_type_display_string_v<const bar_values>.data());
 Defined in header `<reflect_cpp26/enum/enum_count.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
 template <enum_type E>
 constexpr size_t enum_count_v;
 
 template <enum_type E>
 constexpr size_t enum_unique_count_v;
+
+}  // namespace reflect_cpp26
 ```
 
 * `enum_count_v<E>` gets the number of entries in given enum type.
@@ -96,11 +108,15 @@ static_assert(refl::enum_unique_count_v<foo> == 5); // Five distinct values: 0, 
 Defined in header `<reflect_cpp26/enum/enum_entries.hpp>`
 
 ```cpp
+namespace reflect_cpp26 {
+
 template <enum_type E>
 using enum_entry_t = std::pair<std::remove_cv_t<E>, std::string_view>;
 
 template <enum_type E, enum_entry_order Order = enum_entry_order::original>
 constexpr std::span<const enum_entry_t<E>> enum_entries_v;
+
+}  // namespace reflect_cpp26
 ```
 
 * `enum_entries_v<E>` gets the (value, string) pair list of given enum type.
@@ -136,11 +152,15 @@ template for (constexpr auto order: {original, by_value, by_name}) {
 Defined in header `<reflect_cpp26/enum/enum_names.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
 template <enum_type E, enum_entry_order Order = enum_entry_order::original>
 constexpr std::span<const std::string_view> enum_names_v;
 
 template <enum_type E, enum_entry_order Order = enum_entry_order::original>
 constexpr std::span<const std::string_view> enum_names_tolower_v;
+
+}  // namespace reflect_cpp26
 ```
 
 * `enum_names_v<E>` gets the name list of given enum type.
@@ -180,8 +200,12 @@ template for (constexpr auto order: {original, by_value, by_name}) {
 Defined in header `<reflect_cpp26/enum/enum_values.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
 template <class E, enum_entry_order Order = enum_entry_order::original>
 constexpr std::span<const std::remove_cv_t<E>> enum_values_v;
+
+}  // namespace reflect_cpp26
 ```
 
 * `enum_values_v<E>` gets the value list of given enum type.
@@ -192,8 +216,12 @@ Example see below (combined with the next section "Enum Reflection Entry List").
 Defined in header `<reflect_cpp26/enum/enum_meta_entries.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
 template <enum_type E, enum_entry_order Order = enum_entry_order::original>
 constexpr std::span<const std::meta::info> enum_meta_entries_v;
+
+}  // namespace reflect_cpp26
 ```
 
 * `enum_meta_entries_v<E>` gets the reflector list of entries in given enum type.
@@ -227,8 +255,12 @@ template for (constexpr auto order: refl::enum_meta_entries_v<refl::enum_entry_o
 Defined in header `<reflect_cpp26/enum/enum_hash.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
 template <enum_type E>
 constexpr uint64_t enum_hash_v;
+
+}  // namespace reflect_cpp26
 ```
 
 * `enum_hash_v<E>` gets the 64-bit hash value of given enum type.
@@ -266,11 +298,15 @@ static_assert(refl::enum_hash_v<foo_0> != refl::enum_hash_v<foo_6>); // Name cha
 Defined in header `<reflect_cpp26/enum/enum_json.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
 template <enum_type E, enum_entry_order Order = enum_entry_order::original>
 constexpr std::string enum_json();
 
 template <enum_type E, enum_entry_order Order = enum_entry_order::original>
 constexpr std::string_view enum_json_static_v;
+
+}  // namespace reflect_cpp26
 ```
 
 * `enum_json<E>()` gets the JSON representation of given enum class in compact style. The returned `std::string` is built (possibly) during runtime.
@@ -300,6 +336,8 @@ printf("by_value: %s\n", refl::enum_json_static_v<foo, by_value>.data());
 Defined in header `<reflect_cpp26/enum/enum_name.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
 struct enum_name_t {
   // (1)
   template <enum_type E>
@@ -314,6 +352,8 @@ struct enum_name_opt_t {
 
 constexpr auto enum_name = enum_name_t{};
 constexpr auto enum_name_opt = enum_name_opt_t{};
+
+}  // namespace reflect_cpp26
 ```
 
 * (1) `enum_name(e)` gets the name of given enum value `e`, or `std::string_view{}` if no such value defined in the enum type.
@@ -361,6 +401,8 @@ auto convert_to_bar(foo value) -> std::optional<bar> {
 Defined in header `<reflect_cpp26/enum/enum_cast.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
 template <enum_type E>
 struct enum_cast_t {
 private:
@@ -378,6 +420,8 @@ public:
 
 template <enum_type E>
 constexpr auto enum_cast = enum_cast_t<std::remove_cv_t<E>>{};
+
+}  // namespace reflect_cpp26
 ```
 
 * (1.1) `enum_cast<E>(str)` converts given string to the enum value whose name matches, or `std::nullopt` if such enum entry does not exist;
@@ -410,6 +454,8 @@ static_assert(refl::enum_cast<foo>(0x1'0000'0001) == std::nullopt);
 Defined in header `<reflect_cpp26/enum/enum_includes.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
 template <enum_type E>
 struct enum_contains_t {
 private:
@@ -428,6 +474,8 @@ public:
 
 template <enum_type E>
 constexpr auto enum_contains = enum_contains_t<std::remove_cv_t<E>>{};
+
+}  // namespace reflect_cpp26
 ```
 
 * (1) `enum_contains<E>(e)` checks whether given enum value is defined in the enum type;
@@ -462,6 +510,8 @@ static_assert(! refl::enum_contains<foo>(0x1'0000'0001));
 Defined in header `<reflect_cpp26/enum/enum_index.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
 template <enum_entry_order Order>
 struct enum_index_by_t {
   // (1)
@@ -499,6 +549,8 @@ constexpr auto enum_index_opt = enum_index_opt_by<enum_entry_order::original>;
 
 constexpr auto enum_unique_index = enum_unique_index_t{};
 constexpr auto enum_unique_index_opt = enum_unique_index_opt_t{};
+
+}  // namespace reflect_cpp26
 ```
 
 * (1) `enum_index_by<Order>(e)` or `enum_index(e)` (taking the original definition order) gets the index (0-based) of given enum value by specific order, or returns `npos` (which is -1 of type `size_t`) if such enum value is not defined. For multiple enum entries with duplicated underlying value, the first one is taken.
@@ -546,6 +598,8 @@ bool call_handler(foo key, const char* message) {
 Defined in header `<reflect_cpp26/enum/enum_flags_name.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
 template <class Iter>
 struct enum_flags_name_to_result {
   std::errc ec;
@@ -581,6 +635,8 @@ struct enum_flags_name_to_t {
 
 constexpr auto enum_flags_name = enum_flags_name_t{};
 constexpr auto enum_flags_name_to = enum_flags_name_to_t{};
+
+}  // namespace reflect_cpp26
 ```
 
 * (1.1, 1.2) `enum_flags_name(e, delim)` gets the string representation of given enum flags value, entries separated by given delimiter (which is `'|'` by default). If `e` can not be decomposed as disjunction of enum entries defined, `std::nullopt` is returned;
@@ -650,6 +706,8 @@ bool set_file_permissions(std::string_view file, permissions perms) {
 Defined in header `<reflect_cpp26/enum/enum_flags_cast.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
 template <enum_type E>
 struct enum_flags_cast_t {
 private:
@@ -675,6 +733,8 @@ public:
 
 template <enum_type E>
 constexpr auto enum_flags_cast = enum_flags_cast_t<std::remove_cv_t<E>>{};
+
+}  // namespace reflect_cpp26
 ```
 
 * (1.1, 1.2) `enum_flags_cast<E>(str, delim)` Returns the enum flag value if input str can be decomposed as enum entry names split by given delimiter, or `std::nullopt` otherwise. Each segment in input `str` is trimmed before parsing such that leading and trailing ASCII space characters of the segment are removed;
@@ -709,6 +769,8 @@ static_assert(refl::enum_flags_cast<permissions>(8) == std::nullopt);
 Defined in header `<reflect_cpp26/enum/enum_flags_contains.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
 template <enum_type E>
 struct enum_flags_contains_t {
 private:
@@ -735,6 +797,8 @@ public:
 
 template <enum_type E>
 constexpr auto enum_flags_contains = enum_flags_contains_t<std::remove_cv_t<E>>{};
+
+}  // namespace reflect_cpp26
 ```
 
 Overloads in `enum_flags_contains<E>` are similar to those in `enum_flags_cast<E>` while only persence check is performed (i.e. whether the input string or value is a disjunction of enum entries defined). If you do not need the casted enum value, `enum_flags_contains<E>` has better performance.
@@ -744,6 +808,8 @@ Overloads in `enum_flags_contains<E>` are similar to those in `enum_flags_cast<E
 Defined in header `<reflect_cpp26/enum/enum_switch.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
 // (1)
 template <enum_type E, class Func>
 constexpr auto enum_switch(Func&& func, E e) -> void;
@@ -756,6 +822,8 @@ constexpr auto enum_switch(Func&& func, E e) -> std::optional<T>;
 // (4)
 template <class T, enum_type E, class Func>
 constexpr auto enum_switch(Func&& func, E e, T&& default_value) -> std::decay_t<T>;
+
+}  // namespace reflect_cpp26
 ```
 
 * (1) `enum_switch(func, e)` invokes `func(std::integral_constant<E, e>{}) -> void`, or no-op if `e` does not exist in enum type definition;
@@ -823,13 +891,19 @@ void run_interpreter(const uint8_t* bytecode, context_t* ctx) {
 Defined in header `<reflect_cpp26/enum/enum_flags_contains.hpp>`.
 
 ```cpp
+namespace reflect_cpp26 {
+
+// std::format support
 template <reflect_cpp26::enum_type E>
 struct std::formatter<E>;
 
+// fmt::format support (conditional)
 #if __has_include(<fmt/format.h>)
 template <reflect_cpp26::enum_type E>
 struct fmt::formatter<E>;
 #endif
+
+}  // namespace reflect_cpp26
 ```
 
 reflect_cpp26 provides formatting support for both `std::format` and `fmt::format`. Include this header to enable enum formatting.

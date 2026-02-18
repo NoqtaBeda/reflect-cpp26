@@ -34,6 +34,35 @@
 
 namespace rfl = reflect_cpp26;
 
+// Examples in docs/type_operations.md
+namespace examples {
+// (1) Range (including initializer list) to meta_span
+constexpr auto span_1 = rfl::to_structural(std::vector<int>{1, 2, 3, 4, 5});
+static_assert(std::is_same_v<std::remove_const_t<decltype(span_1)>, rfl::meta_span<int>>);
+
+constexpr auto span_2 = rfl::to_structural({"Cat", "Dog", "Rabbit"});
+static_assert(
+    std::is_same_v<std::remove_const_t<decltype(span_2)>, rfl::meta_span<rfl::meta_string_view>>);
+
+// (2) Tuple-like to meta_tuple
+constexpr auto meta_tup =
+    rfl::to_structural(std::tuple<int, double, std::u16string>{42, 3.14, u"Hello"});
+static_assert(std::is_same_v<std::remove_const_t<decltype(meta_tup)>,
+                             rfl::meta_tuple<int, double, rfl::meta_u16string_view>>);
+
+// (3) Const char pointer to meta_string_view
+constexpr auto cstr = rfl::to_structural("world");
+static_assert(std::is_same_v<std::remove_const_t<decltype(cstr)>, rfl::meta_string_view>);
+
+// (4) Identity
+struct point_t {
+  int x;
+  int y;
+};
+constexpr auto val = rfl::to_structural(point_t{.x = 12, .y = 34});
+static_assert(std::is_same_v<decltype(val), const point_t>);
+}  // namespace examples
+
 // Arithmetic types
 constexpr auto some_int = 42;
 constexpr auto some_int_conv = rfl::to_structural(some_int);

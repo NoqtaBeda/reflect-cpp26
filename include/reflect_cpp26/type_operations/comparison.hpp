@@ -73,8 +73,10 @@ constexpr bool is_generic_comparable_with() {
     // Case (3.1): For C-style strings (CharT* or const CharT*):
     // the other operand must be a character range.
     // For the case of const CharT* vs. const CharU*,
-    // it's allowed by case (2) yet discouraged due to semantic confusion
-    // if CharT and CharU are the same; disallowed otherwise.
+    // If CharT and CharU are the same,
+    //   it's allowed by case (2) to keep consistency with C/C++ language behavior,
+    //   though it may be confusing and error-prone in practice.
+    // Otherwise, comparison is disallowed.
     if constexpr (std::ranges::input_range<U>) {
       return char_type<std::ranges::range_value_t<U>>;
     } else {

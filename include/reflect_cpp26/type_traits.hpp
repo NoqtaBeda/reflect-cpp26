@@ -29,6 +29,7 @@
 #include <reflect_cpp26/type_traits/is_invocable.hpp>
 #include <reflect_cpp26/type_traits/reduction.hpp>
 #include <reflect_cpp26/type_traits/string_like_types.hpp>
+#include <reflect_cpp26/type_traits/structural_types.hpp>
 #include <reflect_cpp26/type_traits/template_instance.hpp>
 #include <reflect_cpp26/type_traits/tuple_like_types.hpp>
 #include <reflect_cpp26/type_traits/type_comparison.hpp>

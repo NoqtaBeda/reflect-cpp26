@@ -21,16 +21,11 @@
  **/
 
 #include <cassert>
+#include <reflect_cpp26/type_traits/class_types/flattened_nsdm.hpp>
 #include <reflect_cpp26/utils/define_static_values.hpp>
 #include <reflect_cpp26/utils/to_string.hpp>
 
 #include "tests/test_options.hpp"
-
-#ifdef ENABLE_FULL_HEADER_TEST
-#include <reflect_cpp26/type_traits.hpp>
-#else
-#include <reflect_cpp26/type_traits/class_types/flattened_nsdm.hpp>
-#endif
 
 namespace rfl = reflect_cpp26;
 using namespace std::literals;

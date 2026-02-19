@@ -21,15 +21,10 @@
  **/
 
 #include <reflect_cpp26/enum/enum_bitwise_operators.hpp>
+#include <reflect_cpp26/type_operations/to_string.hpp>
 #include <system_error>
 
 #include "tests/test_options.hpp"
-
-#ifdef ENABLE_FULL_HEADER_TEST
-#include <reflect_cpp26/type_operations.hpp>
-#else
-#include <reflect_cpp26/type_operations/to_string.hpp>
-#endif
 
 namespace rfl = reflect_cpp26;
 

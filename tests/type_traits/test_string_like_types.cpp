@@ -20,16 +20,11 @@
  * SOFTWARE.
  **/
 
+#include <reflect_cpp26/type_traits/string_like_types.hpp>
 #include <reflect_cpp26/utils/meta_string_view.hpp>
 #include <string_view>
 
 #include "tests/test_options.hpp"
-
-#ifdef ENABLE_FULL_HEADER_TEST
-#include <reflect_cpp26/type_traits.hpp>
-#else
-#include <reflect_cpp26/type_traits/string_like_types.hpp>
-#endif
 
 namespace rfl = reflect_cpp26;
 

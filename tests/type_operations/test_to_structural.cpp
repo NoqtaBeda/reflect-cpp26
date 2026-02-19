@@ -22,15 +22,10 @@
 
 #include <cstdio>
 #include <numeric>
+#include <reflect_cpp26/type_operations/to_structural.hpp>
 #include <reflect_cpp26/utils/to_string.hpp>
 
 #include "tests/test_options.hpp"
-
-#ifdef ENABLE_FULL_HEADER_TEST
-#include <reflect_cpp26/type_operations.hpp>
-#else
-#include <reflect_cpp26/type_operations/to_structural.hpp>
-#endif
 
 namespace rfl = reflect_cpp26;
 

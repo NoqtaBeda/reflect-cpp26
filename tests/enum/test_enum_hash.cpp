@@ -20,14 +20,10 @@
  * SOFTWARE.
  **/
 
+#include <reflect_cpp26/enum/enum_hash.hpp>
+
 #include "tests/enum/test_cases.hpp"
 #include "tests/test_options.hpp"
-
-#ifdef ENABLE_FULL_HEADER_TEST
-#include <reflect_cpp26/enum.hpp>
-#else
-#include <reflect_cpp26/enum/enum_hash.hpp>
-#endif
 
 using namespace reflect_cpp26;
 

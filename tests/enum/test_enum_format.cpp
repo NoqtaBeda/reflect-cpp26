@@ -20,13 +20,8 @@
  * SOFTWARE.
  **/
 
-#include <tests/test_options.hpp>
-
-#ifdef ENABLE_FULL_HEADER_TEST
-#include <reflect_cpp26/enum.hpp>
-#else
 #include <reflect_cpp26/enum/enum_format.hpp>
-#endif
+#include <tests/test_options.hpp>
 
 enum class foo_t {
   one = 1,

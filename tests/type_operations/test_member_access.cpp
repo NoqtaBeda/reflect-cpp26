@@ -20,15 +20,10 @@
  * SOFTWARE.
  **/
 
+#include <reflect_cpp26/type_operations/member_access.hpp>
 #include <reflect_cpp26/utils/to_string.hpp>
 
 #include "tests/test_options.hpp"
-
-#ifdef ENABLE_FULL_HEADER_TEST
-#include <reflect_cpp26/type_operations.hpp>
-#else
-#include <reflect_cpp26/type_operations/member_access.hpp>
-#endif
 
 namespace rfl = reflect_cpp26;
 
@@ -41,7 +36,11 @@ public:
   int x, y, z;
   explicit constexpr foo_t(int base)
       : std::pair<int, int>{base - 2, base - 1},
-        a(base), x(base + 1), y(base + 2), z(base + 3), b(base + 4) {}
+        a(base),
+        x(base + 1),
+        y(base + 2),
+        z(base + 3),
+        b(base + 4) {}
 
 protected:
   int b;

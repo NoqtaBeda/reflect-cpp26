@@ -24,15 +24,10 @@
 #include <deque>
 #include <limits>
 #include <list>
+#include <reflect_cpp26/type_operations/comparison.hpp>
 #include <set>
 
 #include "tests/test_options.hpp"
-
-#ifdef ENABLE_FULL_HEADER_TEST
-#include <reflect_cpp26/type_operations.hpp>
-#else
-#include <reflect_cpp26/type_operations/comparison.hpp>
-#endif
 
 namespace rfl = reflect_cpp26;
 

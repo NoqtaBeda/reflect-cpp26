@@ -22,17 +22,12 @@
 
 #include <climits>
 #include <list>
+#include <reflect_cpp26/enum/enum_bitwise_operators.hpp>
+#include <reflect_cpp26/enum/enum_flags_name.hpp>
 #include <sstream>
 
 #include "tests/enum/flags_test_cases.hpp"
 #include "tests/test_options.hpp"
-
-#ifdef ENABLE_FULL_HEADER_TEST
-#include <reflect_cpp26/enum.hpp>
-#else
-#include <reflect_cpp26/enum/enum_bitwise_operators.hpp>
-#include <reflect_cpp26/enum/enum_flags_name.hpp>
-#endif
 
 namespace rfl = reflect_cpp26;
 

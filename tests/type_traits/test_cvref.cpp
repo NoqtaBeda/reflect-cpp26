@@ -20,13 +20,9 @@
  * SOFTWARE.
  **/
 
-#include "tests/test_options.hpp"
-
-#ifdef ENABLE_FULL_HEADER_TEST
-#include <reflect_cpp26/type_traits.hpp>
-#else
 #include <reflect_cpp26/type_traits/cvref.hpp>
-#endif
+
+#include "tests/test_options.hpp"
 
 namespace rfl = reflect_cpp26;
 

@@ -20,16 +20,11 @@
  * SOFTWARE.
  **/
 
+#include <reflect_cpp26/enum/enum_switch.hpp>
 #include <string>
 
 #include "tests/enum/test_cases.hpp"
 #include "tests/test_options.hpp"
-
-#ifdef ENABLE_FULL_HEADER_TEST
-#include <reflect_cpp26/enum.hpp>
-#else
-#include <reflect_cpp26/enum/enum_switch.hpp>
-#endif
 
 using namespace reflect_cpp26;
 using namespace std::literals;

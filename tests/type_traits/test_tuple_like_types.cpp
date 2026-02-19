@@ -20,16 +20,11 @@
  * SOFTWARE.
  **/
 
+#include <reflect_cpp26/type_traits/tuple_like_types.hpp>
 #include <reflect_cpp26/utils/meta_tuple.hpp>
 #include <utility>
 
 #include "tests/test_options.hpp"
-
-#ifdef ENABLE_FULL_HEADER_TEST
-#include <reflect_cpp26/type_traits.hpp>
-#else
-#include <reflect_cpp26/type_traits/tuple_like_types.hpp>
-#endif
 
 namespace rfl = reflect_cpp26;
 

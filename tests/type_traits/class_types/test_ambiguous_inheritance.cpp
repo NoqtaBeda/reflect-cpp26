@@ -20,16 +20,11 @@
  * SOFTWARE.
  **/
 
+#include <reflect_cpp26/type_traits/class_types/ambiguous_inheritance.hpp>
 #include <system_error>
 #include <variant>
 
 #include "tests/test_options.hpp"
-
-#ifdef ENABLE_FULL_HEADER_TEST
-#include <reflect_cpp26/type_traits.hpp>
-#else
-#include <reflect_cpp26/type_traits/class_types/ambiguous_inheritance.hpp>
-#endif
 
 namespace rfl = reflect_cpp26;
 

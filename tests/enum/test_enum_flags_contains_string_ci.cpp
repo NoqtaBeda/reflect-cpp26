@@ -21,15 +21,10 @@
  **/
 
 #include <climits>
+#include <reflect_cpp26/enum/enum_flags_contains.hpp>
 
 #include "tests/enum/flags_test_cases.hpp"
 #include "tests/test_options.hpp"
-
-#ifdef ENABLE_FULL_HEADER_TEST
-#include <reflect_cpp26/enum.hpp>
-#else
-#include <reflect_cpp26/enum/enum_flags_contains.hpp>
-#endif
 
 namespace rfl = reflect_cpp26;
 

@@ -21,6 +21,7 @@
  **/
 
 #include <cstdio>
+#include <reflect_cpp26/type_traits/structural_types.hpp>
 #include <reflect_cpp26/utils/constant.hpp>
 #include <reflect_cpp26/utils/meta_span.hpp>
 #include <reflect_cpp26/utils/meta_string_view.hpp>
@@ -28,12 +29,6 @@
 #include <system_error>
 
 #include "tests/test_options.hpp"
-
-#ifdef ENABLE_FULL_HEADER_TEST
-#include <reflect_cpp26/type_traits.hpp>
-#else
-#include <reflect_cpp26/type_traits/structural_types.hpp>
-#endif
 
 namespace rfl = reflect_cpp26;
 

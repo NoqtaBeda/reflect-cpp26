@@ -5,8 +5,6 @@
 This project uses [XMake](https://xmake.io) as build system.
 ```
 # Optional parameters:
-# --full-header-test=[yn]: Enables full header test
-#   (e.g. <reflect_cpp26/module.hpp> is included instead of <reflect_cpp26/module/component.hpp>)
 # --static-test=[yn]: Enables static assertion test
 
 xmake f -m <debug|release> \
@@ -30,3 +28,6 @@ LD_LIBRARY_PATH=<path-to-libc++> xmake run --group=tests/**
 * Missing UT for string-key fixed map (in utils):
   * Case-insensitive UT with `string_key_map_by_hash_binary_search_slow`;
   * Hash collision cases with every hash-related scenario.
+* type_operations
+  * Serialize to JSON or YAML
+  * Deserialize from JSON or YAML

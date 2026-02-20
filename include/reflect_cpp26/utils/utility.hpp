@@ -28,7 +28,7 @@
 #include <limits>
 #include <reflect_cpp26/type_traits/arithmetic_types.hpp>
 #include <reflect_cpp26/utils/concepts.hpp>
-#include <vector>
+#include <utility>
 
 namespace reflect_cpp26 {
 // -------- Relaxed alternative of integer comparison  --------
@@ -143,14 +143,6 @@ constexpr auto cmp_three_way = cmp_three_way_t{};
 template <class R>
 constexpr auto in_range = in_range_t<R>{};
 
-struct identity_t {
-  template <class T>
-  static constexpr decltype(auto) operator()(T&& value) {
-    return std::forward<T>(value);
-  }
-};
-constexpr auto identity = identity_t{};
-
 struct to_underlying_t {
   template <enum_type E>
   static constexpr auto operator()(E e) {
@@ -159,41 +151,35 @@ struct to_underlying_t {
 };
 constexpr auto to_underlying = to_underlying_t{};
 
-template <std::unsigned_integral To, std::integral From>
-constexpr auto zero_extend(From from) {
-  if constexpr (std::is_signed_v<From>) {
-    auto u = std::make_unsigned_t<From>(from);
-    return static_cast<To>(u);
-  } else {
-    return static_cast<To>(from);
+template <std::unsigned_integral To>
+struct zero_extend_t {
+  template <std::integral From>
+  static constexpr auto operator()(From from) {
+    if constexpr (std::is_signed_v<From>) {
+      auto u = std::make_unsigned_t<From>(from);
+      return static_cast<To>(u);
+    } else {
+      return static_cast<To>(from);
+    }
   }
-}
+};
+template <class To>
+constexpr auto zero_extend = zero_extend_t<To>{};
 
-template <std::signed_integral To, std::integral From>
-constexpr auto sign_extend(From from) {
-  if constexpr (std::is_signed_v<From>) {
-    return static_cast<To>(from);
-  } else {
-    auto s = std::make_signed_t<From>(from);
-    return static_cast<To>(s);
+template <std::signed_integral To>
+struct sign_extend_t {
+  template <std::integral From>
+  static constexpr auto operator()(From from) {
+    if constexpr (std::is_signed_v<From>) {
+      return static_cast<To>(from);
+    } else {
+      auto s = std::make_signed_t<From>(from);
+      return static_cast<To>(s);
+    }
   }
-}
-
-template <class T, class Allocator = std::allocator<T>>
-constexpr auto make_reserved_vector(size_t n) -> std::vector<T, Allocator> {
-  auto res = std::vector<T, Allocator>{};
-  res.reserve(n);
-  return res;
-}
-
-template <class CharT = char,
-          class Traits = std::char_traits<CharT>,
-          class Allocator = std::allocator<CharT>>
-constexpr auto make_reserved_string(size_t n) -> std::basic_string<CharT, Traits, Allocator> {
-  auto res = std::basic_string<CharT, Traits, Allocator>{};
-  res.reserve(n);
-  return res;
-}
+};
+template <class To>
+constexpr auto sign_extend = sign_extend_t<To>{};
 }  // namespace reflect_cpp26
 
 #endif  // REFLECT_CPP26_UTILS_UTILITY_HPP

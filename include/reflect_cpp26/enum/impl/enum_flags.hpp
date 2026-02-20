@@ -166,7 +166,7 @@ consteval auto make_enum_flags_decomposer() -> std::meta::info {
 }
 
 template <class E>
-constexpr auto enum_flags_decomposer_v = extract<make_enum_flags_decomposer<E>()>();
+constexpr auto enum_flags_decomposer_v = [:make_enum_flags_decomposer<E>():];
 
 template <class E>
 constexpr auto enum_flags_is_empty_v =

@@ -35,8 +35,7 @@ using fixed_map_options_variant = std::variant<std::monostate,  // All options b
 
 /**
  * Generates a fixed map in compile-time.
- * Result V is the reflected constant of the fixed map generated, which can be
- * extracted via [: V :] or reflect_cpp26::extract<V>().
+ * Result V is the reflected constant of the fixed map generated, which can be extracted via [:V:].
  * See the following candidates for details:
  *   make_integral_key_fixed_map() in ./integral_key.hpp;
  *   make_string_key_fixed_map() in ./string_key.hpp.

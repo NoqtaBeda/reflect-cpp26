@@ -68,7 +68,8 @@ constexpr auto to_int64_or_uint64(T value) {
 template <class E>
 consteval auto make_enum_name_map_kv_pairs() {
   using kv_pair_t = std::pair<to_int64_or_uint64_t<E>, meta_string_view>;
-  auto res = make_reserved_vector<kv_pair_t>(enum_count_v<E>);
+  auto res = std::vector<kv_pair_t>{};
+  res.reserve(enum_count_v<E>);
 
   auto entries = enumerators_of(^^E);
   const auto& names = enum_names_v<E>;
@@ -97,7 +98,8 @@ consteval auto make_enum_name_map() {
 template <class E, bool CaseInsensitive>
 consteval auto make_enum_from_string_kv_pairs() {
   using kv_pair_t = std::pair<meta_string_view, to_int64_or_uint64_t<E>>;
-  auto res = make_reserved_vector<kv_pair_t>(enum_count_v<E>);
+  auto res = std::vector<kv_pair_t>{};
+  res.reserve(enum_count_v<E>);
 
   auto entries = enumerators_of(^^E);
   const auto& names = []() -> const auto& {
@@ -156,13 +158,15 @@ template <class E>
 consteval auto make_enum_index_map_kv_pairs() {
   using entry_tuple_t = std::pair<size_t, std::string_view>;
   auto entries = enumerators_of(^^E);
-  auto entry_tuples = make_reserved_vector<entry_tuple_t>(entries.size());
+  auto entry_tuples = std::vector<entry_tuple_t>{};
+  entry_tuples.reserve(entries.size());
   for (auto i = 0zU, n = entries.size(); i < n; i++) {
     entry_tuples.emplace_back(i, std::meta::identifier_of(entries[i]));
   }
 
   using kv_pair_t = std::pair<to_int64_or_uint64_t<E>, enum_indices_t>;
-  auto res = make_reserved_vector<kv_pair_t>(entries.size());
+  auto res = std::vector<kv_pair_t>{};
+  res.reserve(entries.size());
   for (auto i = 0zU, n = entries.size(); i < n; i++) {
     auto cur = entries[i];
     res.emplace_back(to_int64_or_uint64(extract<E>(cur)),

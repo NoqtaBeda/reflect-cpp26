@@ -72,14 +72,16 @@ meta_test_cases = {
   -- Utility
   "utils/test_addressable_member",
   "utils/test_ctype",
+  "utils/test_debug_helper",
   "utils/test_identifier_naming",
   "utils/test_meta_tuple",
   "utils/test_to_string",
   "utils/test_type_tuple",
-  "utils/test_utils_misc",
+  "utils/test_utility",
   -- Type Traits
   "type_traits/test_cvref",
   "type_traits/test_is_invocable",
+  "type_traits/test_serializable_types",
   "type_traits/test_string_like_types",
   "type_traits/test_structural_types",
   "type_traits/test_tuple_like_types",

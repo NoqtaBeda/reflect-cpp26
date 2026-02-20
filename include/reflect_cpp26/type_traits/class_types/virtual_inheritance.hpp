@@ -44,7 +44,7 @@ consteval bool is_class_without_virtual_inheritance(std::meta::info T) {
   }
   auto check_fn = [](std::meta::info base) {
     if (is_virtual(base)) return false;
-    return extract_bool(^^class_without_virtual_inheritance, type_of(base));
+    return extract<bool>(^^class_without_virtual_inheritance, type_of(base));
   };
   return std::ranges::all_of(all_direct_bases_of(T), check_fn);
 }

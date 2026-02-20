@@ -23,6 +23,7 @@
 #ifndef REFLECT_CPP26_ENUM_ENUM_COMPARISON_OPERATORS_HPP
 #define REFLECT_CPP26_ENUM_ENUM_COMPARISON_OPERATORS_HPP
 
+#include <compare>
 #include <reflect_cpp26/enum/impl/enum_operator_macros.hpp>
 #include <reflect_cpp26/utils/concepts.hpp>
 

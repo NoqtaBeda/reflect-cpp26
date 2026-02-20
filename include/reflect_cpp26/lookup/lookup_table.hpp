@@ -63,7 +63,7 @@ using direct_members_query_fn = std::vector<std::meta::info> (*)(std::meta::info
                                                                  std::meta::access_context);
 
 consteval bool is_valid_key_type(std::meta::info T) {
-  return extract_bool(^^integral_or_enum_type, T) || extract_bool(^^string_like_of, T, ^^char);
+  return extract<bool>(^^integral_or_enum_type, T) || extract<bool>(^^string_like_of, T, ^^char);
 }
 
 consteval bool is_std_optional_instance(std::meta::info T) {

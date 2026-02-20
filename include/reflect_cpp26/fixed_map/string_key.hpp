@@ -77,7 +77,8 @@ consteval auto make_string_key_fixed_map_impl(std::vector<KVPair> kv_pairs,
     return make_naive_string_key_map(kv_pairs, options.ascii_case_insensitive);
   }
 
-  auto hash_values = make_reserved_vector<uint64_t>(kv_pairs.size());
+  auto hash_values = std::vector<uint64_t>{};
+  hash_values.reserve(kv_pairs.size());
   for (const auto& [k, _] : kv_pairs) {
     hash_values.push_back(bkdr_hash64(k));
   }

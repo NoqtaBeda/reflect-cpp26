@@ -23,6 +23,7 @@
 #ifndef REFLECT_CPP26_ENUM_ENUM_COUNT_HPP
 #define REFLECT_CPP26_ENUM_ENUM_COUNT_HPP
 
+#include <algorithm>
 #include <ranges>
 #include <reflect_cpp26/utils/concepts.hpp>
 #include <reflect_cpp26/utils/config.hpp>

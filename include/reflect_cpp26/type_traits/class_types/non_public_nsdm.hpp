@@ -47,7 +47,7 @@ consteval bool is_class_type_with_non_public_nsdm(std::meta::info T) {
   }
   return std::ranges::any_of(all_direct_bases_of(T), [](std::meta::info base) {
     if (is_public(base)) {
-      return !extract_bool(^^class_without_non_public_nonstatic_data_members, type_of(base));
+      return !extract<bool>(^^class_without_non_public_nonstatic_data_members, type_of(base));
     }
     return !is_empty_type(type_of(base));
   });

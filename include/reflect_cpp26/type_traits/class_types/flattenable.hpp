@@ -30,9 +30,9 @@
 
 namespace reflect_cpp26 {
 namespace impl {
-consteval bool is_recursively_partially_flattenable(std::meta::info T);
-consteval bool is_recursively_flattenable(std::meta::info T);
-consteval bool is_recursively_flattenable_aggregate(std::meta::info T);
+consteval bool is_memberwise_partially_flattenable(std::meta::info T);
+consteval bool is_memberwise_flattenable(std::meta::info T);
+consteval bool is_memberwise_flattenable_aggregate(std::meta::info T);
 consteval bool is_flattenable_aggregate(std::meta::info T);
 }  // namespace impl
 
@@ -59,49 +59,49 @@ template <class T>
 concept flattenable_aggregate = std::is_array_v<T> || flattenable_aggregate_class<T>;
 
 template <class T>
-concept recursively_partially_flattenable =
-    impl::is_recursively_partially_flattenable(remove_cv(^^T));
+concept memberwise_partially_flattenable =
+    impl::is_memberwise_partially_flattenable(remove_cv(^^T));
 
 template <class T>
-concept recursively_partially_flattenable_class =
-    partially_flattenable_class<T> && recursively_partially_flattenable<T>;
+concept memberwise_partially_flattenable_class =
+    partially_flattenable_class<T> && memberwise_partially_flattenable<T>;
 
 template <class T>
-concept recursively_flattenable = impl::is_recursively_flattenable(remove_cv(^^T));
+concept memberwise_flattenable = impl::is_memberwise_flattenable(remove_cv(^^T));
 
 template <class T>
-concept recursively_flattenable_class = flattenable_class<T> && recursively_flattenable<T>;
+concept memberwise_flattenable_class = flattenable_class<T> && memberwise_flattenable<T>;
 
 template <class T>
-concept recursively_flattenable_aggregate =
-    impl::is_recursively_flattenable_aggregate(remove_cv(^^T));
+concept memberwise_flattenable_aggregate =
+    impl::is_memberwise_flattenable_aggregate(remove_cv(^^T));
 
 template <class T>
-concept recursively_flattenable_aggregate_class =
-    flattenable_aggregate_class<T> && recursively_flattenable_aggregate<T>;
+concept memberwise_flattenable_aggregate_class =
+    flattenable_aggregate_class<T> && memberwise_flattenable_aggregate<T>;
 
 namespace impl {
-consteval bool is_recursively_partially_flattenable(std::meta::info T) {
+consteval bool is_memberwise_partially_flattenable(std::meta::info T) {
   if (is_scalar_type(T)) {
     return true;
   }
   if (is_array_type(T)) {
-    return extract_bool(^^recursively_partially_flattenable, remove_all_extents(T));
+    return extract<bool>(^^memberwise_partially_flattenable, remove_all_extents(T));
   }
   if (is_class_type(T)) {
     // 1. T itself should be partially flattenable
-    if (!extract_bool(^^partially_flattenable_class, T)) {
+    if (!extract<bool>(^^partially_flattenable_class, T)) {
       return false;
     }
-    // 2. Each of public base classes should be recursively partially flattenable
+    // 2. Each of public base classes should be memberwise partially flattenable
     for (auto base : public_direct_bases_of(T)) {
-      if (!extract_bool(^^recursively_partially_flattenable_class, type_of(base))) {
+      if (!extract<bool>(^^memberwise_partially_flattenable_class, type_of(base))) {
         return false;
       }
     }
-    // 3. Each public non-static data member should be recursively partially flattenable
+    // 3. Each public non-static data member should be memberwise partially flattenable
     for (auto member : public_direct_nonstatic_data_members_of(T)) {
-      if (!extract_bool(^^recursively_partially_flattenable, type_of(member))) {
+      if (!extract<bool>(^^memberwise_partially_flattenable, type_of(member))) {
         return false;
       }
     }
@@ -110,27 +110,27 @@ consteval bool is_recursively_partially_flattenable(std::meta::info T) {
   return false;
 }
 
-consteval bool is_recursively_flattenable(std::meta::info T) {
+consteval bool is_memberwise_flattenable(std::meta::info T) {
   if (is_scalar_type(T)) {
     return true;
   }
   if (is_array_type(T)) {
-    return extract_bool(^^recursively_flattenable, remove_all_extents(T));
+    return extract<bool>(^^memberwise_flattenable, remove_all_extents(T));
   }
   if (is_class_type(T)) {
     // 1. T itself should be flattenable
-    if (!extract_bool(^^flattenable_class, T)) {
+    if (!extract<bool>(^^flattenable_class, T)) {
       return false;
     }
-    // 2. Each of base classes should be recursively flattenable
+    // 2. Each of base classes should be memberwise flattenable
     for (auto base : all_direct_bases_of(T)) {
-      if (!extract_bool(^^recursively_flattenable_class, type_of(base))) {
+      if (!extract<bool>(^^memberwise_flattenable_class, type_of(base))) {
         return false;
       }
     }
     // 3. Each non-static data member should be flattenable
     for (auto member : all_direct_nonstatic_data_members_of(T)) {
-      if (!extract_bool(^^recursively_flattenable, type_of(member))) {
+      if (!extract<bool>(^^memberwise_flattenable, type_of(member))) {
         return false;
       }
     }
@@ -139,26 +139,26 @@ consteval bool is_recursively_flattenable(std::meta::info T) {
   return false;
 }
 
-consteval bool is_recursively_flattenable_aggregate(std::meta::info T) {
+consteval bool is_memberwise_flattenable_aggregate(std::meta::info T) {
   if (is_array_type(T)) {
     auto U = remove_all_extents(T);
-    return is_scalar_type(U) || extract_bool(^^recursively_flattenable_aggregate, U);
+    return is_scalar_type(U) || extract<bool>(^^memberwise_flattenable_aggregate, U);
   }
   if (is_class_type(T)) {
     // 1. T itself should be flattenable aggregate
-    if (!extract_bool(^^flattenable_aggregate_class, T)) {
+    if (!extract<bool>(^^flattenable_aggregate_class, T)) {
       return false;
     }
-    // 2. Each of base classes should be recursively flattenable aggregate
+    // 2. Each of base classes should be memberwise flattenable aggregate
     for (auto base : all_direct_bases_of(T)) {
-      if (!extract_bool(^^recursively_flattenable_aggregate_class, type_of(base))) {
+      if (!extract<bool>(^^memberwise_flattenable_aggregate_class, type_of(base))) {
         return false;
       }
     }
-    // 3. Each non-static data member should be recursively flattenable
+    // 3. Each non-static data member should be memberwise flattenable
     for (auto member : all_direct_nonstatic_data_members_of(T)) {
       auto M = type_of(member);
-      if (!is_scalar_type(M) && !extract_bool(^^recursively_flattenable_aggregate, M)) {
+      if (!is_scalar_type(M) && !extract<bool>(^^memberwise_flattenable_aggregate, M)) {
         return false;
       }
     }
@@ -167,15 +167,15 @@ consteval bool is_recursively_flattenable_aggregate(std::meta::info T) {
   return false;
 }
 
-consteval bool is_recursively_flattenable(std::meta::info T, std::meta::info target_concept) {
+consteval bool is_memberwise_flattenable(std::meta::info T, std::meta::info target_concept) {
   if (is_scalar_type(T)) {
     return true;
   }
   if (is_array_type(T)) {
     auto U = remove_all_extents(T);
-    return extract_bool(target_concept, U);
+    return extract<bool>(target_concept, U);
   }
-  return extract_bool(target_concept, T);
+  return extract<bool>(target_concept, T);
 }
 
 consteval bool is_flattenable_aggregate(std::meta::info T) {
@@ -189,7 +189,7 @@ consteval bool is_flattenable_aggregate(std::meta::info T) {
     if (!is_public(base) || is_virtual(base)) {
       return false;
     }
-    if (!extract_bool(^^flattenable_aggregate, type_of(base))) {
+    if (!extract<bool>(^^flattenable_aggregate, type_of(base))) {
       return false;
     }
   }

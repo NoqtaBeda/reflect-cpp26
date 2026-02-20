@@ -26,7 +26,7 @@
 
 namespace rfl = reflect_cpp26;
 
-TEST(UtilsMisc, DebugHelper) {
+TEST(UtilsDebugHelper, All) {
   EXPECT_THAT(rfl::type_name_of(0), testing::HasSubstr("int"));
   EXPECT_THAT(rfl::type_name_of<std::string>(), testing::HasSubstr("string"));
   auto sv = std::string_view{"abcde"};

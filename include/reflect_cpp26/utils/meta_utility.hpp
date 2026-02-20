@@ -88,37 +88,12 @@ REFLECT_CPP26_DEFINE_QUERY_V_WITH_ACCESS_CONTEXT(nonstatic_data_members)
 
 // -------- Extration helpers --------
 
-template <std::meta::info V>
-consteval auto extract() {
-  using T = [:type_of(V):];
-  return std::meta::extract<T>(V);
-}
-
 /**
  * Equivalent to extract<T>(substitute(templ, {templ_params})).
  */
 template <class T, std::same_as<std::meta::info>... Args>
 consteval T extract(std::meta::info templ, Args... templ_params) {
   return std::meta::extract<T>(std::meta::substitute(templ, {templ_params...}));
-}
-
-/**
- * Equivalent to extract<bool>(substitute(templ, {templ_params})).
- * Frequently used with type traits and concepts.
- */
-template <std::same_as<std::meta::info>... Args>
-consteval bool extract_bool(std::meta::info templ, Args... templ_params) {
-  return std::meta::extract<bool>(std::meta::substitute(templ, {templ_params...}));
-}
-
-// -------- Substitution helpers --------
-
-/**
- * Equivalent to substitute(templ, {templ_params}).
- */
-template <std::same_as<std::meta::info>... Args>
-consteval auto substitute(std::meta::info templ, Args... templ_params) -> std::meta::info {
-  return std::meta::substitute(templ, {templ_params...});
 }
 
 // -------- Identifier helpers --------

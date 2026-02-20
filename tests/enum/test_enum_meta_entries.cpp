@@ -52,8 +52,7 @@ TEST(EnumMetaEntries, All) {
   static_assert(
       "two" == std::meta::identifier_of(enum_meta_entries_v<volatile bar_unsigned, by_name>[9]));
 
-  constexpr auto some_type_twelve_param_v =
-      extract<enum_meta_entries_v<bar_unsigned, by_name>[2]>();
+  constexpr auto some_type_twelve_param_v = [:enum_meta_entries_v<bar_unsigned, by_name>[2]:];
   using some_type_twelve = some_type_t<some_type_twelve_param_v>;
   static_assert(2196 == some_type_twelve::value);
 }

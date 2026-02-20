@@ -45,8 +45,13 @@ constexpr auto byte_to_hex_table_v =
 constexpr auto to_string_impl(char8_t value, bool quoted = false) -> std::string {
   if (ascii_isprint(value)) {
     if (quoted) {
-      auto res = std::string(3zU, '\'');
-      res[1] = value;
+      auto res = std::string{};
+      res.resize_and_overwrite(3, [value](char* dest, size_t) {
+        dest[0] = '\'';
+        dest[1] = static_cast<char>(value);
+        dest[2] = '\'';
+        return 3;
+      });
       return res;
     }
     return std::string(1zU, static_cast<char>(value));
@@ -67,10 +72,26 @@ constexpr auto to_string_impl(char8_t value, bool quoted = false) -> std::string
     default:
       break;
   }
-  auto res = std::string{quoted ? "'\\x**'" : "\\x**"};
-  auto* out = res.data() + quoted + 2;  // 2 : Length of backslash and 'x'
-  constexpr auto n_xdigits_per_byte = 2;
-  std::copy_n(byte_to_hex_table_v + n_xdigits_per_byte * value, n_xdigits_per_byte, out);
+  auto res = std::string{};
+  if (quoted) {
+    // 6 : Length of '\x**'
+    res.resize_and_overwrite(6, [value](char* dest, size_t) {
+      dest[0] = '\'';
+      dest[1] = '\\';
+      dest[2] = 'x';
+      std::copy_n(byte_to_hex_table_v + 2 * value, 2, dest + 3);
+      dest[5] = '\'';
+      return 6;
+    });
+  } else {
+    // 4 : Length of \x**
+    res.resize_and_overwrite(4, [value](char* dest, size_t) {
+      dest[0] = '\\';
+      dest[1] = 'x';
+      std::copy_n(byte_to_hex_table_v + 2 * value, 2, dest + 2);
+      return 4;
+    });
+  }
   return res;
 }
 
@@ -182,13 +203,13 @@ constexpr auto to_display_string_impl(std::string_view string) -> std::string {
 
   constexpr auto extra_reserved_size = 16zU;
   for (; input_cur != input_end;) {
-    temp.resize_and_overwrite(string.size() + extra_reserved_size,
-                              [&input_cur, input_end](char* buffer_cur, size_t buffer_length) {
-                                const auto* buffer_begin = buffer_cur;
-                                std::tie(input_cur, buffer_cur) = write_display_string(
-                                    input_cur, input_end, buffer_cur, buffer_cur + buffer_length);
-                                return buffer_cur - buffer_begin;
-                              });
+    auto write_fn = [&input_cur, input_end](char* buffer_cur, size_t buffer_length) {
+      const auto* buffer_begin = buffer_cur;
+      std::tie(input_cur, buffer_cur) =
+          write_display_string(input_cur, input_end, buffer_cur, buffer_cur + buffer_length);
+      return buffer_cur - buffer_begin;
+    };
+    temp.resize_and_overwrite(string.size() + extra_reserved_size, write_fn);
     res += temp;
   }
   res.push_back('"');
@@ -204,8 +225,40 @@ constexpr auto to_string(std::same_as<bool> auto value) -> std::string {
   return value ? "true" : "false";
 }
 
+constexpr auto to_wstring(std::same_as<bool> auto value) -> std::wstring {
+  return value ? L"true" : L"false";
+}
+
+constexpr auto to_u8string(std::same_as<bool> auto value) -> std::u8string {
+  return value ? u8"true" : u8"false";
+}
+
+constexpr auto to_u16string(std::same_as<bool> auto value) -> std::u16string {
+  return value ? u"true" : u"false";
+}
+
+constexpr auto to_u32string(std::same_as<bool> auto value) -> std::u32string {
+  return value ? U"true" : U"false";
+}
+
 constexpr auto to_display_string(std::same_as<bool> auto value) -> std::string {
   return to_string(value);
+}
+
+constexpr auto to_display_wstring(std::same_as<bool> auto value) -> std::wstring {
+  return to_wstring(value);
+}
+
+constexpr auto to_display_u8string(std::same_as<bool> auto value) -> std::u8string {
+  return to_u8string(value);
+}
+
+constexpr auto to_display_u16string(std::same_as<bool> auto value) -> std::u16string {
+  return to_u16string(value);
+}
+
+constexpr auto to_display_u32string(std::same_as<bool> auto value) -> std::u32string {
+  return to_u32string(value);
 }
 
 /**

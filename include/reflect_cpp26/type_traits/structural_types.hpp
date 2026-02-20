@@ -23,6 +23,7 @@
 #ifndef REFLECT_CPP26_TYPE_TRAITS_STRUCTURAL_TYPES_HPP
 #define REFLECT_CPP26_TYPE_TRAITS_STRUCTURAL_TYPES_HPP
 
+#include <algorithm>
 #include <reflect_cpp26/utils/meta_utility.hpp>
 
 namespace reflect_cpp26 {
@@ -43,7 +44,7 @@ concept structural_type = impl::is_structural_type(^^std::remove_cv_t<T>);
 namespace impl {
 consteval bool is_structural_nsdm(std::meta::info m) {
   return is_public(m) && !is_volatile(m) && !is_mutable_member(m)
-      && extract_bool(^^structural_type, remove_all_extents(type_of(m)));
+      && extract<bool>(^^structural_type, remove_all_extents(type_of(m)));
 }
 
 consteval bool is_structural_class_type(std::meta::info T) {
@@ -51,7 +52,7 @@ consteval bool is_structural_class_type(std::meta::info T) {
     return false;
   }
   auto bases_are_structural = std::ranges::all_of(all_direct_bases_of(T), [](std::meta::info base) {
-    return is_public(base) && !is_virtual(base) && extract_bool(^^structural_type, type_of(base));
+    return is_public(base) && !is_virtual(base) && extract<bool>(^^structural_type, type_of(base));
   });
   return bases_are_structural
       && std::ranges::all_of(all_direct_nonstatic_data_members_of(T), is_structural_nsdm);
@@ -68,7 +69,7 @@ consteval bool is_structural_type(std::meta::info T) {
   if (is_reference_type(T)) {
     return is_lvalue_reference_type(T);  // Filters out rvalue references
   }
-  if (extract_bool(^^is_value_initializable_structural_type_v, T)) {
+  if (extract<bool>(^^is_value_initializable_structural_type_v, T)) {
     return true;  // Including all scalar types
   }
   if (is_union_type(T)) {

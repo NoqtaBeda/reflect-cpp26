@@ -60,26 +60,26 @@ concept flattenable_aggregate_class = /* ... */;
 template <class T>
 concept flattenable_aggregate = /* ... */;
 
-// ---- Group 2: Recursively flattenable ----
+// ---- Group 2: Memberwise flattenable ----
 
 // (2.1)
 template <class T>
-concept recursively_partially_flattenable_class = /* ... */;
+concept memberwise_partially_flattenable_class = /* ... */;
 // (2.2)
 template <class T>
-concept recursively_partially_flattenable = /* ... */;
+concept memberwise_partially_flattenable = /* ... */;
 // (2.3)
 template <class T>
-concept recursively_flattenable_class = /* ... */;
+concept memberwise_flattenable_class = /* ... */;
 // (2.4)
 template <class T>
-concept recursively_flattenable = /* ... */;
+concept memberwise_flattenable = /* ... */;
 // (2.5)
 template <class T>
-concept recursively_flattenable_aggregate_class = /* ... */;
+concept memberwise_flattenable_aggregate_class = /* ... */;
 // (2.6)
 template <class T>
-concept recursively_flattenable_aggregate = /* ... */;
+concept memberwise_flattenable_aggregate = /* ... */;
 
 }  // namespace reflect_cpp26
 ```
@@ -106,23 +106,23 @@ Group 1 of concepts tests whether a type can be "flattened", i.e. whether we can
     * **C-style array types**: including bounded `U[N]`, unbounded `U[]`, multi-dimension `U[N][K]`, etc.;
     * **Flattenable aggregate class types**: as described above.
 
-Group 2 of concepts tests whether a type can be "recursively flattened", i.e. whether we can flatten all of its non-static data members (or public ones only) recursively.
+Group 2 of concepts tests whether a type can be "memberwise flattened", i.e. whether we can flatten all of its non-static data members (or public ones only) *recursively*.
 
-* **(2.1)** The concept `recursively_partially_flattenable_class` tests whether `std::remove_cv_t<T>` is a recursively partially flattenable non-union class type, which satisfies all the following constraints:
+* **(2.1)** The concept `memberwise_partially_flattenable_class` tests whether `std::remove_cv_t<T>` is a memberwise partially flattenable non-union class type, which satisfies all the following constraints:
     * `T` itself satisfies the concept `partially_flattenable_class`;
-    * For each *public* non-static data member of `T` (including inherited ones from its public base classes), type of the member should satisfy the concept `recursively_partially_flattenable`.
-* **(2.2)** The concept `recursively_partially_flattenable` tests whether `std::remove_cv_t<T>` is a recursively partially flattenable type, which is one of the following:
+    * For each *public* non-static data member of `T` (including inherited ones from its public base classes), type of the member should satisfy the concept `memberwise_partially_flattenable`.
+* **(2.2)** The concept `memberwise_partially_flattenable` tests whether `std::remove_cv_t<T>` is a memberwise partially flattenable type, which is one of the following:
     * **Scalar types**;
-    * **C-style array types**: including bounded `U[N]`, unbounded `U[]`, multi-dimension `U[N][K]`, etc. where `U` should satisfy the concept `recursively_partially_flattenable`;
-    * **Recursively partially flattenable class types**: as described above.
-* **(2.3)** The concept `recursively_flattenable_class` tests whether `std::remove_cv_t<T>` is a recursively flattenable non-union class type, which satisfies all the following constraints:
+    * **C-style array types**: including bounded `U[N]`, unbounded `U[]`, multi-dimension `U[N][K]`, etc. where `U` should satisfy the concept `memberwise_partially_flattenable`;
+    * **Memberwise partially flattenable class types**: as described above.
+* **(2.3)** The concept `memberwise_flattenable_class` tests whether `std::remove_cv_t<T>` is a memberwise flattenable non-union class type, which satisfies all the following constraints:
     * `T` itself satisfies the concept `flattenable_class`;
-    * For each non-static data member of `T` (including non-public ones and inherited ones from its base classes), type of the member should satisfy the concept `recursively_flattenable`.
-* **(2.4)** The concept `recursively_flattenable` tests whether `std::remove_cv_t<T>` is a recursively flattenable type, which is either scalar type, C-style array type whose element type satisfies this concept recursively, or recursively flattenable class type as described above.
-* **(2.5)** The concept `recursively_flattenable_aggregate_class` tests whether `std::remove_cv_t<T>` is a recursively flattenable non-union aggregate class type, which satisfies all the following constraints:
+    * For each non-static data member of `T` (including non-public ones and inherited ones from its base classes), type of the member should satisfy the concept `memberwise_flattenable`.
+* **(2.4)** The concept `memberwise_flattenable` tests whether `std::remove_cv_t<T>` is a memberwise flattenable type, which is either scalar type, C-style array type whose element type satisfies this concept recursively, or memberwise flattenable class type as described above.
+* **(2.5)** The concept `memberwise_flattenable_aggregate_class` tests whether `std::remove_cv_t<T>` is a memberwise flattenable non-union aggregate class type, which satisfies all the following constraints:
     * `T` itself satisfies the concept `flattenable_aggregate_class`;
-    * For each non-static data member of `T` (including non-public ones and inherited ones from its base classes), type of the member should either be scalar type, or satisfy the concept `recursively_flattenable_aggregate`.
-* **(2.6)** The concept `recursively_flattenable_aggregate` tests whether `std::remove_cv_t<T>` is a recursively flattenable aggregate type, which is either C-style array type whose element type either is scalar or satisfies this concept recursively, or recursively flattenable aggregate class type as described above.
+    * For each non-static data member of `T` (including non-public ones and inherited ones from its base classes), type of the member should either be scalar type, or satisfy the concept `memberwise_flattenable_aggregate`.
+* **(2.6)** The concept `memberwise_flattenable_aggregate` tests whether `std::remove_cv_t<T>` is a memberwise flattenable aggregate type, which is either C-style array type whose element type either is scalar or satisfies this concept recursively, or memberwise flattenable aggregate class type as described above.
 
 Note that references, unions, and classes with virtual inheritance are never flattenable. Additionally, classes with private or protected non-static data members (either defined directly or inherited from non-public base classes) are never `flattenable` but may be `partially_flattenable`.
 
@@ -147,21 +147,21 @@ struct my_pairs_t {
   my_pair_t<float, double> pf;
 };
 
-// Recursively flattenable aggregate
+// Memberwise flattenable aggregate
 static_assert(refl::flattenable_aggregate_class<my_pairs_t>);
-// Recursively flattenable aggregate, which can be flattened as: {
+// Memberwise flattenable aggregate, which can be flattened as: {
 //   pi.first: int
 //   pi.second: long
 //   pf.first: float
 //   pf.second: double
 // }
-static_assert(refl::recursively_flattenable_aggregate_class<my_pairs_t>);
+static_assert(refl::memberwise_flattenable_aggregate_class<my_pairs_t>);
 
 static_assert(refl::flattenable_aggregate_class<std_pairs_t>);
-// Recursively flattenable. Similar to above.
-static_assert(refl::recursively_flattenable_class<std_pairs_t>);
-// NOT recursively flattenable aggregate (since std::pair is not aggregate).
-static_assert(! refl::recursively_flattenable_aggregate_class<std_pairs_t>);
+// Memberwise flattenable. Similar to above.
+static_assert(refl::memberwise_flattenable_class<std_pairs_t>);
+// NOT memberwise flattenable aggregate (since std::pair is not aggregate).
+static_assert(! refl::memberwise_flattenable_aggregate_class<std_pairs_t>);
 
 struct foo_t {
   std::string first_name;
@@ -177,8 +177,8 @@ struct bar_t : foo_t {
 //   age: int
 // }
 static_assert(refl::flattenable_aggregate_class<bar_t>);
-// Recursive flattening blocked by std::string.
-static_assert(! refl::recursively_flattenable_aggregate_class<bar_t>);
+// Memberwise flattening blocked by std::string.
+static_assert(! refl::memberwise_flattenable_aggregate_class<bar_t>);
 
 struct baz_t : foo_t {
   virtual void introduce_myself() {
@@ -191,8 +191,8 @@ struct baz_t : foo_t {
 //   last_name: std::string
 // }
 static_assert(refl::flattenable_class<baz_t>);
-// Recursive flattening blocked by std::string.
-static_assert(! refl::recursively_flattenable_class<baz_t>);
+// Memberwise flattening blocked by std::string.
+static_assert(! refl::memberwise_flattenable_class<baz_t>);
 // Not aggregate (due to existence of implicit v-table pointer)
 static_assert(! refl::flattenable_aggregate_class<baz_t>);
 
@@ -207,7 +207,7 @@ private:
 //   /* non-public data members are filtered out */
 // }
 static_assert(refl::partially_flattenable_class<qux_t>);
-static_assert(refl::recursively_partially_flattenable_class<qux_t>);
+static_assert(refl::memberwise_partially_flattenable_class<qux_t>);
 // Not flattenable (due to existence of private non-static data members)
 static_assert(! refl::flattenable_class<qux_t>);
 // Not flattenable aggregate (stronger constraints than flattenable concept)
@@ -218,8 +218,8 @@ static_assert(! refl::flattenable_aggregate_class<qux_t>);
 static_assert(refl::partially_flattenable_class<std::string>);
 static_assert(refl::partially_flattenable_class<std::vector<std::string>>);
 
-static_assert(refl::recursively_partially_flattenable_class<std::string>);
-static_assert(refl::recursively_partially_flattenable_class<std::vector<std::string>>);
+static_assert(refl::memberwise_partially_flattenable_class<std::string>);
+static_assert(refl::memberwise_partially_flattenable_class<std::vector<std::string>>);
 ```
 
 See [unit test](../tests/type_traits/class_types/test_flattenable_types.cpp) for more examples and details.
@@ -317,6 +317,43 @@ template for (constexpr auto M : refl::all_flattened_nonstatic_data_members_v<De
                M.offset_bytes_in_parent());
 }
 ```
+
+### Serializable Types
+
+Defined in header `<reflect_cpp26/type_traits/serializable_types.hpp>`.
+
+```cpp
+namespace reflect_cpp26 {
+
+template <class T>
+concept serializable = /* ... */;
+
+template <class T>
+concept memberwise_serializable = /* ... */;
+
+}  // namespace reflect_cpp26
+```
+
+These concepts test whether types can be serialized (converted to/from a portable format).
+
+The concept `serializable<T>` tests whether `std::remove_cv_t<T>` can be serialized. A type is serializable if it satisfies one of the following:
+
+* **`std::monostate`**: serves as a null placeholder;
+* **Arithmetic types**: all integral types (including `bool` and character types) and floating-point types;
+* **Enumeration types**: all enum types;
+* **String-like types**: types that satisfy the `string_like` concept (see [String-like Types](#string-like-types));
+* **Array types**: bounded and unbounded arrays whose element type is serializable;
+* **Range types**: types satisfying `std::ranges::range` whose `value_type` is serializable;
+* **Tuple-like types**: types satisfying `tuple_like` whose all element types are serializable;
+* **`std::optional<T>`**: if `T` is serializable;
+* **`std::variant<Ts...>`**: if all alternative types `Ts...` are serializable.
+
+The concept `memberwise_serializable<T>` tests whether `std::remove_cv_t<T>` can be serialized in a memberwise manner *recursively*. A type is memberwise serializable if:
+
+* It is `serializable`; or
+* It is a `flattenable_class` and all of its non-static data members (including inherited ones) are memberwise serializable.
+
+See [unit test](../tests/type_traits/test_serializable_types.cpp) for examples and details.
 
 ## Auxiliary Components
 

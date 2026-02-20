@@ -20,8 +20,8 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_TYPE_OPERATIONS_TO_structural_HPP
-#define REFLECT_CPP26_TYPE_OPERATIONS_TO_structural_HPP
+#ifndef REFLECT_CPP26_TYPE_OPERATIONS_TO_STRUCTURAL_HPP
+#define REFLECT_CPP26_TYPE_OPERATIONS_TO_STRUCTURAL_HPP
 
 #include <reflect_cpp26/type_traits/arithmetic_types.hpp>
 #include <reflect_cpp26/type_traits/structural_types.hpp>
@@ -111,4 +111,4 @@ template <class T>
 using to_structural_result_t = decltype(to_structural(std::declval<T>()));
 }  // namespace reflect_cpp26
 
-#endif  // REFLECT_CPP26_TYPE_OPERATIONS_TO_structural_HPP
+#endif  // REFLECT_CPP26_TYPE_OPERATIONS_TO_STRUCTURAL_HPP

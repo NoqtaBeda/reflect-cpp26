@@ -20,8 +20,8 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_UTILS_TO_STRING_UTILS_HPP
-#define REFLECT_CPP26_UTILS_TO_STRING_UTILS_HPP
+#ifndef REFLECT_CPP26_UTILS_STRING_UTILITY_HPP
+#define REFLECT_CPP26_UTILS_STRING_UTILITY_HPP
 
 #include <reflect_cpp26/type_traits/string_like_types.hpp>
 #include <reflect_cpp26/utils/config.hpp>
@@ -71,4 +71,4 @@ constexpr auto make_string_view(const StringT& str) {
 }
 }  // namespace reflect_cpp26
 
-#endif  // REFLECT_CPP26_UTILS_TO_STRING_UTILS_HPP
+#endif  // REFLECT_CPP26_UTILS_STRING_UTILITY_HPP

@@ -20,8 +20,8 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_WITH_HASH_COLLISION_HPP
-#define REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_WITH_HASH_COLLISION_HPP
+#ifndef REFLECT_CPP26_FIXED_MAP_IMPL_STRING_WITH_HASH_COLLISION_HPP
+#define REFLECT_CPP26_FIXED_MAP_IMPL_STRING_WITH_HASH_COLLISION_HPP
 
 #include <reflect_cpp26/fixed_map/impl/string_policy.hpp>
 #include <reflect_cpp26/utils/meta_utility.hpp>
@@ -111,4 +111,4 @@ consteval auto make_string_key_map_with_hash_collision(
 }
 }  // namespace reflect_cpp26::impl
 
-#endif  // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_WITH_HASH_COLLISION_HPP
+#endif  // REFLECT_CPP26_FIXED_MAP_IMPL_STRING_WITH_HASH_COLLISION_HPP

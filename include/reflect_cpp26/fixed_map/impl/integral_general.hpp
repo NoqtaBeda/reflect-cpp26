@@ -20,8 +20,8 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_INTEGRAL_GENERAL_HPP
-#define REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_INTEGRAL_GENERAL_HPP
+#ifndef REFLECT_CPP26_FIXED_MAP_IMPL_INTEGRAL_GENERAL_HPP
+#define REFLECT_CPP26_FIXED_MAP_IMPL_INTEGRAL_GENERAL_HPP
 
 #include <reflect_cpp26/fixed_map/impl/integral_dense.hpp>
 #include <reflect_cpp26/fixed_map/impl/integral_empty.hpp>
@@ -122,4 +122,4 @@ consteval auto make_general_integral_key_map(KVPairIter first,
 }
 }  // namespace reflect_cpp26::impl
 
-#endif  // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_INTEGRAL_GENERAL_HPP
+#endif  // REFLECT_CPP26_FIXED_MAP_IMPL_INTEGRAL_GENERAL_HPP

@@ -20,8 +20,8 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_UTILS_FIXED_MAP_STRING_KEY_HPP
-#define REFLECT_CPP26_UTILS_FIXED_MAP_STRING_KEY_HPP
+#ifndef REFLECT_CPP26_FIXED_MAP_STRING_KEY_HPP
+#define REFLECT_CPP26_FIXED_MAP_STRING_KEY_HPP
 
 #include <reflect_cpp26/fixed_map/impl/string_by_hash_search.hpp>
 #include <reflect_cpp26/fixed_map/impl/string_by_hash_table.hpp>
@@ -141,4 +141,4 @@ consteval auto make_string_key_fixed_map(KVPairRange&& kv_pairs,
 #define REFLECT_CPP26_STRING_KEY_FIXED_MAP(kv_pairs, ...) \
   [:reflect_cpp26::make_string_key_fixed_map(kv_pairs, ##__VA_ARGS__):]
 
-#endif  // REFLECT_CPP26_UTILS_FIXED_MAP_STRING_KEY_HPP
+#endif  // REFLECT_CPP26_FIXED_MAP_STRING_KEY_HPP

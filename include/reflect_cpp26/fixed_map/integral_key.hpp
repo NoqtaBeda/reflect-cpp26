@@ -20,8 +20,8 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_UTILS_FIXED_MAP_INTEGRAL_KEY_HPP
-#define REFLECT_CPP26_UTILS_FIXED_MAP_INTEGRAL_KEY_HPP
+#ifndef REFLECT_CPP26_FIXED_MAP_INTEGRAL_KEY_HPP
+#define REFLECT_CPP26_FIXED_MAP_INTEGRAL_KEY_HPP
 
 #include <reflect_cpp26/fixed_map/impl/integral_dense.hpp>
 #include <reflect_cpp26/fixed_map/impl/integral_empty.hpp>
@@ -173,4 +173,4 @@ consteval auto make_integral_key_fixed_map(KVPairRange kv_pairs,
 #define REFLECT_CPP26_INTEGRAL_KEY_FIXED_MAP(kv_pairs, ...) \
   [:reflect_cpp26::make_integral_key_fixed_map(kv_pairs, ##__VA_ARGS__):]
 
-#endif  // REFLECT_CPP26_UTILS_FIXED_MAP_INTEGRAL_KEY_HPP
+#endif  // REFLECT_CPP26_FIXED_MAP_INTEGRAL_KEY_HPP

@@ -20,8 +20,8 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_TYPE_TRAITS_TYPE_TUPLE_HPP
-#define REFLECT_CPP26_TYPE_TRAITS_TYPE_TUPLE_HPP
+#ifndef REFLECT_CPP26_UTILS_TYPE_TUPLE_HPP
+#define REFLECT_CPP26_UTILS_TYPE_TUPLE_HPP
 
 #include <ranges>
 #include <reflect_cpp26/type_traits/template_instance.hpp>
@@ -141,4 +141,4 @@ struct std::tuple_element<I, TupleLike> {
   using type = reflect_cpp26::ith_element_t<I, tuple_elements>;
 };
 
-#endif  // REFLECT_CPP26_TYPE_TRAITS_TYPE_TUPLE_HPP
+#endif  // REFLECT_CPP26_UTILS_TYPE_TUPLE_HPP

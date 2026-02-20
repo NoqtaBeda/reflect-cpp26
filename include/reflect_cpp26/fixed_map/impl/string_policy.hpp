@@ -20,8 +20,8 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_POLICY_HPP
-#define REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_POLICY_HPP
+#ifndef REFLECT_CPP26_FIXED_MAP_IMPL_STRING_POLICY_HPP
+#define REFLECT_CPP26_FIXED_MAP_IMPL_STRING_POLICY_HPP
 
 #include <reflect_cpp26/fixed_map/impl/string_common.hpp>
 #include <reflect_cpp26/utils/ctype.hpp>
@@ -96,4 +96,4 @@ consteval auto string_key_policy_type(bool case_insensitive) {
 }
 }  // namespace reflect_cpp26::impl
 
-#endif  // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_POLICY_HPP
+#endif  // REFLECT_CPP26_FIXED_MAP_IMPL_STRING_POLICY_HPP

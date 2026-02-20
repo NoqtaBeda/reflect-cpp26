@@ -20,8 +20,8 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_BY_HASH_TABLE_HPP
-#define REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_BY_HASH_TABLE_HPP
+#ifndef REFLECT_CPP26_FIXED_MAP_IMPL_STRING_BY_HASH_TABLE_HPP
+#define REFLECT_CPP26_FIXED_MAP_IMPL_STRING_BY_HASH_TABLE_HPP
 
 #include <reflect_cpp26/fixed_map/impl/string_policy.hpp>
 
@@ -231,4 +231,4 @@ consteval auto try_make_string_key_map_by_hash_table(const std::vector<KVPair>& 
 }
 }  // namespace reflect_cpp26::impl
 
-#endif  // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_BY_HASH_TABLE_HPP
+#endif  // REFLECT_CPP26_FIXED_MAP_IMPL_STRING_BY_HASH_TABLE_HPP

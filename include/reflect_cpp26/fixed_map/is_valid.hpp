@@ -20,8 +20,8 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_UTILS_IS_VALID_HPP
-#define REFLECT_CPP26_UTILS_IS_VALID_HPP
+#ifndef REFLECT_CPP26_FIXED_MAP_IS_VALID_HPP
+#define REFLECT_CPP26_FIXED_MAP_IS_VALID_HPP
 
 #include <reflect_cpp26/type_traits/arithmetic_types.hpp>
 #include <reflect_cpp26/utils/concepts.hpp>
@@ -63,4 +63,4 @@ constexpr bool is_valid(meta_basic_string_view<CharT> v) {
 }
 }  // namespace reflect_cpp26
 
-#endif  // REFLECT_CPP26_UTILS_is_valid_HPP
+#endif  // REFLECT_CPP26_FIXED_MAP_IS_VALID_HPP

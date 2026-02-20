@@ -20,8 +20,8 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_UTILS_FIXED_MAP_ALL_HPP
-#define REFLECT_CPP26_UTILS_FIXED_MAP_ALL_HPP
+#ifndef REFLECT_CPP26_FIXED_MAP_ALL_HPP
+#define REFLECT_CPP26_FIXED_MAP_ALL_HPP
 
 #include <reflect_cpp26/fixed_map/integral_key.hpp>
 #include <reflect_cpp26/fixed_map/is_valid.hpp>
@@ -70,4 +70,4 @@ consteval auto make_fixed_map(KVPairRange kv_pairs, const fixed_map_options_vari
 }
 }  // namespace reflect_cpp26
 
-#endif  // REFLECT_CPP26_UTILS_FIXED_MAP_ALL_HPP
+#endif  // REFLECT_CPP26_FIXED_MAP_ALL_HPP

@@ -20,8 +20,8 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_UTILS_CONFIG_H
-#define REFLECT_CPP26_UTILS_CONFIG_H
+#ifndef REFLECT_CPP26_UTILS_CONFIG_HPP
+#define REFLECT_CPP26_UTILS_CONFIG_HPP
 
 #if __cplusplus
 #if __has_include(<meta>)
@@ -66,4 +66,4 @@ namespace reflect_cpp26 {
 #define REFLECT_CPP26_UNREACHABLE(msg) __builtin_unreachable()
 #endif  // __cplusplus
 
-#endif  // REFLECT_CPP26_UTILS_CONFIG_H
+#endif  // REFLECT_CPP26_UTILS_CONFIG_HPP

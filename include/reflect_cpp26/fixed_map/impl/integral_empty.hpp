@@ -20,8 +20,8 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_INTEGRAL_EMPTY_HPP
-#define REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_INTEGRAL_EMPTY_HPP
+#ifndef REFLECT_CPP26_FIXED_MAP_IMPL_INTEGRAL_EMPTY_HPP
+#define REFLECT_CPP26_FIXED_MAP_IMPL_INTEGRAL_EMPTY_HPP
 
 #include <reflect_cpp26/fixed_map/impl/integral_common.hpp>
 
@@ -53,4 +53,4 @@ consteval auto make_empty_integral_key_map() -> std::meta::info {
 }
 }  // namespace reflect_cpp26::impl
 
-#endif  // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_INTEGRAL_EMPTY_HPP
+#endif  // REFLECT_CPP26_FIXED_MAP_IMPL_INTEGRAL_EMPTY_HPP

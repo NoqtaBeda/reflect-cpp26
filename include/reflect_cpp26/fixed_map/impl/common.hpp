@@ -20,8 +20,8 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_COMMON_HPP
-#define REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_COMMON_HPP
+#ifndef REFLECT_CPP26_FIXED_MAP_IMPL_COMMON_HPP
+#define REFLECT_CPP26_FIXED_MAP_IMPL_COMMON_HPP
 
 #include <bit>
 #include <reflect_cpp26/utils/define_static_values.hpp>
@@ -90,4 +90,4 @@ constexpr auto unwrap_once(alignment_adjusted_wrapper<T>&& wrapper) -> T {
 }
 }  // namespace reflect_cpp26::impl
 
-#endif  // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_COMMON_HPP
+#endif  // REFLECT_CPP26_FIXED_MAP_IMPL_COMMON_HPP

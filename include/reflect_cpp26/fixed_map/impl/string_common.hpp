@@ -20,8 +20,8 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_COMMON_HPP
-#define REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_COMMON_HPP
+#ifndef REFLECT_CPP26_FIXED_MAP_IMPL_STRING_COMMON_HPP
+#define REFLECT_CPP26_FIXED_MAP_IMPL_STRING_COMMON_HPP
 
 #include <reflect_cpp26/fixed_map/impl/common.hpp>
 #include <reflect_cpp26/type_traits/string_like_types.hpp>
@@ -46,4 +46,4 @@ template <class T>
 using alignment_adjusted_string_hash_wrapper = alignment_adjusted_wrapper<string_hash_wrapper<T>>;
 }  // namespace reflect_cpp26::impl
 
-#endif  // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_COMMON_HPP
+#endif  // REFLECT_CPP26_FIXED_MAP_IMPL_STRING_COMMON_HPP

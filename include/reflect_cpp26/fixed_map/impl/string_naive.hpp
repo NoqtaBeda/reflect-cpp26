@@ -20,8 +20,8 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_NAIVE_HPP
-#define REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_NAIVE_HPP
+#ifndef REFLECT_CPP26_FIXED_MAP_IMPL_STRING_NAIVE_HPP
+#define REFLECT_CPP26_FIXED_MAP_IMPL_STRING_NAIVE_HPP
 
 #include <reflect_cpp26/fixed_map/impl/string_policy.hpp>
 
@@ -76,4 +76,4 @@ consteval auto make_naive_string_key_map(const std::vector<KVPair>& kv_pairs, bo
 }
 }  // namespace reflect_cpp26::impl
 
-#endif  // REFLECT_CPP26_UTILS_FIXED_MAP_IMPL_STRING_NAIVE_HPP
+#endif  // REFLECT_CPP26_FIXED_MAP_IMPL_STRING_NAIVE_HPP

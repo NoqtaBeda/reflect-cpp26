@@ -32,13 +32,9 @@
 namespace reflect_cpp26 {
 namespace impl {
 constexpr auto bkdr_hash_default_p_of(size_t char_size) -> unsigned {
-  if (char_size == 1) {
-    return 131;  // 0x83
-  }
-  if (char_size == 2) {
-    return 32771;  // 0x8003
-  }
-  return 2097169;  // 0x200011
+  if (char_size == 1) return 131;    // 0x83
+  if (char_size == 2) return 32771;  // 0x8003
+  return 2097169;                    // 0x200011
 }
 
 template <class CharT>
@@ -77,57 +73,141 @@ constexpr auto bkdr_hash_generic_s(const StringT& str, ResultT p) -> ResultT {
 }
 }  // namespace impl
 
-#define REFLECT_CPP26_BKDR_HASH(fn_name, ResultT, Transform)                                \
-  template <char_type CharT>                                                                \
-  constexpr auto fn_name(                                                                   \
-      const CharT* begin, const CharT* end, ResultT p = impl::bkdr_hash_default_p_v<CharT>) \
-      -> ResultT {                                                                          \
-    return impl::bkdr_hash_generic_it<Transform>(begin, end, p);                            \
-  }                                                                                         \
-                                                                                            \
-  template <char_type CharT>                                                                \
-  constexpr auto fn_name(const CharT* str, ResultT p = impl::bkdr_hash_default_p_v<CharT>)  \
-      -> ResultT {                                                                          \
-    auto null_pos = std::ranges::find(str, std::unreachable_sentinel, '\0');                \
-    return impl::bkdr_hash_generic_it<Transform>(str, null_pos, p);                         \
-  }                                                                                         \
-                                                                                            \
-  template <string_like StringT>                                                            \
-  constexpr auto fn_name(const StringT& str,                                                \
-                         uint32_t p = impl::bkdr_hash_default_p_v<char_type_t<StringT>>)    \
-      -> ResultT {                                                                          \
-    return impl::bkdr_hash_generic_s<Transform>(str, p);                                    \
+struct bkdr_hash32_t {
+  template <char_type CharT>
+  static constexpr auto operator()(const CharT* begin, const CharT* end) -> uint32_t {
+    return impl::bkdr_hash_generic_it<impl::char_identity_t>(
+        begin, end, impl::bkdr_hash_default_p_v<CharT>);
   }
 
-REFLECT_CPP26_BKDR_HASH(bkdr_hash32, uint32_t, impl::char_identity_t)
-REFLECT_CPP26_BKDR_HASH(bkdr_hash64, uint64_t, impl::char_identity_t)
-REFLECT_CPP26_BKDR_HASH(ascii_ci_bkdr_hash32, uint32_t, ascii_tolower_t)
-REFLECT_CPP26_BKDR_HASH(ascii_ci_bkdr_hash64, uint64_t, ascii_tolower_t)
-#undef REFLECT_CPP26_BKDR_HASH
-
-#define REFLECT_CPP26_CI_BKDR_HASH(fn_name, ResultT)                                          \
-  template <same_as_one_of<char, wchar_t> CharT>                                              \
-  ResultT fn_name(                                                                            \
-      const CharT* begin, const CharT* end, ResultT p = impl::bkdr_hash_default_p_v<CharT>) { \
-    return impl::bkdr_hash_generic_it<impl::std_ctype_tolower_t>(begin, end, p);              \
-  }                                                                                           \
-                                                                                              \
-  template <same_as_one_of<char, wchar_t> CharT>                                              \
-  ResultT fn_name(const CharT* str, ResultT p = impl::bkdr_hash_default_p_v<CharT>) {         \
-    auto null_pos = std::ranges::find(str, std::unreachable_sentinel, '\0');                  \
-    return impl::bkdr_hash_generic_it<impl::std_ctype_tolower_t>(str, null_pos, p);           \
-  }                                                                                           \
-                                                                                              \
-  template <string_like StringT>                                                              \
-    requires(same_as_one_of<char_type_t<StringT>, char, wchar_t>)                             \
-  ResultT fn_name(const StringT& str,                                                         \
-                  uint32_t p = impl::bkdr_hash_default_p_v<char_type_t<StringT>>) {           \
-    return impl::bkdr_hash_generic_s<impl::std_ctype_tolower_t>(str, p);                      \
+  template <char_type CharT>
+  static constexpr auto operator()(const CharT* str) -> uint32_t {
+    auto null_pos = std::ranges::find(str, std::unreachable_sentinel, '\0');
+    return impl::bkdr_hash_generic_it<impl::char_identity_t>(
+        str, null_pos, impl::bkdr_hash_default_p_v<CharT>);
   }
 
-REFLECT_CPP26_CI_BKDR_HASH(ci_bkdr_hash32, uint32_t)
-REFLECT_CPP26_CI_BKDR_HASH(ci_bkdr_hash64, uint64_t)
-#undef REFLECT_CPP26_CI_BKDR_HASH
+  template <string_like StringT>
+  static constexpr auto operator()(const StringT& str) -> uint32_t {
+    return impl::bkdr_hash_generic_s<impl::char_identity_t>(
+        str, impl::bkdr_hash_default_p_v<char_type_t<StringT>>);
+  }
+};
+
+struct bkdr_hash64_t {
+  template <char_type CharT>
+  static constexpr auto operator()(const CharT* begin, const CharT* end) -> uint64_t {
+    return impl::bkdr_hash_generic_it<impl::char_identity_t>(
+        begin, end, impl::bkdr_hash_default_p_v<CharT>);
+  }
+
+  template <char_type CharT>
+  static constexpr auto operator()(const CharT* str) -> uint64_t {
+    auto null_pos = std::ranges::find(str, std::unreachable_sentinel, '\0');
+    return impl::bkdr_hash_generic_it<impl::char_identity_t>(
+        str, null_pos, impl::bkdr_hash_default_p_v<CharT>);
+  }
+
+  template <string_like StringT>
+  static constexpr auto operator()(const StringT& str) -> uint64_t {
+    return impl::bkdr_hash_generic_s<impl::char_identity_t>(
+        str, impl::bkdr_hash_default_p_v<char_type_t<StringT>>);
+  }
+};
+
+struct ascii_ci_bkdr_hash32_t {
+  template <char_type CharT>
+  static constexpr auto operator()(const CharT* begin, const CharT* end) -> uint32_t {
+    return impl::bkdr_hash_generic_it<ascii_tolower_t>(
+        begin, end, impl::bkdr_hash_default_p_v<CharT>);
+  }
+
+  template <char_type CharT>
+  static constexpr auto operator()(const CharT* str) -> uint32_t {
+    auto null_pos = std::ranges::find(str, std::unreachable_sentinel, '\0');
+    return impl::bkdr_hash_generic_it<ascii_tolower_t>(
+        str, null_pos, impl::bkdr_hash_default_p_v<CharT>);
+  }
+
+  template <string_like StringT>
+  static constexpr auto operator()(const StringT& str) -> uint32_t {
+    return impl::bkdr_hash_generic_s<ascii_tolower_t>(
+        str, impl::bkdr_hash_default_p_v<char_type_t<StringT>>);
+  }
+};
+
+struct ascii_ci_bkdr_hash64_t {
+  template <char_type CharT>
+  static constexpr auto operator()(const CharT* begin, const CharT* end) -> uint64_t {
+    return impl::bkdr_hash_generic_it<ascii_tolower_t>(
+        begin, end, impl::bkdr_hash_default_p_v<CharT>);
+  }
+
+  template <char_type CharT>
+  static constexpr auto operator()(const CharT* str) -> uint64_t {
+    auto null_pos = std::ranges::find(str, std::unreachable_sentinel, '\0');
+    return impl::bkdr_hash_generic_it<ascii_tolower_t>(
+        str, null_pos, impl::bkdr_hash_default_p_v<CharT>);
+  }
+
+  template <string_like StringT>
+  static constexpr auto operator()(const StringT& str) -> uint64_t {
+    return impl::bkdr_hash_generic_s<ascii_tolower_t>(
+        str, impl::bkdr_hash_default_p_v<char_type_t<StringT>>);
+  }
+};
+
+struct ci_bkdr_hash32_t {
+  template <same_as_one_of<char, wchar_t> CharT>
+  static auto operator()(const CharT* begin, const CharT* end) -> uint32_t {
+    return impl::bkdr_hash_generic_it<impl::std_ctype_tolower_t>(
+        begin, end, impl::bkdr_hash_default_p_v<CharT>);
+  }
+
+  template <same_as_one_of<char, wchar_t> CharT>
+  static auto operator()(const CharT* str) -> uint32_t {
+    auto null_pos = std::ranges::find(str, std::unreachable_sentinel, '\0');
+    return impl::bkdr_hash_generic_it<impl::std_ctype_tolower_t>(
+        str, null_pos, impl::bkdr_hash_default_p_v<CharT>);
+  }
+
+  template <string_like StringT>
+    requires(same_as_one_of<char_type_t<StringT>, char, wchar_t>)
+  static auto operator()(const StringT& str) -> uint32_t {
+    return impl::bkdr_hash_generic_s<impl::std_ctype_tolower_t>(
+        str, impl::bkdr_hash_default_p_v<char_type_t<StringT>>);
+  }
+};
+
+struct ci_bkdr_hash64_t {
+  template <same_as_one_of<char, wchar_t> CharT>
+  static auto operator()(const CharT* begin, const CharT* end) -> uint64_t {
+    return impl::bkdr_hash_generic_it<impl::std_ctype_tolower_t>(
+        begin, end, impl::bkdr_hash_default_p_v<CharT>);
+  }
+
+  template <same_as_one_of<char, wchar_t> CharT>
+  static auto operator()(const CharT* str) -> uint64_t {
+    auto null_pos = std::ranges::find(str, std::unreachable_sentinel, '\0');
+    return impl::bkdr_hash_generic_it<impl::std_ctype_tolower_t>(
+        str, null_pos, impl::bkdr_hash_default_p_v<CharT>);
+  }
+
+  template <string_like StringT>
+    requires(same_as_one_of<char_type_t<StringT>, char, wchar_t>)
+  static auto operator()(const StringT& str) -> uint64_t {
+    return impl::bkdr_hash_generic_s<impl::std_ctype_tolower_t>(
+        str, impl::bkdr_hash_default_p_v<char_type_t<StringT>>);
+  }
+};
+
+constexpr auto bkdr_hash32 = bkdr_hash32_t{};
+constexpr auto bkdr_hash64 = bkdr_hash64_t{};
+constexpr auto ascii_ci_bkdr_hash32 = ascii_ci_bkdr_hash32_t{};
+constexpr auto ascii_ci_bkdr_hash64 = ascii_ci_bkdr_hash64_t{};
+constexpr auto ci_bkdr_hash32 = ci_bkdr_hash32_t{};
+constexpr auto ci_bkdr_hash64 = ci_bkdr_hash64_t{};
+
 }  // namespace reflect_cpp26
 
 #endif  // REFLECT_CPP26_UTILS_STRING_HASH_HPP

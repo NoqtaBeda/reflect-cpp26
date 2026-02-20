@@ -75,6 +75,7 @@ meta_test_cases = {
   "utils/test_debug_helper",
   "utils/test_identifier_naming",
   "utils/test_meta_tuple",
+  "utils/test_string_encoding",
   "utils/test_to_string",
   "utils/test_type_tuple",
   "utils/test_utility",

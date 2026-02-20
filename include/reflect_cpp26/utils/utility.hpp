@@ -122,6 +122,7 @@ private:
 };
 
 template <std::integral R>
+  requires(!std::is_const_v<R> && !std::is_volatile_v<R>)
 struct in_range_t {
   static constexpr auto limit_min = std::numeric_limits<R>::min();
   static constexpr auto limit_max = std::numeric_limits<R>::max();
@@ -130,6 +131,14 @@ struct in_range_t {
   static constexpr bool operator()(T t) noexcept {
     return cmp_greater_equal_t::operator()(t, limit_min)
         && cmp_less_equal_t::operator()(t, limit_max);
+  }
+};
+
+template <>
+struct in_range_t<bool> {
+  template <std::integral T>
+  static constexpr bool operator()(T t) noexcept {
+    return t == 0 || t == 1;
   }
 };
 

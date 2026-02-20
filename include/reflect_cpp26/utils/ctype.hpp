@@ -31,9 +31,6 @@
 #include <reflect_cpp26/utils/string_utility.hpp>
 
 namespace reflect_cpp26 {
-/**
- * Whether c can represent an ASCII character, i.e. c falls in range [0, 127].
- */
 struct is_ascii_char_t {
   static constexpr bool operator()(non_bool_integral auto c) {
     return c >= 0 && c <= 127;
@@ -41,9 +38,6 @@ struct is_ascii_char_t {
 };
 constexpr auto is_ascii_char = is_ascii_char_t{};
 
-/**
- * Whether str is an ASCII string, i.e. each character of str falls in [0, 127].
- */
 struct is_ascii_string_t {
   static constexpr bool operator()(const string_like auto& str) {
     auto sv = std::basic_string_view{str};
@@ -90,11 +84,6 @@ struct ascii_ctype_predicate_t {
   struct ascii_##func##_t : impl::ascii_ctype_predicate_t<std::Comp<uint8_t>, impl::Mask> {}; \
   constexpr auto ascii_##func = ascii_##func##_t{};
 
-/**
- * Constexpr, locale-independent alternative to std::isalnum etc. in <cctype>.
- * Always returns false if inpue value can not represent an ASCII character,
- * i.e. does not fall in range [0, 127].
- */
 REFLECT_CPP26_CTYPE_PREDICATE(isalnum, not_equal_to, ctype_alnum_mask)
 REFLECT_CPP26_CTYPE_PREDICATE(isalpha, not_equal_to, ctype_alpha_mask)
 REFLECT_CPP26_CTYPE_PREDICATE(islower, not_equal_to, ctype_lower_mask)
@@ -112,12 +101,6 @@ REFLECT_CPP26_CTYPE_PREDICATE(ispunct, not_equal_to, ctype_punct_mask)
 namespace impl {
 template <class Derived>
 struct ascii_ctype_conversion_interface_t {
-  /**
-   * ascii_tolower(const StringLike& str) -> std::basic_string
-   * ascii_toupper(const StringLike& str) -> std::basic_string
-   * Converts input string to lower/upper case. Non-letter characters and all
-   * non-ASCII characters (i.e. out of range [0, 127]) are kept unchanged.
-   */
   template <string_like StringT>
   static constexpr auto operator()(const StringT& str)
   /* -> std::basic_string<CharT> */
@@ -134,23 +117,12 @@ struct ascii_ctype_conversion_interface_t {
     return res;
   }
 
-  /**
-   * ascii_tolower(CharType c) -> CharType
-   * ascii_toupper(CharType c) -> CharType
-   * Converts input character to lower/upper case. Non-letter characters and all
-   * non-ASCII characters (i.e. out of range [0, 127]) are kept unchanged.
-   */
   static constexpr auto operator()(char_type auto c) {
     return Derived::convert_char(c);
   }
 };
 }  // namespace impl
 
-/**
- * ascii_tolower(const StringLike& str) -> std::basic_string
- * ascii_tolower(CharType c) -> CharType
- * See above.
- */
 struct ascii_tolower_t : impl::ascii_ctype_conversion_interface_t<ascii_tolower_t> {
   template <char_type CharT>
   static constexpr auto convert_char(CharT c) {
@@ -159,11 +131,6 @@ struct ascii_tolower_t : impl::ascii_ctype_conversion_interface_t<ascii_tolower_
 };
 constexpr auto ascii_tolower = ascii_tolower_t{};
 
-/**
- * ascii_toupper(const StringLike& str) -> std::basic_string
- * ascii_toupper(CharType c) -> CharType
- * See above.
- */
 struct ascii_toupper_t : impl::ascii_ctype_conversion_interface_t<ascii_toupper_t> {
   template <char_type CharT>
   static constexpr auto convert_char(CharT c) {
@@ -172,11 +139,6 @@ struct ascii_toupper_t : impl::ascii_ctype_conversion_interface_t<ascii_toupper_
 };
 constexpr auto ascii_toupper = ascii_toupper_t{};
 
-/**
- * ascii_trim(const StringLike& str) -> std::basic_string_view
- * Removes the maximal leading and trailing substrings of ASCII space characters
- * (' ', '\f', '\n', '\r', '\t', '\v').
- */
 struct ascii_trim_t {
   template <string_like StringT>
   static constexpr auto operator()(const StringT& str)

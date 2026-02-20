@@ -39,7 +39,6 @@
 #elifdef __GNUC__
 #define REFLECT_CPP26_ALWAYS_INLINE __attribute__((always_inline))
 #define REFLECT_CPP26_ALWAYS_INLINE_CALL
-#error "???"
 #else
 #define REFLECT_CPP26_ALWAYS_INLINE
 #define REFLECT_CPP26_ALWAYS_INLINE_CALL

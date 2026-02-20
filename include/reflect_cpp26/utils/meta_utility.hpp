@@ -30,8 +30,6 @@
 #define REFLECT_CPP26_CURRENT_CONTEXT std::meta::access_context::current()
 
 namespace reflect_cpp26 {
-// -------- Reflection with access control (P3547) --------
-
 consteval auto unprivileged_context() {
   return std::meta::access_context::unprivileged();
 }
@@ -57,28 +55,11 @@ consteval auto unchecked_context() {
   template <class_or_union_type T>                                                                \
   constexpr auto all_direct_##fn##_v = std::define_static_array(all_direct_##fn##_of(^^T));
 
-/**
- * public_direct_*_of(std::meta::info a) -> std::vector<std::meta::info>
- *   Equivalent to std::meta::*_of(a, unprivileged_context()).
- *
- * all_direct_*_of(std::meta::info a) -> std::vector<std::meta::info>
- *   Equivalent to std::meta::*_of(a, unchecked_context()).
- *
- * * is one of macro parameters below.
- */
 REFLECT_CPP26_DEFINE_QUERY_FN_WITH_ACCESS_CONTEXT(members)
 REFLECT_CPP26_DEFINE_QUERY_FN_WITH_ACCESS_CONTEXT(bases)
 REFLECT_CPP26_DEFINE_QUERY_FN_WITH_ACCESS_CONTEXT(static_data_members)
 REFLECT_CPP26_DEFINE_QUERY_FN_WITH_ACCESS_CONTEXT(nonstatic_data_members)
 
-/**
- * public_direct_*_v<T>
- *   Stores result of public_direct_*_v(^^T).
- * all_direct_*_v<T>
- *   Stores result of all_direct_*_v(^^T).
- *
- * * is one of macro parameters below.
- */
 REFLECT_CPP26_DEFINE_QUERY_V_WITH_ACCESS_CONTEXT(members)
 REFLECT_CPP26_DEFINE_QUERY_V_WITH_ACCESS_CONTEXT(bases)
 REFLECT_CPP26_DEFINE_QUERY_V_WITH_ACCESS_CONTEXT(static_data_members)
@@ -86,22 +67,11 @@ REFLECT_CPP26_DEFINE_QUERY_V_WITH_ACCESS_CONTEXT(nonstatic_data_members)
 
 #undef REFLECT_CPP26_DEFINE_QUERY_FN_WITH_ACCESS_CONTEXT
 
-// -------- Extration helpers --------
-
-/**
- * Equivalent to extract<T>(substitute(templ, {templ_params})).
- */
 template <class T, std::same_as<std::meta::info>... Args>
 consteval T extract(std::meta::info templ, Args... templ_params) {
   return std::meta::extract<T>(std::meta::substitute(templ, {templ_params...}));
 }
 
-// -------- Identifier helpers --------
-
-/**
- * If has_identifier(m) is true, then its identifier is returned;
- * Otherwise, alt is returned.
- */
 struct identifier_of_t {
   static consteval auto operator()(std::meta::info m, std::string_view alt = "")
       -> std::string_view {

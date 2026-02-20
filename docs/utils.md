@@ -2,7 +2,7 @@
 
 reflect_cpp26 contains a series of utility components for various usages.
 
-## Core Components
+## Components
 
 ### Structural Alternative Types
 
@@ -16,6 +16,183 @@ These headers define structural alternative types to `std::span`, `std::basic_st
 * `meta_span<T>` - A structural alternative to `std::span<const T>`, which stores two pointers `head` and `tail`. For default-constructed `meta_span` instances, both `head` and `tail` are null pointers denoting an empty range; Otherwise, these 2 pointers denote the range `[head, tail)`. It is designed for contiguous ranges with static constant storage only.
 * `meta_basic_string_view<CharT>` - A structural alternative to `std::basic_string_view<CharT>`, which stores two pointers (`head` and `tail`): For default-constructed `meta_basic_string_view` instances, both `head` and `tail` are null pointers denoting an empty string; Otherwise, these 2 pointers denote the character range `[head, tail)`. It is ensured that the referenced string is always null-terminated (i.e., `tail == nullptr || *tail == '\0'` always holds). Type aliases are provided for all character types: `meta_string_view`, `meta_u8string_view`, etc.
 * `meta_tuple<Args...>` - A structural alternative to `std::tuple<Args...>`, which uses `define_aggregate` to create an underlying aggregate type at compile time, making the tuple itself a structural type.
+
+### Testing Addressable Members
+
+Defined in header `<reflect_cpp26/utils/addressable_member.hpp>`.
+
+```cpp
+namespace reflect_cpp26 {
+
+consteval bool is_addressable_class_member(std::meta::info member);
+consteval bool is_addressable_non_class_member(std::meta::info member);
+
+}  // namespace reflect_cpp26
+```
+
+`is_addressable_class_member(member)` checks whether `member` is some *class* member which is addressable, i.e. `&[:member:]` is a valid constant expression. Addressable class member is one of the following:
+* Non-static data member which is:
+  * not template;
+  * neither reference nor bit-field;
+* Static data member (can be reference) which is not template;
+* Non-static member function which is:
+  * not template;
+  * neither of constructor, destructor, or deleted;
+* Static member function which is:
+  * not template;
+  * not deleted.
+
+`is_addressable_non_class_member(member)` checks whether `member` is some *non-class* member which is addressable, i.e. `&[:member:]` is a valid constant expression. Addressable non-class member is one of the following:
+* Variable (can be reference) which is not template;
+* Function which is:
+  * not template;
+  * not deleted.
+
+Detailed examples are shown in [unit test cases](../tests/utils/test_addressable_member.cpp).
+
+### UTF Encoding Conversion
+
+Defined in header `<reflect_cpp26/utils/string_encoding.hpp>`.
+
+```cpp
+namespace reflect_cpp26 {
+
+// Result type for encoding conversion
+template <class OutT, class InT>
+struct encode_result_t {
+  OutT* out_ptr;          // Pointer past the last output character written
+  const InT* in_ptr;      // Pointer to the next input character to process
+  std::errc ec;           // Error code (std::errc{} on success)
+};
+
+// UTF-8 to UTF-16 conversion
+struct utf8_to_utf16_t {
+  // Primary overload: char8_t input -> char16_t output
+  static constexpr auto operator()(char16_t* dest, char16_t* dest_end,
+                                   const char8_t* input, const char8_t* input_end)
+      -> encode_result_t<char16_t, char8_t>;
+  // Wrapper overloads for alternative character types (see below)
+};
+constexpr auto utf8_to_utf16 = utf8_to_utf16_t{};
+
+// UTF-8 to UTF-32 conversion
+struct utf8_to_utf32_t {
+  // Primary overload: char8_t input -> char32_t output
+  static constexpr auto operator()(char32_t* dest, char32_t* dest_end,
+                                   const char8_t* input, const char8_t* input_end)
+      -> encode_result_t<char32_t, char8_t>;
+  // Wrapper overloads for alternative character types
+};
+constexpr auto utf8_to_utf32 = utf8_to_utf32_t{};
+
+// UTF-16 to UTF-8 conversion
+struct utf16_to_utf8_t {
+  // Primary overload: char16_t input -> char8_t output
+  static constexpr auto operator()(char8_t* dest, char8_t* dest_end,
+                                   const char16_t* input, const char16_t* input_end)
+      -> encode_result_t<char8_t, char16_t>;
+  // Wrapper overloads for alternative character types
+};
+constexpr auto utf16_to_utf8 = utf16_to_utf8_t{};
+
+// UTF-16 to UTF-32 conversion
+struct utf16_to_utf32_t {
+  // Primary overload: char16_t input -> char32_t output
+  static constexpr auto operator()(char32_t* dest, char32_t* dest_end,
+                                   const char16_t* input, const char16_t* input_end)
+      -> encode_result_t<char32_t, char16_t>;
+  // Wrapper overloads for alternative character types
+};
+constexpr auto utf16_to_utf32 = utf16_to_utf32_t{};
+
+// UTF-32 to UTF-8 conversion
+struct utf32_to_utf8_t {
+  // Primary overload: char32_t input -> char8_t output
+  static constexpr auto operator()(char8_t* dest, char8_t* dest_end,
+                                   const char32_t* input, const char32_t* input_end)
+      -> encode_result_t<char8_t, char32_t>;
+  // Wrapper overloads for alternative character types
+};
+constexpr auto utf32_to_utf8 = utf32_to_utf8_t{};
+
+// UTF-32 to UTF-16 conversion
+struct utf32_to_utf16_t {
+  // Primary overload: char32_t input -> char16_t output
+  static constexpr auto operator()(char16_t* dest, char16_t* dest_end,
+                                   const char32_t* input, const char32_t* input_end)
+      -> encode_result_t<char16_t, char32_t>;
+  // Wrapper overloads for alternative character types
+};
+constexpr auto utf32_to_utf16 = utf32_to_utf16_t{};
+
+}  // namespace reflect_cpp26
+```
+
+These functors provide constexpr UTF encoding conversion between UTF-8, UTF-16, and UTF-32 encodings.
+
+#### Result Type
+
+`encode_result_t<OutT, InT>` contains:
+* `out_ptr`: Pointer just past the last output character written. On success, this is where the next output would be written.
+* `in_ptr`: Pointer to the next input character to process. On success, this equals `input_end`. On error, this points to the character that caused the error.
+* `ec`: Error code. `std::errc{}` on success, otherwise one of:
+  * `std::errc::invalid_argument`: Invalid UTF sequence (malformed input, invalid code point, or surrogate issues)
+  * `std::errc::value_too_large`: Output buffer too small
+
+#### Character Type Support
+
+Each conversion functor supports multiple character type combinations:
+
+| Direction | Output Types | Input Types |
+|-----------|--------------|-------------|
+| UTF-8 → UTF-16 | `char16_t`, `uint16_t` | `char8_t`, `char`, `uint8_t` |
+| UTF-8 → UTF-32 | `char32_t`, `uint32_t` | `char8_t`, `char`, `uint8_t` |
+| UTF-16 → UTF-8 | `char8_t`, `char`, `uint8_t` | `char16_t`, `uint16_t` |
+| UTF-16 → UTF-32 | `char32_t`, `uint32_t` | `char16_t`, `uint16_t` |
+| UTF-32 → UTF-8 | `char8_t`, `char`, `uint8_t` | `char32_t`, `uint32_t` |
+| UTF-32 → UTF-16 | `char16_t`, `uint16_t` | `char32_t`, `uint32_t` |
+
+Wrapper overloads use `reinterpret_cast` to convert between the canonical types (`char8_t`, `char16_t`, `char32_t`) and alternative types (`char`, `uint8_t`, `uint16_t`, `uint32_t`).
+
+#### Error Handling
+
+On error, the conversion stops at the first invalid character:
+* `out_ptr` points to where the next output would have been written (no partial output for the failed character)
+* `in_ptr` points to the input character that caused the error
+* `ec` contains the appropriate error code
+
+For buffer overflow (`value_too_large`), `in_ptr` points to the input character that couldn't fit in the remaining buffer space.
+
+Example:
+```cpp
+namespace rfl = reflect_cpp26;
+
+// UTF-8 to UTF-16 conversion
+char8_t utf8_input[] = u8"Hello, 世界! 🌍";
+char16_t utf16_output[32];
+auto result = rfl::utf8_to_utf16(utf16_output, utf16_output + 32,
+                                  utf8_input, utf8_input + sizeof(utf8_input) - 1);
+if (result.ec == std::errc{}) {
+  // Success: result.out_ptr points past the last character written
+  // result.in_ptr == utf8_input + sizeof(utf8_input) - 1
+}
+
+// Error handling example: invalid continuation byte
+char8_t invalid_utf8[] = {char8_t(0xC2), char8_t(0x41)}; // 0x41 is not a valid continuation
+char16_t output[16];
+auto err_result = rfl::utf8_to_utf16(output, output + 16,
+                                      invalid_utf8, invalid_utf8 + 2);
+// err_result.ec == std::errc::invalid_argument
+// err_result.in_ptr == invalid_utf8 (error at first byte)
+// err_result.out_ptr == output (nothing written)
+
+// Using alternative character types
+char input[] = "ASCII";  // char instead of char8_t
+uint16_t buffer[16];      // uint16_t instead of char16_t
+auto r = rfl::utf8_to_utf16(buffer, buffer + 16, input, input + 5);
+```
+
+Detailed examples are shown in [unit test cases](../tests/utils/test_string_encoding.cpp).
 
 ### Converting Identifier Naming
 
@@ -118,40 +295,210 @@ Example:
 4. Assume we are converting to upper camel case with overload (2.1). For each word obtained in step 1.2, we convert the first character to upper-case and all following letters to lower-case. Finally, words are converted to `"Example", "Input", "Parse", "Json", "Document", "Test", "Case1"` (Note that `JSON` is converted to `Json`: The uniform conversion rule is applied to each word regardless of its input form);
 5. After concatenation: `"ExampleInputParseJsonDocumentTestCase1"`.
 
-### Testing Addressable Members
+### Locale-Independent Character Categorization & Conversion
 
-Defined in header `<reflect_cpp26/utils/addressable_member.hpp>`.
+Defined in header `<reflect_cpp26/utils/ctype.hpp>`.
 
 ```cpp
 namespace reflect_cpp26 {
 
-consteval bool is_addressable_class_member(std::meta::info member);
-consteval bool is_addressable_non_class_member(std::meta::info member);
+// ASCII character/string check
+struct is_ascii_char_t {
+  static constexpr bool operator()(/* non-bool integral */ auto c);
+};
+struct is_ascii_string_t {
+  static constexpr bool operator()(const /* string-like */ auto& str);
+};
+constexpr auto is_ascii_char = is_ascii_char_t{};
+constexpr auto is_ascii_string = is_ascii_string_t{};
+
+// ASCII character classification (constexpr, locale-independent)
+struct ascii_isalnum_t { /* ... */ };
+struct ascii_isalpha_t { /* ... */ };
+struct ascii_islower_t { /* ... */ };
+struct ascii_isupper_t { /* ... */ };
+struct ascii_isdigit_t { /* ... */ };
+struct ascii_isxdigit_t { /* ... */ };
+struct ascii_isblank_t { /* ... */ };
+struct ascii_iscntrl_t { /* ... */ };
+struct ascii_isgraph_t { /* ... */ };
+struct ascii_isspace_t { /* ... */ };
+struct ascii_isprint_t { /* ... */ };
+struct ascii_ispunct_t { /* ... */ };
+
+constexpr auto ascii_isalnum = ascii_isalnum_t{};
+constexpr auto ascii_isalpha = ascii_isalpha_t{};
+constexpr auto ascii_islower = ascii_islower_t{};
+constexpr auto ascii_isupper = ascii_isupper_t{};
+constexpr auto ascii_isdigit = ascii_isdigit_t{};
+constexpr auto ascii_isxdigit = ascii_isxdigit_t{};
+constexpr auto ascii_isblank = ascii_isblank_t{};
+constexpr auto ascii_iscntrl = ascii_iscntrl_t{};
+constexpr auto ascii_isgraph = ascii_isgraph_t{};
+constexpr auto ascii_isspace = ascii_isspace_t{};
+constexpr auto ascii_isprint = ascii_isprint_t{};
+constexpr auto ascii_ispunct = ascii_ispunct_t{};
+
+// ASCII case conversion
+struct ascii_tolower_t {
+  static constexpr auto operator()(/* char-type */ auto c);
+  static constexpr auto operator()(const /* string-like */ auto& str)
+      -> std::basic_string</* CharT */>;
+};
+struct ascii_toupper_t {
+  static constexpr auto operator()(/* char-type */ auto c);
+  static constexpr auto operator()(const /* string-like */ auto& str)
+      -> std::basic_string</* CharT */>;
+};
+constexpr auto ascii_tolower = ascii_tolower_t{};
+constexpr auto ascii_toupper = ascii_toupper_t{};
+
+// ASCII whitespace trimming
+struct ascii_trim_t {
+  static constexpr auto operator()(const /* string-like */ auto& str)
+      -> std::basic_string_view</* CharT */>;
+};
+constexpr auto ascii_trim = ascii_trim_t{};
 
 }  // namespace reflect_cpp26
 ```
 
-`is_addressable_class_member(member)` checks whether `member` is some *class* member which is addressable, i.e. `&[:member:]` is a valid constant expression. Addressable class member is one of the following:
-* Non-static data member which is:
-  * not template;
-  * neither reference nor bit-field;
-* Static data member (can be reference) which is not template;
-* Non-static member function which is:
-  * not template;
-  * neither of constructor, destructor, or deleted;
-* Static member function which is:
-  * not template;
-  * not deleted.
+These functors provide constexpr, locale-independent alternatives to the character classification and conversion functions in `<cctype>` and `<cwctype>`.
 
-`is_addressable_non_class_member(member)` checks whether `member` is some *non-class* member which is addressable, i.e. `&[:member:]` is a valid constant expression. Addressable non-class member is one of the following:
-* Variable (can be reference) which is not template;
-* Function which is:
-  * not template;
-  * not deleted.
+#### ASCII Character/String Check
 
-Detailed examples are shown in [unit test cases](../tests/utils/test_addressable_member.cpp).
+* `is_ascii_char(c)`: Returns `true` if `c` is in range `[0, 127]`.
+* `is_ascii_string(str)`: Returns `true` if all characters in `str` are in range `[0, 127]`.
 
-## Auxiliary Components
+#### ASCII Character Classification
+
+These predicates match the behavior of their `std::` counterparts for ASCII characters (0-127). For non-ASCII values, they always return `false`:
+
+| Functor | Description |
+|---------|-------------|
+| `ascii_isalnum` | Alphanumeric character (`[0-9A-Za-z]`) |
+| `ascii_isalpha` | Alphabetic character (`[A-Za-z]`) |
+| `ascii_islower` | Lowercase letter (`[a-z]`) |
+| `ascii_isupper` | Uppercase letter (`[A-Z]`) |
+| `ascii_isdigit` | Decimal digit (`[0-9]`) |
+| `ascii_isxdigit` | Hexadecimal digit (`[0-9A-Fa-f]`) |
+| `ascii_isblank` | Blank character (space or tab) |
+| `ascii_iscntrl` | Control character (`[0-31, 127]`) |
+| `ascii_isgraph` | Graphical character (printable except space) |
+| `ascii_isspace` | Whitespace character (`[ \f\n\r\t\v]`) |
+| `ascii_isprint` | Printable character (`[32-126]`) |
+| `ascii_ispunct` | Punctuation character |
+
+#### ASCII Case Conversion
+
+* `ascii_tolower(c)`: Converts uppercase ASCII letter to lowercase, otherwise returns `c` unchanged.
+* `ascii_toupper(c)`: Converts lowercase ASCII letter to uppercase, otherwise returns `c` unchanged.
+* `ascii_tolower(str)`: Returns a new string with all ASCII letters converted to lowercase.
+* `ascii_toupper(str)`: Returns a new string with all ASCII letters converted to uppercase.
+
+For non-ASCII characters, the functions above always return the character unchanged.
+
+#### ASCII Whitespace Trimming
+
+`ascii_trim(str)` removes leading and trailing ASCII whitespace characters (`' '`, `'\f'`, `'\n'`, `'\r'`, `'\t'`, `'\v'`). Returns a `std::basic_string_view`.
+
+Example:
+```cpp
+namespace refl = reflect_cpp26;
+
+// Character classification
+refl::ascii_isalpha('A');     // true
+refl::ascii_isalpha('1');     // false
+refl::ascii_islower('a');     // true
+refl::ascii_isdigit('5');     // true
+
+// Case conversion
+refl::ascii_tolower('A');     // 'a'
+refl::ascii_toupper('z');     // 'Z'
+refl::ascii_tolower("HeLLo"); // "hello"
+refl::ascii_toupper("HeLLo"); // "HELLO"
+
+// Trimming
+refl::ascii_trim("  hello  "); // "hello"
+refl::ascii_trim("\t\nhi\r\n"); // "hi"
+```
+
+### String Hash Calculation
+
+Defined in header `<reflect_cpp26/utils/string_hash.hpp>`.
+
+```cpp
+namespace reflect_cpp26 {
+
+// BKDR hash functors (case-sensitive)
+struct bkdr_hash32_t {
+  template </* char_type */ class CharT>
+  static constexpr auto operator()(const CharT* begin, const CharT* end) -> uint32_t;
+  template </* char_type */ class CharT>
+  static constexpr auto operator()(const CharT* str) -> uint32_t;
+  template </* string_like */ class StringT>
+  static constexpr auto operator()(const StringT& str) -> uint32_t;
+};
+
+struct bkdr_hash64_t {
+  template </* char_type */ class CharT>
+  static constexpr auto operator()(const CharT* begin, const CharT* end) -> uint64_t;
+  template </* char_type */ class CharT>
+  static constexpr auto operator()(const CharT* str) -> uint64_t;
+  template </* string_like */ class StringT>
+  static constexpr auto operator()(const StringT& str) -> uint64_t;
+};
+
+// ASCII case-insensitive, locale-independent
+struct ascii_ci_bkdr_hash32_t {
+  template </* char_type */ class CharT>
+  static constexpr auto operator()(const CharT* begin, const CharT* end) -> uint32_t;
+  template </* char_type */ class CharT>
+  static constexpr auto operator()(const CharT* str) -> uint32_t;
+  template </* string_like */ class StringT>
+  static constexpr auto operator()(const StringT& str) -> uint32_t;
+};
+
+struct ascii_ci_bkdr_hash64_t {
+  template </* char_type */ class CharT>
+  static constexpr auto operator()(const CharT* begin, const CharT* end) -> uint64_t;
+  template </* char_type */ class CharT>
+  static constexpr auto operator()(const CharT* str) -> uint64_t;
+  template </* string_like */ class StringT>
+  static constexpr auto operator()(const StringT& str) -> uint64_t;
+};
+
+// Case-insensitive, locale-dependent (char and wchar_t only)
+struct ci_bkdr_hash32_t { /* ... */ };
+struct ci_bkdr_hash64_t { /* ... */ };
+
+constexpr auto bkdr_hash32 = bkdr_hash32_t{};
+constexpr auto bkdr_hash64 = bkdr_hash64_t{};
+constexpr auto ascii_ci_bkdr_hash32 = ascii_ci_bkdr_hash32_t{};
+constexpr auto ascii_ci_bkdr_hash64 = ascii_ci_bkdr_hash64_t{};
+constexpr auto ci_bkdr_hash32 = ci_bkdr_hash32_t{};
+constexpr auto ci_bkdr_hash64 = ci_bkdr_hash64_t{};
+
+}  // namespace reflect_cpp26
+```
+
+These functors implement the modified BKDR hash algorithm for string hashing:
+```
+result = 0
+for each c in the input string:
+    result = result * P + c
+return result
+```
+where $P = 131$ for 1-byte character types, $P = 32771$ for 2-byte character types, $P = 2097169$ for 4-byte character types.
+
+* `bkdr_hash32` / `bkdr_hash64`: Case-sensitive BKDR hash. Returns 32-bit or 64-bit hash value.
+* `ascii_ci_bkdr_hash32` / `ascii_ci_bkdr_hash64`: ASCII case-insensitive BKDR hash which uses `ascii_tolower` to convert characters to lowercase before hashing. Works with all character types.
+* `ci_bkdr_hash32` / `ci_bkdr_hash64`: Locale-dependent case-insensitive BKDR hash which uses `std::tolower` / `std::towlower`, whose behavior may be affected by the runtime locale. Only supports `char` and `wchar_t` character types.
+
+Each functor provides three overloads:
+1. Pointer range `[begin, end)`
+2. Null-terminated C-string
+3. Any string-like type (see [String-like Types](#string-like-types))
 
 ### Alternatives to `<utility>` Components
 
@@ -232,6 +579,8 @@ reflect_cpp26::cmp_less(true, 1);   // OK: compares as int
 
 `in_range<R>(t)` checks whether the integer value `t` can be represented by type `R`. It is equivalent to `std::in_range<R>(t)` but uses the relaxed comparison functors internally.
 
+The `in_range_t<bool>` specialization checks whether the value is exactly `0` or `1`, since `bool` can only represent these two values.
+
 Example:
 ```cpp
 reflect_cpp26::in_range<uint8_t>(255);   // true
@@ -239,6 +588,10 @@ reflect_cpp26::in_range<uint8_t>(256);   // false
 reflect_cpp26::in_range<uint8_t>(-1);    // false
 reflect_cpp26::in_range<int8_t>(127);    // true
 reflect_cpp26::in_range<int8_t>(128);    // false
+reflect_cpp26::in_range<bool>(0);        // true
+reflect_cpp26::in_range<bool>(1);        // true
+reflect_cpp26::in_range<bool>(2);        // false
+reflect_cpp26::in_range<bool>(-1);       // false
 ```
 
 #### Underlying Type Conversion

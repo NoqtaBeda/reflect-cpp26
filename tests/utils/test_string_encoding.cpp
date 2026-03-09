@@ -26,6 +26,107 @@
 
 namespace rfl = reflect_cpp26;
 
+namespace examples {
+
+template <typename Char16T>
+constexpr Char16T* encode_utf16(Char16T* dest, char32_t code_point) {
+  if (code_point <= 0xFFFF) {
+    *dest = static_cast<Char16T>(code_point);
+    return dest + 1;
+  }
+  code_point -= 0x10000;
+  auto high = static_cast<Char16T>(0xD800 + (code_point >> 10));
+  auto low = static_cast<Char16T>(0xDC00 + (code_point & 0x3FF));
+  dest[0] = high;
+  dest[1] = low;
+  return dest + 2;
+}
+
+// Example: UTF-8 to UTF-16 conversion
+// Documentation: docs/utils.md
+TEST(UtilsStringEncodingExamples, Utf8ToUtf16Basic) {
+  char8_t utf8_input[] = u8"Hello, 世界! 🌍";
+  constexpr auto len = sizeof(u8"Hello, 世界! 🌍") - 1;
+  char16_t utf16_output[32] = {};
+  auto result = rfl::utf8_to_utf16(utf16_output, utf16_output + 32, utf8_input, utf8_input + len);
+  EXPECT_EQ(std::errc{}, result.ec);
+  // Success: result.out_ptr points past the last character written
+  EXPECT_EQ(utf8_input + len, result.in_ptr);
+}
+
+// Example: Error handling - invalid continuation byte
+// Documentation: docs/utils.md
+TEST(UtilsStringEncodingExamples, Utf8ToUtf16InvalidContinuation) {
+  // 0x41 is not a valid continuation byte after 0xC2
+  char8_t invalid_utf8[] = {char8_t(0xC2), char8_t(0x41)};
+  char16_t output[16] = {};
+  auto err_result = rfl::utf8_to_utf16(output, output + 16, invalid_utf8, invalid_utf8 + 2);
+  EXPECT_EQ(std::errc::invalid_argument, err_result.ec);
+  // err_result.in_ptr == invalid_utf8 (points to the invalid sequence, can retry)
+  EXPECT_EQ(invalid_utf8, err_result.in_ptr);
+  // err_result.out_ptr == output (nothing written)
+  EXPECT_EQ(output, err_result.out_ptr);
+}
+
+// Example: Using alternative character types
+// Documentation: docs/utils.md
+TEST(UtilsStringEncodingExamples, AlternativeCharTypes) {
+  char input[] = "ASCII";    // char instead of char8_t
+  uint16_t buffer[16] = {};  // uint16_t instead of char16_t
+  auto r = rfl::utf8_to_utf16(buffer, buffer + 16, input, input + 5);
+  EXPECT_EQ(std::errc{}, r.ec);
+  EXPECT_EQ(buffer + 5, r.out_ptr);
+  EXPECT_EQ(input + 5, r.in_ptr);
+}
+
+// Example: Error handling with replacement character
+// This test demonstrates the error handling pattern.
+// Documentation: docs/utils.md
+TEST(UtilsStringEncodingExamples, ReplaceInvalidWithReplacementChar) {
+  char8_t input[] = {'H',
+                     'e',
+                     'l',
+                     'l',
+                     'o',
+                     static_cast<char8_t>(0xFF),
+                     static_cast<char8_t>(0xFE),
+                     'W',
+                     'o',
+                     'r',
+                     'l',
+                     'd'};
+  constexpr auto len = sizeof(input);
+  char16_t output[32] = {};
+  char16_t* out_ptr = output;
+
+  // First conversion: convert "Hello", stop at invalid 0xFF
+  auto result = rfl::utf8_to_utf16(out_ptr, output + 32, input, input + len);
+  EXPECT_EQ(std::errc::invalid_argument, result.ec);
+  EXPECT_EQ(5, result.out_ptr - output);  // "Hello" = 5 chars
+
+  // Verify in_ptr points to the invalid byte
+  EXPECT_EQ(input + 5, result.in_ptr);
+
+  // Consume invalid bytes (0xFF, 0xFE)
+  auto invalid_end = rfl::consume_utf8_invalid_sequence(result.in_ptr, input + len);
+  EXPECT_EQ(input + 7, invalid_end);
+
+  // Update out_ptr to continue from where first conversion stopped
+  out_ptr = result.out_ptr;
+
+  // Write replacement character
+  out_ptr = encode_utf16(out_ptr, 0xFFFD);
+
+  // Second conversion: convert remaining "World"
+  result = rfl::utf8_to_utf16(out_ptr, output + 32, invalid_end, input + len);
+
+  // Final result should be 11 UTF-16 code units (5 + 1 + 5)
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(11, result.out_ptr - output);
+}
+
+}  // namespace examples
+
 // ==================== UTF-8 to UTF-16 ====================
 
 TEST(UtilsStringEncoding, Utf8ToUtf16Empty) {
@@ -97,7 +198,8 @@ TEST(UtilsStringEncoding, Utf8ToUtf16BufferTooSmall) {
   char16_t output[3] = {};
   auto result = rfl::utf8_to_utf16(output, output + 3, input, input + 5);
   EXPECT_EQ(std::errc::value_too_large, result.ec);
-  // 3 input characters processed before buffer full: out_ptr at output + 3, in_ptr at input + 3
+  // 3 chars written, 4th char doesn't fit: out_ptr at output + 3, in_ptr at input + 3 (NOT
+  // consumed, can retry)
   EXPECT_EQ(output + 3, result.out_ptr);
   EXPECT_EQ(input + 3, result.in_ptr);
 }
@@ -107,8 +209,8 @@ TEST(UtilsStringEncoding, Utf8ToUtf16InvalidContinuation) {
   char16_t output[16] = {};
   auto result = rfl::utf8_to_utf16(output, output + 16, input, input + 2);
   EXPECT_EQ(std::errc::invalid_argument, result.ec);
-  // Error at first byte (0xC2 expects continuation, got 0x41):
-  // no output written, in_ptr at error position
+  // Error: 0xC2 expects continuation, got 0x41 - does not consume invalid bytes
+  // no output written, in_ptr points to the invalid sequence (can retry)
   EXPECT_EQ(output, result.out_ptr);
   EXPECT_EQ(input, result.in_ptr);
 }
@@ -118,8 +220,8 @@ TEST(UtilsStringEncoding, Utf8ToUtf16OverlongEncoding) {
   char16_t output[16] = {};
   auto result = rfl::utf8_to_utf16(output, output + 16, input, input + 2);
   EXPECT_EQ(std::errc::invalid_argument, result.ec);
-  // Overlong encoding (0xC0 0x80 would encode NUL, but is invalid):
-  // no output written, in_ptr at error position
+  // Overlong encoding (0xC0 0x80 would encode NUL, but is invalid): does not consume
+  // leading byte no output written, in_ptr points to the invalid sequence
   EXPECT_EQ(output, result.out_ptr);
   EXPECT_EQ(input, result.in_ptr);
 }
@@ -129,8 +231,8 @@ TEST(UtilsStringEncoding, Utf8ToUtf16TruncatedSequence) {
   char16_t output[16] = {};
   auto result = rfl::utf8_to_utf16(output, output + 16, input, input + 1);
   EXPECT_EQ(std::errc::invalid_argument, result.ec);
-  // 0xE2 starts 3-byte sequence but no continuation bytes:
-  // no output written, in_ptr at error position
+  // 0xE2 starts 3-byte sequence but no continuation bytes: does not consume
+  // no output written, in_ptr points to the truncated sequence
   EXPECT_EQ(output, result.out_ptr);
   EXPECT_EQ(input, result.in_ptr);
 }
@@ -141,8 +243,8 @@ TEST(UtilsStringEncoding, Utf8ToUtf16SurrogateInUtf8) {
   char16_t output[16] = {};
   auto result = rfl::utf8_to_utf16(output, output + 16, input, input + 3);
   EXPECT_EQ(std::errc::invalid_argument, result.ec);
-  // 0xED 0xA0 0x80 encodes U+D800 (surrogate), which is invalid in UTF-8:
-  // no output written, in_ptr at error position
+  // 0xED 0xA0 0x80 encodes U+D800 (surrogate), which is invalid in UTF-8: does not consume
+  // no output written, in_ptr points to the invalid sequence
   EXPECT_EQ(output, result.out_ptr);
   EXPECT_EQ(input, result.in_ptr);
 }
@@ -191,9 +293,21 @@ TEST(UtilsStringEncoding, Utf8ToUtf32BufferTooSmall) {
   char32_t output[2] = {};
   auto result = rfl::utf8_to_utf32(output, output + 2, input, input + 3);
   EXPECT_EQ(std::errc::value_too_large, result.ec);
-  // 2 chars converted before buffer full: out_ptr at output + 2, in_ptr at input + 2
+  // 2 chars converted before buffer full: out_ptr at output + 2, in_ptr at input + 2 (NOT consumed,
+  // can retry)
   EXPECT_EQ(output + 2, result.out_ptr);
   EXPECT_EQ(input + 2, result.in_ptr);
+}
+
+TEST(UtilsStringEncoding, Utf8ToUtf32InvalidContinuation) {
+  char8_t input[] = {static_cast<char8_t>(0xC2), static_cast<char8_t>(0x41)};
+  char32_t output[16] = {};
+  auto result = rfl::utf8_to_utf32(output, output + 16, input, input + 2);
+  EXPECT_EQ(std::errc::invalid_argument, result.ec);
+  // Error: 0xC2 expects continuation, got 0x41 - does not consume
+  // no output written, in_ptr points to the invalid sequence (can retry)
+  EXPECT_EQ(output, result.out_ptr);
+  EXPECT_EQ(input, result.in_ptr);
 }
 
 // ==================== UTF-16 to UTF-8 ====================
@@ -250,7 +364,8 @@ TEST(UtilsStringEncoding, Utf16ToUtf8LowSurrogateOnly) {
   char8_t output[16] = {};
   auto result = rfl::utf16_to_utf8(output, output + 16, input, input + 1);
   EXPECT_EQ(std::errc::invalid_argument, result.ec);
-  // Low surrogate without high surrogate: no output written, in_ptr at error position
+  // Low surrogate without high surrogate: does not consume
+  // no output written, in_ptr points to the invalid surrogate (can retry)
   EXPECT_EQ(output, result.out_ptr);
   EXPECT_EQ(input, result.in_ptr);
 }
@@ -260,8 +375,8 @@ TEST(UtilsStringEncoding, Utf16ToUtf8HighSurrogateOnly) {
   char8_t output[16] = {};
   auto result = rfl::utf16_to_utf8(output, output + 16, input, input + 1);
   EXPECT_EQ(std::errc::invalid_argument, result.ec);
-  // High surrogate without low surrogate (end of input): no output written, in_ptr at error
-  // position
+  // High surrogate without low surrogate (end of input): does not consume
+  // no output written, in_ptr points to the truncated surrogate (can retry)
   EXPECT_EQ(output, result.out_ptr);
   EXPECT_EQ(input, result.in_ptr);
 }
@@ -271,7 +386,8 @@ TEST(UtilsStringEncoding, Utf16ToUtf8HighSurrogateWithoutLow) {
   char8_t output[16] = {};
   auto result = rfl::utf16_to_utf8(output, output + 16, input, input + 2);
   EXPECT_EQ(std::errc::invalid_argument, result.ec);
-  // High surrogate followed by non-low-surrogate: no output written, in_ptr at error position
+  // High surrogate followed by non-low-surrogate: does not consume
+  // no output written, in_ptr points to the invalid sequence (can retry)
   EXPECT_EQ(output, result.out_ptr);
   EXPECT_EQ(input, result.in_ptr);
 }
@@ -281,7 +397,7 @@ TEST(UtilsStringEncoding, Utf16ToUtf8BufferTooSmall) {
   char8_t output[2] = {};
   auto result = rfl::utf16_to_utf8(output, output + 2, input, input + 1);
   EXPECT_EQ(std::errc::value_too_large, result.ec);
-  // \u4E2D needs 3 bytes in UTF-8, buffer has 2: no output written, in_ptr at error position
+  // \u4E2D needs 3 bytes in UTF-8, buffer has 2: no output written, in_ptr NOT consumed
   EXPECT_EQ(output, result.out_ptr);
   EXPECT_EQ(input, result.in_ptr);
 }
@@ -326,9 +442,21 @@ TEST(UtilsStringEncoding, Utf16ToUtf32BufferTooSmall) {
   char32_t output[1] = {};
   auto result = rfl::utf16_to_utf32(output, output + 1, input, input + 2);
   EXPECT_EQ(std::errc::value_too_large, result.ec);
-  // 1 char converted before buffer full: out_ptr at output + 1, in_ptr at input + 1
+  // 1 char converted before buffer full: out_ptr at output + 1, in_ptr at input + 1 (NOT consumed,
+  // can retry)
   EXPECT_EQ(output + 1, result.out_ptr);
   EXPECT_EQ(input + 1, result.in_ptr);
+}
+
+TEST(UtilsStringEncoding, Utf16ToUtf32InvalidSurrogate) {
+  char16_t input[] = {static_cast<char16_t>(0xD800)};
+  char32_t output[16] = {};
+  auto result = rfl::utf16_to_utf32(output, output + 16, input, input + 1);
+  EXPECT_EQ(std::errc::invalid_argument, result.ec);
+  // High surrogate without low surrogate: does not consume
+  // no output written, in_ptr points to the truncated surrogate (can retry)
+  EXPECT_EQ(output, result.out_ptr);
+  EXPECT_EQ(input, result.in_ptr);
 }
 
 // ==================== UTF-32 to UTF-8 ====================
@@ -392,7 +520,8 @@ TEST(UtilsStringEncoding, Utf32ToUtf8InvalidSurrogate) {
   char8_t output[16] = {};
   auto result = rfl::utf32_to_utf8(output, output + 16, input, input + 1);
   EXPECT_EQ(std::errc::invalid_argument, result.ec);
-  // Surrogate code point is invalid: no output written, in_ptr at error position
+  // Surrogate code point is invalid: does not consume
+  // no output written, in_ptr points to the invalid code point (can retry)
   EXPECT_EQ(output, result.out_ptr);
   EXPECT_EQ(input, result.in_ptr);
 }
@@ -402,7 +531,8 @@ TEST(UtilsStringEncoding, Utf32ToUtf8TooLarge) {
   char8_t output[16] = {};
   auto result = rfl::utf32_to_utf8(output, output + 16, input, input + 1);
   EXPECT_EQ(std::errc::invalid_argument, result.ec);
-  // Code point > U+10FFFF is invalid: no output written, in_ptr at error position
+  // Code point > U+10FFFF is invalid: does not consume
+  // no output written, in_ptr points to the invalid code point (can retry)
   EXPECT_EQ(output, result.out_ptr);
   EXPECT_EQ(input, result.in_ptr);
 }
@@ -412,7 +542,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf8BufferTooSmall) {
   char8_t output[2] = {};
   auto result = rfl::utf32_to_utf8(output, output + 2, input, input + 1);
   EXPECT_EQ(std::errc::value_too_large, result.ec);
-  // \u4E2D needs 3 bytes in UTF-8, buffer has 2: no output written, in_ptr at error position
+  // \u4E2D needs 3 bytes in UTF-8, buffer has 2: no output written, in_ptr NOT consumed
   EXPECT_EQ(output, result.out_ptr);
   EXPECT_EQ(input, result.in_ptr);
 }
@@ -458,7 +588,8 @@ TEST(UtilsStringEncoding, Utf32ToUtf16InvalidSurrogate) {
   char16_t output[16] = {};
   auto result = rfl::utf32_to_utf16(output, output + 16, input, input + 1);
   EXPECT_EQ(std::errc::invalid_argument, result.ec);
-  // Surrogate code point is invalid: no output written, in_ptr at error position
+  // Surrogate code point is invalid: does not consume
+  // no output written, in_ptr points to the invalid code point (can retry)
   EXPECT_EQ(output, result.out_ptr);
   EXPECT_EQ(input, result.in_ptr);
 }
@@ -468,7 +599,8 @@ TEST(UtilsStringEncoding, Utf32ToUtf16TooLarge) {
   char16_t output[16] = {};
   auto result = rfl::utf32_to_utf16(output, output + 16, input, input + 1);
   EXPECT_EQ(std::errc::invalid_argument, result.ec);
-  // Code point > U+10FFFF is invalid: no output written, in_ptr at error position
+  // Code point > U+10FFFF is invalid: does not consume
+  // no output written, in_ptr points to the invalid code point (can retry)
   EXPECT_EQ(output, result.out_ptr);
   EXPECT_EQ(input, result.in_ptr);
 }
@@ -478,8 +610,8 @@ TEST(UtilsStringEncoding, Utf32ToUtf16BufferTooSmall) {
   char16_t output[1] = {};
   auto result = rfl::utf32_to_utf16(output, output + 1, input, input + 1);
   EXPECT_EQ(std::errc::value_too_large, result.ec);
-  // Emoji needs 2 UTF-16 code units (surrogate pair), buffer has 1: no output written, in_ptr at
-  // error position
+  // Emoji needs 2 UTF-16 code units (surrogate pair), buffer has 1: no output written, in_ptr NOT
+  // consumed
   EXPECT_EQ(output, result.out_ptr);
   EXPECT_EQ(input, result.in_ptr);
 }
@@ -537,4 +669,108 @@ TEST(UtilsStringEncoding, RoundTripUtf16ToUtf32ToUtf16) {
   for (ptrdiff_t i = 0; i < 6; ++i) {
     EXPECT_EQ(original[i], utf16_buf[i]);
   }
+}
+
+// ==================== Consume invalid UTF-8 sequence ====================
+// consume_utf8_invalid_sequence consumes the maximal prefix of continuous invalid UTF-8 bytes.
+// Invalid bytes include: continuation bytes (0x80-0xBF), overlong encodings (0xC0-0xC1),
+// and invalid leading bytes (0xF5-0xFF). Valid UTF-8 stops the consumption.
+
+TEST(UtilsStringEncoding, ConsumeUtf8InvalidSequenceEmpty) {
+  // Empty input: returns input unchanged
+  char8_t input[] = u8"";
+  auto end = rfl::consume_utf8_invalid_sequence(input, input);
+  EXPECT_EQ(input, end);
+}
+
+TEST(UtilsStringEncoding, ConsumeUtf8InvalidSequenceAscii) {
+  // ASCII bytes (0x00-0x7F) are valid UTF-8: returns input unchanged
+  char8_t input[] = u8"ABC";
+  auto end = rfl::consume_utf8_invalid_sequence(input, input + 3);
+  EXPECT_EQ(input, end);
+}
+
+TEST(UtilsStringEncoding, ConsumeUtf8InvalidSequenceContinuationOnly) {
+  // Standalone continuation bytes (0x80-0xBF) are invalid: consume all 3
+  char8_t input[] = {
+      static_cast<char8_t>(0x80), static_cast<char8_t>(0x81), static_cast<char8_t>(0xBF)};
+  auto end = rfl::consume_utf8_invalid_sequence(input, input + 3);
+  EXPECT_EQ(input + 3, end);
+}
+
+TEST(UtilsStringEncoding, ConsumeUtf8InvalidSequenceOverlong) {
+  // Overlong encodings (0xC0-0xC1) are invalid: consume both bytes
+  char8_t input[] = {static_cast<char8_t>(0xC0), static_cast<char8_t>(0xC1)};
+  auto end = rfl::consume_utf8_invalid_sequence(input, input + 2);
+  EXPECT_EQ(input + 2, end);
+}
+
+TEST(UtilsStringEncoding, ConsumeUtf8InvalidSequenceInvalidLeading) {
+  // Invalid leading bytes (0xF5-0xFF) are invalid: consume both bytes
+  char8_t input[] = {static_cast<char8_t>(0xF5), static_cast<char8_t>(0xFF)};
+  auto end = rfl::consume_utf8_invalid_sequence(input, input + 2);
+  EXPECT_EQ(input + 2, end);
+}
+
+TEST(UtilsStringEncoding, ConsumeUtf8InvalidSequenceMixed) {
+  // Mixed: continuation byte + overlong leading byte consumed, stops at valid ASCII
+  char8_t input[] = {
+      static_cast<char8_t>(0x80), static_cast<char8_t>(0xC0), static_cast<char8_t>('A')};
+  auto end = rfl::consume_utf8_invalid_sequence(input, input + 3);
+  EXPECT_EQ(input + 2, end);
+}
+
+TEST(UtilsStringEncoding, ConsumeUtf8InvalidSequenceValidUtf8) {
+  // Valid multi-byte UTF-8 sequences: returns input unchanged (no invalid prefix)
+  char8_t input[] = u8"\u00A9\u00AE";
+  auto end = rfl::consume_utf8_invalid_sequence(input, input + 4);
+  EXPECT_EQ(input, end);
+}
+
+// ==================== Consume invalid UTF-16 sequence ====================
+// consume_utf16_invalid_sequence consumes the maximal prefix of continuous invalid UTF-16 code
+// units. Invalid code units include: unpaired surrogates (standalone low surrogates, high
+// surrogates without following low surrogate). Valid surrogate pairs and non-surrogate BMP chars
+// stop consumption.
+
+TEST(UtilsStringEncoding, ConsumeUtf16InvalidSequenceEmpty) {
+  // Empty input: returns input unchanged
+  char16_t input[] = u"";
+  auto end = rfl::consume_utf16_invalid_sequence(input, input);
+  EXPECT_EQ(input, end);
+}
+
+TEST(UtilsStringEncoding, ConsumeUtf16InvalidSequenceBmp) {
+  // Regular BMP characters (non-surrogate) are valid: returns input unchanged
+  char16_t input[] = u"AB";
+  auto end = rfl::consume_utf16_invalid_sequence(input, input + 2);
+  EXPECT_EQ(input, end);
+}
+
+TEST(UtilsStringEncoding, ConsumeUtf16InvalidSequenceLowSurrogateOnly) {
+  // Standalone low surrogates (0xDC00-0xDFFF) are invalid: consume both
+  char16_t input[] = {static_cast<char16_t>(0xDC00), static_cast<char16_t>(0xDC01)};
+  auto end = rfl::consume_utf16_invalid_sequence(input, input + 2);
+  EXPECT_EQ(input + 2, end);
+}
+
+TEST(UtilsStringEncoding, ConsumeUtf16InvalidSequenceHighSurrogateWithoutLow) {
+  // High surrogate (0xD800-0xDBFF) followed by non-surrogate: consume only the high surrogate
+  char16_t input[] = {static_cast<char16_t>(0xD800), u'A'};
+  auto end = rfl::consume_utf16_invalid_sequence(input, input + 2);
+  EXPECT_EQ(input + 1, end);
+}
+
+TEST(UtilsStringEncoding, ConsumeUtf16InvalidSequenceHighSurrogateWithLow) {
+  // Valid surrogate pair (high + low): returns input unchanged (not invalid)
+  char16_t input[] = {static_cast<char16_t>(0xD83D), static_cast<char16_t>(0xDE00)};
+  auto end = rfl::consume_utf16_invalid_sequence(input, input + 2);
+  EXPECT_EQ(input, end);
+}
+
+TEST(UtilsStringEncoding, ConsumeUtf16InvalidSequenceTruncatedSurrogate) {
+  // Truncated surrogate at end of input: consume the high surrogate
+  char16_t input[] = {static_cast<char16_t>(0xD800)};
+  auto end = rfl::consume_utf16_invalid_sequence(input, input + 1);
+  EXPECT_EQ(input + 1, end);
 }

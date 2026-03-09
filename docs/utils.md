@@ -125,6 +125,22 @@ struct utf32_to_utf16_t {
 };
 constexpr auto utf32_to_utf16 = utf32_to_utf16_t{};
 
+// Consume maximal prefix of invalid UTF-8 bytes
+struct consume_utf8_invalid_sequence_t {
+  static constexpr auto operator()(const char8_t* input, const char8_t* input_end)
+      -> const char8_t*;
+  // Wrapper overloads for alternative character types
+};
+constexpr auto consume_utf8_invalid_sequence = consume_utf8_invalid_sequence_t{};
+
+// Consume maximal prefix of invalid UTF-16 code units
+struct consume_utf16_invalid_sequence_t {
+  static constexpr auto operator()(const char16_t* input, const char16_t* input_end)
+      -> const char16_t*;
+  // Wrapper overloads for alternative character types
+};
+constexpr auto consume_utf16_invalid_sequence = consume_utf16_invalid_sequence_t{};
+
 }  // namespace reflect_cpp26
 ```
 
@@ -134,9 +150,12 @@ These functors provide constexpr UTF encoding conversion between UTF-8, UTF-16, 
 
 `encode_result_t<OutT, InT>` contains:
 * `out_ptr`: Pointer just past the last output character written. On success, this is where the next output would be written.
-* `in_ptr`: Pointer to the next input character to process. On success, this equals `input_end`. On error, this points to the character that caused the error.
+* `in_ptr`: Pointer to the next input character to process. The value depends on the result:
+  * **Success (`ec == std::errc{}`)**: Equals `input_end` (all input consumed).
+  * **Invalid input (`ec == std::errc::invalid_argument`)**: Points to the invalid UTF sequence. The converter does NOT consume invalid bytes, allowing retry from the same position (e.g., to replace with a replacement character).
+  * **Buffer overflow (`ec == std::errc::value_too_large`)**: Points to the character that couldn't fit. The converter does NOT consume this character, allowing retry from the same position with a larger buffer.
 * `ec`: Error code. `std::errc{}` on success, otherwise one of:
-  * `std::errc::invalid_argument`: Invalid UTF sequence (malformed input, invalid code point, or surrogate issues)
+  * `std::errc::invalid_argument`: Invalid UTF sequence (malformed encoding, invalid code point, or surrogate in wrong context)
   * `std::errc::value_too_large`: Output buffer too small
 
 #### Character Type Support
@@ -156,12 +175,33 @@ Wrapper overloads use `reinterpret_cast` to convert between the canonical types 
 
 #### Error Handling
 
-On error, the conversion stops at the first invalid character:
-* `out_ptr` points to where the next output would have been written (no partial output for the failed character)
-* `in_ptr` points to the input character that caused the error
-* `ec` contains the appropriate error code
+The converters detect two types of errors:
+* `std::errc::invalid_argument`: The input contains an invalid UTF sequence (malformed encoding, invalid code point, or surrogate in wrong context).
+* `std::errc::value_too_large`: The output buffer is too small to hold the next character.
 
-For buffer overflow (`value_too_large`), `in_ptr` points to the input character that couldn't fit in the remaining buffer space.
+Both cases return immediately with the error code, and `out_ptr` points to where the next output would have been written (no partial output for the failed character).
+
+#### Consuming Invalid Sequences
+
+When an invalid UTF sequence is encountered, the converter returns `std::errc::invalid_argument` with `in_ptr` pointing to the start of the invalid sequence. The helper functors `consume_utf8_invalid_sequence` and `consume_utf16_invalid_sequence` can be used to consume the maximal prefix of continuous invalid bytes/code units, allowing replacement with the Unicode replacement character (U+FFFD):
+
+```cpp
+namespace rfl = reflect_cpp26;
+
+// Process UTF-8 with error handling
+char8_t input[] = u8"Hello\u00A9\xFF\xFEWorld";
+char16_t output[32];
+auto result = rfl::utf8_to_utf16(output, output + 32, input, input + sizeof(input) - 1);
+
+while (result.ec == std::errc::invalid_argument) {
+  // Consume the invalid bytes
+  auto invalid_end = rfl::consume_utf8_invalid_sequence(result.in_ptr, input + sizeof(input) - 1);
+  // Write replacement character
+  output = rfl::encode_utf16(output, 0xFFFD);
+  // Continue conversion
+  result = rfl::utf8_to_utf16(output, output + 32, invalid_end, input + sizeof(input) - 1);
+}
+```
 
 Example:
 ```cpp
@@ -183,7 +223,7 @@ char16_t output[16];
 auto err_result = rfl::utf8_to_utf16(output, output + 16,
                                       invalid_utf8, invalid_utf8 + 2);
 // err_result.ec == std::errc::invalid_argument
-// err_result.in_ptr == invalid_utf8 (error at first byte)
+// err_result.in_ptr == invalid_utf8 (points to the invalid sequence, can retry)
 // err_result.out_ptr == output (nothing written)
 
 // Using alternative character types
@@ -191,8 +231,6 @@ char input[] = "ASCII";  // char instead of char8_t
 uint16_t buffer[16];      // uint16_t instead of char16_t
 auto r = rfl::utf8_to_utf16(buffer, buffer + 16, input, input + 5);
 ```
-
-Detailed examples are shown in [unit test cases](../tests/utils/test_string_encoding.cpp).
 
 ### Converting Identifier Naming
 

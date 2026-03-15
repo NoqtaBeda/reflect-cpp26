@@ -76,8 +76,6 @@ consteval bool is_serializable_type(std::meta::info T) {
     }
     return true;
   }
-  // Note: Though std::optional has range support in C++26,
-  //       it may not be supported by all the compilers.
   if (has_template_arguments(T) && template_of(T) == ^^std::optional) {
     auto U = template_arguments_of(T)[0];
     return extract<bool>(^^serializable, U);

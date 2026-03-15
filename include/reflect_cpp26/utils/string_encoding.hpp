@@ -25,6 +25,8 @@
 
 #include <cstdint>
 #include <system_error>
+#include <tuple>
+#include <type_traits>
 
 namespace reflect_cpp26 {
 namespace impl {
@@ -60,22 +62,21 @@ constexpr size_t utf8_encoded_length(char32_t code_point) {
 constexpr size_t utf16_encoded_length(char32_t code_point) {
   return (code_point <= 0xFFFF) ? 1 : 2;
 }
+}  // namespace impl
 
-#define REFLECT_CPP26_UNWIND_AND_RETURN_INVALID() \
-  do {                                            \
-    *input = original;                            \
-    return invalid_code_point;                    \
-  } while (false)
+constexpr auto decode_utf8(const char8_t* input, const char8_t* input_end)
+    -> std::pair<char32_t, const char8_t*> {
+  if (input >= input_end) {
+    return {impl::invalid_code_point, input};
+  }
 
-constexpr char32_t decode_utf8(const char8_t** input, const char8_t* input_end) {
-  // Precondition: *input < input_end
-  const char8_t* original = *input;
-  auto c0 = static_cast<uint8_t>(*(*input)++);
+  const char8_t* original = input;
+  auto c0 = static_cast<uint8_t>(*input++);
   if (c0 < 0x80) {
-    return static_cast<char32_t>(c0);
+    return {static_cast<char32_t>(c0), input};
   }
   if (c0 < 0xC0) {
-    REFLECT_CPP26_UNWIND_AND_RETURN_INVALID();
+    return {impl::invalid_code_point, original};
   }
 
   char32_t code_point = 0;
@@ -85,7 +86,7 @@ constexpr char32_t decode_utf8(const char8_t** input, const char8_t* input_end) 
     code_point = c0 & 0x1F;
     num_continuations = 1;
     if (c0 < 0xC2) {
-      REFLECT_CPP26_UNWIND_AND_RETURN_INVALID();
+      return {impl::invalid_code_point, original};
     }
   } else if (c0 < 0xF0) {
     code_point = c0 & 0x0F;
@@ -94,95 +95,140 @@ constexpr char32_t decode_utf8(const char8_t** input, const char8_t* input_end) 
     code_point = c0 & 0x07;
     num_continuations = 3;
     if (c0 > 0xF4) {
-      REFLECT_CPP26_UNWIND_AND_RETURN_INVALID();
+      return {impl::invalid_code_point, original};
     }
   } else {
-    REFLECT_CPP26_UNWIND_AND_RETURN_INVALID();
+    return {impl::invalid_code_point, original};
   }
 
-  if (*input + num_continuations > input_end) {
-    REFLECT_CPP26_UNWIND_AND_RETURN_INVALID();
+  if (input + num_continuations > input_end) {
+    return {impl::invalid_code_point, original};
   }
   for (size_t i = 0; i < num_continuations; ++i) {
-    auto c = static_cast<uint8_t>(*(*input)++);
-    if (!is_utf8_trailing_byte(c)) {
-      REFLECT_CPP26_UNWIND_AND_RETURN_INVALID();
+    auto c = static_cast<uint8_t>(*input++);
+    if (!impl::is_utf8_trailing_byte(c)) {
+      return {impl::invalid_code_point, original};
     }
     code_point = (code_point << 6) | (c & 0x3F);
   }
 
   if (num_continuations == 2) {
     if (code_point < 0x800 || (code_point >= 0xD800 && code_point <= 0xDFFF)) {
-      REFLECT_CPP26_UNWIND_AND_RETURN_INVALID();
+      return {impl::invalid_code_point, original};
     }
   } else if (num_continuations == 3) {
     if (code_point < 0x10000 || code_point > 0x10FFFF) {
-      REFLECT_CPP26_UNWIND_AND_RETURN_INVALID();
+      return {impl::invalid_code_point, original};
     }
   }
 
-  return code_point;
+  return {code_point, input};
 }
 
-constexpr char32_t decode_utf16(const char16_t** input, const char16_t* input_end) {
-  const char16_t* original = *input;
-  auto c0 = static_cast<char16_t>(*(*input)++);
+constexpr auto decode_utf16(const char16_t* input, const char16_t* input_end)
+    -> std::pair<char32_t, const char16_t*> {
+  if (input >= input_end) {
+    return {impl::invalid_code_point, input};
+  }
+
+  const char16_t* original = input;
+  auto c0 = static_cast<char16_t>(*input++);
   if (c0 < 0xD800 || c0 > 0xDFFF) {
-    return static_cast<char32_t>(c0);
+    return {static_cast<char32_t>(c0), input};
   }
   if (c0 >= 0xDC00) {
-    REFLECT_CPP26_UNWIND_AND_RETURN_INVALID();
+    return {impl::invalid_code_point, original};
   }
-  if (*input >= input_end) {
-    REFLECT_CPP26_UNWIND_AND_RETURN_INVALID();
+  if (input >= input_end) {
+    return {impl::invalid_code_point, original};
   }
 
-  auto c1 = static_cast<char16_t>(*(*input)++);
+  auto c1 = static_cast<char16_t>(*input++);
   if (c1 < 0xDC00 || c1 > 0xDFFF) {
-    REFLECT_CPP26_UNWIND_AND_RETURN_INVALID();
+    return {impl::invalid_code_point, original};
   }
 
-  auto code_point =
-      0x10000 + ((static_cast<char32_t>(c0) - 0xD800) << 10) + (static_cast<char32_t>(c1) - 0xDC00);
-  return static_cast<char32_t>(code_point);
+  auto code_point = 0x10000 + ((char32_t(c0) - 0xD800) << 10) + (char32_t(c1) - 0xDC00);
+  return {static_cast<char32_t>(code_point), input};
 }
 
-constexpr char8_t* encode_utf8(char8_t* dest, char32_t code_point) {
-  if (code_point < 0x80) {
-    *dest = static_cast<char8_t>(code_point);
-    return dest + 1;
+struct encode_code_point_to_utf8_unsafe_t {
+  // Assumes: (1) Buffer size is enough; (2) code_point is valid
+  static constexpr auto operator()(char8_t* dest, char32_t code_point) -> char8_t* {
+    if (code_point < 0x80) {
+      *dest = static_cast<char8_t>(code_point);
+      return dest + 1;
+    }
+    if (code_point < 0x800) {
+      dest[0] = static_cast<char8_t>(0xC0 | (code_point >> 6));
+      dest[1] = static_cast<char8_t>(0x80 | (code_point & 0x3F));
+      return dest + 2;
+    }
+    if (code_point < 0x10000) {
+      dest[0] = static_cast<char8_t>(0xE0 | (code_point >> 12));
+      dest[1] = static_cast<char8_t>(0x80 | ((code_point >> 6) & 0x3F));
+      dest[2] = static_cast<char8_t>(0x80 | (code_point & 0x3F));
+      return dest + 3;
+    }
+    dest[0] = static_cast<char8_t>(0xF0 | (code_point >> 18));
+    dest[1] = static_cast<char8_t>(0x80 | ((code_point >> 12) & 0x3F));
+    dest[2] = static_cast<char8_t>(0x80 | ((code_point >> 6) & 0x3F));
+    dest[3] = static_cast<char8_t>(0x80 | (code_point & 0x3F));
+    return dest + 4;
   }
-  if (code_point < 0x800) {
-    dest[0] = static_cast<char8_t>(0xC0 | (code_point >> 6));
-    dest[1] = static_cast<char8_t>(0x80 | (code_point & 0x3F));
+
+  static auto operator()(char* dest, char32_t code_point) -> char* {
+    auto* res = operator()(reinterpret_cast<char8_t*>(dest), code_point);
+    return reinterpret_cast<char*>(res);
+  }
+
+  static auto operator()(uint8_t* dest, char32_t code_point) -> uint8_t* {
+    auto* res = operator()(reinterpret_cast<char8_t*>(dest), code_point);
+    return reinterpret_cast<uint8_t*>(res);
+  }
+};
+
+struct encode_code_point_to_utf16_unsafe_t {
+  // Assumes: (1) Buffer size is enough; (2) code_point is valid
+  static constexpr auto operator()(char16_t* dest, char32_t code_point) -> char16_t* {
+    if (code_point <= 0xFFFF) {
+      *dest = static_cast<char16_t>(code_point);
+      return dest + 1;
+    }
+    code_point -= 0x10000;
+    auto high = static_cast<char16_t>(0xD800 + (code_point >> 10));
+    auto low = static_cast<char16_t>(0xDC00 + (code_point & 0x3FF));
+    dest[0] = high;
+    dest[1] = low;
     return dest + 2;
   }
-  if (code_point < 0x10000) {
-    dest[0] = static_cast<char8_t>(0xE0 | (code_point >> 12));
-    dest[1] = static_cast<char8_t>(0x80 | ((code_point >> 6) & 0x3F));
-    dest[2] = static_cast<char8_t>(0x80 | (code_point & 0x3F));
-    return dest + 3;
-  }
-  dest[0] = static_cast<char8_t>(0xF0 | (code_point >> 18));
-  dest[1] = static_cast<char8_t>(0x80 | ((code_point >> 12) & 0x3F));
-  dest[2] = static_cast<char8_t>(0x80 | ((code_point >> 6) & 0x3F));
-  dest[3] = static_cast<char8_t>(0x80 | (code_point & 0x3F));
-  return dest + 4;
-}
 
-constexpr char16_t* encode_utf16(char16_t* dest, char32_t code_point) {
-  if (code_point <= 0xFFFF) {
-    *dest = static_cast<char16_t>(code_point);
-    return dest + 1;
+  static auto operator()(uint16_t* dest, char32_t code_point) -> uint16_t* {
+    auto* res = operator()(reinterpret_cast<char16_t*>(dest), code_point);
+    return reinterpret_cast<uint16_t*>(res);
   }
-  code_point -= 0x10000;
-  auto high = static_cast<char16_t>(0xD800 + (code_point >> 10));
-  auto low = static_cast<char16_t>(0xDC00 + (code_point & 0x3FF));
-  dest[0] = high;
-  dest[1] = low;
-  return dest + 2;
-}
-}  // namespace impl
+};
+
+struct encode_code_point_unsafe_t {
+  template <class OutT>
+  static constexpr auto operator()(OutT* dest, char32_t code_point) -> OutT* {
+    if constexpr (sizeof(OutT) == 1) {
+      return encode_code_point_to_utf8_unsafe_t::operator()(dest, code_point);
+    } else if constexpr (sizeof(OutT) == 2) {
+      return encode_code_point_to_utf16_unsafe_t::operator()(dest, code_point);
+    } else if constexpr (sizeof(OutT) == 4) {
+      *dest = code_point;
+      return dest + 1;
+    } else {
+      static_assert(false, "Invalid OutT");
+    }
+  }
+};
+
+constexpr auto encode_code_point_to_utf8_unsafe = encode_code_point_to_utf8_unsafe_t{};
+constexpr auto encode_code_point_to_utf16_unsafe = encode_code_point_to_utf16_unsafe_t{};
+// Dispatcher
+constexpr auto encode_code_point_unsafe = encode_code_point_unsafe_t{};
 
 #define REFLECT_CPP26_ENCODING_OVERLOAD(char_dest_t, char_src_t, given_dest_t, given_src_t) \
   static auto operator()(given_dest_t* dest,                                                \
@@ -212,18 +258,15 @@ struct utf8_to_utf16_t {
                                    const char8_t* input,
                                    const char8_t* input_end) -> encode_result_t<char16_t, char8_t> {
     while (input < input_end) {
-      const auto* next_input = input;
-      auto code_point = impl::decode_utf8(&next_input, input_end);
+      auto [code_point, next_input] = decode_utf8(input, input_end);
       if (code_point == impl::invalid_code_point) {
-        // Does not consume the invalid character
         return {dest, input, std::errc::invalid_argument};
       }
       size_t needed = impl::utf16_encoded_length(code_point);
       if (dest + needed > dest_end) {
-        // Does not consume the character that fails to be written to dest.
         return {dest, input, std::errc::value_too_large};
       }
-      dest = impl::encode_utf16(dest, code_point);
+      dest = encode_code_point_to_utf16_unsafe(dest, code_point);
       input = next_input;
     }
     return {dest, input, std::errc{}};
@@ -250,12 +293,12 @@ struct utf8_to_utf32_t {
       if (dest >= dest_end) {
         return {dest, input, std::errc::value_too_large};
       }
-      auto code_point = impl::decode_utf8(&input, input_end);  // input advanced
+      auto [code_point, next_input] = decode_utf8(input, input_end);
       if (code_point == impl::invalid_code_point) {
-        // Does not consume the invalid character
         return {dest, input, std::errc::invalid_argument};
       }
       *dest++ = code_point;
+      input = next_input;
     }
     return {dest, input, std::errc{}};
   }
@@ -279,18 +322,15 @@ struct utf16_to_utf8_t {
                                    const char16_t* input_end)
       -> encode_result_t<char8_t, char16_t> {
     while (input < input_end) {
-      const auto* next_input = input;
-      auto code_point = impl::decode_utf16(&next_input, input_end);
+      auto [code_point, next_input] = decode_utf16(input, input_end);
       if (code_point == impl::invalid_code_point) {
-        // Does not consume the invalid character
         return {dest, input, std::errc::invalid_argument};
       }
       auto needed = impl::utf8_encoded_length(code_point);
       if (dest + needed > dest_end) {
-        // Does not consume the character that fails to be written to dest.
         return {dest, input, std::errc::value_too_large};
       }
-      dest = impl::encode_utf8(dest, code_point);
+      dest = encode_code_point_to_utf8_unsafe(dest, code_point);
       input = next_input;
     }
     return {dest, input, std::errc{}};
@@ -318,12 +358,12 @@ struct utf16_to_utf32_t {
       if (dest >= dest_end) {
         return {dest, input, std::errc::value_too_large};
       }
-      auto code_point = impl::decode_utf16(&input, input_end);  // input advanced
+      auto [code_point, next_input] = decode_utf16(input, input_end);
       if (code_point == impl::invalid_code_point) {
-        // Does not consume the invalid character
         return {dest, input, std::errc::invalid_argument};
       }
       *dest++ = code_point;
+      input = next_input;
     }
     return {dest, input, std::errc{}};
   }
@@ -345,15 +385,13 @@ struct utf32_to_utf8_t {
     for (; input < input_end; ++input) {
       auto code_point = *input;
       if (code_point > 0x10FFFF || (code_point >= 0xD800 && code_point <= 0xDFFF)) {
-        // Does not consume the invalid character
         return {dest, input, std::errc::invalid_argument};
       }
       auto needed = impl::utf8_encoded_length(code_point);
       if (dest + needed > dest_end) {
-        // Does not consume the character that fails to be written to dest.
         return {dest, input, std::errc::value_too_large};
       }
-      dest = impl::encode_utf8(dest, code_point);
+      dest = encode_code_point_to_utf8_unsafe(dest, code_point);
     }
     return {dest, input, std::errc{}};
   }
@@ -379,15 +417,13 @@ struct utf32_to_utf16_t {
     for (; input < input_end; ++input) {
       auto code_point = *input;
       if (code_point > 0x10FFFF || (code_point >= 0xD800 && code_point <= 0xDFFF)) {
-        // Does not consume the invalid character
         return {dest, input, std::errc::invalid_argument};
       }
       auto needed = impl::utf16_encoded_length(code_point);
       if (dest + needed > dest_end) {
-        // Does not consume the character that fails to be written to dest.
         return {dest, input, std::errc::value_too_large};
       }
-      dest = impl::encode_utf16(dest, code_point);
+      dest = encode_code_point_to_utf16_unsafe(dest, code_point);
     }
     return {dest, input, std::errc{}};
   }
@@ -400,12 +436,44 @@ struct utf32_to_utf16_t {
   REFLECT_CPP26_ENCODING_OVERLOAD(char16_t, char32_t, uint16_t, uint32_t)
 };
 
+// TODO: Now add the non-template class utf_convert_t as dispatcher.
+//       Hint: you can judge which candidate to use with sizeof(FromCharT) and sizeof(ToCharT)
+
+struct utf_convert_t {
+  template <class OutT, class InT>
+  static constexpr auto operator()(OutT* dest,
+                                   OutT* dest_end,
+                                   const InT* input,
+                                   const InT* input_end) -> encode_result_t<OutT, InT> {
+    constexpr size_t in_size = sizeof(InT);
+    constexpr size_t out_size = sizeof(OutT);
+
+    if constexpr (in_size == 1 && out_size == 2) {
+      return utf8_to_utf16_t::operator()(dest, dest_end, input, input_end);
+    } else if constexpr (in_size == 1 && out_size == 4) {
+      return utf8_to_utf32_t::operator()(dest, dest_end, input, input_end);
+    } else if constexpr (in_size == 2 && out_size == 1) {
+      return utf16_to_utf8_t::operator()(dest, dest_end, input, input_end);
+    } else if constexpr (in_size == 2 && out_size == 4) {
+      return utf16_to_utf32_t::operator()(dest, dest_end, input, input_end);
+    } else if constexpr (in_size == 4 && out_size == 1) {
+      return utf32_to_utf8_t::operator()(dest, dest_end, input, input_end);
+    } else if constexpr (in_size == 4 && out_size == 2) {
+      return utf32_to_utf16_t::operator()(dest, dest_end, input, input_end);
+    } else {
+      static_assert(false, "Invalid OutT and InT");
+    }
+  }
+};
+
 constexpr auto utf8_to_utf16 = utf8_to_utf16_t{};
 constexpr auto utf8_to_utf32 = utf8_to_utf32_t{};
 constexpr auto utf16_to_utf8 = utf16_to_utf8_t{};
 constexpr auto utf16_to_utf32 = utf16_to_utf32_t{};
 constexpr auto utf32_to_utf8 = utf32_to_utf8_t{};
 constexpr auto utf32_to_utf16 = utf32_to_utf16_t{};
+// Dispatcher
+constexpr auto utf_convert = utf_convert_t{};
 
 // Consumes the maximal prefix of continuous invalid UTF-8 bytes.
 // Let ret be the returned pointer, [input, ret) is expected to be replaced as a single placeholder
@@ -477,8 +545,50 @@ struct consume_utf16_invalid_sequence_t {
   }
 };
 
+// Consumes the maximal prefix of continuous invalid UTF-32 code points.
+// Invalid UTF-32: surrogates (0xD800-0xDFFF) and code points > 0x10FFFF
+struct consume_utf32_invalid_sequence_t {
+  static constexpr auto operator()(const char32_t* input, const char32_t* input_end)  //
+      -> const char32_t* {
+    while (input < input_end) {
+      auto c = *input;
+      if (c <= 0xD7FF || (c >= 0xE000 && c <= 0x10FFFF)) {
+        break;
+      }
+      ++input;
+    }
+    return input;
+  }
+
+  static auto operator()(const uint32_t* input, const uint32_t* input_end) -> const uint32_t* {
+    const char32_t* res = operator()(reinterpret_cast<const char32_t*>(input),
+                                     reinterpret_cast<const char32_t*>(input_end));
+    return reinterpret_cast<const uint32_t*>(res);
+  }
+};
+
+struct consume_utf_invalid_sequence_t {
+  template <class CharT>
+  static constexpr auto operator()(const CharT* input, const CharT* input_end) -> const CharT* {
+    constexpr size_t char_size = sizeof(CharT);
+
+    if constexpr (char_size == 1) {
+      return consume_utf8_invalid_sequence_t::operator()(input, input_end);
+    } else if constexpr (char_size == 2) {
+      return consume_utf16_invalid_sequence_t::operator()(input, input_end);
+    } else if constexpr (char_size == 4) {
+      return consume_utf32_invalid_sequence_t::operator()(input, input_end);
+    } else {
+      static_assert(false, "Invalid CharT");
+    }
+  }
+};
+
 constexpr auto consume_utf8_invalid_sequence = consume_utf8_invalid_sequence_t{};
 constexpr auto consume_utf16_invalid_sequence = consume_utf16_invalid_sequence_t{};
+constexpr auto consume_utf32_invalid_sequence = consume_utf32_invalid_sequence_t{};
+// Dispatcher
+constexpr auto consume_utf_invalid_sequence = consume_utf_invalid_sequence_t{};
 }  // namespace reflect_cpp26
 
 #undef REFLECT_CPP26_ENCODING_OVERLOAD

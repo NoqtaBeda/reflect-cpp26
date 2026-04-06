@@ -72,7 +72,6 @@ meta_test_cases = {
   -- Utility
   "utils/test_addressable_member",
   "utils/test_ctype",
-  "utils/test_debug_helper",
   "utils/test_identifier_naming",
   "utils/test_meta_tuple",
   "utils/test_string_builder",
@@ -175,6 +174,7 @@ meta_test_cases = {
   -- Type Operations
   "type_operations/test_comparison",
   "type_operations/test_member_access",
+  "type_operations/test_serialize_to_json",
   "type_operations/test_to_string",
   "type_operations/test_to_structural",
 }

@@ -774,3 +774,346 @@ TEST(UtilsStringEncoding, ConsumeUtf16InvalidSequenceTruncatedSurrogate) {
   auto end = rfl::consume_utf16_invalid_sequence(input, input + 1);
   EXPECT_EQ(input + 1, end);
 }
+
+TEST(UtilsStringEncoding, Utf8ToUtf16JsonEscapedBasic) {
+  char8_t input[] = u8"Hello";
+  char16_t output[16] = {};
+  auto result = rfl::utf8_to_utf16_json_escaped(output, output + 16, input, input + 5);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(output + 5, result.out_ptr);
+  EXPECT_EQ(input + 5, result.in_ptr);
+}
+
+TEST(UtilsStringEncoding, Utf8ToUtf16JsonEscapedControlChar) {
+  char8_t input[] = {char8_t(0x01), char8_t(0x0A), char8_t(0x7F)};
+  char16_t output[32] = {};
+  auto result = rfl::utf8_to_utf16_json_escaped(output, output + 32, input, input + 3);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 3, result.in_ptr);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedBasic) {
+  char32_t input[] = {U'A', U'B', U'C'};
+  char8_t output[16] = {};
+  auto result = rfl::utf32_to_utf8_json_escaped(output, output + 16, input, input + 3);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 3, result.in_ptr);
+  EXPECT_EQ(output + 3, result.out_ptr);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedControlChar) {
+  char32_t input[] = {U'\n', U'\t'};
+  char8_t output[16] = {};
+  auto result = rfl::utf32_to_utf8_json_escaped(output, output + 16, input, input + 2);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 2, result.in_ptr);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedDoubleQuote) {
+  char32_t input[] = {U'"'};
+  char8_t output[8] = {};
+  auto result = rfl::utf32_to_utf8_json_escaped(output, output + 8, input, input + 1);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 1, result.in_ptr);
+  EXPECT_EQ(u8'\\', output[0]);
+  EXPECT_EQ(u8'"', output[1]);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedBackslash) {
+  char32_t input[] = {U'\\'};
+  char8_t output[8] = {};
+  auto result = rfl::utf32_to_utf8_json_escaped(output, output + 8, input, input + 1);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 1, result.in_ptr);
+  EXPECT_EQ(u8'\\', output[0]);
+  EXPECT_EQ(u8'\\', output[1]);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedSlash) {
+  char32_t input[] = {U'/'};
+  char8_t output[8] = {};
+  auto result = rfl::utf32_to_utf8_json_escaped(output, output + 8, input, input + 1);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 1, result.in_ptr);
+  EXPECT_EQ(u8'\\', output[0]);
+  EXPECT_EQ(u8'/', output[1]);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedBackspace) {
+  char32_t input[] = {U'\b'};
+  char8_t output[8] = {};
+  auto result = rfl::utf32_to_utf8_json_escaped(output, output + 8, input, input + 1);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 1, result.in_ptr);
+  EXPECT_EQ(u8'\\', output[0]);
+  EXPECT_EQ(u8'b', output[1]);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedFormFeed) {
+  char32_t input[] = {U'\f'};
+  char8_t output[8] = {};
+  auto result = rfl::utf32_to_utf8_json_escaped(output, output + 8, input, input + 1);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 1, result.in_ptr);
+  EXPECT_EQ(u8'\\', output[0]);
+  EXPECT_EQ(u8'f', output[1]);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedNewline) {
+  char32_t input[] = {U'\n'};
+  char8_t output[8] = {};
+  auto result = rfl::utf32_to_utf8_json_escaped(output, output + 8, input, input + 1);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 1, result.in_ptr);
+  EXPECT_EQ(u8'\\', output[0]);
+  EXPECT_EQ(u8'n', output[1]);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedCarriageReturn) {
+  char32_t input[] = {U'\r'};
+  char8_t output[8] = {};
+  auto result = rfl::utf32_to_utf8_json_escaped(output, output + 8, input, input + 1);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 1, result.in_ptr);
+  EXPECT_EQ(u8'\\', output[0]);
+  EXPECT_EQ(u8'r', output[1]);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedTab) {
+  char32_t input[] = {U'\t'};
+  char8_t output[8] = {};
+  auto result = rfl::utf32_to_utf8_json_escaped(output, output + 8, input, input + 1);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 1, result.in_ptr);
+  EXPECT_EQ(u8'\\', output[0]);
+  EXPECT_EQ(u8't', output[1]);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedControlCharU0000) {
+  char32_t input[] = {U'\x00'};
+  char8_t output[16] = {};
+  auto result = rfl::utf32_to_utf8_json_escaped(output, output + 16, input, input + 1);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 1, result.in_ptr);
+  EXPECT_EQ(u8'\\', output[0]);
+  EXPECT_EQ(u8'u', output[1]);
+  EXPECT_EQ(u8'0', output[2]);
+  EXPECT_EQ(u8'0', output[3]);
+  EXPECT_EQ(u8'0', output[4]);
+  EXPECT_EQ(u8'0', output[5]);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedControlCharU001F) {
+  char32_t input[] = {U'\x1F'};
+  char8_t output[16] = {};
+  auto result = rfl::utf32_to_utf8_json_escaped(output, output + 16, input, input + 1);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 1, result.in_ptr);
+  EXPECT_EQ(u8'\\', output[0]);
+  EXPECT_EQ(u8'u', output[1]);
+  EXPECT_EQ(u8'0', output[2]);
+  EXPECT_EQ(u8'0', output[3]);
+  EXPECT_EQ(u8'1', output[4]);
+  EXPECT_EQ(u8'F', output[5]);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedNoEscapeForNormalChars) {
+  char32_t input[] = {U'A', U'B', U'C'};
+  char8_t output[16] = {};
+  auto result = rfl::utf32_to_utf8_json_escaped(output, output + 16, input, input + 3);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 3, result.in_ptr);
+  EXPECT_EQ(output + 3, result.out_ptr);
+  EXPECT_EQ(u8'A', output[0]);
+  EXPECT_EQ(u8'B', output[1]);
+  EXPECT_EQ(u8'C', output[2]);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedNoEscapeForU007F) {
+  char32_t input[] = {U'\x7F'};
+  char8_t output[16] = {};
+  auto result = rfl::utf32_to_utf8_json_escaped(output, output + 16, input, input + 1);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 1, result.in_ptr);
+  EXPECT_EQ(u8'\x7F', output[0]);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedEmpty) {
+  char32_t input[] = {};
+  char8_t output[4] = {};
+  auto result = rfl::utf32_to_utf8_json_escaped(output, output + 4, input, input);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input, result.in_ptr);
+  EXPECT_EQ(output, result.out_ptr);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedMixed) {
+  char32_t input[] = {U'A', U'"', U'B'};
+  char8_t output[16] = {};
+  auto result = rfl::utf32_to_utf8_json_escaped(output, output + 16, input, input + 3);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 3, result.in_ptr);
+  EXPECT_EQ(u8'A', output[0]);
+  EXPECT_EQ(u8'\\', output[1]);
+  EXPECT_EQ(u8'"', output[2]);
+  EXPECT_EQ(u8'B', output[3]);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedDoubleQuote) {
+  char32_t input[] = {U'"'};
+  char16_t output[8] = {};
+  auto result = rfl::utf32_to_utf16_json_escaped(output, output + 8, input, input + 1);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 1, result.in_ptr);
+  EXPECT_EQ(u'\\', output[0]);
+  EXPECT_EQ(u'"', output[1]);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedBackslash) {
+  char32_t input[] = {U'\\'};
+  char16_t output[8] = {};
+  auto result = rfl::utf32_to_utf16_json_escaped(output, output + 8, input, input + 1);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 1, result.in_ptr);
+  EXPECT_EQ(u'\\', output[0]);
+  EXPECT_EQ(u'\\', output[1]);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedSlash) {
+  char32_t input[] = {U'/'};
+  char16_t output[8] = {};
+  auto result = rfl::utf32_to_utf16_json_escaped(output, output + 8, input, input + 1);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 1, result.in_ptr);
+  EXPECT_EQ(u'\\', output[0]);
+  EXPECT_EQ(u'/', output[1]);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedBackspace) {
+  char32_t input[] = {U'\b'};
+  char16_t output[8] = {};
+  auto result = rfl::utf32_to_utf16_json_escaped(output, output + 8, input, input + 1);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 1, result.in_ptr);
+  EXPECT_EQ(u'\\', output[0]);
+  EXPECT_EQ(u'b', output[1]);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedFormFeed) {
+  char32_t input[] = {U'\f'};
+  char16_t output[8] = {};
+  auto result = rfl::utf32_to_utf16_json_escaped(output, output + 8, input, input + 1);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 1, result.in_ptr);
+  EXPECT_EQ(u'\\', output[0]);
+  EXPECT_EQ(u'f', output[1]);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedNewline) {
+  char32_t input[] = {U'\n'};
+  char16_t output[8] = {};
+  auto result = rfl::utf32_to_utf16_json_escaped(output, output + 8, input, input + 1);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 1, result.in_ptr);
+  EXPECT_EQ(u'\\', output[0]);
+  EXPECT_EQ(u'n', output[1]);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedCarriageReturn) {
+  char32_t input[] = {U'\r'};
+  char16_t output[8] = {};
+  auto result = rfl::utf32_to_utf16_json_escaped(output, output + 8, input, input + 1);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 1, result.in_ptr);
+  EXPECT_EQ(u'\\', output[0]);
+  EXPECT_EQ(u'r', output[1]);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedTab) {
+  char32_t input[] = {U'\t'};
+  char16_t output[8] = {};
+  auto result = rfl::utf32_to_utf16_json_escaped(output, output + 8, input, input + 1);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 1, result.in_ptr);
+  EXPECT_EQ(u'\\', output[0]);
+  EXPECT_EQ(u't', output[1]);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedControlCharU0000) {
+  char32_t input[] = {U'\x00'};
+  char16_t output[16] = {};
+  auto result = rfl::utf32_to_utf16_json_escaped(output, output + 16, input, input + 1);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 1, result.in_ptr);
+  EXPECT_EQ(u'\\', output[0]);
+  EXPECT_EQ(u'u', output[1]);
+  EXPECT_EQ(u'0', output[2]);
+  EXPECT_EQ(u'0', output[3]);
+  EXPECT_EQ(u'0', output[4]);
+  EXPECT_EQ(u'0', output[5]);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedControlCharU001F) {
+  char32_t input[] = {U'\x1F'};
+  char16_t output[16] = {};
+  auto result = rfl::utf32_to_utf16_json_escaped(output, output + 16, input, input + 1);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 1, result.in_ptr);
+  EXPECT_EQ(u'\\', output[0]);
+  EXPECT_EQ(u'u', output[1]);
+  EXPECT_EQ(u'0', output[2]);
+  EXPECT_EQ(u'0', output[3]);
+  EXPECT_EQ(u'1', output[4]);
+  EXPECT_EQ(u'F', output[5]);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedNoEscapeForNormalChars) {
+  char32_t input[] = {U'A', U'B', U'C'};
+  char16_t output[16] = {};
+  auto result = rfl::utf32_to_utf16_json_escaped(output, output + 16, input, input + 3);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 3, result.in_ptr);
+  EXPECT_EQ(output + 3, result.out_ptr);
+  EXPECT_EQ(u'A', output[0]);
+  EXPECT_EQ(u'B', output[1]);
+  EXPECT_EQ(u'C', output[2]);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedNoEscapeForU007F) {
+  char32_t input[] = {U'\x7F'};
+  char16_t output[16] = {};
+  auto result = rfl::utf32_to_utf16_json_escaped(output, output + 16, input, input + 1);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 1, result.in_ptr);
+  EXPECT_EQ(u'\x7F', output[0]);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedEmpty) {
+  char32_t input[] = {};
+  char16_t output[4] = {};
+  auto result = rfl::utf32_to_utf16_json_escaped(output, output + 4, input, input);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input, result.in_ptr);
+  EXPECT_EQ(output, result.out_ptr);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedMixed) {
+  char32_t input[] = {U'A', U'"', U'B'};
+  char16_t output[16] = {};
+  auto result = rfl::utf32_to_utf16_json_escaped(output, output + 16, input, input + 3);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 3, result.in_ptr);
+  EXPECT_EQ(u'A', output[0]);
+  EXPECT_EQ(u'\\', output[1]);
+  EXPECT_EQ(u'"', output[2]);
+  EXPECT_EQ(u'B', output[3]);
+}
+
+TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedSurrogatePair) {
+  char32_t input[] = {U'\U0001F600'};
+  char16_t output[8] = {};
+  auto result = rfl::utf32_to_utf16_json_escaped(output, output + 8, input, input + 1);
+  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(input + 1, result.in_ptr);
+  EXPECT_EQ(output + 2, result.out_ptr);
+}

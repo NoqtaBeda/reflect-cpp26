@@ -28,8 +28,7 @@
 
 namespace reflect_cpp26 {
 template <enum_type E>
-constexpr auto enum_type_name_v =
-    reflect_cpp26::identifier_of(dealias(remove_cvref(^^E)), "(anonymous enum type)");
+constexpr auto enum_type_name_v = reflect_cpp26::identifier_of(dealias(remove_cvref(^^E)));
 
 template <enum_type E>
 constexpr auto enum_type_display_string_v = std::string_view{display_string_of(dealias(^^E))};

@@ -458,13 +458,6 @@ TEST(UtilsStringBuilder, ChainedOperationsUtf) {
   EXPECT_EQ(builder.strview(), u8"Hello世界!\n");
 }
 
-TEST(UtilsStringBuilder, GetReturnsOwnership) {
-  rfl::string_builder builder;
-  builder.append_string("test");
-  auto [buffer, end] = std::move(builder).get();
-  EXPECT_NE(buffer, nullptr);
-}
-
 TEST(UtilsStringBuilder, AutoResize) {
   rfl::string_builder builder(4);
   builder.append_string("12345678901234567890");

@@ -342,16 +342,24 @@ The concept `serializable<T>` tests whether `std::remove_cv_t<T>` can be seriali
 * **Arithmetic types**: all integral types (including `bool` and character types) and floating-point types;
 * **Enumeration types**: all enum types;
 * **String-like types**: types that satisfy the `string_like` concept (see [String-like Types](#string-like-types));
-* **Array types**: bounded and unbounded arrays whose element type is serializable;
-* **Range types**: types satisfying `std::ranges::range` whose `value_type` is serializable;
-* **Tuple-like types**: types satisfying `tuple_like` whose all element types are serializable;
-* **`std::optional<T>`**: if `T` is serializable;
-* **`std::variant<Ts...>`**: if all alternative types `Ts...` are serializable.
+* **Array types**: bounded and unbounded arrays whose element type is `serializable`;
+* **Range types**: types satisfying `std::ranges::range` whose `value_type` is `serializable`;
+* **Tuple-like types**: types satisfying `tuple_like` whose all element types are `serializable`;
+* **`std::optional<T>`**: if `T` is `serializable`;
+* **`std::variant<Ts...>`**: if all alternative types `Ts...` are `serializable`.
 
-The concept `memberwise_serializable<T>` tests whether `std::remove_cv_t<T>` can be serialized in a memberwise manner *recursively*. A type is memberwise serializable if:
+The concept `memberwise_serializable<T>` tests whether `std::remove_cv_t<T>` can be serialized in a memberwise manner *recursively*. A type is memberwise serializable if it satisfies one of the following:
 
-* It is `serializable`; or
-* It is a `flattenable_class` and all of its non-static data members (including inherited ones) are memberwise serializable.
+* **`std::monostate`**: serves as a null placeholder;
+* **Arithmetic types**: all integral types (including `bool` and character types) and floating-point types;
+* **Enumeration types**: all enum types;
+* **String-like types**: types that satisfy the `string_like` concept (see [String-like Types](#string-like-types));
+* **Array types**: bounded and unbounded arrays whose element type is `memberwise_serializable`;
+* **Range types**: types satisfying `std::ranges::range` whose `value_type` is `memberwise_serializable`;
+* **Tuple-like types**: types satisfying `tuple_like` whose all element types are `memberwise_serializable`;
+* **`std::optional<T>`**: if `T` is `memberwise_serializable`;
+* **`std::variant<Ts...>`**: if all alternative types `Ts...` are `memberwise_serializable`.
+* **Memberwise serializable class types**: It is a `flattenable_class` and all of its non-static data members (including inherited ones) are `memberwise_serializable`.
 
 See [unit test](../tests/type_traits/test_serializable_types.cpp) for examples and details.
 

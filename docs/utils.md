@@ -54,32 +54,45 @@ Detailed examples are shown in [unit test cases](../tests/utils/test_addressable
 
 Defined in header `<reflect_cpp26/utils/string_encoding.hpp>`.
 
+This module provides constexpr-compatible UTF encoding conversion between UTF-8, UTF-16, and UTF-32. It also supports JSON escaping for use in JSON serialization.
+
+#### Synopsis
+
 ```cpp
 namespace reflect_cpp26 {
+
+// Escaping mode
+enum class escaping_mode {
+  none = 0,  // No escaping
+  json = 1,   // JSON escaping (RFC 8259 standard)
+};
 
 // Result type for encoding conversion
 template <class OutT, class InT>
 struct encode_result_t {
-  OutT* out_ptr;          // Pointer past the last output character written
-  const InT* in_ptr;      // Pointer to the next input character to process
-  std::errc ec;           // Error code (std::errc{} on success)
+  OutT* out_ptr;
+  const InT* in_ptr;
+  std::errc ec;
 };
 
+// Decode functions
 constexpr auto decode_utf8(const char8_t* input, const char8_t* input_end)
     -> std::pair<char32_t, const char8_t*>;
 
 constexpr auto decode_utf16(const char16_t* input, const char16_t* input_end)
     -> std::pair<char32_t, const char16_t*>;
 
+// Encode functions
 struct encode_code_point_to_utf8_unsafe_t {
   static constexpr auto operator()(char8_t* dest, char32_t code_point) -> char8_t*;
-  // Wrapper overloads for alternative character types (see below)
+  static auto operator()(char* dest, char32_t code_point) -> char*;
+  static auto operator()(uint8_t* dest, char32_t code_point) -> uint8_t*;
 };
 constexpr auto encode_code_point_to_utf8_unsafe = encode_code_point_to_utf8_unsafe_t{};
 
 struct encode_code_point_to_utf16_unsafe_t {
   static constexpr auto operator()(char16_t* dest, char32_t code_point) -> char16_t*;
-  // Wrapper overloads for alternative character types (see below)
+  static auto operator()(uint16_t* dest, char32_t code_point) -> uint16_t*;
 };
 constexpr auto encode_code_point_to_utf16_unsafe = encode_code_point_to_utf16_unsafe_t{};
 
@@ -89,86 +102,113 @@ struct encode_code_point_unsafe_t {
 };
 constexpr auto encode_code_point_unsafe = encode_code_point_unsafe_t{};
 
-struct utf8_to_utf16_t {
-  // Primary overload: char8_t input -> char16_t output
+// UTF-8 to UTF-16 converters
+template <escaping_mode EscMode>
+struct utf8_to_utf16_base_t {
   static constexpr auto operator()(char16_t* dest, char16_t* dest_end,
                                    const char8_t* input, const char8_t* input_end)
       -> encode_result_t<char16_t, char8_t>;
-  // Wrapper overloads for alternative character types (see below)
+  // Wrapper overloads: char16_t/char, char16_t/uint8_t, uint16_t/char8_t, uint16_t/char, uint16_t/uint8_t
 };
+using utf8_to_utf16_t = utf8_to_utf16_base_t<escaping_mode::none>;
+using utf8_to_utf16_json_escaped_t = utf8_to_utf16_base_t<escaping_mode::json>;
 constexpr auto utf8_to_utf16 = utf8_to_utf16_t{};
+constexpr auto utf8_to_utf16_json_escaped = utf8_to_utf16_json_escaped_t{};
 
-struct utf8_to_utf32_t {
-  // Primary overload: char8_t input -> char32_t output
+// UTF-8 to UTF-32 converters
+template <escaping_mode EscMode>
+struct utf8_to_utf32_base_t {
   static constexpr auto operator()(char32_t* dest, char32_t* dest_end,
                                    const char8_t* input, const char8_t* input_end)
       -> encode_result_t<char32_t, char8_t>;
-  // Wrapper overloads for alternative character types
+  // Wrapper overloads: char32_t/char, char32_t/uint8_t, uint32_t/char8_t, uint32_t/char, uint32_t/uint8_t
 };
+using utf8_to_utf32_t = utf8_to_utf32_base_t<escaping_mode::none>;
+using utf8_to_utf32_json_escaped_t = utf8_to_utf32_base_t<escaping_mode::json>;
 constexpr auto utf8_to_utf32 = utf8_to_utf32_t{};
+constexpr auto utf8_to_utf32_json_escaped = utf8_to_utf32_json_escaped_t{};
 
-struct utf16_to_utf8_t {
-  // Primary overload: char16_t input -> char8_t output
+// UTF-16 to UTF-8 converters
+template <escaping_mode EscMode>
+struct utf16_to_utf8_base_t {
   static constexpr auto operator()(char8_t* dest, char8_t* dest_end,
                                    const char16_t* input, const char16_t* input_end)
       -> encode_result_t<char8_t, char16_t>;
-  // Wrapper overloads for alternative character types
+  // Wrapper overloads: char/char16_t, uint8_t/char16_t, char8_t/uint16_t, char/uint16_t, uint8_t/uint16_t
 };
+using utf16_to_utf8_t = utf16_to_utf8_base_t<escaping_mode::none>;
+using utf16_to_utf8_json_escaped_t = utf16_to_utf8_base_t<escaping_mode::json>;
 constexpr auto utf16_to_utf8 = utf16_to_utf8_t{};
+constexpr auto utf16_to_utf8_json_escaped = utf16_to_utf8_json_escaped_t{};
 
-struct utf16_to_utf32_t {
-  // Primary overload: char16_t input -> char32_t output
+// UTF-16 to UTF-32 converters
+template <escaping_mode EscMode>
+struct utf16_to_utf32_base_t {
   static constexpr auto operator()(char32_t* dest, char32_t* dest_end,
                                    const char16_t* input, const char16_t* input_end)
       -> encode_result_t<char32_t, char16_t>;
-  // Wrapper overloads for alternative character types
+  // Wrapper overloads: char32_t/uint16_t, uint32_t/char16_t, uint32_t/uint16_t
 };
+using utf16_to_utf32_t = utf16_to_utf32_base_t<escaping_mode::none>;
+using utf16_to_utf32_json_escaped_t = utf16_to_utf32_base_t<escaping_mode::json>;
 constexpr auto utf16_to_utf32 = utf16_to_utf32_t{};
+constexpr auto utf16_to_utf32_json_escaped = utf16_to_utf32_json_escaped_t{};
 
-struct utf32_to_utf8_t {
-  // Primary overload: char32_t input -> char8_t output
+// UTF-32 to UTF-8 converters
+template <escaping_mode EscMode>
+struct utf32_to_utf8_base_t {
   static constexpr auto operator()(char8_t* dest, char8_t* dest_end,
                                    const char32_t* input, const char32_t* input_end)
       -> encode_result_t<char8_t, char32_t>;
-  // Wrapper overloads for alternative character types
+  // Wrapper overloads: char/char32_t, uint8_t/char32_t, char8_t/uint32_t, char/uint32_t, uint8_t/uint32_t
 };
+using utf32_to_utf8_t = utf32_to_utf8_base_t<escaping_mode::none>;
+using utf32_to_utf8_json_escaped_t = utf32_to_utf8_base_t<escaping_mode::json>;
 constexpr auto utf32_to_utf8 = utf32_to_utf8_t{};
+constexpr auto utf32_to_utf8_json_escaped = utf32_to_utf8_json_escaped_t{};
 
-struct utf32_to_utf16_t {
-  // Primary overload: char32_t input -> char16_t output
+// UTF-32 to UTF-16 converters
+template <escaping_mode EscMode>
+struct utf32_to_utf16_base_t {
   static constexpr auto operator()(char16_t* dest, char16_t* dest_end,
                                    const char32_t* input, const char32_t* input_end)
       -> encode_result_t<char16_t, char32_t>;
-  // Wrapper overloads for alternative character types
+  // Wrapper overloads: char16_t/uint32_t, uint16_t/char32_t, uint16_t/uint32_t
 };
+using utf32_to_utf16_t = utf32_to_utf16_base_t<escaping_mode::none>;
+using utf32_to_utf16_json_escaped_t = utf32_to_utf16_base_t<escaping_mode::json>;
 constexpr auto utf32_to_utf16 = utf32_to_utf16_t{};
+constexpr auto utf32_to_utf16_json_escaped = utf32_to_utf16_json_escaped_t{};
 
-struct utf_convert_t {
+// Dispatcher
+template <escaping_mode EscMode>
+struct utf_convert_base_t {
   template <class OutT, class InT>
   static constexpr auto operator()(OutT* dest, OutT* dest_end,
                                    const InT* input, const InT* input_end)
       -> encode_result_t<OutT, InT>;
 };
+using utf_convert_t = utf_convert_base_t<escaping_mode::none>;
+using utf_convert_json_escaped_t = utf_convert_base_t<escaping_mode::json>;
 constexpr auto utf_convert = utf_convert_t{};
+constexpr auto utf_convert_json_escaped = utf_convert_json_escaped_t{};
 
+// Invalid sequence consumers
 struct consume_utf8_invalid_sequence_t {
   static constexpr auto operator()(const char8_t* input, const char8_t* input_end)
       -> const char8_t*;
-  // Wrapper overloads for alternative character types
 };
 constexpr auto consume_utf8_invalid_sequence = consume_utf8_invalid_sequence_t{};
 
 struct consume_utf16_invalid_sequence_t {
   static constexpr auto operator()(const char16_t* input, const char16_t* input_end)
       -> const char16_t*;
-  // Wrapper overloads for alternative character types
 };
 constexpr auto consume_utf16_invalid_sequence = consume_utf16_invalid_sequence_t{};
 
 struct consume_utf32_invalid_sequence_t {
   static constexpr auto operator()(const char32_t* input, const char32_t* input_end)
       -> const char32_t*;
-  // Wrapper overloads for alternative character types
 };
 constexpr auto consume_utf32_invalid_sequence = consume_utf32_invalid_sequence_t{};
 
@@ -182,62 +222,58 @@ constexpr auto consume_utf_invalid_sequence = consume_utf_invalid_sequence_t{};
 }  // namespace reflect_cpp26
 ```
 
-These functors provide constexpr UTF encoding conversion between UTF-8, UTF-16, and UTF-32 encodings.
+#### Decode Functions
 
-#### Public API Functions
+- `decode_utf8(input, input_end)`: Decodes a single UTF-8 code point. Returns `std::pair<char32_t, const char8_t*>` where the second element points past the decoded sequence. On error, returns `{static_cast<char32_t>(-1), input}`.
 
-The library provides standalone functions for decoding and encoding single code points:
+- `decode_utf16(input, input_end)`: Decodes a single UTF-16 code point (including surrogate pairs). Returns `std::pair<char32_t, const char16_t*>`. On error, returns `{static_cast<char32_t>(-1), input}`.
 
-* `decode_utf8(input, input_end)`: Decodes a single UTF-8 code point. Returns `std::pair<char32_t, const char8_t*>` where the second element points past the decoded sequence. On error, returns `{static_cast<char32_t>(-1), input}`.
+#### Encode Functions
 
-* `decode_utf16(input, input_end)`: Decodes a single UTF-16 code point (including surrogate pairs). Returns `std::pair<char32_t, const char16_t*>`. On error, returns `{static_cast<char32_t>(-1), input}`.
+- `encode_code_point_to_utf8_unsafe`: Encodes a single Unicode code point to UTF-8. Supports `char8_t*`, `char*`, and `uint8_t*` destination types. Returns pointer past the last written byte. **Note**: This function neither validates the code point (validation shall be performed before) nor checks the buffer size.
 
-* `encode_code_point_to_utf8_unsafe`: Encodes a single Unicode code point to UTF-8. Supports `char8_t*`, `char*`, and `uint8_t*` destination types. Returns pointer past the last written byte. **Note**: This functor neither validates the code point (validation shall be performed before) nor checks the buffer size (assuming the buffer is allocated enough).
+- `encode_code_point_to_utf16_unsafe`: Encodes a single Unicode code point to UTF-16. Supports `char16_t*` and `uint16_t*` destination types. Returns pointer past the last written code unit. **Note**: This function neither validates the code point nor checks the buffer size.
 
-* `encode_code_point_to_utf16_unsafe`: Encodes a single Unicode code point to UTF-16. Supports `char16_t*` and `uint16_t*` destination types. Returns pointer past the last written code unit. **Note**: This functor neither validates the code point (validation shall be performed before) nor checks the buffer size (assuming the buffer is allocated enough).
+- `encode_code_point_unsafe`: A dispatcher that uses `sizeof(OutT)` to automatically select the appropriate encoding:
+  - `sizeof(OutT) == 1`: UTF-8 encoding
+  - `sizeof(OutT) == 2`: UTF-16 encoding
+  - `sizeof(OutT) == 4`: Direct copy (for UTF-32)
 
-* `encode_code_point_unsafe`: A dispatcher that uses `sizeof(OutT)` to automatically select the appropriate encoding:
-  * `sizeof(OutT) == 1`: UTF-8 encoding
-  * `sizeof(OutT) == 2`: UTF-16 encoding
-  * `sizeof(OutT) == 4`: Direct copy (for UTF-32)
+#### UTF Converters
 
-#### Converter Functors
-
-The library provides six converter functors for UTF encoding conversion:
-
-* `utf8_to_utf16_t`: Converts UTF-8 to UTF-16. Each converter functor supports multiple character type combinations (see table above).
-
-* `utf8_to_utf32_t`: Converts UTF-8 to UTF-32.
-
-* `utf16_to_utf8_t`: Converts UTF-16 to UTF-8.
-
-* `utf16_to_utf32_t`: Converts UTF-16 to UTF-32.
-
-* `utf32_to_utf8_t`: Converts UTF-32 to UTF-8.
-
-* `utf32_to_utf16_t`: Converts UTF-32 to UTF-16.
-
-Each functor is a struct with a static `operator()` that performs the conversion. The primary overloads use the canonical types (`char8_t`, `char16_t`, `char32_t`), and wrapper overloads handle alternative types (`char`, `uint8_t`, `uint16_t`, `uint32_t`).
-
-Example usage:
+Each converter functor performs UTF encoding conversion with the following signature:
 ```cpp
-char8_t utf8_input[] = u8"Hello, 世界!";
-char16_t utf16_output[32];
-auto result = rfl::utf8_to_utf16(utf16_output, utf16_output + 32,
-                                  utf8_input, utf8_input + sizeof(utf8_input) - 1);
+static constexpr auto operator()(OutT* dest, OutT* dest_end,
+                                 const InT* input, const InT* input_end)
+    -> encode_result_t<OutT, InT>;
 ```
+
+- `utf8_to_utf16_t`: Converts UTF-8 to UTF-16.
+- `utf8_to_utf32_t`: Converts UTF-8 to UTF-32.
+- `utf16_to_utf8_t`: Converts UTF-16 to UTF-8.
+- `utf16_to_utf32_t`: Converts UTF-16 to UTF-32.
+- `utf32_to_utf8_t`: Converts UTF-32 to UTF-8.
+- `utf32_to_utf16_t`: Converts UTF-32 to UTF-16.
+
+The corresponding `_json_escaped` variants apply RFC 8259 JSON escaping during conversion:
+- Escaped characters: `"` → `\"`, `\` → `\\`, control chars (U+0000 to U+001F) → `\uXXXX`
+
+#### Escaping Modes
+
+The library uses an `escaping_mode` enum to control character escaping behavior:
+
+- `escaping_mode::none`: No escaping (plain conversion)
+- `escaping_mode::json`: JSON escaping according to RFC 8259
 
 #### Result Type
 
 `encode_result_t<OutT, InT>` contains:
-* `out_ptr`: Pointer just past the last output character written. On success, this is where the next output would be written.
-* `in_ptr`: Pointer to the next input character to process. The value depends on the result:
-  * **Success (`ec == std::errc{}`)**: Equals `input_end` (all input consumed).
-  * **Invalid input (`ec == std::errc::invalid_argument`)**: Points to the invalid UTF sequence. The converter does NOT consume invalid bytes, allowing retry from the same position (e.g., to replace with a replacement character).
-  * **Buffer overflow (`ec == std::errc::value_too_large`)**: Points to the character that couldn't fit. The converter does NOT consume this character, allowing retry from the same position with a larger buffer.
-* `ec`: Error code. `std::errc{}` on success, otherwise one of:
-  * `std::errc::invalid_argument`: Invalid UTF sequence (malformed encoding, invalid code point, or surrogate in wrong context)
-  * `std::errc::value_too_large`: Output buffer too small
+- `out_ptr`: Pointer past the last output character written.
+- `in_ptr`: Pointer to the next input character to process:
+  - **Success (`ec == std::errc{}`)**: Equals `input_end` (all input consumed).
+  - **Invalid input (`ec == std::errc::invalid_argument`)**: Points to the invalid UTF sequence. The converter does NOT consume invalid bytes, allowing retry from the same position.
+  - **Buffer overflow (`ec == std::errc::value_too_large`)**: Points to the character that couldn't fit. The converter does NOT consume this character.
+- `ec`: Error code. `std::errc{}` on success, otherwise `std::errc::invalid_argument` or `std::errc::value_too_large`.
 
 #### Character Type Support
 
@@ -252,23 +288,52 @@ Each conversion functor supports multiple character type combinations:
 | UTF-32 → UTF-8 | `char8_t`, `char`, `uint8_t` | `char32_t`, `uint32_t` |
 | UTF-32 → UTF-16 | `char16_t`, `uint16_t` | `char32_t`, `uint32_t` |
 
-Wrapper overloads use `reinterpret_cast` to convert between the canonical types (`char8_t`, `char16_t`, `char32_t`) and alternative types (`char`, `uint8_t`, `uint16_t`, `uint32_t`).
+#### Dispatcher
+
+`utf_convert_t` uses `sizeof(InT)` and `sizeof(OutT)` to select the appropriate conversion:
+- 1→2: UTF-8 → UTF-16
+- 1→4: UTF-8 → UTF-32
+- 2→1: UTF-16 → UTF-8
+- 2→4: UTF-16 → UTF-32
+- 4→1: UTF-32 → UTF-8
+- 4→2: UTF-32 → UTF-16
 
 #### Invalid Sequence Consumers
 
-The library provides three functors and a dispatcher for consuming invalid UTF sequences:
+- `consume_utf8_invalid_sequence_t`: Consumes the maximal prefix of continuous invalid UTF-8 bytes. Returns pointer to the first valid byte (or `input_end`).
 
-* `consume_utf8_invalid_sequence_t`: Consumes the maximal prefix of continuous invalid UTF-8 bytes. Returns pointer to the first valid byte (or `input_end`). The invalid prefix `[input, ret)` should be replaced with a placeholder character (e.g., U+FFFD).
+- `consume_utf16_invalid_sequence_t`: Consumes the maximal prefix of continuous invalid UTF-16 code units. Returns pointer to the first valid code unit (or `input_end`).
 
-* `consume_utf16_invalid_sequence_t`: Consumes the maximal prefix of continuous invalid UTF-16 code units. Returns pointer to the first valid code unit (or `input_end`). The invalid prefix should be replaced with a placeholder character.
+- `consume_utf32_invalid_sequence_t`: Consumes the maximal prefix of continuous invalid UTF-32 code points. Invalid UTF-32 code points include surrogates (0xD800-0xDFFF) and code points > 0x10FFFF. Returns pointer to the first valid code point (or `input_end`).
 
-* `consume_utf32_invalid_sequence_t`: Consumes the maximal prefix of continuous invalid UTF-32 code points. Invalid UTF-32 code points include surrogates (0xD800-0xDFFF) and code points > 0x10FFFF. Returns pointer to the first valid code point (or `input_end`).
+- `consume_utf_invalid_sequence_t`: A dispatcher that uses `sizeof(CharT)` to select the appropriate consumer:
+  - `sizeof(CharT) == 1`: UTF-8 invalid sequence consumer
+  - `sizeof(CharT) == 2`: UTF-16 invalid sequence consumer
+  - `sizeof(CharT) == 4`: UTF-32 invalid sequence consumer
 
-All three functors support wrapper overloads for alternative character types.
+#### Examples
 
-Example usage:
 ```cpp
-// Process UTF-8 with error handling
+namespace rfl = reflect_cpp26;
+
+// Basic UTF conversion
+char8_t utf8_input[] = u8"Hello, 世界!";
+char16_t utf16_output[32];
+auto result = rfl::utf8_to_utf16(utf16_output, utf16_output + 32,
+                                  utf8_input, utf8_input + sizeof(utf8_input) - 1);
+
+// JSON escaping conversion
+auto json_result = rfl::utf8_to_utf16_json_escaped(utf16_output, utf16_output + 32,
+                                                     utf8_input, utf8_input + sizeof(utf8_input) - 1);
+
+// Generic conversion using dispatcher
+template <class OutCharT, class InCharT>
+auto convert_generic(OutCharT* dest, OutCharT* dest_end,
+                     const InCharT* input, const InCharT* input_end) {
+  return rfl::utf_convert(dest, dest_end, input, input_end);
+}
+
+// Error handling: replace invalid sequences with U+FFFD
 char8_t input[] = u8"Hello\xFF\xFEWorld";
 char16_t output[32];
 auto result = rfl::utf8_to_utf16(output, output + 32, input, input + sizeof(input) - 1);
@@ -278,99 +343,10 @@ while (result.ec == std::errc::invalid_argument) {
   output = rfl::encode_code_point_to_utf16_unsafe(output, 0xFFFD);
   result = rfl::utf8_to_utf16(output, output + 32, invalid_end, input + sizeof(input) - 1);
 }
-```
-
-#### Dispatchers for Generic Programming
-
-The library provides dispatcher classes for generic programming that automatically select the appropriate conversion based on character type size:
-
-* `utf_convert_t`: A non-template dispatcher that uses `sizeof(InT)` and `sizeof(OutT)` to automatically select the correct conversion:
-  * `sizeof(InT) == 1` and `sizeof(OutT) == 2`: UTF-8 → UTF-16
-  * `sizeof(InT) == 1` and `sizeof(OutT) == 4`: UTF-8 → UTF-32
-  * `sizeof(InT) == 2` and `sizeof(OutT) == 1`: UTF-16 → UTF-8
-  * `sizeof(InT) == 2` and `sizeof(OutT) == 4`: UTF-16 → UTF-32
-  * `sizeof(InT) == 4` and `sizeof(OutT) == 1`: UTF-32 → UTF-8
-  * `sizeof(InT) == 4` and `sizeof(OutT) == 2`: UTF-32 → UTF-16
-
-* `consume_utf_invalid_sequence_t`: A non-template dispatcher that uses `sizeof(CharT)` to automatically select the appropriate invalid sequence consumer:
-  * `sizeof(CharT) == 1`: UTF-8 invalid sequence consumer
-  * `sizeof(CharT) == 2`: UTF-16 invalid sequence consumer
-  * `sizeof(CharT) == 4`: UTF-32 invalid sequence consumer
-
-Example using dispatchers:
-```cpp
-namespace rfl = reflect_cpp26;
-
-// Generic conversion using utf_convert
-template <class OutCharT, class InCharT>
-auto convert_generic(OutCharT* dest, OutCharT* dest_end,
-                     const InCharT* input, const InCharT* input_end) {
-  return rfl::utf_convert(dest, dest_end, input, input_end);
-}
-
-// Generic invalid sequence consumer
-template <class CharT>
-const CharT* consume_invalid(const CharT* input, const CharT* input_end) {
-  return rfl::consume_utf_invalid_sequence(input, input_end);
-}
-```
-
-#### Error Handling
-
-The converters detect two types of errors:
-* `std::errc::invalid_argument`: The input contains an invalid UTF sequence (malformed encoding, invalid code point, or surrogate in wrong context).
-* `std::errc::value_too_large`: The output buffer is too small to hold the next character.
-
-Both cases return immediately with the error code, and `out_ptr` points to where the next output would have been written (no partial output for the failed character).
-
-#### Consuming Invalid Sequences
-
-When an invalid UTF sequence is encountered, the converter returns `std::errc::invalid_argument` with `in_ptr` pointing to the start of the invalid sequence. The helper functors `consume_utf8_invalid_sequence` and `consume_utf16_invalid_sequence` can be used to consume the maximal prefix of continuous invalid bytes/code units, allowing replacement with the Unicode replacement character (U+FFFD):
-
-```cpp
-namespace rfl = reflect_cpp26;
-
-// Process UTF-8 with error handling
-char8_t input[] = u8"Hello\u00A9\xFF\xFEWorld";
-char16_t output[32];
-auto result = rfl::utf8_to_utf16(output, output + 32, input, input + sizeof(input) - 1);
-
-while (result.ec == std::errc::invalid_argument) {
-  // Consume the invalid bytes
-  auto invalid_end = rfl::consume_utf8_invalid_sequence(result.in_ptr, input + sizeof(input) - 1);
-  // Write replacement character using the unsafe encoder (valid code point)
-  output = rfl::encode_code_point_to_utf16_unsafe(output, 0xFFFD);
-  // Continue conversion
-  result = rfl::utf8_to_utf16(output, output + 32, invalid_end, input + sizeof(input) - 1);
-}
-```
-
-Example:
-```cpp
-namespace rfl = reflect_cpp26;
-
-// UTF-8 to UTF-16 conversion
-char8_t utf8_input[] = u8"Hello, 世界! 🌍";
-char16_t utf16_output[32];
-auto result = rfl::utf8_to_utf16(utf16_output, utf16_output + 32,
-                                  utf8_input, utf8_input + sizeof(utf8_input) - 1);
-if (result.ec == std::errc{}) {
-  // Success: result.out_ptr points past the last character written
-  // result.in_ptr == utf8_input + sizeof(utf8_input) - 1
-}
-
-// Error handling example: invalid continuation byte
-char8_t invalid_utf8[] = {char8_t(0xC2), char8_t(0x41)}; // 0x41 is not a valid continuation
-char16_t output[16];
-auto err_result = rfl::utf8_to_utf16(output, output + 16,
-                                      invalid_utf8, invalid_utf8 + 2);
-// err_result.ec == std::errc::invalid_argument
-// err_result.in_ptr == invalid_utf8 (points to the invalid sequence, can retry)
-// err_result.out_ptr == output (nothing written)
 
 // Using alternative character types
-char input[] = "ASCII";  // char instead of char8_t
-uint16_t buffer[16];      // uint16_t instead of char16_t
+char input[] = "ASCII";
+uint16_t buffer[16];
 auto r = rfl::utf8_to_utf16(buffer, buffer + 16, input, input + 5);
 ```
 
@@ -390,8 +366,8 @@ public:
   explicit constexpr basic_string_builder(size_t initial_size, Allocator alloc);
 
   constexpr size_t size() const;
+  constexpr auto str() const -> std::basic_string<CharT>;
   constexpr auto strview() const& -> std::basic_string_view<CharT>;
-  constexpr auto get() && -> std::pair<std::unique_ptr<CharT[]>, CharT*>;
 
   constexpr auto append_char(CharT c) -> basic_string_builder&;
   constexpr auto append_utf_code_point(char32_t code_point) -> basic_string_builder&;
@@ -450,8 +426,10 @@ The library provides type aliases for all standard character types:
 #### Core Methods
 
 * `size()`: Returns the current number of characters in the builder.
-* `strview()`: Returns a `std::basic_string_view` referencing the current content.
-* `get()`: Returns ownership of the internal buffer as a `std::pair<unique_ptr<CharT[]>, CharT*>`.
+* `str()`: Returns a `std::basic_string<CharT>` with a copy of the current content.
+* `strview()`: Returns a `std::basic_string_view<CharT>` referencing the current content.
+
+Note: `strview()` provides a zero-copy view into the internal buffer, while `str()` creates a copy.
 
 #### Appending Characters
 
@@ -511,10 +489,11 @@ builder.append_floating_point(1.23e10, std::chars_format::scientific);
 
 #### Buffer Management
 
-The builder automatically manages buffer growth:
+The builder manages a buffer allocated via the provided allocator:
 - Initial size can be specified in the constructor
 - When the buffer is full, it grows exponentially (doubles capacity)
 - All operations are constexpr-compatible
+- Buffer memory is deallocated in the destructor using the allocator
 
 Example:
 ```cpp

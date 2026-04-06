@@ -47,42 +47,65 @@ template <class T>
 concept memberwise_serializable = impl::is_memberwise_serializable_type(remove_cv(^^T));
 
 namespace impl {
-consteval bool is_serializable_type(std::meta::info T) {
-  // std::monostate serves as null in practice
+consteval auto test_serializable_leaf_type(std::meta::info T) -> bool {
+  // (1) std::monostate serves as null in practice
   if (T == ^^std::monostate) {
     return true;
   }
+  // (2) Arithmetic types
+  // (3) Enum types
   if (is_arithmetic_type(T) || is_enum_type(T)) {
     return true;  // Including boolean and character types
   }
+  // (4) String-like types
   if (extract<bool>(^^string_like, T)) {
     return true;
   }
+  return false;
+}
+
+consteval auto test_serializable_container_type(std::meta::info T, std::meta::info target_concept)
+    -> std::optional<bool> {
+  // (5) Range types (including C-style arrays)
   if (is_array_type(T)) {
     auto U = remove_all_extents(T);
-    return extract<bool>(^^serializable, U);
+    return extract<bool>(target_concept, U);
   }
   if (extract<bool>(^^std::ranges::range, T)) {
     auto params_il = {T};
     auto U = substitute(^^std::ranges::range_value_t, params_il);
-    return extract<bool>(^^serializable, U);
+    return extract<bool>(target_concept, U);
   }
+  // (6) Tuple-like types
   if (extract<bool>(^^tuple_like, T)) {
     auto n = tuple_size(T);
     for (auto i = 0zU; i < n; i++) {
-      if (!extract<bool>(^^serializable, tuple_element(i, T))) {
+      if (!extract<bool>(target_concept, tuple_element(i, T))) {
         return false;
       }
     }
     return true;
   }
+  // (7) std::optional
   if (has_template_arguments(T) && template_of(T) == ^^std::optional) {
     auto U = template_arguments_of(T)[0];
-    return extract<bool>(^^serializable, U);
+    return extract<bool>(target_concept, U);
   }
+  // (8) std::variant
   if (has_template_arguments(T) && template_of(T) == ^^std::variant) {
     auto Us = template_arguments_of(T);
-    return std::ranges::all_of(Us, [](auto U) { return extract<bool>(^^serializable, U); });
+    return std::ranges::all_of(
+        Us, [target_concept](auto U) { return extract<bool>(target_concept, U); });
+  }
+  return std::nullopt;
+}
+
+consteval bool is_serializable_type(std::meta::info T) {
+  if (test_serializable_leaf_type(T)) {
+    return true;
+  }
+  if (auto res = test_serializable_container_type(T, ^^serializable); res.has_value()) {
+    return *res;
   }
   return false;
 }
@@ -99,9 +122,14 @@ consteval bool is_memberwise_serializable_class_type() {
 }
 
 consteval bool is_memberwise_serializable_type(std::meta::info T) {
-  if (is_serializable_type(T)) {
+  // (1) ~ (8) above
+  if (test_serializable_leaf_type(T)) {
     return true;
   }
+  if (auto res = test_serializable_container_type(T, ^^memberwise_serializable); res.has_value()) {
+    return *res;
+  }
+  // (9) Flattenable class types
   if (extract<bool>(^^flattenable_class, T)) {
     auto fn = extract<bool (*)()>(^^is_memberwise_serializable_class_type, T);
     return fn();

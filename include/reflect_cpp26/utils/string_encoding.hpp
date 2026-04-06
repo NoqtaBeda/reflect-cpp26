@@ -27,9 +27,23 @@
 #include <system_error>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 
 namespace reflect_cpp26 {
+enum class escaping_mode {
+  none = 0,
+  json = 1,  // Following RFC 8259 standard
+};
+
 namespace impl {
+enum class escaping_status : int {
+  no_escape = 0,
+  // POSIX error is always > 0. Thus we use -1 to represent successful escaping.
+  done = -1,
+  // Unspecified positive integer
+  error = std::to_underlying(std::errc::value_too_large),
+};
+
 constexpr auto invalid_code_point = static_cast<char32_t>(-1);
 
 constexpr bool is_utf8_trailing_byte(uint8_t c) {
@@ -62,11 +76,62 @@ constexpr size_t utf8_encoded_length(char32_t code_point) {
 constexpr size_t utf16_encoded_length(char32_t code_point) {
   return (code_point <= 0xFFFF) ? 1 : 2;
 }
+
+// Shared by string_builder.hpp
+constexpr std::pair<char, char> ascii_json_escape_map[] = {
+    {'"', '"'},
+    {'\\', '\\'},
+    {'\b', 'b'},
+    {'\f', 'f'},
+    {'\n', 'n'},
+    {'\r', 'r'},
+    {'\t', 't'},
+    {'/', '/'},  // Common practice for JSON serialization
+};
+
+template <class DestCharT>
+constexpr auto write_json_escaped_character(DestCharT* dest, DestCharT* dest_end, char32_t c)
+    -> std::pair<escaping_status, DestCharT*> {
+  template for (constexpr auto entry : ascii_json_escape_map) {
+    if (c == entry.first) [[unlikely]] {
+      if (dest + 2 > dest_end) [[unlikely]] {
+        return {escaping_status::error, dest};
+      }
+      *dest++ = '\\';
+      *dest++ = entry.second;
+      return {escaping_status::done, dest};
+    }
+  }
+  if (c < 0x20) [[unlikely]] {
+    if (dest + 6 > dest_end) [[unlikely]] {
+      return {escaping_status::error, dest};
+    }
+    *dest++ = '\\';
+    *dest++ = 'u';
+    *dest++ = '0';
+    *dest++ = '0';
+    *dest++ = static_cast<DestCharT>(c >= 0x10 ? '1' : '0');
+    auto low = c & 0xF;
+    *dest++ = static_cast<DestCharT>(low < 10 ? '0' + low : 'A' + low - 10);
+    return {escaping_status::done, dest};
+  }
+  return {escaping_status::no_escape, dest};
+}
+
+template <escaping_mode EscMode, class DestCharT>
+constexpr auto write_escaped_character(DestCharT* dest, DestCharT* dest_end, char32_t c)
+    -> std::pair<escaping_status, DestCharT*> {
+  if constexpr (EscMode == escaping_mode::json) {
+    return write_json_escaped_character(dest, dest_end, c);
+  } else {
+    static_assert(false, "Invalid or unsupported escaping mode.");
+  }
+}
 }  // namespace impl
 
 constexpr auto decode_utf8(const char8_t* input, const char8_t* input_end)
     -> std::pair<char32_t, const char8_t*> {
-  if (input >= input_end) {
+  if (input >= input_end) [[unlikely]] {
     return {impl::invalid_code_point, input};
   }
 
@@ -75,7 +140,7 @@ constexpr auto decode_utf8(const char8_t* input, const char8_t* input_end)
   if (c0 < 0x80) {
     return {static_cast<char32_t>(c0), input};
   }
-  if (c0 < 0xC0) {
+  if (c0 < 0xC0) [[unlikely]] {
     return {impl::invalid_code_point, original};
   }
 
@@ -85,7 +150,7 @@ constexpr auto decode_utf8(const char8_t* input, const char8_t* input_end)
   if (c0 < 0xE0) {
     code_point = c0 & 0x1F;
     num_continuations = 1;
-    if (c0 < 0xC2) {
+    if (c0 < 0xC2) [[unlikely]] {
       return {impl::invalid_code_point, original};
     }
   } else if (c0 < 0xF0) {
@@ -94,30 +159,30 @@ constexpr auto decode_utf8(const char8_t* input, const char8_t* input_end)
   } else if (c0 < 0xF8) {
     code_point = c0 & 0x07;
     num_continuations = 3;
-    if (c0 > 0xF4) {
+    if (c0 > 0xF4) [[unlikely]] {
       return {impl::invalid_code_point, original};
     }
-  } else {
+  } else [[unlikely]] {
     return {impl::invalid_code_point, original};
   }
 
-  if (input + num_continuations > input_end) {
+  if (input + num_continuations > input_end) [[unlikely]] {
     return {impl::invalid_code_point, original};
   }
   for (size_t i = 0; i < num_continuations; ++i) {
     auto c = static_cast<uint8_t>(*input++);
-    if (!impl::is_utf8_trailing_byte(c)) {
+    if (!impl::is_utf8_trailing_byte(c)) [[unlikely]] {
       return {impl::invalid_code_point, original};
     }
     code_point = (code_point << 6) | (c & 0x3F);
   }
 
   if (num_continuations == 2) {
-    if (code_point < 0x800 || (code_point >= 0xD800 && code_point <= 0xDFFF)) {
+    if (code_point < 0x800 || (code_point >= 0xD800 && code_point <= 0xDFFF)) [[unlikely]] {
       return {impl::invalid_code_point, original};
     }
   } else if (num_continuations == 3) {
-    if (code_point < 0x10000 || code_point > 0x10FFFF) {
+    if (code_point < 0x10000 || code_point > 0x10FFFF) [[unlikely]] {
       return {impl::invalid_code_point, original};
     }
   }
@@ -127,7 +192,7 @@ constexpr auto decode_utf8(const char8_t* input, const char8_t* input_end)
 
 constexpr auto decode_utf16(const char16_t* input, const char16_t* input_end)
     -> std::pair<char32_t, const char16_t*> {
-  if (input >= input_end) {
+  if (input >= input_end) [[unlikely]] {
     return {impl::invalid_code_point, input};
   }
 
@@ -136,15 +201,15 @@ constexpr auto decode_utf16(const char16_t* input, const char16_t* input_end)
   if (c0 < 0xD800 || c0 > 0xDFFF) {
     return {static_cast<char32_t>(c0), input};
   }
-  if (c0 >= 0xDC00) {
+  if (c0 >= 0xDC00) [[unlikely]] {
     return {impl::invalid_code_point, original};
   }
-  if (input >= input_end) {
+  if (input >= input_end) [[unlikely]] {
     return {impl::invalid_code_point, original};
   }
 
   auto c1 = static_cast<char16_t>(*input++);
-  if (c1 < 0xDC00 || c1 > 0xDFFF) {
+  if (c1 < 0xDC00 || c1 > 0xDFFF) [[unlikely]] {
     return {impl::invalid_code_point, original};
   }
 
@@ -252,18 +317,30 @@ struct encode_result_t {
   std::errc ec;
 };
 
-struct utf8_to_utf16_t {
+template <escaping_mode EscMode>
+struct utf8_to_utf16_base_t {
   static constexpr auto operator()(char16_t* dest,
                                    char16_t* dest_end,
                                    const char8_t* input,
                                    const char8_t* input_end) -> encode_result_t<char16_t, char8_t> {
     while (input < input_end) {
+      if constexpr (EscMode != escaping_mode::none) {
+        auto [status, next_dest] =
+            impl::write_escaped_character<EscMode>(dest, dest_end, static_cast<char32_t>(*input));
+        if (status == impl::escaping_status::done) [[unlikely]] {
+          dest = next_dest;
+          input += 1;
+          continue;
+        } else if (status == impl::escaping_status::error) [[unlikely]] {
+          return {dest, input, std::errc::value_too_large};
+        }
+      }
       auto [code_point, next_input] = decode_utf8(input, input_end);
-      if (code_point == impl::invalid_code_point) {
+      if (code_point == impl::invalid_code_point) [[unlikely]] {
         return {dest, input, std::errc::invalid_argument};
       }
       size_t needed = impl::utf16_encoded_length(code_point);
-      if (dest + needed > dest_end) {
+      if (dest + needed > dest_end) [[unlikely]] {
         return {dest, input, std::errc::value_too_large};
       }
       dest = encode_code_point_to_utf16_unsafe(dest, code_point);
@@ -284,17 +361,32 @@ struct utf8_to_utf16_t {
   REFLECT_CPP26_ENCODING_OVERLOAD(char16_t, char8_t, uint16_t, uint8_t)
 };
 
-struct utf8_to_utf32_t {
+using utf8_to_utf16_t = utf8_to_utf16_base_t<escaping_mode::none>;
+using utf8_to_utf16_json_escaped_t = utf8_to_utf16_base_t<escaping_mode::json>;
+
+template <escaping_mode EscMode>
+struct utf8_to_utf32_base_t {
   static constexpr auto operator()(char32_t* dest,
                                    char32_t* dest_end,
                                    const char8_t* input,
                                    const char8_t* input_end) -> encode_result_t<char32_t, char8_t> {
     while (input < input_end) {
-      if (dest >= dest_end) {
+      if (dest >= dest_end) [[unlikely]] {
         return {dest, input, std::errc::value_too_large};
       }
+      if constexpr (EscMode != escaping_mode::none) {
+        auto [status, next_dest] =
+            impl::write_escaped_character<EscMode>(dest, dest_end, static_cast<char32_t>(*input));
+        if (status == impl::escaping_status::done) [[unlikely]] {
+          dest = next_dest;
+          input += 1;
+          continue;
+        } else if (status == impl::escaping_status::error) [[unlikely]] {
+          return {dest, input, std::errc::value_too_large};
+        }
+      }
       auto [code_point, next_input] = decode_utf8(input, input_end);
-      if (code_point == impl::invalid_code_point) {
+      if (code_point == impl::invalid_code_point) [[unlikely]] {
         return {dest, input, std::errc::invalid_argument};
       }
       *dest++ = code_point;
@@ -315,19 +407,34 @@ struct utf8_to_utf32_t {
   REFLECT_CPP26_ENCODING_OVERLOAD(char32_t, char8_t, uint32_t, uint8_t)
 };
 
-struct utf16_to_utf8_t {
+using utf8_to_utf32_t = utf8_to_utf32_base_t<escaping_mode::none>;
+using utf8_to_utf32_json_escaped_t = utf8_to_utf32_base_t<escaping_mode::json>;
+
+template <escaping_mode EscMode>
+struct utf16_to_utf8_base_t {
   static constexpr auto operator()(char8_t* dest,
                                    char8_t* dest_end,
                                    const char16_t* input,
                                    const char16_t* input_end)
       -> encode_result_t<char8_t, char16_t> {
     while (input < input_end) {
+      if constexpr (EscMode != escaping_mode::none) {
+        auto [status, esc_dest] =
+            impl::write_escaped_character<EscMode>(dest, dest_end, static_cast<char32_t>(*input));
+        if (status == impl::escaping_status::done) [[unlikely]] {
+          dest = esc_dest;
+          input += 1;
+          continue;
+        } else if (status == impl::escaping_status::error) [[unlikely]] {
+          return {dest, input, std::errc::value_too_large};
+        }
+      }
       auto [code_point, next_input] = decode_utf16(input, input_end);
-      if (code_point == impl::invalid_code_point) {
+      if (code_point == impl::invalid_code_point) [[unlikely]] {
         return {dest, input, std::errc::invalid_argument};
       }
       auto needed = impl::utf8_encoded_length(code_point);
-      if (dest + needed > dest_end) {
+      if (dest + needed > dest_end) [[unlikely]] {
         return {dest, input, std::errc::value_too_large};
       }
       dest = encode_code_point_to_utf8_unsafe(dest, code_point);
@@ -348,18 +455,33 @@ struct utf16_to_utf8_t {
   REFLECT_CPP26_ENCODING_OVERLOAD(char8_t, char16_t, uint8_t, uint16_t)
 };
 
-struct utf16_to_utf32_t {
+using utf16_to_utf8_t = utf16_to_utf8_base_t<escaping_mode::none>;
+using utf16_to_utf8_json_escaped_t = utf16_to_utf8_base_t<escaping_mode::json>;
+
+template <escaping_mode EscMode>
+struct utf16_to_utf32_base_t {
   static constexpr auto operator()(char32_t* dest,
                                    char32_t* dest_end,
                                    const char16_t* input,
                                    const char16_t* input_end)
       -> encode_result_t<char32_t, char16_t> {
     while (input < input_end) {
-      if (dest >= dest_end) {
+      if (dest >= dest_end) [[unlikely]] {
         return {dest, input, std::errc::value_too_large};
       }
+      if constexpr (EscMode != escaping_mode::none) {
+        auto [status, esc_dest] =
+            impl::write_escaped_character<EscMode>(dest, dest_end, static_cast<char32_t>(*input));
+        if (status == impl::escaping_status::done) [[unlikely]] {
+          dest = esc_dest;
+          input += 1;
+          continue;
+        } else if (status == impl::escaping_status::error) [[unlikely]] {
+          return {dest, input, std::errc::value_too_large};
+        }
+      }
       auto [code_point, next_input] = decode_utf16(input, input_end);
-      if (code_point == impl::invalid_code_point) {
+      if (code_point == impl::invalid_code_point) [[unlikely]] {
         return {dest, input, std::errc::invalid_argument};
       }
       *dest++ = code_point;
@@ -376,7 +498,11 @@ struct utf16_to_utf32_t {
   REFLECT_CPP26_ENCODING_OVERLOAD(char32_t, char16_t, uint32_t, uint16_t)
 };
 
-struct utf32_to_utf8_t {
+using utf16_to_utf32_t = utf16_to_utf32_base_t<escaping_mode::none>;
+using utf16_to_utf32_json_escaped_t = utf16_to_utf32_base_t<escaping_mode::json>;
+
+template <escaping_mode EscMode>
+struct utf32_to_utf8_base_t {
   static constexpr auto operator()(char8_t* dest,
                                    char8_t* dest_end,
                                    const char32_t* input,
@@ -384,11 +510,21 @@ struct utf32_to_utf8_t {
       -> encode_result_t<char8_t, char32_t> {
     for (; input < input_end; ++input) {
       auto code_point = *input;
-      if (code_point > 0x10FFFF || (code_point >= 0xD800 && code_point <= 0xDFFF)) {
+      if (code_point > 0x10FFFF || (code_point >= 0xD800 && code_point <= 0xDFFF)) [[unlikely]] {
         return {dest, input, std::errc::invalid_argument};
       }
+      if constexpr (EscMode != escaping_mode::none) {
+        auto [esc_status, esc_dest] =
+            impl::write_escaped_character<EscMode>(dest, dest_end, code_point);
+        if (esc_status == impl::escaping_status::done) [[unlikely]] {
+          dest = esc_dest;
+          continue;
+        } else if (esc_status == impl::escaping_status::error) [[unlikely]] {
+          return {dest, input, std::errc::value_too_large};
+        }
+      }
       auto needed = impl::utf8_encoded_length(code_point);
-      if (dest + needed > dest_end) {
+      if (dest + needed > dest_end) [[unlikely]] {
         return {dest, input, std::errc::value_too_large};
       }
       dest = encode_code_point_to_utf8_unsafe(dest, code_point);
@@ -408,7 +544,11 @@ struct utf32_to_utf8_t {
   REFLECT_CPP26_ENCODING_OVERLOAD(char8_t, char32_t, uint8_t, uint32_t)
 };
 
-struct utf32_to_utf16_t {
+using utf32_to_utf8_t = utf32_to_utf8_base_t<escaping_mode::none>;
+using utf32_to_utf8_json_escaped_t = utf32_to_utf8_base_t<escaping_mode::json>;
+
+template <escaping_mode EscMode>
+struct utf32_to_utf16_base_t {
   static constexpr auto operator()(char16_t* dest,
                                    char16_t* dest_end,
                                    const char32_t* input,
@@ -416,11 +556,21 @@ struct utf32_to_utf16_t {
       -> encode_result_t<char16_t, char32_t> {
     for (; input < input_end; ++input) {
       auto code_point = *input;
-      if (code_point > 0x10FFFF || (code_point >= 0xD800 && code_point <= 0xDFFF)) {
+      if (code_point > 0x10FFFF || (code_point >= 0xD800 && code_point <= 0xDFFF)) [[unlikely]] {
         return {dest, input, std::errc::invalid_argument};
       }
+      if constexpr (EscMode != escaping_mode::none) {
+        auto [esc_status, esc_dest] =
+            impl::write_escaped_character<EscMode>(dest, dest_end, code_point);
+        if (esc_status == impl::escaping_status::done) [[unlikely]] {
+          dest = esc_dest;
+          continue;
+        } else if (esc_status == impl::escaping_status::error) [[unlikely]] {
+          return {dest, input, std::errc::value_too_large};
+        }
+      }
       auto needed = impl::utf16_encoded_length(code_point);
-      if (dest + needed > dest_end) {
+      if (dest + needed > dest_end) [[unlikely]] {
         return {dest, input, std::errc::value_too_large};
       }
       dest = encode_code_point_to_utf16_unsafe(dest, code_point);
@@ -436,10 +586,11 @@ struct utf32_to_utf16_t {
   REFLECT_CPP26_ENCODING_OVERLOAD(char16_t, char32_t, uint16_t, uint32_t)
 };
 
-// TODO: Now add the non-template class utf_convert_t as dispatcher.
-//       Hint: you can judge which candidate to use with sizeof(FromCharT) and sizeof(ToCharT)
+using utf32_to_utf16_t = utf32_to_utf16_base_t<escaping_mode::none>;
+using utf32_to_utf16_json_escaped_t = utf32_to_utf16_base_t<escaping_mode::json>;
 
-struct utf_convert_t {
+template <escaping_mode EscMode>
+struct utf_convert_base_t {
   template <class OutT, class InT>
   static constexpr auto operator()(OutT* dest,
                                    OutT* dest_end,
@@ -449,22 +600,25 @@ struct utf_convert_t {
     constexpr size_t out_size = sizeof(OutT);
 
     if constexpr (in_size == 1 && out_size == 2) {
-      return utf8_to_utf16_t::operator()(dest, dest_end, input, input_end);
+      return utf8_to_utf16_base_t<EscMode>::operator()(dest, dest_end, input, input_end);
     } else if constexpr (in_size == 1 && out_size == 4) {
-      return utf8_to_utf32_t::operator()(dest, dest_end, input, input_end);
+      return utf8_to_utf32_base_t<EscMode>::operator()(dest, dest_end, input, input_end);
     } else if constexpr (in_size == 2 && out_size == 1) {
-      return utf16_to_utf8_t::operator()(dest, dest_end, input, input_end);
+      return utf16_to_utf8_base_t<EscMode>::operator()(dest, dest_end, input, input_end);
     } else if constexpr (in_size == 2 && out_size == 4) {
-      return utf16_to_utf32_t::operator()(dest, dest_end, input, input_end);
+      return utf16_to_utf32_base_t<EscMode>::operator()(dest, dest_end, input, input_end);
     } else if constexpr (in_size == 4 && out_size == 1) {
-      return utf32_to_utf8_t::operator()(dest, dest_end, input, input_end);
+      return utf32_to_utf8_base_t<EscMode>::operator()(dest, dest_end, input, input_end);
     } else if constexpr (in_size == 4 && out_size == 2) {
-      return utf32_to_utf16_t::operator()(dest, dest_end, input, input_end);
+      return utf32_to_utf16_base_t<EscMode>::operator()(dest, dest_end, input, input_end);
     } else {
       static_assert(false, "Invalid OutT and InT");
     }
   }
 };
+
+using utf_convert_t = utf_convert_base_t<escaping_mode::none>;
+using utf_convert_json_escaped_t = utf_convert_base_t<escaping_mode::json>;
 
 constexpr auto utf8_to_utf16 = utf8_to_utf16_t{};
 constexpr auto utf8_to_utf32 = utf8_to_utf32_t{};
@@ -472,8 +626,17 @@ constexpr auto utf16_to_utf8 = utf16_to_utf8_t{};
 constexpr auto utf16_to_utf32 = utf16_to_utf32_t{};
 constexpr auto utf32_to_utf8 = utf32_to_utf8_t{};
 constexpr auto utf32_to_utf16 = utf32_to_utf16_t{};
+
+constexpr auto utf8_to_utf16_json_escaped = utf8_to_utf16_json_escaped_t{};
+constexpr auto utf8_to_utf32_json_escaped = utf8_to_utf32_json_escaped_t{};
+constexpr auto utf16_to_utf8_json_escaped = utf16_to_utf8_json_escaped_t{};
+constexpr auto utf16_to_utf32_json_escaped = utf16_to_utf32_json_escaped_t{};
+constexpr auto utf32_to_utf8_json_escaped = utf32_to_utf8_json_escaped_t{};
+constexpr auto utf32_to_utf16_json_escaped = utf32_to_utf16_json_escaped_t{};
+
 // Dispatcher
 constexpr auto utf_convert = utf_convert_t{};
+constexpr auto utf_convert_json_escaped = utf_convert_json_escaped_t{};
 
 // Consumes the maximal prefix of continuous invalid UTF-8 bytes.
 // Let ret be the returned pointer, [input, ret) is expected to be replaced as a single placeholder
@@ -592,6 +755,5 @@ constexpr auto consume_utf_invalid_sequence = consume_utf_invalid_sequence_t{};
 }  // namespace reflect_cpp26
 
 #undef REFLECT_CPP26_ENCODING_OVERLOAD
-#undef REFLECT_CPP26_UNWIND_AND_RETURN_INVALID
 
 #endif  // REFLECT_CPP26_UTILS_STRING_ENCODING_HPP

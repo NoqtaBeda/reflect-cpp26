@@ -328,3 +328,443 @@ TEST(TypeTraits, MemberwiseSerializable) {
   static_assert(NOT rfl::memberwise_serializable<int()>);
   static_assert(NOT rfl::memberwise_serializable<int (*)()>);
 }
+
+TEST(TypeTraits, SerializableAdvancedNesting) {
+  // Note: `serializable` does NOT include struct types directly.
+  // Only primitive types (monostate, arithmetic, string-like) and container types
+  // (range, tuple, optional, variant) are serializable. Struct types belong to
+  // `memberwise_serializable` instead.
+
+  // ---- Range with primitive elements ----
+  static_assert(rfl::serializable<std::vector<int>>);
+  static_assert(rfl::serializable<std::vector<double>>);
+  static_assert(rfl::serializable<std::list<int>>);
+  static_assert(rfl::serializable<std::array<int, 4>>);
+  static_assert(rfl::serializable<std::deque<double>>);
+  static_assert(rfl::serializable<std::set<int>>);
+
+  // ---- Range with optional elements ----
+  static_assert(rfl::serializable<std::vector<std::optional<int>>>);
+  static_assert(rfl::serializable<std::vector<std::optional<double>>>);
+  static_assert(rfl::serializable<std::list<std::optional<std::string>>>);
+  static_assert(rfl::serializable<std::array<std::optional<std::string>, 4>>);
+
+  // ---- Range with variant elements ----
+  static_assert(rfl::serializable<std::vector<std::variant<int, std::string>>>);
+  static_assert(rfl::serializable<std::vector<std::variant<double, color_t>>>);
+  static_assert(rfl::serializable<std::list<std::variant<int, double, bool>>>);
+
+  // ---- Range with tuple elements ----
+  static_assert(rfl::serializable<std::vector<std::tuple<int, double>>>);
+  static_assert(rfl::serializable<std::vector<std::pair<int, std::string>>>);
+  static_assert(rfl::serializable<std::list<std::tuple<std::string, color_t, bool>>>);
+
+  // ---- Range with range elements (nested ranges) ----
+  static_assert(rfl::serializable<std::vector<std::vector<int>>>);
+  static_assert(rfl::serializable<std::vector<std::array<int, 4>>>);
+  static_assert(rfl::serializable<std::list<std::vector<double>>>);
+
+  // ---- Tuple with primitive elements ----
+  static_assert(rfl::serializable<std::tuple<int, double>>);
+  static_assert(rfl::serializable<std::pair<int, double>>);
+  static_assert(rfl::serializable<std::tuple<int, std::string, double>>);
+
+  // ---- Tuple with optional elements ----
+  static_assert(rfl::serializable<std::tuple<std::optional<int>, std::optional<double>>>);
+  static_assert(rfl::serializable<std::pair<std::optional<std::string>, int>>);
+  static_assert(rfl::serializable<std::tuple<int, std::optional<std::string>, bool>>);
+
+  // ---- Tuple with variant elements ----
+  static_assert(rfl::serializable<std::tuple<std::variant<int, double>, std::string>>);
+  static_assert(rfl::serializable<std::pair<std::variant<color_t, bool>, std::string>>);
+  static_assert(rfl::serializable<std::tuple<int, std::variant<std::string, double>, bool>>);
+
+  // ---- Optional with primitive types ----
+  static_assert(rfl::serializable<std::optional<int>>);
+  static_assert(rfl::serializable<std::optional<double>>);
+  static_assert(rfl::serializable<std::optional<std::string>>);
+
+  // ---- Optional with range ----
+  static_assert(rfl::serializable<std::optional<std::vector<int>>>);
+  static_assert(rfl::serializable<std::optional<std::array<double, 4>>>);
+  static_assert(rfl::serializable<std::optional<std::list<std::string>>>);
+
+  // ---- Optional with tuple ----
+  static_assert(rfl::serializable<std::optional<std::pair<int, double>>>);
+  static_assert(rfl::serializable<std::optional<std::tuple<int, std::string, bool>>>);
+
+  // ---- Optional with optional (nested optional) ----
+  static_assert(rfl::serializable<std::optional<std::optional<int>>>);
+  static_assert(rfl::serializable<std::optional<std::optional<std::string>>>);
+
+  // ---- Optional with variant ----
+  static_assert(rfl::serializable<std::optional<std::variant<int, double>>>);
+  static_assert(rfl::serializable<std::optional<std::variant<std::string, int>>>);
+
+  // ---- Variant with primitive types ----
+  static_assert(rfl::serializable<std::variant<int, double>>);
+  static_assert(rfl::serializable<std::variant<int, std::string, double>>);
+
+  // ---- Variant with range ----
+  static_assert(rfl::serializable<std::variant<std::vector<int>, double>>);
+  static_assert(rfl::serializable<std::variant<int, std::array<std::string, 4>>>);
+
+  // ---- Variant with tuple ----
+  static_assert(rfl::serializable<std::variant<std::pair<int, double>, std::string>>);
+  static_assert(rfl::serializable<std::variant<int, std::tuple<double, bool, std::string>>>);
+
+  // ---- Variant with optional ----
+  static_assert(rfl::serializable<std::variant<std::optional<int>, double>>);
+  static_assert(rfl::serializable<std::variant<int, std::optional<std::string>>>);
+
+  // ---- Variant with variant (nested variant) ----
+  static_assert(rfl::serializable<std::variant<std::variant<int, double>, std::string>>);
+  static_assert(rfl::serializable<std::variant<int, std::variant<double, std::string, color_t>>>);
+
+  // ---- Deep nesting ----
+  static_assert(rfl::serializable<std::vector<std::pair<int, std::vector<std::string>>>>);
+  static_assert(rfl::serializable<
+                std::tuple<int, std::optional<std::vector<std::pair<std::string, color_t>>>>>);
+  static_assert(
+      rfl::serializable<std::tuple<std::optional<int>,
+                                   std::optional<std::variant<std::vector<double>, std::string>>>>);
+  static_assert(
+      rfl::serializable<std::optional<
+          std::vector<std::tuple<std::optional<int>, std::variant<std::string, double>>>>>);
+
+  // ---- Associative containers with complex value_types ----
+  static_assert(rfl::serializable<std::map<int, std::vector<std::string>>>);
+  static_assert(rfl::serializable<std::unordered_map<std::string, std::optional<int>>>);
+  static_assert(rfl::serializable<std::map<std::string, std::variant<int, double, std::string>>>);
+}
+
+TEST(TypeTraits, MemberwiseSerializableAdvancedNesting) {
+  // ---- Range with struct elements ----
+  static_assert(rfl::memberwise_serializable<std::vector<serializable_struct_t>>);
+  static_assert(rfl::memberwise_serializable<std::vector<nested_serializable_struct_t>>);
+  static_assert(rfl::memberwise_serializable<std::array<serializable_struct_t, 4>>);
+
+  // ---- Range with optional elements ----
+  static_assert(rfl::memberwise_serializable<std::vector<std::optional<int>>>);
+  static_assert(rfl::memberwise_serializable<std::vector<std::optional<serializable_struct_t>>>);
+
+  // ---- Range with variant elements ----
+  static_assert(rfl::memberwise_serializable<std::vector<std::variant<int, std::string>>>);
+  static_assert(
+      rfl::memberwise_serializable<std::vector<std::variant<serializable_struct_t, int>>>);
+
+  // ---- Range with tuple elements ----
+  static_assert(rfl::memberwise_serializable<std::vector<std::tuple<int, double>>>);
+  static_assert(rfl::memberwise_serializable<std::vector<std::pair<int, std::string>>>);
+
+  // ---- Range with range elements (nested ranges) ----
+  static_assert(rfl::memberwise_serializable<std::vector<std::vector<int>>>);
+  static_assert(rfl::memberwise_serializable<std::vector<std::array<int, 4>>>);
+
+  // ---- Tuple with struct elements ----
+  static_assert(rfl::memberwise_serializable<std::tuple<serializable_struct_t, int>>);
+  static_assert(
+      rfl::memberwise_serializable<std::pair<serializable_struct_t, serializable_struct_t>>);
+
+  // ---- Tuple with optional elements ----
+  static_assert(
+      rfl::memberwise_serializable<std::tuple<std::optional<int>, std::optional<double>>>);
+  static_assert(rfl::memberwise_serializable<std::pair<std::optional<serializable_struct_t>, int>>);
+
+  // ---- Tuple with variant elements ----
+  static_assert(rfl::memberwise_serializable<std::tuple<std::variant<int, double>, std::string>>);
+  static_assert(
+      rfl::memberwise_serializable<std::pair<std::variant<color_t, bool>, serializable_struct_t>>);
+
+  // ---- Optional with struct ----
+  static_assert(rfl::memberwise_serializable<std::optional<serializable_struct_t>>);
+  static_assert(rfl::memberwise_serializable<std::optional<nested_serializable_struct_t>>);
+
+  // ---- Optional with range ----
+  static_assert(rfl::memberwise_serializable<std::optional<std::vector<int>>>);
+  static_assert(rfl::memberwise_serializable<std::optional<std::array<double, 4>>>);
+
+  // ---- Optional with tuple ----
+  static_assert(rfl::memberwise_serializable<std::optional<std::pair<int, double>>>);
+  static_assert(rfl::memberwise_serializable<std::optional<std::tuple<int, std::string, bool>>>);
+
+  // ---- Optional with optional (nested optional) ----
+  static_assert(rfl::memberwise_serializable<std::optional<std::optional<int>>>);
+  static_assert(rfl::memberwise_serializable<std::optional<std::optional<serializable_struct_t>>>);
+
+  // ---- Optional with variant ----
+  static_assert(rfl::memberwise_serializable<std::optional<std::variant<int, double>>>);
+  static_assert(
+      rfl::memberwise_serializable<std::optional<std::variant<serializable_struct_t, int>>>);
+
+  // ---- Variant with struct ----
+  static_assert(rfl::memberwise_serializable<std::variant<serializable_struct_t, int>>);
+  static_assert(rfl::memberwise_serializable<std::variant<int, serializable_struct_t, double>>);
+
+  // ---- Variant with range ----
+  static_assert(rfl::memberwise_serializable<std::variant<std::vector<int>, double>>);
+  static_assert(rfl::memberwise_serializable<std::variant<int, std::array<std::string, 4>>>);
+
+  // ---- Variant with tuple ----
+  static_assert(rfl::memberwise_serializable<std::variant<std::pair<int, double>, std::string>>);
+  static_assert(
+      rfl::memberwise_serializable<std::variant<int, std::tuple<double, bool, std::string>>>);
+
+  // ---- Variant with optional ----
+  static_assert(rfl::memberwise_serializable<std::variant<std::optional<int>, double>>);
+  static_assert(
+      rfl::memberwise_serializable<std::variant<int, std::optional<serializable_struct_t>>>);
+
+  // ---- Variant with variant (nested variant) ----
+  static_assert(rfl::memberwise_serializable<std::variant<std::variant<int, double>, std::string>>);
+  static_assert(
+      rfl::memberwise_serializable<std::variant<int, std::variant<double, std::string, color_t>>>);
+
+  // ---- Deep nesting ----
+  static_assert(rfl::memberwise_serializable<
+                std::vector<std::pair<int, std::vector<serializable_struct_t>>>>);
+  static_assert(rfl::memberwise_serializable<
+                std::tuple<int, std::optional<std::vector<std::pair<std::string, color_t>>>>>);
+  static_assert(rfl::memberwise_serializable<
+                std::tuple<serializable_struct_t,
+                           std::optional<std::variant<std::vector<int>, std::string>>>>);
+  static_assert(
+      rfl::memberwise_serializable<std::optional<std::vector<
+          std::tuple<std::optional<int>, std::variant<serializable_struct_t, std::string>>>>>);
+
+  // ---- Associative containers with complex value_types ----
+  static_assert(rfl::memberwise_serializable<std::map<int, std::vector<serializable_struct_t>>>);
+  static_assert(rfl::memberwise_serializable<
+                std::unordered_map<std::string, std::optional<serializable_struct_t>>>);
+  static_assert(
+      rfl::memberwise_serializable<std::map<std::string, std::variant<int, double, std::string>>>);
+}
+
+TEST(TypeTraits, MemberwiseSerializableMultiLevelNesting) {
+  // ---- Level 1: struct -> range -> struct ----
+  static_assert(rfl::memberwise_serializable<std::vector<serializable_struct_t>>);
+  static_assert(rfl::memberwise_serializable<std::list<std::vector<serializable_struct_t>>>);
+  static_assert(rfl::memberwise_serializable<std::array<std::list<serializable_struct_t>, 3>>);
+
+  // ---- Level 2: struct -> tuple -> struct ----
+  static_assert(
+      rfl::memberwise_serializable<std::pair<serializable_struct_t, serializable_struct_t>>);
+  static_assert(
+      rfl::memberwise_serializable<std::tuple<serializable_struct_t, int, serializable_struct_t>>);
+  static_assert(
+      rfl::memberwise_serializable<std::tuple<std::string, serializable_struct_t, double>>);
+
+  // ---- Level 2: struct -> optional -> struct ----
+  static_assert(rfl::memberwise_serializable<std::optional<serializable_struct_t>>);
+  static_assert(rfl::memberwise_serializable<std::optional<std::optional<serializable_struct_t>>>);
+
+  // ---- Level 2: struct -> variant -> struct ----
+  static_assert(
+      rfl::memberwise_serializable<std::variant<serializable_struct_t, serializable_struct_t>>);
+  static_assert(rfl::memberwise_serializable<std::variant<int, serializable_struct_t, double>>);
+
+  // ---- Level 3: range -> struct -> range ----
+  static_assert(rfl::memberwise_serializable<std::vector<std::vector<serializable_struct_t>>>);
+  static_assert(rfl::memberwise_serializable<std::vector<std::array<serializable_struct_t, 4>>>);
+  static_assert(rfl::memberwise_serializable<std::list<std::vector<serializable_struct_t>>>);
+  static_assert(rfl::memberwise_serializable<std::vector<std::list<serializable_struct_t>>>);
+  static_assert(rfl::memberwise_serializable<std::vector<std::set<serializable_struct_t>>>);
+
+  // ---- Level 3: tuple -> struct -> tuple ----
+  static_assert(
+      rfl::memberwise_serializable<std::pair<serializable_struct_t, serializable_struct_t>>);
+  static_assert(rfl::memberwise_serializable<
+                std::tuple<serializable_struct_t, serializable_struct_t, serializable_struct_t>>);
+  static_assert(
+      rfl::memberwise_serializable<std::tuple<std::pair<int, serializable_struct_t>, std::string>>);
+  static_assert(rfl::memberwise_serializable<
+                std::pair<std::string, std::tuple<int, serializable_struct_t, double>>>);
+
+  // ---- Level 3: optional -> struct -> optional ----
+  static_assert(rfl::memberwise_serializable<std::optional<std::optional<serializable_struct_t>>>);
+  static_assert(rfl::memberwise_serializable<
+                std::optional<std::optional<std::optional<serializable_struct_t>>>>);
+
+  // ---- Level 3: variant -> struct -> variant ----
+  static_assert(
+      rfl::memberwise_serializable<std::variant<serializable_struct_t, serializable_struct_t>>);
+  static_assert(
+      rfl::memberwise_serializable<std::variant<std::variant<int, serializable_struct_t>, double>>);
+  static_assert(rfl::memberwise_serializable<
+                std::variant<int, std::variant<double, serializable_struct_t, std::string>>>);
+
+  // ---- Level 4: range -> tuple -> struct -> range ----
+  static_assert(
+      rfl::memberwise_serializable<std::vector<std::tuple<int, serializable_struct_t, double>>>);
+  static_assert(
+      rfl::memberwise_serializable<std::list<std::pair<std::string, serializable_struct_t>>>);
+
+  // ---- Level 4: tuple -> optional -> struct -> tuple ----
+  static_assert(
+      rfl::memberwise_serializable<std::tuple<int, std::optional<serializable_struct_t>, double>>);
+  static_assert(
+      rfl::memberwise_serializable<std::pair<std::string, std::optional<serializable_struct_t>>>);
+
+  // ---- Level 4: optional -> variant -> struct -> optional ----
+  static_assert(
+      rfl::memberwise_serializable<std::optional<std::variant<int, serializable_struct_t>>>);
+  static_assert(
+      rfl::memberwise_serializable<std::optional<std::variant<serializable_struct_t, double>>>);
+
+  // ---- Level 4: variant -> range -> struct -> variant ----
+  static_assert(
+      rfl::memberwise_serializable<std::variant<std::vector<serializable_struct_t>, int>>);
+  static_assert(
+      rfl::memberwise_serializable<std::variant<int, std::vector<serializable_struct_t>>>);
+
+  // ---- Level 5: deeply nested combinations ----
+  static_assert(rfl::memberwise_serializable<
+                std::vector<std::tuple<std::optional<serializable_struct_t>, int>>>);
+  static_assert(rfl::memberwise_serializable<
+                std::list<std::pair<std::string, std::optional<serializable_struct_t>>>>);
+  static_assert(rfl::memberwise_serializable<
+                std::optional<std::vector<std::optional<serializable_struct_t>>>>);
+  static_assert(
+      rfl::memberwise_serializable<std::variant<std::list<serializable_struct_t>, double>>);
+  static_assert(rfl::memberwise_serializable<
+                std::tuple<std::variant<int, serializable_struct_t>, std::string, bool>>);
+
+  // ---- Level 6+: extremely deep nesting ----
+  static_assert(rfl::memberwise_serializable<
+                std::optional<std::vector<std::tuple<int, std::optional<serializable_struct_t>>>>>);
+  static_assert(rfl::memberwise_serializable<
+                std::vector<std::optional<std::variant<serializable_struct_t, std::string>>>>);
+  static_assert(
+      rfl::memberwise_serializable<std::list<
+          std::pair<std::string, std::optional<std::variant<int, serializable_struct_t>>>>>);
+  static_assert(rfl::memberwise_serializable<
+                std::optional<std::tuple<std::vector<serializable_struct_t>, int, double>>>);
+  static_assert(rfl::memberwise_serializable<
+                std::variant<std::optional<std::list<serializable_struct_t>>, std::string>>);
+
+  // ---- mixed nesting: struct containing range containing tuple containing struct ----
+  static_assert(rfl::memberwise_serializable<
+                std::vector<std::pair<int, std::vector<serializable_struct_t>>>>);
+  static_assert(rfl::memberwise_serializable<
+                std::tuple<serializable_struct_t,
+                           std::optional<std::variant<std::vector<int>, std::string>>>>);
+  static_assert(
+      rfl::memberwise_serializable<std::optional<std::vector<
+          std::tuple<std::optional<int>, std::variant<serializable_struct_t, std::string>>>>>);
+  static_assert(
+      rfl::memberwise_serializable<std::map<std::string, std::vector<serializable_struct_t>>>);
+  static_assert(rfl::memberwise_serializable<
+                std::unordered_map<std::string, std::optional<serializable_struct_t>>>);
+  static_assert(rfl::memberwise_serializable<
+                std::multimap<int, std::variant<serializable_struct_t, double>>>);
+  static_assert(rfl::memberwise_serializable<std::map<serializable_struct_t, std::vector<int>>>);
+  static_assert(
+      rfl::memberwise_serializable<std::unordered_map<serializable_struct_t, std::set<int>>>);
+}
+
+TEST(TypeTraits, SerializableNegativeTests) {
+  // Note: struct types are NOT serializable (they are memberwise_serializable only)
+  static_assert(NOT rfl::serializable<serializable_struct_t>);
+  static_assert(NOT rfl::serializable<nested_serializable_struct_t>);
+  static_assert(NOT rfl::serializable<foo_t>);
+
+  // ---- Range with struct elements: ❌ ----
+  static_assert(NOT rfl::serializable<std::vector<serializable_struct_t>>);
+  static_assert(NOT rfl::serializable<std::list<serializable_struct_t>>);
+  static_assert(NOT rfl::serializable<std::array<serializable_struct_t, 4>>);
+  static_assert(NOT rfl::serializable<std::deque<serializable_struct_t>>);
+  static_assert(NOT rfl::serializable<std::set<serializable_struct_t>>);
+
+  // ---- Tuple with struct elements: ❌ ----
+  static_assert(NOT rfl::serializable<std::tuple<serializable_struct_t, int>>);
+  static_assert(NOT rfl::serializable<std::pair<serializable_struct_t, serializable_struct_t>>);
+
+  // ---- Optional with struct: ❌ ----
+  static_assert(NOT rfl::serializable<std::optional<serializable_struct_t>>);
+  static_assert(NOT rfl::serializable<std::optional<nested_serializable_struct_t>>);
+  static_assert(NOT rfl::serializable<std::optional<derived_serializable_t>>);
+
+  // ---- Variant with struct: ❌ ----
+  static_assert(NOT rfl::serializable<std::variant<serializable_struct_t, int>>);
+  static_assert(NOT rfl::serializable<std::variant<int, serializable_struct_t, double>>);
+
+  // ---- Associative containers with struct values: ❌ ----
+  static_assert(NOT rfl::serializable<std::map<int, serializable_struct_t>>);
+  static_assert(NOT rfl::serializable<std::unordered_map<std::string, serializable_struct_t>>);
+  static_assert(NOT rfl::serializable<std::set<serializable_struct_t>>);
+
+  // ---- Range with non-memberwise-serializable struct elements: ❌ ----
+  static_assert(NOT rfl::serializable<std::vector<struct_with_pointer_t>>);
+  static_assert(NOT rfl::serializable<std::vector<struct_with_reference_t>>);
+  static_assert(NOT rfl::serializable<std::vector<struct_with_private_member_t>>);
+
+  // ---- Derived class with pointer in base: ❌ ----
+  static_assert(NOT rfl::serializable<derived_from_pointer_base_t>);
+  static_assert(NOT rfl::serializable<std::vector<derived_from_pointer_base_t>>);
+
+  // ---- Deep nesting with structs: ❌ ----
+  static_assert(
+      NOT rfl::serializable<std::vector<std::pair<int, std::vector<serializable_struct_t>>>>);
+  static_assert(NOT rfl::serializable<
+                std::tuple<serializable_struct_t,
+                           std::optional<std::variant<std::vector<int>, std::string>>>>);
+}
+
+TEST(TypeTraits, MemberwiseSerializableNegativeTests) {
+  // ---- Struct with pointer member: ❌ ----
+  static_assert(NOT rfl::memberwise_serializable<struct_with_pointer_t>);
+  static_assert(NOT rfl::memberwise_serializable<std::vector<struct_with_pointer_t>>);
+  static_assert(NOT rfl::memberwise_serializable<std::optional<struct_with_pointer_t>>);
+  static_assert(NOT rfl::memberwise_serializable<std::tuple<int, struct_with_pointer_t>>);
+  static_assert(NOT rfl::memberwise_serializable<std::variant<struct_with_pointer_t, int>>);
+  static_assert(NOT rfl::memberwise_serializable<std::pair<struct_with_pointer_t, double>>);
+  static_assert(NOT rfl::memberwise_serializable<std::map<int, struct_with_pointer_t>>);
+  static_assert(
+      NOT rfl::memberwise_serializable<std::optional<std::vector<struct_with_pointer_t>>>);
+
+  // ---- Struct with reference member: ❌ ----
+  static_assert(NOT rfl::memberwise_serializable<struct_with_reference_t>);
+  static_assert(NOT rfl::memberwise_serializable<std::vector<struct_with_reference_t>>);
+  static_assert(NOT rfl::memberwise_serializable<std::optional<struct_with_reference_t>>);
+  static_assert(NOT rfl::memberwise_serializable<std::tuple<struct_with_reference_t, int>>);
+  static_assert(NOT rfl::memberwise_serializable<std::variant<double, struct_with_reference_t>>);
+  static_assert(NOT rfl::memberwise_serializable<std::pair<std::string, struct_with_reference_t>>);
+  static_assert(NOT rfl::memberwise_serializable<std::unordered_map<int, struct_with_reference_t>>);
+
+  // ---- Struct with private member: ❌ ----
+  static_assert(NOT rfl::memberwise_serializable<struct_with_private_member_t>);
+  static_assert(NOT rfl::memberwise_serializable<std::vector<struct_with_private_member_t>>);
+  static_assert(NOT rfl::memberwise_serializable<std::optional<struct_with_private_member_t>>);
+  static_assert(NOT rfl::memberwise_serializable<std::tuple<struct_with_private_member_t, double>>);
+  static_assert(NOT rfl::memberwise_serializable<std::variant<int, struct_with_private_member_t>>);
+  static_assert(NOT rfl::memberwise_serializable<std::pair<struct_with_private_member_t, bool>>);
+  static_assert(
+      NOT rfl::memberwise_serializable<std::map<struct_with_private_member_t, std::string>>);
+
+  // ---- Derived class with pointer in base: ❌ ----
+  static_assert(NOT rfl::memberwise_serializable<base_with_pointer_t>);
+  static_assert(NOT rfl::memberwise_serializable<derived_from_pointer_base_t>);
+  static_assert(NOT rfl::memberwise_serializable<std::vector<derived_from_pointer_base_t>>);
+  static_assert(NOT rfl::memberwise_serializable<std::optional<derived_from_pointer_base_t>>);
+  static_assert(NOT rfl::memberwise_serializable<std::tuple<derived_from_pointer_base_t, int>>);
+  static_assert(
+      NOT rfl::memberwise_serializable<std::variant<derived_from_pointer_base_t, double>>);
+  static_assert(
+      NOT rfl::memberwise_serializable<std::pair<std::string, derived_from_pointer_base_t>>);
+  static_assert(
+      NOT rfl::memberwise_serializable<std::unordered_map<int, derived_from_pointer_base_t>>);
+
+  // ---- Deep nesting with non-memberwise-serializable structs: ❌ ----
+  static_assert(NOT rfl::memberwise_serializable<
+                std::vector<std::pair<int, std::vector<struct_with_pointer_t>>>>);
+  static_assert(
+      NOT rfl::memberwise_serializable<std::optional<std::vector<struct_with_reference_t>>>);
+  static_assert(NOT rfl::memberwise_serializable<
+                std::tuple<struct_with_private_member_t, std::optional<int>, double>>);
+  static_assert(NOT rfl::memberwise_serializable<
+                std::variant<std::vector<derived_from_pointer_base_t>, std::string>>);
+  static_assert(NOT rfl::memberwise_serializable<
+                std::map<std::string, std::optional<struct_with_pointer_t>>>);
+  static_assert(
+      NOT rfl::memberwise_serializable<std::list<std::pair<std::string, struct_with_reference_t>>>);
+}

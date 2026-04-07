@@ -89,7 +89,7 @@ struct dense_integral_key_map {
 // -------- Factory --------
 
 template <bool ValidityStored, bool AlignmentAdjusted, class KVPair>
-constexpr auto dense_integral_key_map_factory(meta_span<KVPair> sorted_entries) -> std::meta::info {
+consteval auto dense_integral_key_map_factory(meta_span<KVPair> sorted_entries) -> std::meta::info {
   using dest_type = dense_integral_key_map<ValidityStored, AlignmentAdjusted, KVPair>;
   using value_type = typename dest_type::value_type;
   using span_element_type = typename dest_type::span_element_type;

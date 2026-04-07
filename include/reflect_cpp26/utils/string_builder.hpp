@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <charconv>
+#include <climits>
 #include <iterator>
 #include <reflect_cpp26/type_traits/arithmetic_types.hpp>
 #include <reflect_cpp26/utils/string_encoding.hpp>
@@ -368,14 +369,16 @@ private:
     } else {
       while (true) {
         auto temp_buffer_size = remaining_capacity();
-        auto temp_buffer = std::make_unique<char[]>(temp_buffer_size);
-        auto [ptr, ec] =
-            std::to_chars(temp_buffer.get(), temp_buffer.get() + temp_buffer_size, args...);
+        // TODO: Simple workaround
+        auto temp_buffer = new char[temp_buffer_size];
+        auto [ptr, ec] = std::to_chars(temp_buffer, temp_buffer + temp_buffer_size, args...);
         if (std::errc{} != ec) [[unlikely]] {
           buffer_size *= 2;
           reserve_at_least(buffer_size);
+          delete[] temp_buffer;
         } else {
-          cur_ = std::ranges::copy(temp_buffer.get(), ptr, cur_).out;
+          cur_ = std::ranges::copy(temp_buffer, ptr, cur_).out;
+          delete[] temp_buffer;
           return;
         }
       }

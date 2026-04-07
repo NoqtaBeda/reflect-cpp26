@@ -41,7 +41,7 @@ struct string_key_map_by_hash_binary_search {
   constexpr auto get(std::basic_string_view<character_type> key) const
       -> std::pair<result_type, bool> {
     auto key_hash = Policy::hash(key);
-    for (auto head = _entries.head, tail = _entries.tail; head < tail;) {
+    for (auto head = _entries.head, tail = _entries.head + _entries.n; head < tail;) {
       const auto* mid = head + (tail - head) / 2;
       const auto& [mid_hash, mid_kv_pair] = unwrap(*mid);
       if (mid_hash == key_hash) {
@@ -98,7 +98,7 @@ struct string_key_map_by_hash_linear_search {
 // -------- Factory --------
 
 template <bool UsesBinarySearch, bool AlignmentAdjusted, class Policy, class KVPair>
-constexpr auto string_key_map_by_hash_search_factory(const std::vector<KVPair>& kv_pairs,
+consteval auto string_key_map_by_hash_search_factory(const std::vector<KVPair>& kv_pairs,
                                                      const std::vector<uint64_t>& hash_values)
     -> std::meta::info {
   auto elems = std::vector<string_hash_wrapper<KVPair>>();

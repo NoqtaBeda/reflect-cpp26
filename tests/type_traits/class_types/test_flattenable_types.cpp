@@ -77,6 +77,8 @@ struct bar_t : foo_t {
 // }
 static_assert(rfl::flattenable_aggregate_class<bar_t>);
 // Memberwise flattening blocked by std::string.
+static_assert(NOT rfl::memberwise_flattenable_aggregate_class<foo_t>);
+static_assert(NOT rfl::memberwise_flattenable_aggregate<bar_t>);
 static_assert(NOT rfl::memberwise_flattenable_aggregate_class<bar_t>);
 
 struct baz_t : foo_t {
@@ -91,6 +93,7 @@ struct baz_t : foo_t {
 // }
 static_assert(rfl::flattenable_class<baz_t>);
 // Memberwise flattening blocked by std::string.
+static_assert(NOT rfl::memberwise_flattenable_class<foo_t>);
 static_assert(NOT rfl::memberwise_flattenable_class<baz_t>);
 // Not aggregate (due to existence of implicit v-table pointer)
 static_assert(NOT rfl::flattenable_aggregate_class<baz_t>);

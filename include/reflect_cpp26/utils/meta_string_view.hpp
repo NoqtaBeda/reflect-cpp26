@@ -36,7 +36,7 @@ namespace reflect_cpp26 {
 /**
  * structural alternative to std::basic_string_view<CharT>.
  * It's ensured that the referenced string is always null-terminated, i.e.
- * the constraint *tail == '\0' always holds as long as meta_string_view is
+ * the constraint head[n] == '\0' always holds as long as meta_string_view is
  * not default-constructed.
  * Semantic constraints: meta_basic_string_view<CharT> is used for strings
  * with static constant storage only.
@@ -63,7 +63,7 @@ private:
 
 public:
   const CharT* head = nullptr;
-  const CharT* tail = nullptr;
+  size_t n = 0;
 
   constexpr meta_basic_string_view() = default;
 
@@ -73,7 +73,8 @@ public:
     }
     auto res = meta_basic_string_view{};
     res.head = literal;
-    res.tail = std::ranges::find(literal, std::unreachable_sentinel, '\0');
+    const auto* tail = std::ranges::find(literal, std::unreachable_sentinel, '\0');
+    res.n = static_cast<size_t>(tail - literal);
     return res;
   }
 
@@ -108,7 +109,7 @@ public:
 
   // Implicit conversion to std::string_view
   constexpr operator std::basic_string_view<CharT>() const {
-    return {head, tail};
+    return {head, n};
   }
 
   constexpr auto operator[](size_t index) const -> CharT {
@@ -120,19 +121,19 @@ public:
   }
 
   constexpr auto back() const -> CharT {
-    return tail[-1];
+    return head[n - 1];
   }
 
   constexpr auto size() const -> size_t {
-    return tail - head;
+    return n;
   }
 
   constexpr auto length() const -> size_t {
-    return tail - head;
+    return n;
   }
 
   constexpr auto empty() const -> bool {
-    return head == tail;
+    return n == 0;
   }
 
   constexpr auto data() const -> const CharT* {
@@ -144,36 +145,36 @@ public:
   }
 
   constexpr auto end() const -> const CharT* {
-    return tail;
+    return head + n;
   }
 
   // Note: remove_suffix(n) is not provided since we need to ensure
-  // the constraint *tail == '\0' is always satisfied.
+  // the constraint head[n] == '\0' is always satisfied.
   constexpr auto remove_prefix(size_t n) const -> meta_basic_string_view {
     auto res = meta_basic_string_view{};
     res.head = this->head + n;
-    res.tail = this->tail;
+    res.n = this->n - n;
     return res;
   }
 
   template <std::same_as<meta_basic_string_view<CharT>> RhsType>
   constexpr auto operator<=>(RhsType rhs) const -> std::strong_ordering {
-    return std::lexicographical_compare_three_way(head, tail, rhs.head, rhs.tail);
+    return std::lexicographical_compare_three_way(head, head + n, rhs.head, rhs.head + rhs.n);
   }
 
   template <std::same_as<meta_basic_string_view<CharT>> RhsType>
   constexpr bool operator==(RhsType rhs) const {
-    return std::ranges::equal(head, tail, rhs.head, rhs.tail);
+    return std::ranges::equal(head, head + n, rhs.head, rhs.head + rhs.n);
   }
 
   template <class Alloc>
   constexpr auto operator<=>(const std_string_of_alloc<Alloc>& rhs) const -> std::strong_ordering {
-    return std::lexicographical_compare_three_way(head, tail, rhs.begin(), rhs.end());
+    return std::lexicographical_compare_three_way(head, head + n, rhs.begin(), rhs.end());
   }
 
   template <class Alloc>
   constexpr bool operator==(const std_string_of_alloc<Alloc>& rhs) const {
-    return std::ranges::equal(head, tail, rhs.begin(), rhs.end());
+    return std::ranges::equal(head, head + n, rhs.begin(), rhs.end());
   }
 
   constexpr auto operator<=>(const CharT* rhs) const -> std::strong_ordering {
@@ -181,11 +182,11 @@ public:
       return size() <=> 0;  // nullptr as empty string
     }
     if (head == nullptr) {
-      return (rhs == nullptr) || (*rhs == '\0') ? std::strong_ordering::equal
-                                                : std::strong_ordering::less;
+      auto rhs_is_empty = (rhs == nullptr) || (*rhs == '\0');
+      return rhs_is_empty ? std::strong_ordering::equal : std::strong_ordering::less;
     }
     const auto* rhs_tail = std::ranges::find(rhs, std::unreachable_sentinel, '\0');
-    return std::lexicographical_compare_three_way(head, tail, rhs, rhs_tail);
+    return std::lexicographical_compare_three_way(head, head + n, rhs, rhs_tail);
   }
 
   constexpr bool operator==(const CharT* rhs) const {
@@ -193,7 +194,7 @@ public:
       return size() == 0;  // nullptr as empty string
     }
     const auto* rhs_tail = std::ranges::find(rhs, std::unreachable_sentinel, '\0');
-    return std::ranges::equal(head, tail, rhs, rhs_tail);
+    return std::ranges::equal(head, head + n, rhs, rhs_tail);
   }
 };
 

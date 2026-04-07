@@ -68,7 +68,7 @@ struct fully_dense_integral_key_map {
 // -------- Factory --------
 
 template <bool AlignmentAdjusted, class KVPair>
-constexpr auto fully_dense_integral_key_map_factory(meta_span<KVPair> sorted_entries)
+consteval auto fully_dense_integral_key_map_factory(meta_span<KVPair> sorted_entries)
     -> std::meta::info {
   using dest_type = fully_dense_integral_key_map<AlignmentAdjusted, KVPair>;
   using value_type = typename dest_type::value_type;

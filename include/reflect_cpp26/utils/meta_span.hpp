@@ -48,7 +48,7 @@ struct meta_span {
   using difference_type = ptrdiff_t;
 
   const T* head = nullptr;
-  const T* tail = nullptr;
+  size_t n = 0;
 
   constexpr meta_span() = default;
 
@@ -56,7 +56,7 @@ struct meta_span {
   static consteval auto from_array(const T (&arr)[N]) -> meta_span {
     auto res = meta_span{};
     res.head = arr;
-    res.tail = arr + N;
+    res.n = N;
     return res;
   }
 
@@ -64,19 +64,19 @@ struct meta_span {
   static consteval auto from_array(const std::array<T, N>& arr) -> meta_span {
     auto res = meta_span{};
     res.head = arr.data();
-    res.tail = arr.data() + N;
+    res.n = N;
     return res;
   }
 
   static consteval auto from_std_span(std::span<const T> span) -> meta_span {
     auto res = meta_span{};
     res.head = span.data();
-    res.tail = span.data() + span.size();
+    res.n = span.size();
     return res;
   }
 
   constexpr operator std::span<const T>() const {
-    return {head, tail};
+    return {head, n};
   }
 
   constexpr auto operator[](size_t index) const -> const T& {
@@ -88,15 +88,15 @@ struct meta_span {
   }
 
   constexpr auto back() const -> const T& {
-    return tail[-1];
+    return head[n - 1];
   }
 
   constexpr auto size() const -> size_t {
-    return tail - head;
+    return n;
   }
 
   constexpr auto empty() const -> bool {
-    return tail == head;
+    return n == 0;
   }
 
   constexpr auto data() const -> const T* {
@@ -108,7 +108,7 @@ struct meta_span {
   }
 
   constexpr auto end() const -> const T* {
-    return tail;
+    return head + n;
   }
 
   constexpr auto first(size_t n) const -> meta_span {
@@ -123,9 +123,9 @@ struct meta_span {
     auto res = meta_span{};
     res.head = this->head + offset;
     if (count == std::dynamic_extent) {
-      res.tail = this->tail;
+      res.n = this->n - offset;
     } else {
-      res.tail = res.head + count;
+      res.n = count;
     }
     return res;
   }

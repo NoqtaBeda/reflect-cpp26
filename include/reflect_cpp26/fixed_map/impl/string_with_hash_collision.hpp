@@ -64,7 +64,7 @@ struct string_key_map_with_hash_collision {
 // -------- Factory --------
 
 template <bool AlignmentAdjusted, class Policy, class KVPair>
-constexpr auto string_key_map_with_hash_collision_factory(const std::vector<KVPair>& kv_pairs,
+consteval auto string_key_map_with_hash_collision_factory(const std::vector<KVPair>& kv_pairs,
                                                           const std::vector<uint64_t>& hash_values)
     -> std::meta::info {
   using dest_type = string_key_map_with_hash_collision<AlignmentAdjusted, Policy, KVPair>;

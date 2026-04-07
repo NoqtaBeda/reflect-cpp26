@@ -25,6 +25,7 @@
 
 #include <bit>
 #include <charconv>
+#include <climits>
 #include <reflect_cpp26/type_traits/arithmetic_types.hpp>
 #include <reflect_cpp26/utils/ctype.hpp>
 #include <reflect_cpp26/utils/meta_string_view.hpp>

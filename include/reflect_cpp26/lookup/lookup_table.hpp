@@ -333,13 +333,13 @@ template <class T, auto MemRefl>
 constexpr auto to_pointer_v = static_cast<T*>(&[:MemRefl:]);
 
 template <class T, class Mem>
-constexpr auto to_pointer_to_member(std::meta::info member) {
+consteval auto to_pointer_to_member(std::meta::info member) {
   auto Refl = std::meta::reflect_constant(member);
   return extract<Mem T::*>(^^to_pointer_to_member_v, ^^T, ^^Mem, Refl);
 }
 
 template <class T>
-constexpr auto to_pointer(std::meta::info member) {
+consteval auto to_pointer(std::meta::info member) {
   return extract<T*>(^^to_pointer_v, ^^T, std::meta::reflect_constant(member));
 }
 

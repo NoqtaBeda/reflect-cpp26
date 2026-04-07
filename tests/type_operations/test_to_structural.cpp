@@ -22,6 +22,7 @@
 
 #include <cstdio>
 #include <numeric>
+#include <print>
 #include <reflect_cpp26/type_operations/to_structural.hpp>
 #include <reflect_cpp26/utils/to_string.hpp>
 
@@ -36,8 +37,7 @@ constexpr auto span_1 = rfl::to_structural(std::vector<int>{1, 2, 3, 4, 5});
 static_assert(std::is_same_v<std::remove_const_t<decltype(span_1)>, rfl::meta_span<int>>);
 
 constexpr auto span_2 = rfl::to_structural({"Cat", "Dog", "Rabbit"});
-static_assert(
-    std::is_same_v<std::remove_const_t<decltype(span_2)>, rfl::meta_span<rfl::meta_string_view>>);
+static_assert(std::is_same_v<decltype(span_2), const rfl::meta_span<rfl::meta_string_view>>);
 
 // (2) Tuple-like to meta_tuple
 constexpr auto meta_tup =
@@ -79,7 +79,7 @@ constexpr auto u16_literal_conv = rfl::to_structural(u16_literal);
 static_assert(std::is_same_v<decltype(u16_literal_conv), const rfl::meta_u16string_view>);
 static_assert(u16_literal_conv.size() == 5);
 static_assert(u16_literal_conv[4] == u'界');
-static_assert(*u16_literal_conv.tail == '\0');
+static_assert(u16_literal_conv.head[u16_literal_conv.n] == '\0');
 
 constexpr auto printf_fptr = printf;
 constexpr auto printf_fptr_conv = rfl::to_structural(printf_fptr);
@@ -139,7 +139,7 @@ constexpr auto char_array_conv = rfl::to_structural(char_array);
 static_assert(std::is_same_v<decltype(char_array_conv), const rfl::meta_string_view>);
 static_assert(char_array_conv.size() == 7);
 static_assert(char_array_conv[4] == 'o');
-static_assert(*char_array_conv.tail == '\0');
+static_assert(char_array_conv.head[char_array_conv.n] == '\0');
 
 // std::initializer_list
 constexpr auto float_il_conv = rfl::to_structural({1.0f, 2.5f, 3.75f, 5.875f});

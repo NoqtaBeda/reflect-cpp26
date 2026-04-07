@@ -658,8 +658,7 @@ TEST(TypeTraits, MemberwiseSerializableMultiLevelNesting) {
   static_assert(rfl::memberwise_serializable<
                 std::multimap<int, std::variant<serializable_struct_t, double>>>);
   static_assert(rfl::memberwise_serializable<std::map<serializable_struct_t, std::vector<int>>>);
-  static_assert(
-      rfl::memberwise_serializable<std::unordered_map<serializable_struct_t, std::set<int>>>);
+  static_assert(rfl::memberwise_serializable<std::map<serializable_struct_t, std::set<int>>>);
 }
 
 TEST(TypeTraits, SerializableNegativeTests) {

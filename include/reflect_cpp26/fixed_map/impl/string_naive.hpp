@@ -56,7 +56,7 @@ struct naive_string_key_map {
 // -------- Factory --------
 
 template <class Policy, class KVPair>
-constexpr auto naive_string_key_map_factory(meta_span<KVPair> entries) -> std::meta::info {
+consteval auto naive_string_key_map_factory(meta_span<KVPair> entries) -> std::meta::info {
   auto res = naive_string_key_map<Policy, KVPair>{._entries = entries};
   return std::meta::reflect_constant(res);
 }

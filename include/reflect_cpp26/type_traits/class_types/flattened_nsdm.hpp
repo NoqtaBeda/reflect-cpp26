@@ -23,6 +23,7 @@
 #ifndef REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_FLATTENED_NSDM_HPP
 #define REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_FLATTENED_NSDM_HPP
 
+#include <climits>
 #include <reflect_cpp26/type_traits/class_types/flattenable.hpp>
 #include <reflect_cpp26/utils/constant.hpp>
 

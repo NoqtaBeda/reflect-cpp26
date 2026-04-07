@@ -21,6 +21,7 @@
  **/
 
 #include <cstdio>
+#include <print>
 #include <reflect_cpp26/type_traits/structural_types.hpp>
 #include <reflect_cpp26/utils/constant.hpp>
 #include <reflect_cpp26/utils/meta_span.hpp>

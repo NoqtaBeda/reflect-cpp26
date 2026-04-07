@@ -31,6 +31,12 @@
 
 namespace rfl = reflect_cpp26;
 
+template <class T, class U>
+struct my_pair {
+  T first;
+  U second;
+};
+
 int g_first = 1;
 const int g_second = 2;
 
@@ -134,7 +140,7 @@ TEST(UtilsMetaUtility, IsAddressableClassMember) {
   [[maybe_unused]] const int* ref_second_fptr = &C::ref_second;
 
   // Non-static member functions (including implicitly defined ones): ✔️
-  using P = std::pair<int, int>;
+  using P = my_pair<int, int>;
   constexpr auto copy_assignment_operator = [] consteval {
     for (auto member : members_of(^^P, std::meta::access_context::current())) {
       if (is_copy_assignment(member)) return member;
@@ -155,7 +161,13 @@ TEST(UtilsMetaUtility, IsAddressableClassMember) {
   // constexpr auto _ = &C::d;
 
   // Constructors and destructures: ❌
-  static_assert(NOT rfl::is_addressable_class_member(^^C::C));
+  constexpr auto constructor = [] consteval {
+    for (auto member : members_of(^^C, std::meta::access_context::current())) {
+      if (is_constructor(member)) return member;
+    }
+    rfl::compile_error("Implementation error");
+  }();
+  static_assert(NOT rfl::is_addressable_class_member(constructor));
   static_assert(NOT rfl::is_addressable_class_member(^^C::~C));
   // ERROR: qualified reference to 'C' is a constructor name rather than a type in this context
   // constexpr auto _ = &C::C;
@@ -221,9 +233,15 @@ TEST(UtilsMetaUtility, IsAddressableNonClassMember) {
   static_assert(rfl::is_addressable_non_class_member(^^std::popcount<unsigned>));
 
   // Class members: ❌
+  constexpr auto constructor = [] consteval {
+    for (auto member : members_of(^^C, std::meta::access_context::current())) {
+      if (is_constructor(member)) return member;
+    }
+    rfl::compile_error("Implementation error");
+  }();
   static_assert(NOT rfl::is_addressable_non_class_member(^^C::a));
   static_assert(NOT rfl::is_addressable_non_class_member(^^C::constant));
-  static_assert(NOT rfl::is_addressable_non_class_member(^^C::C));
+  static_assert(NOT rfl::is_addressable_non_class_member(constructor));
   static_assert(NOT rfl::is_addressable_non_class_member(^^C::~C));
   static_assert(NOT rfl::is_addressable_non_class_member(^^C::dump));
   static_assert(NOT rfl::is_addressable_non_class_member(^^C::get));

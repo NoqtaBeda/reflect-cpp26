@@ -107,7 +107,7 @@ struct string_key_map_by_hash_table_slow
 // -------- Factory --------
 
 template <bool AA, class Policy, class KVPair>
-constexpr auto string_key_map_by_hash_table_factory(const std::vector<KVPair>& kv_pairs,
+consteval auto string_key_map_by_hash_table_factory(const std::vector<KVPair>& kv_pairs,
                                                     const std::vector<uint64_t>& hash_values,
                                                     uint64_t bucket_size) -> std::meta::info {
   auto table =

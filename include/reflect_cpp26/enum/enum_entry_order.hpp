@@ -24,6 +24,12 @@
 #define REFLECT_CPP26_ENUM_ENUM_ENTRY_ORDER_HPP
 
 namespace reflect_cpp26 {
+namespace impl {
+// Used by other components in reflect_cpp26
+struct invalid_enum_entry_order_tag_t {};
+constexpr auto invalid_enum_entry_order_tag = invalid_enum_entry_order_tag_t{};
+}  // namespace impl
+
 enum class enum_entry_order {
   original,
   by_value,

@@ -50,7 +50,7 @@ struct string_key_identity_policy_t {
                                const StringU& u,
                                equal_length_tag_t) {
     const auto* iu = std::ranges::data(u);
-    for (const auto* it = t.head; it < t.tail; ++it, ++iu) {
+    for (const auto* it = t.head; it < t.head + t.n; ++it, ++iu) {
       if (*it != *iu) {
         return false;
       }
@@ -82,7 +82,7 @@ struct string_key_case_insensitive_policy_t {
                                const StringU& u,
                                equal_length_tag_t) {
     const auto* iu = std::ranges::data(u);
-    for (const auto* it = t.head; it < t.tail; ++it, ++iu) {
+    for (const auto* it = t.head; it < t.head + t.n; ++it, ++iu) {
       if (*it != ascii_tolower(*iu)) {
         return false;
       }

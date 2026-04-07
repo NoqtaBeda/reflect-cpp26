@@ -103,7 +103,7 @@ struct binary_search_integral_key_map {
 // -------- Factory --------
 
 template <class KVPair>
-constexpr auto linear_search_integral_key_map_factory(meta_span<KVPair> sorted_entries)
+consteval auto linear_search_integral_key_map_factory(meta_span<KVPair> sorted_entries)
     -> std::meta::info {
   auto res = linear_search_integral_key_map<KVPair>{
       ._entries = sorted_entries,
@@ -112,7 +112,7 @@ constexpr auto linear_search_integral_key_map_factory(meta_span<KVPair> sorted_e
 }
 
 template <bool AlignmentAdjusted, class KVPair>
-constexpr auto binary_search_integral_key_map_factory(meta_span<KVPair> sorted_entries)
+consteval auto binary_search_integral_key_map_factory(meta_span<KVPair> sorted_entries)
     -> std::meta::info {
   using dest_type = binary_search_integral_key_map<AlignmentAdjusted, KVPair>;
   using span_element_type = typename dest_type::span_element_type;

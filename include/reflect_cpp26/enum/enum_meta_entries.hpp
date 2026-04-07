@@ -33,7 +33,7 @@
 namespace reflect_cpp26 {
 namespace impl {
 template <class E, enum_entry_order Order>
-constexpr auto enum_meta_entries_array_v = compile_error("Invalid Order.");
+constexpr auto enum_meta_entries_array_v = invalid_enum_entry_order_tag;
 
 template <class E>
 consteval auto make_enum_meta_entries_original_order()

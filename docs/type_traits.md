@@ -34,7 +34,7 @@ See [unit test](../tests/type_traits/test_structural_types.cpp) for examples and
 
 ### Flattenable Type
 
-Defined in header `<reflect_cpp26/type_traits/class_types/flattenable.hpp>`.
+Defined in header `<reflect_cpp26/type_traits/class_types/flattened_nsdm.hpp>`.
 
 ```cpp
 namespace reflect_cpp26 {
@@ -245,10 +245,10 @@ struct flattened_data_member_info {
 };
 
 template <partially_flattenable_class T>
-constexpr std::array<flattened_data_member_info, /*N*/> all_flattened_nonstatic_data_members_v;
+constexpr flattened_data_member_info (&all_flattened_nonstatic_data_members_v)[/* N */];
 
 template <partially_flattenable_class T>
-constexpr std::array<flattened_data_member_info, /*N*/> public_flattened_nonstatic_data_members_v;
+constexpr flattened_data_member_info (&public_flattened_nonstatic_data_members_v)[/* N */];
 
 }  // namespace reflect_cpp26
 ```
@@ -294,22 +294,24 @@ public:
 | `DemoStructC::c1` | 4 | 40 | 0 |
 | `DemoStructC::c2` | 4 | 44 | 4 |
 
-The variable template `all_flattened_nonstatic_data_members_v` gets a full list of non-static data members of non-union class `T`, including direct and inherited ones. Members are sorted in ascending order by actual offset relative to `T`.
+The variable template `all_flattened_nonstatic_data_members_v` (which is a **reference** to C-style array) gets a full list of non-static data members of non-union class `T`, including direct and inherited ones. Members are sorted in ascending order by actual offset relative to `T`.
 
-The variable template `public_flattened_nonstatic_data_members_v` gets a full list of non-static data members with public access of non-union class `T` (i.e. each member in the list can be accessed globally via class `T`), including direct and inherited ones. Members are sorted in ascending order by actual offset relative to `T`.
+The variable template `public_flattened_nonstatic_data_members_v` (which is a **reference** to a C-style array) gets a full list of non-static data members with public access of non-union class `T` (i.e. each member in the list can be accessed globally via class `T`), including direct and inherited ones. Members are sorted in ascending order by actual offset relative to `T`.
 
 Example:
 ```cpp
 namespace refl = reflect_cpp26;
 
-// | `DemoStructA::a1` | 8 | 0 | 0 |
-// | `DemoStructA::a2` | 4 | 8 | 8 |
-// | `DemoStructB::b1` | 8 | 16 | 0 |
+// `members` is a reference to a C-style array.
+constexpr const auto& members = refl::all_flattened_nonstatic_data_members_v<DemoStructC>;
+// | `DemoStructA::a1` |  8 |  0 | 0 |
+// | `DemoStructA::a2` |  4 |  8 | 8 |
+// | `DemoStructB::b1` |  8 | 16 | 0 |
 // | `DemoStructB::b2` | 16 | 24 | 8 |
-// | `DemoStructC::c1` | 4 | 40 | 0 |
-// | `DemoStructC::c2` | 4 | 44 | 4 |
-template for (constexpr auto M : refl::all_flattened_nonstatic_data_members_v<DemoStructC>) {
-  std::println("| `{}::{}` | {} | {} | {} |",
+// | `DemoStructC::c1` |  4 | 40 | 0 |
+// | `DemoStructC::c2` |  4 | 44 | 4 |
+template for (constexpr auto M : members) {
+  std::println("| `{}::{}` | {:2d} | {:2d} | {} |",
                identifier_of(M.direct_parent()),
                identifier_of(M.member),
                size_of(M.member),
@@ -328,15 +330,12 @@ namespace reflect_cpp26 {
 template <class T>
 concept serializable = /* ... */;
 
-template <class T>
-concept memberwise_serializable = /* ... */;
-
 }  // namespace reflect_cpp26
 ```
 
 These concepts test whether types can be serialized (converted to/from a portable format).
 
-The concept `serializable<T>` tests whether `std::remove_cv_t<T>` can be serialized. A type is serializable if it satisfies one of the following:
+The concept `serializable<T>` tests whether `std::remove_cv_t<T>` can be serialized in a memberwise manner *recursively*. A type is memberwise serializable if it satisfies one of the following:
 
 * **`std::monostate`**: serves as a null placeholder;
 * **Arithmetic types**: all integral types (including `bool` and character types) and floating-point types;
@@ -347,19 +346,11 @@ The concept `serializable<T>` tests whether `std::remove_cv_t<T>` can be seriali
 * **Tuple-like types**: types satisfying `tuple_like` whose all element types are `serializable`;
 * **`std::optional<T>`**: if `T` is `serializable`;
 * **`std::variant<Ts...>`**: if all alternative types `Ts...` are `serializable`.
+* **Memberwise serializable class types**: It is a `flattenable_class` and:
+  * all of its non-static data members (including inherited ones) are `serializable`;
+  * no duplicated field name after flattening.
 
-The concept `memberwise_serializable<T>` tests whether `std::remove_cv_t<T>` can be serialized in a memberwise manner *recursively*. A type is memberwise serializable if it satisfies one of the following:
-
-* **`std::monostate`**: serves as a null placeholder;
-* **Arithmetic types**: all integral types (including `bool` and character types) and floating-point types;
-* **Enumeration types**: all enum types;
-* **String-like types**: types that satisfy the `string_like` concept (see [String-like Types](#string-like-types));
-* **Array types**: bounded and unbounded arrays whose element type is `memberwise_serializable`;
-* **Range types**: types satisfying `std::ranges::range` whose `value_type` is `memberwise_serializable`;
-* **Tuple-like types**: types satisfying `tuple_like` whose all element types are `memberwise_serializable`;
-* **`std::optional<T>`**: if `T` is `memberwise_serializable`;
-* **`std::variant<Ts...>`**: if all alternative types `Ts...` are `memberwise_serializable`.
-* **Memberwise serializable class types**: It is a `flattenable_class` and all of its non-static data members (including inherited ones) are `memberwise_serializable`.
+Note: pointers and references are NOT `serializable`.
 
 See [unit test](../tests/type_traits/test_serializable_types.cpp) for examples and details.
 

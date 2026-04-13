@@ -20,7 +20,10 @@
  * SOFTWARE.
  **/
 
+#include <gmock/gmock-matchers.h>
+
 #include <optional>
+#include <reflect_cpp26/enum/enum_bitwise_operators.hpp>
 #include <reflect_cpp26/type_operations/serialize_to_json.hpp>
 #include <variant>
 
@@ -43,6 +46,15 @@ enum class color_t {
   green,
   blue
 };
+
+enum class permissions_t : int {
+  read = 1,
+  write = 2,
+  execute = 4,
+};
+REFLECT_CPP26_DEFINE_ENUM_BITWISE_BINARY_OPERATORS(permissions_t)
+template <>
+constexpr auto rfl::is_enum_flag_v<permissions_t> = true;
 
 TEST(TypeOperationsSerializeToJson, BasicIntegers) {
   EXPECT_EQ("42", rfl::serialize_to_json(42));
@@ -89,6 +101,32 @@ TEST(TypeOperationsSerializeToJson, VectorOfInts) {
   EXPECT_EQ("[1,2,3]", rfl::serialize_to_json(vec));
 }
 
+TEST(TypeOperationsSerializeToJson, VectorOfBools) {
+  std::vector<bool> vec{true, false, true};
+  EXPECT_EQ("[true,false,true]", rfl::serialize_to_json(vec));
+}
+
+TEST(TypeOperationsSerializeToJson, VectorOfBoolsEmpty) {
+  std::vector<bool> vec{};
+  EXPECT_EQ("[]", rfl::serialize_to_json(vec));
+}
+
+TEST(TypeOperationsSerializeToJson, VectorOfBoolsAllTrue) {
+  std::vector<bool> vec{true, true, true};
+  EXPECT_EQ("[true,true,true]", rfl::serialize_to_json(vec));
+}
+
+TEST(TypeOperationsSerializeToJson, VectorOfBoolsAllFalse) {
+  std::vector<bool> vec{false, false, false};
+  EXPECT_EQ("[false,false,false]", rfl::serialize_to_json(vec));
+}
+
+// Note: std::vector<char> is handled as a single string since it satisfies string_like concept
+TEST(TypeOperationsSerializeToJson, VectorOfChars) {
+  std::vector<char> vec{'a', 'b', 'c'};
+  EXPECT_EQ(uR"("abc")", rfl::serialize_to_json<char16_t>(vec));
+}
+
 TEST(TypeOperationsSerializeToJson, EmptyVector) {
   std::vector<int> vec{};
   EXPECT_EQ("[]", rfl::serialize_to_json(vec));
@@ -133,6 +171,120 @@ TEST(TypeOperationsSerializeToJson, EnumToInt) {
 TEST(TypeOperationsSerializeToJson, EnumToString) {
   constexpr rfl::serialize_options opts{.enum_to_string = true};
   EXPECT_EQ(R"("red")", (rfl::serialize_to_json<char, opts>(color_t::red)));
+}
+
+TEST(TypeOperationsSerializeToJson, EnumFlagAsInteger) {
+  EXPECT_EQ("1", rfl::serialize_to_json(permissions_t::read));
+  EXPECT_EQ("3", rfl::serialize_to_json(permissions_t::read | permissions_t::write));
+  EXPECT_EQ(
+      "7",
+      rfl::serialize_to_json(permissions_t::read | permissions_t::write | permissions_t::execute));
+}
+
+TEST(TypeOperationsSerializeToJson, EnumFlagToString) {
+  constexpr rfl::serialize_options opts{.enum_to_string = true};
+  EXPECT_EQ(R"("read")", (rfl::serialize_to_json<char, opts>(permissions_t::read)));
+  EXPECT_THAT((rfl::serialize_to_json<char, opts>(permissions_t::read | permissions_t::write)),
+              testing::AnyOf(R"("read|write")", R"("write|read")"));
+  EXPECT_THAT((rfl::serialize_to_json<char, opts>(permissions_t::read | permissions_t::write
+                                                  | permissions_t::execute)),
+              testing::AnyOf(R"("read|write|execute")",
+                             R"("read|execute|write")",
+                             R"("write|read|execute")",
+                             R"("write|execute|read")",
+                             R"("execute|read|write")",
+                             R"("execute|write|read")"));
+}
+
+TEST(TypeOperationsSerializeToJson, EnumFlagToStringInvalidHalts) {
+  constexpr rfl::serialize_options opts{.enum_to_string = true, .halts_on_invalid_enum = true};
+  auto result = rfl::serialize_to_json<char, opts>(static_cast<permissions_t>(8));
+  EXPECT_EQ(std::nullopt, result);
+}
+
+TEST(TypeOperationsSerializeToJson, EnumFlagToStringInvalidNull) {
+  constexpr rfl::serialize_options opts{.enum_to_string = true, .halts_on_invalid_enum = false};
+  EXPECT_EQ("null", (rfl::serialize_to_json<char, opts>(static_cast<permissions_t>(8))));
+}
+
+TEST(TypeOperationsSerializeToJson, EnumFlagInStruct) {
+  struct file_t {
+    std::string name;
+    permissions_t mode;
+  };
+  constexpr rfl::serialize_options opts{.enum_to_string = true};
+  file_t f{"script.sh", permissions_t::read | permissions_t::execute};
+  EXPECT_THAT((rfl::serialize_to_json<char, opts>(f)),
+              testing::AnyOf(R"({"name":"script.sh","mode":"read|execute"})",
+                             R"({"name":"script.sh","mode":"execute|read"})"));
+}
+
+TEST(TypeOperationsSerializeToJson, EnumFlagInVector) {
+  constexpr rfl::serialize_options opts{.enum_to_string = true};
+  std::vector<permissions_t> vec{
+      permissions_t::read, permissions_t::write, permissions_t::read | permissions_t::write};
+  EXPECT_THAT(
+      (rfl::serialize_to_json<char, opts>(vec)),
+      testing::AnyOf(R"(["read","write","read|write"])", R"(["read","write","write|read"])"));
+}
+
+TEST(TypeOperationsSerializeToJson, EnumFlagEmptySet) {
+  constexpr rfl::serialize_options opts{.enum_to_string = true};
+  auto result = rfl::serialize_to_json<char, opts>(static_cast<permissions_t>(0));
+  EXPECT_EQ(R"("")", result);
+}
+
+TEST(TypeOperationsSerializeToJson, EnumFlagAllFlags) {
+  constexpr rfl::serialize_options opts{.enum_to_string = true};
+  auto all = permissions_t::read | permissions_t::write | permissions_t::execute;
+  EXPECT_THAT((rfl::serialize_to_json<char, opts>(all)),
+              testing::AnyOf(R"("read|write|execute")",
+                             R"("read|execute|write")",
+                             R"("write|read|execute")",
+                             R"("write|execute|read")",
+                             R"("execute|read|write")",
+                             R"("execute|write|read")"));
+}
+
+TEST(TypeOperationsSerializeToJson, EnumFlagMixedWithRegularEnum) {
+  struct config_t {
+    color_t color;
+    permissions_t perms;
+  };
+  constexpr rfl::serialize_options opts{.enum_to_string = true};
+  config_t c{color_t::blue, permissions_t::read | permissions_t::write};
+  EXPECT_THAT((rfl::serialize_to_json<char, opts>(c)),
+              testing::AnyOf(R"({"color":"blue","perms":"read|write"})",
+                             R"({"color":"blue","perms":"write|read"})"));
+}
+
+TEST(TypeOperationsSerializeToJson, EnumFlagInOptional) {
+  constexpr rfl::serialize_options opts{.enum_to_string = true};
+  std::optional<permissions_t> present{permissions_t::read | permissions_t::execute};
+  std::optional<permissions_t> empty{std::nullopt};
+  EXPECT_THAT((rfl::serialize_to_json<char, opts>(present)),
+              testing::AnyOf(R"("read|execute")", R"("execute|read")"));
+  EXPECT_EQ("null", (rfl::serialize_to_json<char, opts>(empty)));
+}
+
+TEST(TypeOperationsSerializeToJson, EnumFlagInVariant) {
+  constexpr rfl::serialize_options opts{.enum_to_string = true};
+  std::variant<permissions_t, int> v1{permissions_t::write};
+  std::variant<permissions_t, int> v2{42};
+  EXPECT_EQ(R"("write")", (rfl::serialize_to_json<char, opts>(v1)));
+  EXPECT_EQ("42", (rfl::serialize_to_json<char, opts>(v2)));
+}
+
+TEST(TypeOperationsSerializeToJson, EnumFlagWithChar16T) {
+  constexpr rfl::serialize_options opts{.enum_to_string = true};
+  EXPECT_THAT((rfl::serialize_to_json<char16_t, opts>(permissions_t::read | permissions_t::write)),
+              testing::AnyOf(u"\"read|write\"", u"\"write|read\""));
+}
+
+TEST(TypeOperationsSerializeToJson, EnumFlagWithChar32T) {
+  constexpr rfl::serialize_options opts{.enum_to_string = true};
+  EXPECT_THAT((rfl::serialize_to_json<char32_t, opts>(permissions_t::read | permissions_t::write)),
+              testing::AnyOf(U"\"read|write\"", U"\"write|read\""));
 }
 
 TEST(TypeOperationsSerializeToJson, Variant1) {
@@ -205,6 +357,16 @@ TEST(TypeOperationsSerializeToJson, VectorWithIndent) {
             rfl::serialize_to_json(vec, 2, ' '));
 }
 
+TEST(TypeOperationsSerializeToJson, VectorOfBoolsWithIndent) {
+  std::vector<bool> vec{true, false, true};
+  EXPECT_EQ(R"([
+  true,
+  false,
+  true
+])",
+            rfl::serialize_to_json(vec, 2, ' '));
+}
+
 TEST(TypeOperationsSerializeToJson, Monostate) {
   std::monostate m{};
   EXPECT_EQ("null", rfl::serialize_to_json(m));
@@ -223,15 +385,6 @@ TEST(TypeOperationsSerializeToJson, VectorOfOptionals) {
 TEST(TypeOperationsSerializeToJson, StringWithSpecialChars) {
   std::string s{"hello\nworld\ttab"};
   EXPECT_EQ(R"("hello\nworld\ttab")", rfl::serialize_to_json(s));
-}
-
-TEST(TypeOperationsSerializeToJson, StringWithAllEscapeChars) {
-  std::string s = "\"test\\/\b\f\n\r\t";
-  auto result = rfl::serialize_to_json(s);
-  EXPECT_TRUE(result.find(R"(\")") != std::string::npos);
-  EXPECT_TRUE(result.find(R"(\\)") != std::string::npos);
-  EXPECT_TRUE(result.find("\\n") != std::string::npos);
-  EXPECT_TRUE(result.find("\\t") != std::string::npos);
 }
 
 TEST(TypeOperationsSerializeToJson, StringWithMixedContent) {
@@ -303,10 +456,9 @@ TEST(TypeOperationsSerializeToJson, TripleNestedStruct) {
     employee_t ceo;
   };
   company_t company{"TechCorp", {"Alice", {"123 Main St", "New York"}}};
-  auto result = rfl::serialize_to_json(company);
-  EXPECT_TRUE(result.find(R"("name":"TechCorp")") != std::string::npos);
-  EXPECT_TRUE(result.find(R"("street":"123 Main St")") != std::string::npos);
-  EXPECT_TRUE(result.find(R"("city":"New York")") != std::string::npos);
+  EXPECT_EQ(
+      R"({"name":"TechCorp","ceo":{"name":"Alice","address":{"street":"123 Main St","city":"New York"}}})",
+      rfl::serialize_to_json(company));
 }
 
 TEST(TypeOperationsSerializeToJson, NestedOptionalInVector) {
@@ -330,6 +482,15 @@ TEST(TypeOperationsSerializeToJson, OptionalStructWithValue) {
 TEST(TypeOperationsSerializeToJson, VectorOfVariants) {
   std::vector<std::variant<int, std::string>> vec{42, "hello", 100, "world"};
   EXPECT_EQ(R"([42,"hello",100,"world"])", rfl::serialize_to_json(vec));
+}
+
+TEST(TypeOperationsSerializeToJson, VectorOfBoolsInStruct) {
+  struct settings_t {
+    std::string name;
+    std::vector<bool> flags;
+  };
+  settings_t s{"debug", {true, false, true, false}};
+  EXPECT_EQ(R"({"name":"debug","flags":[true,false,true,false]})", rfl::serialize_to_json(s));
 }
 
 TEST(TypeOperationsSerializeToJson, MapLikeWithVector) {
@@ -364,13 +525,20 @@ TEST(TypeOperationsSerializeToJson, StructWithAllTypes) {
             rfl::serialize_to_json(m));
 }
 
+// The expected result shall be INDENTED by 2 spaces. Also, make the expected as raw string.
 TEST(TypeOperationsSerializeToJson, NestedWithIndentComplex) {
   std::vector<person_t> people{{"Alice", 30}, {"Bob", 25}};
-  auto result = rfl::serialize_to_json(people, 2, ' ');
-  EXPECT_TRUE(result.find(R"("name": "Alice")") != std::string::npos);
-  EXPECT_TRUE(result.find(R"("age": 30)") != std::string::npos);
-  EXPECT_TRUE(result.find(R"("name": "Bob")") != std::string::npos);
-  EXPECT_TRUE(result.find(R"("age": 25)") != std::string::npos);
+  EXPECT_EQ(R"([
+  {
+    "name": "Alice",
+    "age": 30
+  },
+  {
+    "name": "Bob",
+    "age": 25
+  }
+])",
+            rfl::serialize_to_json(people, 2, ' '));
 }
 
 TEST(TypeOperationsSerializeToJson, EmptyOptional) {
@@ -543,6 +711,54 @@ TEST(TypeOperationsSerializeToJson, UTF32String) {
   EXPECT_EQ(expected, rfl::serialize_to_json(s));
 }
 
+TEST(TypeOperationsSerializeToJson, UTF8StringToUtf16) {
+  std::u8string s = u8"你好";
+  constexpr auto expected = std::u16string_view{uR"("你好")"};
+  EXPECT_EQ(expected, rfl::serialize_to_json<char16_t>(s));
+}
+
+TEST(TypeOperationsSerializeToJson, UTF8StringToUtf32) {
+  std::u8string s = u8"你好";
+  constexpr auto expected = std::u32string_view{U"\"你好\""};
+  EXPECT_EQ(expected, rfl::serialize_to_json<char32_t>(s));
+}
+
+TEST(TypeOperationsSerializeToJson, UTF16StringToUtf8) {
+  std::u16string s = u"你好";
+  constexpr auto expected = std::u8string_view{u8R"("你好")"};
+  EXPECT_TRUE(expected == rfl::serialize_to_json<char8_t>(s));
+}
+
+TEST(TypeOperationsSerializeToJson, UTF16StringToUtf16) {
+  std::u16string s = u"你好";
+  constexpr auto expected = std::u16string_view{uR"("你好")"};
+  EXPECT_EQ(expected, rfl::serialize_to_json<char16_t>(s));
+}
+
+TEST(TypeOperationsSerializeToJson, UTF16StringToUtf32) {
+  std::u16string s = u"你好";
+  constexpr auto expected = std::u32string_view{U"\"你好\""};
+  EXPECT_EQ(expected, rfl::serialize_to_json<char32_t>(s));
+}
+
+TEST(TypeOperationsSerializeToJson, UTF32StringToUtf8) {
+  std::u32string s = U"你好";
+  constexpr auto expected = std::u8string_view{u8R"("你好")"};
+  EXPECT_TRUE(expected == rfl::serialize_to_json<char8_t>(s));
+}
+
+TEST(TypeOperationsSerializeToJson, UTF32StringToUtf16) {
+  std::u32string s = U"你好";
+  constexpr auto expected = std::u16string_view{uR"("你好")"};
+  EXPECT_EQ(expected, rfl::serialize_to_json<char16_t>(s));
+}
+
+TEST(TypeOperationsSerializeToJson, UTF32StringToUtf32) {
+  std::u32string s = U"你好";
+  constexpr auto expected = std::u32string_view{U"\"你好\""};
+  EXPECT_EQ(expected, rfl::serialize_to_json<char32_t>(s));
+}
+
 TEST(TypeOperationsSerializeToJson, UTF8VectorOfStrings) {
   std::vector<std::u8string> vec{u8"你好", u8"世界"};
   constexpr auto expected = std::string_view{R"(["你好","世界"])"};
@@ -559,6 +775,54 @@ TEST(TypeOperationsSerializeToJson, UTF32VectorOfStrings) {
   std::vector<std::u32string> vec{U"你好", U"世界"};
   constexpr auto expected = std::string_view{R"(["你好","世界"])"};
   EXPECT_EQ(expected, rfl::serialize_to_json(vec));
+}
+
+TEST(TypeOperationsSerializeToJson, UTF8VectorOfStringsToUtf16) {
+  std::vector<std::u8string> vec{u8"你好", u8"世界"};
+  constexpr auto expected = std::u16string_view{uR"(["你好","世界"])"};
+  EXPECT_EQ(expected, rfl::serialize_to_json<char16_t>(vec));
+}
+
+TEST(TypeOperationsSerializeToJson, UTF8VectorOfStringsToUtf32) {
+  std::vector<std::u8string> vec{u8"你好", u8"世界"};
+  constexpr auto expected = std::u32string_view{U"[\"你好\",\"世界\"]"};
+  EXPECT_EQ(expected, rfl::serialize_to_json<char32_t>(vec));
+}
+
+TEST(TypeOperationsSerializeToJson, UTF16VectorOfStringsToUtf8) {
+  std::vector<std::u16string> vec{u"你好", u"世界"};
+  constexpr auto expected = std::u8string_view{u8R"(["你好","世界"])"};
+  EXPECT_TRUE(expected == rfl::serialize_to_json<char8_t>(vec));
+}
+
+TEST(TypeOperationsSerializeToJson, UTF16VectorOfStringsToUtf16) {
+  std::vector<std::u16string> vec{u"你好", u"世界"};
+  constexpr auto expected = std::u16string_view{uR"(["你好","世界"])"};
+  EXPECT_EQ(expected, rfl::serialize_to_json<char16_t>(vec));
+}
+
+TEST(TypeOperationsSerializeToJson, UTF16VectorOfStringsToUtf32) {
+  std::vector<std::u16string> vec{u"你好", u"世界"};
+  constexpr auto expected = std::u32string_view{U"[\"你好\",\"世界\"]"};
+  EXPECT_EQ(expected, rfl::serialize_to_json<char32_t>(vec));
+}
+
+TEST(TypeOperationsSerializeToJson, UTF32VectorOfStringsToUtf8) {
+  std::vector<std::u32string> vec{U"你好", U"世界"};
+  constexpr auto expected = std::u8string_view{u8R"(["你好","世界"])"};
+  EXPECT_TRUE(expected == rfl::serialize_to_json<char8_t>(vec));
+}
+
+TEST(TypeOperationsSerializeToJson, UTF32VectorOfStringsToUtf16) {
+  std::vector<std::u32string> vec{U"你好", U"世界"};
+  constexpr auto expected = std::u16string_view{uR"(["你好","世界"])"};
+  EXPECT_EQ(expected, rfl::serialize_to_json<char16_t>(vec));
+}
+
+TEST(TypeOperationsSerializeToJson, UTF32VectorOfStringsToUtf32) {
+  std::vector<std::u32string> vec{U"你好", U"世界"};
+  constexpr auto expected = std::u32string_view{U"[\"你好\",\"世界\"]"};
+  EXPECT_EQ(expected, rfl::serialize_to_json<char32_t>(vec));
 }
 
 TEST(TypeOperationsSerializeToJson, StructWithUTF8String) {
@@ -642,12 +906,6 @@ TEST(TypeOperationsSerializeToJson, UTF8StringWithBackslash) {
   EXPECT_EQ(expected, rfl::serialize_to_json(s));
 }
 
-TEST(TypeOperationsSerializeToJson, UTF8StringWithAllEscapes) {
-  std::u8string s = u8"换行:\n制表:\t双引:\"反斜:\\";
-  constexpr auto expected = std::string_view{R"("换行:\n制表:\t双引:\"反斜:\\")"};
-  EXPECT_EQ(expected, rfl::serialize_to_json(s));
-}
-
 TEST(TypeOperationsSerializeToJson, UTF16StringWithNewline) {
   std::u16string s = u"hello\nworld";
   constexpr auto expected = std::string_view{R"("hello\nworld")"};
@@ -660,12 +918,6 @@ TEST(TypeOperationsSerializeToJson, UTF16StringWithQuote) {
   EXPECT_EQ(expected, rfl::serialize_to_json(s));
 }
 
-TEST(TypeOperationsSerializeToJson, UTF16StringWithChineseAndEscapes) {
-  std::u16string s = u"中文\n测试\t\"引号\"\\斜杠";
-  constexpr auto expected = std::string_view{R"("中文\n测试\t\"引号\"\\斜杠")"};
-  EXPECT_EQ(expected, rfl::serialize_to_json(s));
-}
-
 TEST(TypeOperationsSerializeToJson, UTF32StringWithNewline) {
   std::u32string s = U"hello\nworld";
   constexpr auto expected = std::string_view{R"("hello\nworld")"};
@@ -675,12 +927,6 @@ TEST(TypeOperationsSerializeToJson, UTF32StringWithNewline) {
 TEST(TypeOperationsSerializeToJson, UTF32StringWithQuote) {
   std::u32string s = U"他说:\"你好\"";
   constexpr auto expected = std::string_view{R"("他说:\"你好\"")"};
-  EXPECT_EQ(expected, rfl::serialize_to_json(s));
-}
-
-TEST(TypeOperationsSerializeToJson, UTF32StringWithChineseAndEscapes) {
-  std::u32string s = U"中文\n测试\t\"引号\"\\斜杠";
-  constexpr auto expected = std::string_view{R"("中文\n测试\t\"引号\"\\斜杠")"};
   EXPECT_EQ(expected, rfl::serialize_to_json(s));
 }
 
@@ -821,7 +1067,7 @@ TEST(TypeOperationsSerializeToJson, Char8TStringWithAllEscapes) {
 }
 
 TEST(TypeOperationsSerializeToJson, Char8TVector) {
-  std::vector<std::u8string> vec{u8"你好", u8"世界"};
+  std::vector<std::u16string> vec{u"你好", u"世界"};
   std::u8string result = rfl::serialize_to_json<char8_t>(vec);
   std::u8string expected = u8R"(["你好","世界"])";
   EXPECT_TRUE(expected == result);
@@ -872,10 +1118,10 @@ TEST(TypeOperationsSerializeToJson, Char8TWithIndent) {
 
 TEST(TypeOperationsSerializeToJson, Char8TStruct) {
   struct person_t {
-    std::u8string name;
-    std::u8string city;
+    std::u32string name;
+    std::u32string city;
   };
-  person_t p{u8"张三", u8"北京"};
+  person_t p{U"张三", U"北京"};
   std::u8string result = rfl::serialize_to_json<char8_t>(p);
   std::u8string expected = u8R"({"name":"张三","city":"北京"})";
   EXPECT_TRUE(expected == result);
@@ -908,7 +1154,7 @@ TEST(TypeOperationsSerializeToJson, Char16TStringWithBackslash) {
 }
 
 TEST(TypeOperationsSerializeToJson, Char16TVector) {
-  std::vector<std::u16string> vec{u"中文", u"测试"};
+  std::vector<std::u32string> vec{U"中文", U"测试"};
   std::u16string result = rfl::serialize_to_json<char16_t>(vec);
   std::u16string expected = u"[\"中文\",\"测试\"]";
   EXPECT_EQ(expected, result);
@@ -1001,7 +1247,7 @@ TEST(TypeOperationsSerializeToJson, Char32TStringWithBackslash) {
 }
 
 TEST(TypeOperationsSerializeToJson, Char32TVector) {
-  std::vector<std::u32string> vec{U"你好", U"世界"};
+  std::vector<std::u8string> vec{u8"你好", u8"世界"};
   std::u32string result = rfl::serialize_to_json<char32_t>(vec);
   std::u32string expected = U"[\"你好\",\"世界\"]";
   EXPECT_EQ(expected, result);
@@ -1046,14 +1292,14 @@ TEST(TypeOperationsSerializeToJson, Char32TWithIndent) {
 }
 
 TEST(TypeOperationsSerializeToJson, Char32TMap) {
-  std::map<std::u32string, std::u32string> m{{U"key1", U"值1"}, {U"key2", U"值2"}};
+  std::map<std::u8string, std::u16string> m{{u8"key1", u"值1"}, {u8"key2", u"值2"}};
   std::u32string result = rfl::serialize_to_json<char32_t>(m);
   std::u32string expected = U"{\"key1\":\"值1\",\"key2\":\"值2\"}";
   EXPECT_EQ(expected, result);
 }
 
 TEST(TypeOperationsSerializeToJson, Char32TMapIntKey) {
-  std::map<int, std::u32string> m{{1, U"一"}, {2, U"二"}};
+  std::map<int, std::u16string> m{{1, u"一"}, {2, u"二"}};
   std::u32string result = rfl::serialize_to_json<char32_t>(m);
   std::u32string expected = U"[[1,\"一\"],[2,\"二\"]]";
   EXPECT_EQ(expected, result);
@@ -1262,4 +1508,368 @@ TEST(TypeOperationsSerializeToJson, Char8TControlCharacters) {
   std::u8string result = rfl::serialize_to_json<char8_t>(s);
   std::u8string expected = u8R"("\u0000\u0001\u001F")";
   EXPECT_TRUE(expected == result);
+}
+
+TEST(TypeOperationsSerializeToJson, EscapeCharSerializeChar8ToChar8) {
+  std::string s = "换行\n制表\t双引\"反斜\\斜杠/";
+  std::string result = rfl::serialize_to_json<char>(s);
+  std::string expected = R"("换行\n制表\t双引\"反斜\\斜杠\/")";
+  EXPECT_EQ(expected, result);
+}
+
+TEST(TypeOperationsSerializeToJson, EscapeCharSerializeChar8ToChar8T) {
+  std::string s = "换行\n制表\t双引\"反斜\\斜杠/";
+  std::u8string result = rfl::serialize_to_json<char8_t>(s);
+  std::u8string expected = u8R"("换行\n制表\t双引\"反斜\\斜杠\/")";
+  EXPECT_TRUE(expected == result);
+}
+
+TEST(TypeOperationsSerializeToJson, EscapeCharSerializeChar8ToChar16T) {
+  std::string s = "换行\n制表\t双引\"反斜\\斜杠/";
+  std::u16string result = rfl::serialize_to_json<char16_t>(s);
+  std::u16string expected = u"\"换行\\n制表\\t双引\\\"反斜\\\\斜杠\\/\"";
+  EXPECT_EQ(expected, result);
+}
+
+TEST(TypeOperationsSerializeToJson, EscapeCharSerializeChar8ToChar32T) {
+  std::string s = "换行\n制表\t双引\"反斜\\斜杠/";
+  std::u32string result = rfl::serialize_to_json<char32_t>(s);
+  std::u32string expected = U"\"换行\\n制表\\t双引\\\"反斜\\\\斜杠\\/\"";
+  EXPECT_EQ(expected, result);
+}
+
+TEST(TypeOperationsSerializeToJson, EscapeCharSerializeChar8TToChar8) {
+  std::u8string s = u8"换行\n制表\t双引\"反斜\\斜杠/";
+  std::string result = rfl::serialize_to_json<char>(s);
+  std::string expected = R"("换行\n制表\t双引\"反斜\\斜杠\/")";
+  EXPECT_EQ(expected, result);
+}
+
+TEST(TypeOperationsSerializeToJson, EscapeCharSerializeChar8TToChar8T) {
+  std::u8string s = u8"换行\n制表\t双引\"反斜\\斜杠/";
+  std::u8string result = rfl::serialize_to_json<char8_t>(s);
+  std::u8string expected = u8R"("换行\n制表\t双引\"反斜\\斜杠\/")";
+  EXPECT_TRUE(expected == result);
+}
+
+TEST(TypeOperationsSerializeToJson, EscapeCharSerializeChar8TToChar16T) {
+  std::u8string s = u8"换行\n制表\t双引\"反斜\\斜杠/";
+  std::u16string result = rfl::serialize_to_json<char16_t>(s);
+  std::u16string expected = u"\"换行\\n制表\\t双引\\\"反斜\\\\斜杠\\/\"";
+  EXPECT_EQ(expected, result);
+}
+
+TEST(TypeOperationsSerializeToJson, EscapeCharSerializeChar8TToChar32T) {
+  std::u8string s = u8"换行\n制表\t双引\"反斜\\斜杠/";
+  std::u32string result = rfl::serialize_to_json<char32_t>(s);
+  std::u32string expected = U"\"换行\\n制表\\t双引\\\"反斜\\\\斜杠\\/\"";
+  EXPECT_EQ(expected, result);
+}
+
+TEST(TypeOperationsSerializeToJson, EscapeCharSerializeChar16TToChar8) {
+  std::u16string s = u"换行\n制表\t双引\"反斜\\斜杠/";
+  std::string result = rfl::serialize_to_json<char>(s);
+  std::string expected = R"("换行\n制表\t双引\"反斜\\斜杠\/")";
+  EXPECT_EQ(expected, result);
+}
+
+TEST(TypeOperationsSerializeToJson, EscapeCharSerializeChar16TToChar8T) {
+  std::u16string s = u"换行\n制表\t双引\"反斜\\斜杠/";
+  std::u8string result = rfl::serialize_to_json<char8_t>(s);
+  std::u8string expected = u8R"("换行\n制表\t双引\"反斜\\斜杠\/")";
+  EXPECT_TRUE(expected == result);
+}
+
+TEST(TypeOperationsSerializeToJson, EscapeCharSerializeChar16TToChar16T) {
+  std::u16string s = u"换行\n制表\t双引\"反斜\\斜杠/";
+  std::u16string result = rfl::serialize_to_json<char16_t>(s);
+  std::u16string expected = u"\"换行\\n制表\\t双引\\\"反斜\\\\斜杠\\/\"";
+  EXPECT_EQ(expected, result);
+}
+
+TEST(TypeOperationsSerializeToJson, EscapeCharSerializeChar16TToChar32T) {
+  std::u16string s = u"换行\n制表\t双引\"反斜\\斜杠/";
+  std::u32string result = rfl::serialize_to_json<char32_t>(s);
+  std::u32string expected = U"\"换行\\n制表\\t双引\\\"反斜\\\\斜杠\\/\"";
+  EXPECT_EQ(expected, result);
+}
+
+TEST(TypeOperationsSerializeToJson, EscapeCharSerializeChar32TToChar8) {
+  std::u32string s = U"换行\n制表\t双引\"反斜\\斜杠/";
+  std::string result = rfl::serialize_to_json<char>(s);
+  std::string expected = R"("换行\n制表\t双引\"反斜\\斜杠\/")";
+  EXPECT_EQ(expected, result);
+}
+
+TEST(TypeOperationsSerializeToJson, EscapeCharSerializeChar32TToChar8T) {
+  std::u32string s = U"换行\n制表\t双引\"反斜\\斜杠/";
+  std::u8string result = rfl::serialize_to_json<char8_t>(s);
+  std::u8string expected = u8R"("换行\n制表\t双引\"反斜\\斜杠\/")";
+  EXPECT_TRUE(expected == result);
+}
+
+TEST(TypeOperationsSerializeToJson, EscapeCharSerializeChar32TToChar16T) {
+  std::u32string s = U"换行\n制表\t双引\"反斜\\斜杠/";
+  std::u16string result = rfl::serialize_to_json<char16_t>(s);
+  std::u16string expected = u"\"换行\\n制表\\t双引\\\"反斜\\\\斜杠\\/\"";
+  EXPECT_EQ(expected, result);
+}
+
+TEST(TypeOperationsSerializeToJson, EscapeCharSerializeChar32TToChar32T) {
+  std::u32string s = U"换行\n制表\t双引\"反斜\\斜杠/";
+  std::u32string result = rfl::serialize_to_json<char32_t>(s);
+  std::u32string expected = U"\"换行\\n制表\\t双引\\\"反斜\\\\斜杠\\/\"";
+  EXPECT_EQ(expected, result);
+}
+
+TEST(TypeOperationsSerializeToJson, SingleCharToChar) {
+  constexpr auto options = rfl::serialize_options{
+      .char_to_string = true,
+  };
+  // char -> char
+  constexpr auto c1 = 'A';
+  constexpr auto expected_1 = std::string_view{R"("A")"};
+  EXPECT_EQ(expected_1, (rfl::serialize_to_json<char, options>(c1)));
+  constexpr auto c2 = '\n';
+  constexpr auto expected_2 = std::string_view{R"("\n")"};
+  EXPECT_EQ(expected_2, (rfl::serialize_to_json<char, options>(c2)));
+
+  // char8_t -> char
+  constexpr auto c3 = u8'A';
+  EXPECT_EQ(expected_1, (rfl::serialize_to_json<char, options>(c3)));
+  constexpr auto c4 = u8'\n';
+  EXPECT_EQ(expected_2, (rfl::serialize_to_json<char, options>(c4)));
+
+  // char16_t -> char
+  constexpr auto c5 = u'A';
+  EXPECT_EQ(expected_1, (rfl::serialize_to_json<char, options>(c5)));
+  constexpr auto c6 = u'\n';
+  EXPECT_EQ(expected_2, (rfl::serialize_to_json<char, options>(c6)));
+
+  // char32_t -> char
+  constexpr auto c7 = U'A';
+  EXPECT_EQ(expected_1, (rfl::serialize_to_json<char, options>(c7)));
+  constexpr auto c8 = U'\n';
+  EXPECT_EQ(expected_2, (rfl::serialize_to_json<char, options>(c8)));
+}
+
+TEST(TypeOperationsSerializeToJson, SingleCharToChar8T) {
+  constexpr auto options = rfl::serialize_options{
+      .char_to_string = true,
+  };
+  // char -> char8_t
+  constexpr auto c1 = 'A';
+  constexpr auto expected_1 = std::u8string_view{u8R"("A")"};
+  EXPECT_TRUE(expected_1 == (rfl::serialize_to_json<char8_t, options>(c1)));
+  constexpr auto c2 = '\n';
+  constexpr auto expected_2 = std::u8string_view{u8R"("\n")"};
+  EXPECT_TRUE(expected_2 == (rfl::serialize_to_json<char8_t, options>(c2)));
+
+  // char8_t -> char8_t
+  constexpr auto c3 = u8'A';
+  EXPECT_TRUE(expected_1 == (rfl::serialize_to_json<char8_t, options>(c3)));
+  constexpr auto c4 = u8'\n';
+  EXPECT_TRUE(expected_2 == (rfl::serialize_to_json<char8_t, options>(c4)));
+
+  // char16_t -> char8_t
+  constexpr auto c5 = u'A';
+  EXPECT_TRUE(expected_1 == (rfl::serialize_to_json<char8_t, options>(c5)));
+  constexpr auto c6 = u'\n';
+  EXPECT_TRUE(expected_2 == (rfl::serialize_to_json<char8_t, options>(c6)));
+
+  // char32_t -> char8_t
+  constexpr auto c7 = U'A';
+  EXPECT_TRUE(expected_1 == (rfl::serialize_to_json<char8_t, options>(c7)));
+  constexpr auto c8 = U'\n';
+  EXPECT_TRUE(expected_2 == (rfl::serialize_to_json<char8_t, options>(c8)));
+}
+
+TEST(TypeOperationsSerializeToJson, SingleCharToChar16T) {
+  constexpr auto options = rfl::serialize_options{
+      .char_to_string = true,
+  };
+  // char -> char16_t
+  constexpr auto c1 = 'A';
+  constexpr auto expected_1 = std::u16string_view{u"\"A\""};
+  EXPECT_EQ(expected_1, (rfl::serialize_to_json<char16_t, options>(c1)));
+  constexpr auto c2 = '\n';
+  constexpr auto expected_2 = std::u16string_view{u"\"\\n\""};
+  EXPECT_EQ(expected_2, (rfl::serialize_to_json<char16_t, options>(c2)));
+
+  // char8_t -> char16_t
+  constexpr auto c3 = u8'A';
+  EXPECT_EQ(expected_1, (rfl::serialize_to_json<char16_t, options>(c3)));
+  constexpr auto c4 = u8'\n';
+  EXPECT_EQ(expected_2, (rfl::serialize_to_json<char16_t, options>(c4)));
+
+  // char16_t -> char16_t
+  constexpr auto c5 = u'A';
+  EXPECT_EQ(expected_1, (rfl::serialize_to_json<char16_t, options>(c5)));
+  constexpr auto c6 = u'\n';
+  EXPECT_EQ(expected_2, (rfl::serialize_to_json<char16_t, options>(c6)));
+
+  // char32_t -> char16_t
+  constexpr auto c7 = U'A';
+  EXPECT_EQ(expected_1, (rfl::serialize_to_json<char16_t, options>(c7)));
+  constexpr auto c8 = U'\n';
+  EXPECT_EQ(expected_2, (rfl::serialize_to_json<char16_t, options>(c8)));
+}
+
+TEST(TypeOperationsSerializeToJson, SingleCharToChar32T) {
+  constexpr auto options = rfl::serialize_options{
+      .char_to_string = true,
+  };
+  // char -> char32_t
+  constexpr auto c1 = 'A';
+  constexpr auto expected_1 = std::u32string_view{U"\"A\""};
+  EXPECT_EQ(expected_1, (rfl::serialize_to_json<char32_t, options>(c1)));
+  constexpr auto c2 = '\n';
+  constexpr auto expected_2 = std::u32string_view{U"\"\\n\""};
+  EXPECT_EQ(expected_2, (rfl::serialize_to_json<char32_t, options>(c2)));
+
+  // char8_t -> char32_t
+  constexpr auto c3 = u8'A';
+  EXPECT_EQ(expected_1, (rfl::serialize_to_json<char32_t, options>(c3)));
+  constexpr auto c4 = u8'\n';
+  EXPECT_EQ(expected_2, (rfl::serialize_to_json<char32_t, options>(c4)));
+
+  // char16_t -> char32_t
+  constexpr auto c5 = u'A';
+  EXPECT_EQ(expected_1, (rfl::serialize_to_json<char32_t, options>(c5)));
+  constexpr auto c6 = u'\n';
+  EXPECT_EQ(expected_2, (rfl::serialize_to_json<char32_t, options>(c6)));
+
+  // char32_t -> char32_t
+  constexpr auto c7 = U'A';
+  EXPECT_EQ(expected_1, (rfl::serialize_to_json<char32_t, options>(c7)));
+  constexpr auto c8 = U'\n';
+  EXPECT_EQ(expected_2, (rfl::serialize_to_json<char32_t, options>(c8)));
+}
+
+struct base_person_t {
+  std::string name;
+  int age;
+};
+
+struct derived_employee_t : base_person_t {
+  double salary;
+  std::string department;
+};
+
+TEST(TypeOperationsSerializeToJson, StructWithInheritance) {
+  derived_employee_t emp{{"Alice", 30}, 75000.0, "Engineering"};
+  EXPECT_EQ(R"({"name":"Alice","age":30,"salary":75000,"department":"Engineering"})",
+            rfl::serialize_to_json(emp));
+}
+
+TEST(TypeOperationsSerializeToJson, StructWithInheritanceIndent) {
+  derived_employee_t emp{{"Bob", 25}, 60000.5, "Sales"};
+  EXPECT_EQ(R"({
+  "name": "Bob",
+  "age": 25,
+  "salary": 60000.5,
+  "department": "Sales"
+})",
+            rfl::serialize_to_json(emp, 2, ' '));
+}
+
+struct grand_base_t {
+  int id;
+};
+
+struct middle_base_t : grand_base_t {
+  std::string tag;
+};
+
+struct top_derived_t : middle_base_t {
+  double value;
+};
+
+TEST(TypeOperationsSerializeToJson, StructWithMultiLevelInheritance) {
+  top_derived_t obj;
+  obj.id = 1;
+  obj.tag = "test";
+  obj.value = 3.14;
+  EXPECT_EQ(R"({"id":1,"tag":"test","value":3.14})", rfl::serialize_to_json(obj));
+}
+
+struct multiple_base_a_t {
+  int a;
+};
+
+struct multiple_base_b_t {
+  int b;
+};
+
+struct multiple_derived_t : multiple_base_a_t, multiple_base_b_t {
+  int c;
+};
+
+TEST(TypeOperationsSerializeToJson, StructWithMultipleInheritance) {
+  multiple_derived_t obj{{1}, {2}, 3};
+  EXPECT_EQ(R"({"a":1,"b":2,"c":3})", rfl::serialize_to_json(obj));
+}
+
+struct base_with_virtual_t {
+  int x;
+  virtual void greet() {
+    std::println("x = {}", x);
+  }
+};
+
+struct derived_with_virtual_t : base_with_virtual_t {
+  int y;
+  void greet() override {
+    std::println("y = {}", y);
+  }
+};
+
+TEST(TypeOperationsSerializeToJson, StructWithInheritanceWithVirtual) {
+  derived_with_virtual_t obj;
+  obj.x = 1;
+  obj.y = 2;
+  EXPECT_EQ(R"({"x":1,"y":2})", rfl::serialize_to_json(obj));
+}
+
+struct bitfield_t {
+  unsigned int flags : 4;
+  unsigned int mode : 4;
+  unsigned int value : 8;
+  int priority : 4;
+};
+
+TEST(TypeOperationsSerializeToJson, StructWithBitFields) {
+  bitfield_t bf{};
+  bf.flags = 0b1010;
+  bf.mode = 0b0011;
+  bf.value = 255;
+  bf.priority = -8;
+  EXPECT_EQ(R"({"flags":10,"mode":3,"value":255,"priority":-8})", rfl::serialize_to_json(bf));
+}
+
+struct bitfield_with_other_members_t {
+  std::string name;
+  unsigned int enabled : 1;
+  unsigned int readonly : 1;
+  unsigned int hidden : 1;
+  int data;
+};
+
+TEST(TypeOperationsSerializeToJson, StructWithBitFieldsAndOtherMembers) {
+  bitfield_with_other_members_t obj{"config", 1, 0, 1, 42};
+  EXPECT_EQ(R"({"name":"config","enabled":1,"readonly":0,"hidden":1,"data":42})",
+            rfl::serialize_to_json(obj));
+}
+
+struct bitfield_mixed_t {
+  int a;
+  unsigned int b : 3;
+  int c;
+  unsigned int d : 5;
+  double e;
+};
+
+TEST(TypeOperationsSerializeToJson, StructWithBitFieldsMixed) {
+  bitfield_mixed_t obj{1, 7, 2, 31, 3.14};
+  EXPECT_EQ(R"({"a":1,"b":7,"c":2,"d":31,"e":3.14})", rfl::serialize_to_json(obj));
 }

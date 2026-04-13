@@ -20,13 +20,39 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_TYPE_OPERATIONS_HPP
-#define REFLECT_CPP26_TYPE_OPERATIONS_HPP
+#ifndef REFLECT_CPP26_TYPE_TRAITS_ENUM_TYPES_HPP
+#define REFLECT_CPP26_TYPE_TRAITS_ENUM_TYPES_HPP
 
-#include <reflect_cpp26/type_operations/comparison.hpp>
-#include <reflect_cpp26/type_operations/dump_to_json_like.hpp>
-#include <reflect_cpp26/type_operations/serialize_to_json.hpp>
-#include <reflect_cpp26/type_operations/to_string.hpp>
-#include <reflect_cpp26/type_operations/to_structural.hpp>
+#include <concepts>
+#include <reflect_cpp26/utils/meta_utility.hpp>
+#include <type_traits>
 
-#endif  // REFLECT_CPP26_TYPE_OPERATIONS_HPP
+#define REFLECT_CPP26_AS_ENUM_FLAG [[= ::reflect_cpp26::impl::enum_flag_annotation_tag_t{}]]
+
+namespace reflect_cpp26 {
+// Specialize is_enum_flag_v to mark an enum type as flag type.
+template <class T>
+constexpr auto is_enum_flag_v = false;
+
+namespace impl {
+struct enum_flag_annotation_tag_t {};
+
+consteval bool is_enum_flag_type(std::meta::info T) {
+  if (extract<bool>(^^is_enum_flag_v, T)) {
+    return true;
+  }
+  // Alternative: Annotate the enum type via macro REFLECT_CPP26_AS_ENUM_FLAG
+  for (auto a : annotations_of(T)) {
+    if (type_of(a) == ^^enum_flag_annotation_tag_t) {
+      return true;  // TODO: Replace this for-loop with std::meta::annotations_of_with_type()
+    }
+  }
+  return false;
+}
+}  // namespace impl
+
+template <class T>
+concept enum_flag = impl::is_enum_flag_type(remove_cv(^^T));
+}  // namespace reflect_cpp26
+
+#endif  // REFLECT_CPP26_TYPE_TRAITS_ENUM_TYPES_HPP

@@ -21,7 +21,7 @@
  **/
 
 #include <print>
-#include <reflect_cpp26/type_traits/class_types/flattenable.hpp>
+#include <reflect_cpp26/type_traits/class_types/flattened_nsdm.hpp>
 #include <system_error>
 
 #include "tests/test_options.hpp"

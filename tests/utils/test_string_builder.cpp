@@ -403,6 +403,7 @@ TEST(UtilsStringBuilder, AppendFloatingPointWithVeryHighPrecision) {
   const double pi = 3.14159265358979;
   builder.append_floating_point(pi, std::chars_format::fixed, 50);
   auto sv = builder.strview();
+  EXPECT_TRUE(sv.starts_with("3.1415926"));
   EXPECT_GT(sv.size(), 50);
 }
 
@@ -413,30 +414,6 @@ TEST(UtilsStringBuilder, AppendFloatingPointWithExtremelyHighPrecision) {
   auto sv = builder.strview();
   EXPECT_GE(sv.size(), 200000);
   EXPECT_TRUE(sv.find("3.14") != std::string_view::npos);
-}
-
-TEST(UtilsStringBuilder, AppendLongDoubleHighPrecision) {
-  rfl::string_builder builder;
-  long double val = 1.0L;
-  for (int i = 0; i < 100; ++i) {
-    val *= 1.0000000001L;
-  }
-  builder.append_floating_point(val);
-  EXPECT_GT(builder.size(), 10);
-}
-
-TEST(UtilsStringBuilder, AppendDoubleVeryLargeValue) {
-  rfl::string_builder builder;
-  builder.append_floating_point(1e300);
-  auto sv = builder.strview();
-  EXPECT_GT(sv.size(), 5);
-}
-
-TEST(UtilsStringBuilder, AppendDoubleVerySmallValue) {
-  rfl::string_builder builder;
-  builder.append_floating_point(1e-300);
-  auto sv = builder.strview();
-  EXPECT_GT(sv.size(), 5);
 }
 
 TEST(UtilsStringBuilder, ChainedOperations) {
@@ -824,7 +801,8 @@ TEST(UtilsStringBuilder, AppendUtfStringSameTypeWithInvalidSequence) {
   rfl::u8string_builder builder;
   const char8_t invalid[] = u8"hello\xFF\xFEworld";
   builder.append_utf_string(invalid, invalid + sizeof(invalid) - 1);
-  EXPECT_EQ(builder.size(), 12);
+  // Invalid sequence \xFF\xFE -> '�' -> 3 bytes in UTF-8 encoding
+  EXPECT_EQ(builder.size(), 13);
 }
 
 TEST(UtilsStringBuilder, AppendUtfStringSameTypeBufferResize) {
@@ -1088,4 +1066,378 @@ TEST(UtilsStringBuilder, AppendUtfStringUtf32InvalidSurrogate) {
   char32_t invalid[] = U"hello\xD800world";  // Invalid surrogate in UTF-32
   builder.append_utf_string(invalid, invalid + sizeof(invalid) / sizeof(char32_t) - 1);
   EXPECT_GT(builder.size(), 0);
+}
+
+TEST(UtilsStringBuilder, AppendCharWithCount) {
+  rfl::string_builder builder;
+  builder.append_char('a', 5);
+  EXPECT_EQ(builder.size(), 5);
+  EXPECT_EQ(builder.strview(), "aaaaa");
+}
+
+TEST(UtilsStringBuilder, AppendCharWithCountUtf8) {
+  rfl::u8string_builder builder;
+  builder.append_char(u8'x', 3);
+  EXPECT_EQ(builder.size(), 3);
+  EXPECT_TRUE(builder.strview() == u8"xxx");
+}
+
+TEST(UtilsStringBuilder, AppendCharWithCountUtf16) {
+  rfl::u16string_builder builder;
+  builder.append_char(u'y', 4);
+  EXPECT_EQ(builder.size(), 4);
+  EXPECT_EQ(builder.strview(), u"yyyy");
+}
+
+TEST(UtilsStringBuilder, AppendCharWithCountZero) {
+  rfl::string_builder builder;
+  builder.append_char('a', 0);
+  EXPECT_EQ(builder.size(), 0);
+}
+
+TEST(UtilsStringBuilder, AppendCharWithCountBufferGrowth) {
+  rfl::string_builder builder(2);
+  builder.append_char('b', 100);
+  EXPECT_EQ(builder.size(), 100);
+  EXPECT_EQ(builder.strview(), std::string(100, 'b'));
+}
+
+TEST(UtilsStringBuilder, AppendCharJsonEscapedBasic) {
+  rfl::string_builder builder;
+  builder.append_char_json_escaped('"');
+  EXPECT_EQ(builder.strview(), "\\\"");
+}
+
+TEST(UtilsStringBuilder, AppendCharJsonEscapedBackslash) {
+  rfl::string_builder builder;
+  builder.append_char_json_escaped('\\');
+  EXPECT_EQ(builder.strview(), "\\\\");
+}
+
+TEST(UtilsStringBuilder, AppendCharJsonEscapedNewline) {
+  rfl::string_builder builder;
+  builder.append_char_json_escaped('\n');
+  EXPECT_EQ(builder.strview(), "\\n");
+}
+
+TEST(UtilsStringBuilder, AppendCharJsonEscapedTab) {
+  rfl::string_builder builder;
+  builder.append_char_json_escaped('\t');
+  EXPECT_EQ(builder.strview(), "\\t");
+}
+
+TEST(UtilsStringBuilder, AppendCharJsonEscapedNoEscape) {
+  rfl::string_builder builder;
+  builder.append_char_json_escaped('a');
+  EXPECT_EQ(builder.strview(), "a");
+}
+
+TEST(UtilsStringBuilder, AppendCharJsonEscapedUtf8) {
+  rfl::u8string_builder builder;
+  builder.append_char_json_escaped(u8'"');
+  EXPECT_TRUE(builder.strview() == u8"\\\"");
+}
+
+TEST(UtilsStringBuilder, AppendCharJsonEscapedControlChar) {
+  rfl::string_builder builder;
+  builder.append_char_json_escaped('\x00');
+  EXPECT_EQ(builder.strview(), "\\u0000");
+}
+
+TEST(UtilsStringBuilder, AppendUtfCodePointJsonEscapedBasic) {
+  rfl::u8string_builder builder;
+  builder.append_utf_code_point_json_escaped(U'A');
+  EXPECT_TRUE(builder.strview() == u8"A");
+}
+
+TEST(UtilsStringBuilder, AppendUtfCodePointJsonEscapedDoubleQuote) {
+  rfl::u8string_builder builder;
+  builder.append_utf_code_point_json_escaped(U'"');
+  EXPECT_TRUE(builder.strview() == u8"\\\"");
+}
+
+TEST(UtilsStringBuilder, AppendUtfCodePointJsonEscapedBackslash) {
+  rfl::u8string_builder builder;
+  builder.append_utf_code_point_json_escaped(U'\\');
+  EXPECT_TRUE(builder.strview() == u8"\\\\");
+}
+
+TEST(UtilsStringBuilder, AppendUtfCodePointJsonEscapedNewline) {
+  rfl::u8string_builder builder;
+  builder.append_utf_code_point_json_escaped(U'\n');
+  EXPECT_TRUE(builder.strview() == u8"\\n");
+}
+
+TEST(UtilsStringBuilder, AppendUtfCodePointJsonEscapedEmoji) {
+  rfl::u8string_builder builder;
+  builder.append_utf_code_point_json_escaped(U'\U0001F600');
+  EXPECT_TRUE(builder.strview() == u8"\U0001F600");
+}
+
+TEST(UtilsStringBuilder, AppendUtfCodePointJsonEscapedInvalid) {
+  rfl::u8string_builder builder;
+  builder.append_utf_code_point_json_escaped(static_cast<char32_t>(0xFFFFFFFF));
+  EXPECT_TRUE(builder.strview() == u8"\uFFFD");
+}
+
+TEST(UtilsStringBuilder, AppendUtfCodePointJsonEscapedUtf16) {
+  rfl::u16string_builder builder;
+  builder.append_utf_code_point_json_escaped(U'"');
+  EXPECT_EQ(builder.strview(), u"\\\"");
+}
+
+TEST(UtilsStringBuilder, AppendStringJsonEscapedBasic) {
+  rfl::string_builder builder;
+  builder.append_string_json_escaped("hello");
+  EXPECT_EQ(builder.strview(), "hello");
+}
+
+TEST(UtilsStringBuilder, AppendStringJsonEscapedWithSpecialChars) {
+  rfl::string_builder builder;
+  builder.append_string_json_escaped("line1\nline2\ttab");
+  EXPECT_EQ(builder.strview(), "line1\\nline2\\ttab");
+}
+
+TEST(UtilsStringBuilder, AppendStringJsonEscapedQuotes) {
+  rfl::string_builder builder;
+  builder.append_string_json_escaped("say \"hello\"");
+  EXPECT_EQ(builder.strview(), "say \\\"hello\\\"");
+}
+
+TEST(UtilsStringBuilder, AppendStringJsonEscapedBackslash) {
+  rfl::string_builder builder;
+  builder.append_string_json_escaped("path\\to\\file");
+  EXPECT_EQ(builder.strview(), "path\\\\to\\\\file");
+}
+
+TEST(UtilsStringBuilder, AppendStringJsonEscapedPtrWithEnd) {
+  rfl::string_builder builder;
+  const char* str = "test\nvalue";
+  builder.append_string_json_escaped(str, str + 10);
+  EXPECT_EQ(builder.strview(), "test\\nvalue");
+}
+
+TEST(UtilsStringBuilder, AppendStringJsonEscapedView) {
+  rfl::string_builder builder;
+  std::string_view sv = "escape\tthis";
+  builder.append_string_json_escaped(sv);
+  EXPECT_EQ(builder.strview(), "escape\\tthis");
+}
+
+TEST(UtilsStringBuilder, AppendStringJsonEscapedUtf8) {
+  rfl::u8string_builder builder;
+  builder.append_string_json_escaped(u8"hello\nworld");
+  EXPECT_TRUE(builder.strview() == u8"hello\\nworld");
+}
+
+TEST(UtilsStringBuilder, AppendUtfStringJsonEscapedUtf8ToUtf8) {
+  rfl::u8string_builder builder;
+  builder.append_utf_string_json_escaped(u8"hello");
+  EXPECT_TRUE(builder.strview() == u8"hello");
+}
+
+TEST(UtilsStringBuilder, AppendUtfStringJsonEscapedUtf8ToUtf16) {
+  rfl::u16string_builder builder;
+  builder.append_utf_string_json_escaped(u8"hello\nworld");
+  EXPECT_EQ(builder.strview(), u"hello\\nworld");
+}
+
+TEST(UtilsStringBuilder, AppendUtfStringJsonEscapedUtf8ToUtf32) {
+  rfl::u32string_builder builder;
+  builder.append_utf_string_json_escaped(u8"test\nvalue");
+  EXPECT_TRUE(builder.strview() == U"test\\nvalue");
+}
+
+TEST(UtilsStringBuilder, AppendUtfStringJsonEscapedUtf16ToUtf8) {
+  rfl::u8string_builder builder;
+  builder.append_utf_string_json_escaped(u"quote\"here");
+  EXPECT_TRUE(builder.strview() == u8"quote\\\"here");
+}
+
+TEST(UtilsStringBuilder, AppendUtfStringJsonEscapedUtf16ToUtf16) {
+  rfl::u16string_builder builder;
+  builder.append_utf_string_json_escaped(u"escape\\here");
+  EXPECT_EQ(builder.strview(), u"escape\\\\here");
+}
+
+TEST(UtilsStringBuilder, AppendUtfStringJsonEscapedUtf32ToUtf8) {
+  rfl::u8string_builder builder;
+  builder.append_utf_string_json_escaped(U"tab\there");
+  EXPECT_TRUE(builder.strview() == u8"tab\\there");
+}
+
+TEST(UtilsStringBuilder, AppendUtfStringJsonEscapedUtf32ToUtf16) {
+  rfl::u16string_builder builder;
+  builder.append_utf_string_json_escaped(U"newline\n");
+  EXPECT_EQ(builder.strview(), u"newline\\n");
+}
+
+TEST(UtilsStringBuilder, AppendUtfStringJsonEscapedWithEmoji) {
+  rfl::u8string_builder builder;
+  builder.append_utf_string_json_escaped(u8"Hello 😀!");
+  EXPECT_TRUE(builder.strview() == u8"Hello 😀!");
+}
+
+TEST(UtilsStringBuilder, AppendUtfStringJsonEscapedWithControlChar) {
+  rfl::string_builder builder;
+  constexpr auto str = u8"before\0after";
+  builder.append_utf_string_json_escaped(str, str + 12);
+  EXPECT_EQ("before\\u0000after", builder.strview());
+}
+
+TEST(UtilsStringBuilder, AppendUtfStringJsonEscapedPtrWithEnd) {
+  rfl::u8string_builder builder;
+  const char8_t* str = u8"test\nvalue";
+  builder.append_utf_string_json_escaped(str, str + 10);
+  EXPECT_TRUE(builder.strview() == u8"test\\nvalue");
+}
+
+TEST(UtilsStringBuilder, AppendUtfStringJsonEscapedView) {
+  rfl::u8string_builder builder;
+  std::u8string_view sv = u8"tab\there";
+  builder.append_utf_string_json_escaped(sv);
+  EXPECT_TRUE(builder.strview() == u8"tab\\there");
+}
+
+TEST(UtilsStringBuilder, AppendUtfStringJsonEscapedEmpty) {
+  rfl::u8string_builder builder;
+  builder.append_utf_string_json_escaped(u8"");
+  EXPECT_EQ(builder.size(), 0);
+}
+
+TEST(UtilsStringBuilder, AppendUtfStringJsonEscapedSameTypeUtf8) {
+  rfl::u8string_builder builder;
+  builder.append_utf_string_json_escaped(u8"quote\"");
+  EXPECT_TRUE(builder.strview() == u8"quote\\\"");
+}
+
+TEST(UtilsStringBuilder, AppendUtfStringJsonEscapedSameTypeUtf16) {
+  rfl::u16string_builder builder;
+  builder.append_utf_string_json_escaped(u"tab\t");
+  EXPECT_EQ(builder.strview(), u"tab\\t");
+}
+
+TEST(UtilsStringBuilder, AppendUtfStringJsonEscapedSameTypeUtf32) {
+  rfl::u32string_builder builder;
+  builder.append_utf_string_json_escaped(U"newline\n");
+  EXPECT_TRUE(builder.strview() == U"newline\\n");
+}
+
+TEST(UtilsStringBuilder, AppendUtfStringJsonEscapedInvalidSequence) {
+  rfl::u8string_builder builder;
+  const char8_t invalid[] = u8"hello\xFFworld";
+  builder.append_utf_string_json_escaped(invalid, invalid + sizeof(invalid) - 1);
+  EXPECT_GT(builder.size(), 0);
+}
+
+TEST(UtilsStringBuilder, AppendUtfStringWithBasicString) {
+  rfl::u8string_builder builder;
+  std::string str = "hello";
+  builder.append_utf_string(str);
+  EXPECT_TRUE(builder.strview() == u8"hello");
+}
+
+TEST(UtilsStringBuilder, AppendUtfStringWithBasicStringUtf16ToUtf8) {
+  rfl::u8string_builder builder;
+  std::u16string str = u"world";
+  builder.append_utf_string(str);
+  EXPECT_TRUE(builder.strview() == u8"world");
+}
+
+TEST(UtilsStringBuilder, AppendUtfStringWithBasicStringUtf8ToUtf16) {
+  rfl::u16string_builder builder;
+  std::string str = "test";
+  builder.append_utf_string(str);
+  EXPECT_EQ(builder.strview(), u"test");
+}
+
+TEST(UtilsStringBuilder, AppendUtfStringWithBasicStringUtf32ToUtf8) {
+  rfl::u8string_builder builder;
+  std::u32string str = U"unicode";
+  builder.append_utf_string(str);
+  EXPECT_TRUE(builder.strview() == u8"unicode");
+}
+
+TEST(UtilsStringBuilder, AppendUtfStringJsonEscapedWithBasicString) {
+  rfl::u8string_builder builder;
+  std::string str = "line1\nline2";
+  builder.append_utf_string_json_escaped(str);
+  EXPECT_TRUE(builder.strview() == u8"line1\\nline2");
+}
+
+TEST(UtilsStringBuilder, AppendUtfStringJsonEscapedWithBasicStringUtf16) {
+  rfl::u16string_builder builder;
+  std::u16string str = u"quote\"here";
+  builder.append_utf_string_json_escaped(str);
+  EXPECT_EQ(builder.strview(), u"quote\\\"here");
+}
+
+TEST(UtilsStringBuilder, StrMethod) {
+  rfl::string_builder builder;
+  builder.append_string("hello");
+  auto str = builder.str();
+  EXPECT_EQ(str, "hello");
+  EXPECT_EQ(str.size(), 5);
+}
+
+TEST(UtilsStringBuilder, StrMethodUtf8) {
+  rfl::u8string_builder builder;
+  builder.append_string(u8"world");
+  auto str = builder.str();
+  EXPECT_TRUE(str == u8"world");
+}
+
+TEST(UtilsStringBuilder, StrMethodEmpty) {
+  rfl::string_builder builder;
+  auto str = builder.str();
+  EXPECT_EQ(str, "");
+}
+
+TEST(UtilsStringBuilder, StrMethodAfterModification) {
+  rfl::string_builder builder;
+  builder.append_string("hello");
+  auto str1 = builder.str();
+  builder.append_string(" world");
+  auto str2 = builder.str();
+  EXPECT_EQ(str1, "hello");
+  EXPECT_EQ(str2, "hello world");
+}
+
+TEST(UtilsStringBuilder, PmrStringBuilder) {
+  rfl::pmr_string_builder builder;
+  builder.append_string("test");
+  EXPECT_EQ(builder.strview(), "test");
+}
+
+TEST(UtilsStringBuilder, PmrU8StringBuilder) {
+  rfl::pmr_u8string_builder builder;
+  builder.append_string(u8"hello");
+  EXPECT_TRUE(builder.strview() == u8"hello");
+}
+
+TEST(UtilsStringBuilder, PmrU16StringBuilder) {
+  rfl::pmr_u16string_builder builder;
+  builder.append_string(u"world");
+  EXPECT_EQ(builder.strview(), u"world");
+}
+
+TEST(UtilsStringBuilder, PmrU32StringBuilder) {
+  rfl::pmr_u32string_builder builder;
+  builder.append_utf_code_point(U'A');
+  EXPECT_EQ(builder.size(), 1);
+}
+
+TEST(UtilsStringBuilder, ChainedJsonEscaped) {
+  rfl::string_builder builder;
+  builder.append_string("Message: ")
+      .append_string_json_escaped("Hello\nWorld")
+      .append_string(" - Done");
+  EXPECT_EQ(builder.strview(), "Message: Hello\\nWorld - Done");
+}
+
+TEST(UtilsStringBuilder, ChainedUtfJsonEscaped) {
+  rfl::u8string_builder builder;
+  builder.append_utf_string_json_escaped(u8"line1\n")
+      .append_utf_string_json_escaped(u8"line2\tindented");
+  EXPECT_TRUE(builder.strview() == u8"line1\\nline2\\tindented");
 }

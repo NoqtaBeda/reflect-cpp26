@@ -24,13 +24,14 @@
 #define REFLECT_CPP26_TYPE_OPERATIONS_SERIALIZE_TO_JSON_HPP
 
 #include <map>
-#include <ranges>
+#include <optional>
+#include <reflect_cpp26/enum/enum_flags_name.hpp>
 #include <reflect_cpp26/enum/enum_name.hpp>
-#include <reflect_cpp26/type_traits/class_types/flattened_nsdm.hpp>
+#include <reflect_cpp26/type_operations/impl/serialize_to_json_common.hpp>
+#include <reflect_cpp26/type_traits/enum_types.hpp>
 #include <reflect_cpp26/type_traits/serializable_types.hpp>
 #include <reflect_cpp26/type_traits/template_instance.hpp>
-#include <reflect_cpp26/utils/functional.hpp>
-#include <reflect_cpp26/utils/string_builder.hpp>
+#include <variant>
 
 namespace reflect_cpp26 {
 struct serialize_options {
@@ -44,29 +45,16 @@ struct serialize_options {
   }
 };
 
-namespace impl {
-template <class T>
-struct is_std_map_as_json_object : std::false_type {};
-
-template <class K, class V, class Comp, class Alloc>
-struct is_std_map_as_json_object<std::map<K, V, Comp, Alloc>> : std::bool_constant<string_like<K>> {
-};
-
-template <bool Indents, serialize_options Options, class CharT, class Allocator, class T>
-constexpr bool serialize_to_json_impl(basic_string_builder<CharT, Allocator>& dest,
-                                      const T& value,
-                                      int indent_level,
-                                      int indent_size,
-                                      CharT indent_char);
-
+namespace impl::json {
 template <bool ToString, class CharT, class Allocator, class T>
-constexpr void serialize_char_to_json_impl(basic_string_builder<CharT, Allocator>& dest, T value) {
+static constexpr void serialize_char(basic_string_builder<CharT, Allocator>& dest, T value) {
   if constexpr (ToString) {
     dest.append_char('"');
     if constexpr (sizeof(T) <= sizeof(CharT)) {
-      dest.append_char(value);
+      dest.append_char_json_escaped(static_cast<CharT>(value));
     } else {
-      dest.append_utf_code_point(value);
+      static_assert(sizeof(T) <= sizeof(char32_t));
+      dest.append_utf_code_point_json_escaped(static_cast<uint32_t>(value));
     }
     dest.append_char('"');
   } else {
@@ -74,21 +62,9 @@ constexpr void serialize_char_to_json_impl(basic_string_builder<CharT, Allocator
   }
 }
 
-template <class CharT, class Allocator, class T>
-constexpr void serialize_non_char_integral_to_json_impl(
-    basic_string_builder<CharT, Allocator>& dest, T value) {
-  if constexpr (std::is_same_v<T, bool>) {
-    dest.append_bool(value);
-  } else if constexpr (std::is_integral_v<T>) {
-    dest.append_integer(value);
-  } else {
-    static_assert(false, "Invalid or usupported value type");
-  }
-}
-
 template <bool HaltsOnInfOrNaN, class CharT, class Allocator, class T>
-constexpr bool serialize_floating_point_to_json_impl(basic_string_builder<CharT, Allocator>& dest,
-                                                     T value) {
+static constexpr bool serialize_floating_point(basic_string_builder<CharT, Allocator>& dest,
+                                               T value) {
   if (std::isnan(value)) [[unlikely]] {
     if constexpr (HaltsOnInfOrNaN) {
       return false;
@@ -109,303 +85,224 @@ constexpr bool serialize_floating_point_to_json_impl(basic_string_builder<CharT,
   return true;
 }
 
-template <bool ToString, bool HaltsOnInvalid, class CharT, class T>
-constexpr bool serialize_enum_to_json_impl(basic_string_builder<CharT>& dest, T value) {
+template <bool HaltsOnInvalid, class CharT, class Allocator, class T>
+constexpr bool stringify_enum_flag(basic_string_builder<CharT, Allocator>& dest, T value) {
+  auto str = enum_flags_name(value);
+
+  if (str.has_value()) [[likely]] {
+    dest.append_char('"').append_utf_string(*str).append_char('"');
+    return true;
+  } else if constexpr (HaltsOnInvalid) {
+    return false;
+  } else {
+    dest.append_utf_string("null");
+    return true;
+  }
+}
+
+template <bool HaltsOnInvalid, class CharT, class Allocator, class T>
+constexpr bool stringify_enum(basic_string_builder<CharT, Allocator>& dest, T value) {
+  auto str = enum_name(value);
+
+  if (!str.empty()) [[likely]] {
+    dest.append_char('"').append_utf_string(str).append_char('"');
+    return true;
+  } else if constexpr (HaltsOnInvalid) {
+    return false;
+  } else {
+    dest.append_utf_string("null");
+    return true;
+  }
+}
+
+template <bool ToString, bool HaltsOnInvalid, class CharT, class Allocator, class T>
+constexpr bool serialize_enum(basic_string_builder<CharT, Allocator>& dest, T value) {
   if constexpr (ToString) {
-    auto str = enum_name(value);
-    if (!str.empty()) [[likely]] {
-      dest.append_char('"').append_utf_string(str).append_char('"');
-    } else if constexpr (HaltsOnInvalid) {
-      return false;
+    if constexpr (enum_flag<T>) {
+      return stringify_enum_flag<HaltsOnInvalid>(dest, value);
     } else {
-      dest.append_utf_string("null");
+      return stringify_enum<HaltsOnInvalid>(dest, value);
     }
   } else {
     dest.append_integer(std::to_underlying(value));
+    return true;
   }
-  return true;
 }
 
-template <bool Indents, serialize_options Options, class CharT, class Allocator, class T>
-constexpr bool serialize_std_map_to_json_impl(basic_string_builder<CharT, Allocator>& dest,
+template <class Parent, class CharT, class Allocator, class T, class... Args>
+constexpr bool serializer_dispatch_arithmetic(basic_string_builder<CharT, Allocator>& dest,
                                               const T& value,
-                                              int indent_level,
-                                              int indent_size,
-                                              CharT indent_char) {
-  dest.append_char('{');
-  if constexpr (Indents) {
-    indent_level += indent_size;
-    auto is_first = true;
-    for (const auto& [k, v] : value) {
-      is_first ? (void)(is_first = false) : (void)(dest.append_char(','));
-      dest.append_char('\n').append_char(indent_char, indent_level);
-      dest.append_char('"').append_utf_string_json_escaped(k).append_utf_string("\": ");
-      if (!serialize_to_json_impl<true, Options>(dest, v, indent_level, indent_size, indent_char))
-          [[unlikely]] {
-        return false;
-      }
-    }
-    indent_level -= indent_size;
-    dest.append_char('\n').append_char(indent_char, indent_level);
-  } else {
-    auto is_first = true;
-    for (const auto& [k, v] : value) {
-      is_first ? (void)(is_first = false) : (void)(dest.append_char(','));
-      dest.append_char('"').append_utf_string_json_escaped(k).append_utf_string("\":");
-      if (!serialize_to_json_impl<false, Options>(dest, v, 0, 0, static_cast<CharT>(0)))
-          [[unlikely]] {
-        return false;
-      }
-    }
-  }
-  dest.append_char('}');
-  return true;
-}
+                                              const Args&... args) {
+  constexpr auto Options = Parent::options;
 
-template <bool Indents, serialize_options Options, class CharT, class Allocator, class T>
-constexpr bool serialize_range_to_json_impl(basic_string_builder<CharT, Allocator>& dest,
-                                            const T& value,
-                                            int indent_level,
-                                            int indent_size,
-                                            CharT indent_char) {
-  dest.append_char('[');
-  if constexpr (Indents) {
-    indent_level += indent_size;
-    auto is_first = true;
-    for (const auto& elem : value) {
-      is_first ? (void)(is_first = false) : (void)(dest.append_char(','));
-      dest.append_char('\n').append_char(indent_char, indent_level);
-      if (!serialize_to_json_impl<true, Options>(
-              dest, elem, indent_level, indent_size, indent_char)) [[unlikely]] {
-        return false;
-      }
-    }
-    indent_level -= indent_size;
-    dest.append_char('\n').append_char(indent_char, indent_level);
-  } else {
-    auto is_first = true;
-    for (const auto& elem : value) {
-      is_first ? (void)(is_first = false) : (void)(dest.append_char(','));
-      if (!serialize_to_json_impl<false, Options>(dest, elem, 0, 0, static_cast<CharT>(0)))
-          [[unlikely]] {
-        return false;
-      }
-    }
-  }
-  dest.append_char(']');
-  return true;
-}
-
-template <bool Indents, serialize_options Options, class CharT, class Allocator, class T>
-constexpr bool serialize_tuple_to_json_impl(basic_string_builder<CharT, Allocator>& dest,
-                                            const T& value,
-                                            int indent_level,
-                                            int indent_size,
-                                            CharT indent_char) {
-  constexpr auto N = std::tuple_size_v<T>;
-  dest.append_char('[');
-  if constexpr (Indents) {
-    indent_level += indent_size;
-    template for (constexpr auto I : std::views::iota(0zU, N)) {
-      if constexpr (I > 0) {
-        dest.append_char(',');
-      }
-      dest.append_char('\n').append_char(indent_char, indent_level);
-      const auto& elem = get_ith_element<I>(value);
-      if (!serialize_to_json_impl<true, Options>(
-              dest, elem, indent_level, indent_size, indent_char)) [[unlikely]] {
-        return false;
-      }
-    }
-    indent_level -= indent_size;
-    dest.append_char('\n').append_char(indent_char, indent_level).append_char(']');
-  } else {
-    template for (constexpr auto I : std::views::iota(0zU, N)) {
-      if constexpr (I > 0) {
-        dest.append_char(',');
-      }
-      const auto& elem = get_ith_element<I>(value);
-      if (!serialize_to_json_impl<false, Options>(dest, elem, 0, 0, static_cast<CharT>(0)))
-          [[unlikely]] {
-        return false;
-      }
-    }
-    dest.append_char(']');
-  }
-  return true;
-}
-
-template <bool Indents, serialize_options Options, class CharT, class Allocator, class T>
-constexpr bool serialize_struct_to_json_impl(basic_string_builder<CharT, Allocator>& dest,
-                                             const T& value,
-                                             int indent_level,
-                                             int indent_size,
-                                             CharT indent_char) {
-  constexpr auto members = all_flattened_nonstatic_data_members_v<T>;
-  constexpr auto N = members.size();
-
-  indent_level += indent_size;
-  dest.append_char('{');
-  template for (constexpr auto I : std::views::iota(0zU, N)) {
-    if constexpr (I > 0) {
-      dest.append_char(',');
-    }
-    if constexpr (Indents) {
-      dest.append_char('\n').append_char(indent_char, indent_level);
-    }
-    constexpr auto cur_member = members[I];
-    if constexpr (has_identifier(cur_member.member)) {
-      dest.append_char('"').append_utf_string(identifier_of(cur_member.member)).append_char('"');
-    } else {
-      dest.append_integer(I);
-    }
-    const auto& elem = value.[:cur_member.member:];
-    if constexpr (Indents) {
-      dest.append_utf_string(": ");
-      if (!serialize_to_json_impl<true, Options>(
-              dest, elem, indent_level, indent_size, indent_char)) [[unlikely]] {
-        return false;
-      }
-    } else {
-      dest.append_char(':');
-      if (!serialize_to_json_impl<false, Options>(dest, elem, 0, 0, static_cast<CharT>(0)))
-          [[unlikely]] {
-        return false;
-      }
-    }
-  }
-  if constexpr (Indents) {
-    indent_level -= indent_size;
-    dest.append_char('\n').append_char(indent_char, indent_level);
-  }
-  dest.append_char('}');
-  return true;
-}
-
-template <bool Indents, serialize_options Options, class CharT, class Allocator, class T>
-constexpr bool serialize_to_json_impl(basic_string_builder<CharT, Allocator>& dest,
-                                      const T& value,
-                                      int indent_level,
-                                      int indent_size,
-                                      CharT indent_char) {
-  if constexpr (std::is_same_v<T, std::monostate>) {
-    // (1) std::monostate
-    dest.append_utf_string("null");
+  if constexpr (std::is_same_v<T, bool>) {
+    // (2.1) bool
+    dest.append_utf_string(value ? "true" : "false");
     return true;
   } else if constexpr (char_type<T>) {
-    // (2.1) Character types
+    // (2.2) Character types
     constexpr auto to_string = Options.char_to_string;
-    serialize_char_to_json_impl<to_string>(dest, value);
+    serialize_char<to_string>(dest, value);
     return true;
   } else if constexpr (std::is_integral_v<T>) {
-    // (2.2) Integral types (except chars)
-    serialize_non_char_integral_to_json_impl(dest, value);
+    // (2.3) Integer types
+    dest.append_integer(value);
     return true;
   } else if constexpr (std::is_floating_point_v<T>) {
-    // (2.3) Floating-point types
+    // (2.4) Floating-point types
     constexpr auto halts_on_inf_or_nan = Options.halts_on_non_finite_floating_point;
-    return serialize_floating_point_to_json_impl<halts_on_inf_or_nan>(dest, value);
+    auto res = serialize_floating_point<halts_on_inf_or_nan>(dest, value);
+    return res;
+  } else {
+    static_assert(false, "Invalid or unsupported value type.");
+  }
+}
+
+template <class Parent, class CharT, class Allocator, class T, class... Args>
+constexpr bool serializer_dispatch(basic_string_builder<CharT, Allocator>& dest,
+                                   const T& value,
+                                   const Args&... args) {
+  constexpr auto Options = Parent::options;
+
+  if constexpr (std::is_same_v<T, std::monostate>) {
+    // (1) std::monostate (typically used as nullish alternative in std::variant)
+    dest.append_utf_string("null");
+    return true;
+  } else if constexpr (std::is_arithmetic_v<T>) {
+    // (2) Arithmetic types (see above)
+    auto res = serializer_dispatch_arithmetic<Parent>(dest, value, args...);
+    return res;
   } else if constexpr (std::is_enum_v<T>) {
     // (3) Enum types
     constexpr auto to_string = Options.enum_to_string;
     constexpr auto halts_on_invalid = to_string && Options.halts_on_invalid_enum;
-    return serialize_enum_to_json_impl<to_string, halts_on_invalid>(dest, value);
+    auto res = serialize_enum<to_string, halts_on_invalid>(dest, value);
+    return res;
   } else if constexpr (string_like<T>) {
     // (4) String-like types
-    dest.append_char('"').append_utf_string_json_escaped(value).append_char('"');
+    auto str = std::basic_string_view{value};
+    dest.append_char('"').append_utf_string_json_escaped(str).append_char('"');
     return true;
   } else if constexpr (template_instance_of<T, std::optional>) {
     // (7) std::optional
-    //     Note: we check std::optional before range types
-    //           since std::optional is also a range (whose size is 0 or 1)
     if (value.has_value()) {
-      return serialize_to_json_impl<Indents, Options>(
-          dest, *value, indent_level, indent_size, indent_char);
+      return Parent::operator()(dest, *value, args...);
     } else {
       dest.append_utf_string("null");
       return true;
     }
   } else if constexpr (template_instance_of<T, std::variant>) {
     // (8) std::variant
-    auto visit_fn = [&](const auto& v) -> bool {
-      return serialize_to_json_impl<Indents, Options>(
-          dest, v, indent_level, indent_size, indent_char);
-    };
+    auto visit_fn = [&](const auto& v) -> bool { return Parent::operator()(dest, v, args...); };
     if (value.valueless_by_exception()) [[unlikely]] {
       dest.append_utf_string("null");
       return true;
     } else {
       return std::visit(visit_fn, value);
     }
-  } else if constexpr (impl::is_std_map_as_json_object<T>::value) {
-    // (5.1) std::map<K, V> where K is string-like type:
-    //       Serialized to JSON object
-    return serialize_std_map_to_json_impl<Indents, Options>(
-        dest, value, indent_level, indent_size, indent_char);
+  } else if constexpr (template_instance_of<T, std::map>) {
+    if constexpr (string_like<typename T::key_type>) {
+      // (5.1) std::map<K, V> where K is string-like type: Serialized to JSON object
+      return Parent::append_map(dest, value, args...);
+    } else {
+      // (5.2.1) std::map<K, V> where K is not string-like type: Serialized to JSON nested array
+      return Parent::append_range(dest, value, args...);
+    }
   } else if constexpr (std::ranges::range<T>) {
-    // (5.2) Other range types (including C-style arrays)
-    return serialize_range_to_json_impl<Indents, Options>(
-        dest, value, indent_level, indent_size, indent_char);
+    // (5.2.2) Other range types (including C-style arrays)
+    return Parent::append_range(dest, value, args...);
   } else if constexpr (tuple_like<T>) {
     // (6) Tuple-like types
-    return serialize_tuple_to_json_impl<Indents, Options>(
-        dest, value, indent_level, indent_size, indent_char);
+    return Parent::append_tuple(dest, value, args...);
   } else if constexpr (flattenable_class<T>) {
     // (9) Flattenable class types (memberwise serializable)
-    return serialize_struct_to_json_impl<Indents, Options>(
-        dest, value, indent_level, indent_size, indent_char);
+    return Parent::append_struct(dest, value, args...);
   } else {
     static_assert(false, "Invalid or usupported value type");
   }
 }
-}  // namespace impl
 
-template <serialize_options Options = {}, class CharT, class Allocator, memberwise_serializable T>
+template <serialize_options Options>
+struct indented_serializer : indented_serializer_base<indented_serializer<Options>> {
+  using self_type = indented_serializer<Options>;
+
+  static constexpr auto options = Options;
+  static constexpr auto quotes_field_name = true;
+
+  template <class CharT, class Allocator, class T>
+  static constexpr bool operator()(basic_string_builder<CharT, Allocator>& dest,
+                                   const T& value,
+                                   int indent_level,
+                                   int indent_size,
+                                   CharT indent_char) {
+    return serializer_dispatch<self_type>(dest, value, indent_level, indent_size, indent_char);
+  }
+};
+
+template <serialize_options Options>
+struct unindented_serializer : unindented_serializer_base<unindented_serializer<Options>> {
+  using self_type = unindented_serializer<Options>;
+
+  static constexpr auto options = Options;
+  static constexpr auto quotes_field_name = true;
+
+  template <class CharT, class Allocator, class T>
+  static constexpr bool operator()(basic_string_builder<CharT, Allocator>& dest, const T& value) {
+    return serializer_dispatch<self_type>(dest, value);
+  }
+};
+}  // namespace impl::json
+
+template <serialize_options Options = {}, class CharT, class Allocator, serializable T>
 constexpr bool serialize_to_json(basic_string_builder<CharT, Allocator>& dest, const T& value) {
-  return impl::serialize_to_json_impl<false, Options>(dest, value, 0, 0, static_cast<CharT>(0));
+  return impl::json::unindented_serializer<Options>::operator()(dest, value);
 }
 
-template <serialize_options Options = {}, class CharT, class Allocator, memberwise_serializable T>
+template <serialize_options Options = {}, class CharT, class Allocator, serializable T>
 constexpr bool serialize_to_json(basic_string_builder<CharT, Allocator>& dest,
                                  const T& value,
                                  int indent_size,
                                  CharT indent_char = static_cast<CharT>(' ')) {
-  return impl::serialize_to_json_impl<true, Options>(dest, value, 0, indent_size, indent_char);
+  return impl::json::indented_serializer<Options>::operator()(
+      dest, value, 0, indent_size, indent_char);
 }
 
-template <class CharT = char, serialize_options Options = {}, memberwise_serializable T>
+template <class CharT = char, serialize_options Options = {}, serializable T>
 constexpr auto serialize_to_json(const T& value) /* -> (see below) */ {
   auto builder = basic_string_builder<CharT>{};
   if constexpr (Options.never_halts()) {
     // -> std::basic_string<CharT>
-    impl::serialize_to_json_impl<false, Options>(builder, value, 0, 0, static_cast<CharT>(0));
+    impl::json::unindented_serializer<Options>::operator()(builder, value);
     return builder.str();
   } else {
     // -> std::optional<std::basic_string<CharT>>
     using Ret = std::optional<std::basic_string<CharT>>;
-    if (impl::serialize_to_json_impl<false, Options>(builder, value, 0, 0, static_cast<CharT>(0))) {
+    if (impl::json::unindented_serializer<Options>::operator()(builder, value)) [[likely]] {
       return Ret{builder.str()};
-    } else [[unlikely]] {
+    } else {
       return Ret{std::nullopt};
     }
   }
 }
 
-template <class CharT = char, serialize_options Options = {}, memberwise_serializable T>
+template <class CharT = char, serialize_options Options = {}, serializable T>
 constexpr auto serialize_to_json(const T& value,
                                  int indent_size,
                                  CharT indent_char = static_cast<CharT>(' ')) /* -> (see below) */ {
   auto builder = basic_string_builder<CharT>{};
   if constexpr (Options.never_halts()) {
     // -> std::basic_string<CharT>
-    impl::serialize_to_json_impl<true, Options>(builder, value, 0, indent_size, indent_char);
+    impl::json::indented_serializer<Options>::operator()(
+        builder, value, 0, indent_size, indent_char);
     return builder.str();
   } else {
     // -> std::optional<std::basic_string<CharT>>
     using Ret = std::optional<std::basic_string<CharT>>;
-    if (impl::serialize_to_json_impl<true, Options>(builder, value, 0, indent_size, indent_char)) {
+    auto ok = impl::json::indented_serializer<Options>::operator()(
+        builder, value, 0, indent_size, indent_char);
+    if (ok) [[likely]] {
       return Ret{builder.str()};
-    } else [[unlikely]] {
+    } else {
       return Ret{std::nullopt};
     }
   }

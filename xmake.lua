@@ -81,6 +81,7 @@ meta_test_cases = {
   "utils/test_utility",
   -- Type Traits
   "type_traits/test_cvref",
+  "type_traits/test_enum_types",
   "type_traits/test_is_invocable",
   "type_traits/test_serializable_types",
   "type_traits/test_string_like_types",
@@ -173,7 +174,7 @@ meta_test_cases = {
   "lookup/namespace_member/string_key/test_templates",
   -- Type Operations
   "type_operations/test_comparison",
-  "type_operations/test_member_access",
+  "type_operations/test_dump_to_json_like",
   "type_operations/test_serialize_to_json",
   "type_operations/test_to_string",
   "type_operations/test_to_structural",

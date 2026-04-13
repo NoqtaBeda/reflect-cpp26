@@ -49,7 +49,7 @@ TEST(UtilsStringEncodingExamples, Utf8ToUtf16Basic) {
   constexpr auto len = sizeof(u8"Hello, 世界! 🌍") - 1;
   char16_t utf16_output[32] = {};
   auto result = rfl::utf8_to_utf16(utf16_output, utf16_output + 32, utf8_input, utf8_input + len);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   // Success: result.out_ptr points past the last character written
   EXPECT_EQ(utf8_input + len, result.in_ptr);
 }
@@ -61,7 +61,7 @@ TEST(UtilsStringEncodingExamples, Utf8ToUtf16InvalidContinuation) {
   char8_t invalid_utf8[] = {char8_t(0xC2), char8_t(0x41)};
   char16_t output[16] = {};
   auto err_result = rfl::utf8_to_utf16(output, output + 16, invalid_utf8, invalid_utf8 + 2);
-  EXPECT_EQ(std::errc::invalid_argument, err_result.ec);
+  EXPECT_EQ(rfl::encoding_status::invalid_character, err_result.status);
   // err_result.in_ptr == invalid_utf8 (points to the invalid sequence, can retry)
   EXPECT_EQ(invalid_utf8, err_result.in_ptr);
   // err_result.out_ptr == output (nothing written)
@@ -74,7 +74,7 @@ TEST(UtilsStringEncodingExamples, AlternativeCharTypes) {
   char input[] = "ASCII";    // char instead of char8_t
   uint16_t buffer[16] = {};  // uint16_t instead of char16_t
   auto r = rfl::utf8_to_utf16(buffer, buffer + 16, input, input + 5);
-  EXPECT_EQ(std::errc{}, r.ec);
+  EXPECT_EQ(rfl::encoding_status::done, r.status);
   EXPECT_EQ(buffer + 5, r.out_ptr);
   EXPECT_EQ(input + 5, r.in_ptr);
 }
@@ -101,7 +101,7 @@ TEST(UtilsStringEncodingExamples, ReplaceInvalidWithReplacementChar) {
 
   // First conversion: convert "Hello", stop at invalid 0xFF
   auto result = rfl::utf8_to_utf16(out_ptr, output + 32, input, input + len);
-  EXPECT_EQ(std::errc::invalid_argument, result.ec);
+  EXPECT_EQ(rfl::encoding_status::invalid_character, result.status);
   EXPECT_EQ(5, result.out_ptr - output);  // "Hello" = 5 chars
 
   // Verify in_ptr points to the invalid byte
@@ -121,7 +121,7 @@ TEST(UtilsStringEncodingExamples, ReplaceInvalidWithReplacementChar) {
   result = rfl::utf8_to_utf16(out_ptr, output + 32, invalid_end, input + len);
 
   // Final result should be 11 UTF-16 code units (5 + 1 + 5)
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(11, result.out_ptr - output);
 }
 
@@ -136,7 +136,7 @@ TEST(UtilsStringEncoding, Utf8ToUtf16Empty) {
   // No input processed, no output written
   EXPECT_EQ(output, result.out_ptr);
   EXPECT_EQ(input, result.in_ptr);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
 }
 
 TEST(UtilsStringEncoding, Utf8ToUtf16Ascii) {
@@ -146,7 +146,7 @@ TEST(UtilsStringEncoding, Utf8ToUtf16Ascii) {
   // 5 ASCII chars converted: out_ptr advanced by 5, in_ptr advanced by 5
   EXPECT_EQ(output + 5, result.out_ptr);
   EXPECT_EQ(input + 5, result.in_ptr);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(u'H', output[0]);
   EXPECT_EQ(u'e', output[1]);
   EXPECT_EQ(u'l', output[2]);
@@ -161,7 +161,7 @@ TEST(UtilsStringEncoding, Utf8ToUtf16TwoByte) {
   // 2 code points (2-byte UTF-8 each): out_ptr advanced by 2, in_ptr advanced by 4
   EXPECT_EQ(output + 2, result.out_ptr);
   EXPECT_EQ(input + 4, result.in_ptr);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(u'\u00A9', output[0]);
   EXPECT_EQ(u'\u00AE', output[1]);
 }
@@ -173,7 +173,7 @@ TEST(UtilsStringEncoding, Utf8ToUtf16ThreeByte) {
   // 2 code points (3-byte UTF-8 each): out_ptr advanced by 2, in_ptr advanced by 6
   EXPECT_EQ(output + 2, result.out_ptr);
   EXPECT_EQ(input + 6, result.in_ptr);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(u'\u4E2D', output[0]);
   EXPECT_EQ(u'\u6587', output[1]);
 }
@@ -186,7 +186,7 @@ TEST(UtilsStringEncoding, Utf8ToUtf16FourByte) {
   // out_ptr advanced by 4, in_ptr advanced by 8
   EXPECT_EQ(output + 4, result.out_ptr);
   EXPECT_EQ(input + 8, result.in_ptr);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(static_cast<char16_t>(0xD83D), output[0]);
   EXPECT_EQ(static_cast<char16_t>(0xDE00), output[1]);
   EXPECT_EQ(static_cast<char16_t>(0xD83C), output[2]);
@@ -197,7 +197,7 @@ TEST(UtilsStringEncoding, Utf8ToUtf16BufferTooSmall) {
   char8_t input[] = u8"Hello";
   char16_t output[3] = {};
   auto result = rfl::utf8_to_utf16(output, output + 3, input, input + 5);
-  EXPECT_EQ(std::errc::value_too_large, result.ec);
+  EXPECT_EQ(rfl::encoding_status::buffer_run_out, result.status);
   // 3 chars written, 4th char doesn't fit: out_ptr at output + 3, in_ptr at input + 3 (NOT
   // consumed, can retry)
   EXPECT_EQ(output + 3, result.out_ptr);
@@ -208,7 +208,7 @@ TEST(UtilsStringEncoding, Utf8ToUtf16InvalidContinuation) {
   char8_t input[] = {static_cast<char8_t>(0xC2), static_cast<char8_t>(0x41)};
   char16_t output[16] = {};
   auto result = rfl::utf8_to_utf16(output, output + 16, input, input + 2);
-  EXPECT_EQ(std::errc::invalid_argument, result.ec);
+  EXPECT_EQ(rfl::encoding_status::invalid_character, result.status);
   // Error: 0xC2 expects continuation, got 0x41 - does not consume invalid bytes
   // no output written, in_ptr points to the invalid sequence (can retry)
   EXPECT_EQ(output, result.out_ptr);
@@ -219,7 +219,7 @@ TEST(UtilsStringEncoding, Utf8ToUtf16OverlongEncoding) {
   char8_t input[] = {static_cast<char8_t>(0xC0), static_cast<char8_t>(0x80)};
   char16_t output[16] = {};
   auto result = rfl::utf8_to_utf16(output, output + 16, input, input + 2);
-  EXPECT_EQ(std::errc::invalid_argument, result.ec);
+  EXPECT_EQ(rfl::encoding_status::invalid_character, result.status);
   // Overlong encoding (0xC0 0x80 would encode NUL, but is invalid): does not consume
   // leading byte no output written, in_ptr points to the invalid sequence
   EXPECT_EQ(output, result.out_ptr);
@@ -230,7 +230,7 @@ TEST(UtilsStringEncoding, Utf8ToUtf16TruncatedSequence) {
   char8_t input[] = {static_cast<char8_t>(0xE2)};
   char16_t output[16] = {};
   auto result = rfl::utf8_to_utf16(output, output + 16, input, input + 1);
-  EXPECT_EQ(std::errc::invalid_argument, result.ec);
+  EXPECT_EQ(rfl::encoding_status::invalid_character, result.status);
   // 0xE2 starts 3-byte sequence but no continuation bytes: does not consume
   // no output written, in_ptr points to the truncated sequence
   EXPECT_EQ(output, result.out_ptr);
@@ -242,7 +242,7 @@ TEST(UtilsStringEncoding, Utf8ToUtf16SurrogateInUtf8) {
       static_cast<char8_t>(0xED), static_cast<char8_t>(0xA0), static_cast<char8_t>(0x80)};
   char16_t output[16] = {};
   auto result = rfl::utf8_to_utf16(output, output + 16, input, input + 3);
-  EXPECT_EQ(std::errc::invalid_argument, result.ec);
+  EXPECT_EQ(rfl::encoding_status::invalid_character, result.status);
   // 0xED 0xA0 0x80 encodes U+D800 (surrogate), which is invalid in UTF-8: does not consume
   // no output written, in_ptr points to the invalid sequence
   EXPECT_EQ(output, result.out_ptr);
@@ -258,7 +258,7 @@ TEST(UtilsStringEncoding, Utf8ToUtf32Empty) {
   // No input processed, no output written
   EXPECT_EQ(output, result.out_ptr);
   EXPECT_EQ(input, result.in_ptr);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
 }
 
 TEST(UtilsStringEncoding, Utf8ToUtf32Ascii) {
@@ -268,7 +268,7 @@ TEST(UtilsStringEncoding, Utf8ToUtf32Ascii) {
   // 3 ASCII chars converted: out_ptr advanced by 3, in_ptr advanced by 3
   EXPECT_EQ(output + 3, result.out_ptr);
   EXPECT_EQ(input + 3, result.in_ptr);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(U'A', output[0]);
   EXPECT_EQ(U'B', output[1]);
   EXPECT_EQ(U'C', output[2]);
@@ -281,7 +281,7 @@ TEST(UtilsStringEncoding, Utf8ToUtf32Mixed) {
   // 4 code points (1+2+3+4 bytes in UTF-8): out_ptr advanced by 4, in_ptr advanced by 10
   EXPECT_EQ(output + 4, result.out_ptr);
   EXPECT_EQ(input + 10, result.in_ptr);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(U'A', output[0]);
   EXPECT_EQ(U'\u00A9', output[1]);
   EXPECT_EQ(U'\u4E2D', output[2]);
@@ -292,7 +292,7 @@ TEST(UtilsStringEncoding, Utf8ToUtf32BufferTooSmall) {
   char8_t input[] = u8"ABC";
   char32_t output[2] = {};
   auto result = rfl::utf8_to_utf32(output, output + 2, input, input + 3);
-  EXPECT_EQ(std::errc::value_too_large, result.ec);
+  EXPECT_EQ(rfl::encoding_status::buffer_run_out, result.status);
   // 2 chars converted before buffer full: out_ptr at output + 2, in_ptr at input + 2 (NOT consumed,
   // can retry)
   EXPECT_EQ(output + 2, result.out_ptr);
@@ -303,7 +303,7 @@ TEST(UtilsStringEncoding, Utf8ToUtf32InvalidContinuation) {
   char8_t input[] = {static_cast<char8_t>(0xC2), static_cast<char8_t>(0x41)};
   char32_t output[16] = {};
   auto result = rfl::utf8_to_utf32(output, output + 16, input, input + 2);
-  EXPECT_EQ(std::errc::invalid_argument, result.ec);
+  EXPECT_EQ(rfl::encoding_status::invalid_character, result.status);
   // Error: 0xC2 expects continuation, got 0x41 - does not consume
   // no output written, in_ptr points to the invalid sequence (can retry)
   EXPECT_EQ(output, result.out_ptr);
@@ -319,7 +319,7 @@ TEST(UtilsStringEncoding, Utf16ToUtf8Empty) {
   // No input processed, no output written
   EXPECT_EQ(output, result.out_ptr);
   EXPECT_EQ(input, result.in_ptr);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
 }
 
 TEST(UtilsStringEncoding, Utf16ToUtf8Ascii) {
@@ -329,7 +329,7 @@ TEST(UtilsStringEncoding, Utf16ToUtf8Ascii) {
   // 2 BMP chars converted (each 1 byte in UTF-8): out_ptr advanced by 2, in_ptr advanced by 2
   EXPECT_EQ(output + 2, result.out_ptr);
   EXPECT_EQ(input + 2, result.in_ptr);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(u8'H', output[0]);
   EXPECT_EQ(u8'i', output[1]);
 }
@@ -341,7 +341,7 @@ TEST(UtilsStringEncoding, Utf16ToUtf8Bmp) {
   // 2 BMP chars (2+3 bytes in UTF-8): out_ptr advanced by 5, in_ptr advanced by 2
   EXPECT_EQ(output + 5, result.out_ptr);
   EXPECT_EQ(input + 2, result.in_ptr);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
 }
 
 TEST(UtilsStringEncoding, Utf16ToUtf8SurrogatePair) {
@@ -352,7 +352,7 @@ TEST(UtilsStringEncoding, Utf16ToUtf8SurrogatePair) {
   // 2
   EXPECT_EQ(output + 4, result.out_ptr);
   EXPECT_EQ(input + 2, result.in_ptr);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(static_cast<char8_t>(0xF0), output[0]);
   EXPECT_EQ(static_cast<char8_t>(0x9F), output[1]);
   EXPECT_EQ(static_cast<char8_t>(0x98), output[2]);
@@ -363,7 +363,7 @@ TEST(UtilsStringEncoding, Utf16ToUtf8LowSurrogateOnly) {
   char16_t input[] = {static_cast<char16_t>(0xDC00)};
   char8_t output[16] = {};
   auto result = rfl::utf16_to_utf8(output, output + 16, input, input + 1);
-  EXPECT_EQ(std::errc::invalid_argument, result.ec);
+  EXPECT_EQ(rfl::encoding_status::invalid_character, result.status);
   // Low surrogate without high surrogate: does not consume
   // no output written, in_ptr points to the invalid surrogate (can retry)
   EXPECT_EQ(output, result.out_ptr);
@@ -374,7 +374,7 @@ TEST(UtilsStringEncoding, Utf16ToUtf8HighSurrogateOnly) {
   char16_t input[] = {static_cast<char16_t>(0xD800)};
   char8_t output[16] = {};
   auto result = rfl::utf16_to_utf8(output, output + 16, input, input + 1);
-  EXPECT_EQ(std::errc::invalid_argument, result.ec);
+  EXPECT_EQ(rfl::encoding_status::invalid_character, result.status);
   // High surrogate without low surrogate (end of input): does not consume
   // no output written, in_ptr points to the truncated surrogate (can retry)
   EXPECT_EQ(output, result.out_ptr);
@@ -385,7 +385,7 @@ TEST(UtilsStringEncoding, Utf16ToUtf8HighSurrogateWithoutLow) {
   char16_t input[] = {static_cast<char16_t>(0xD800), u'A'};
   char8_t output[16] = {};
   auto result = rfl::utf16_to_utf8(output, output + 16, input, input + 2);
-  EXPECT_EQ(std::errc::invalid_argument, result.ec);
+  EXPECT_EQ(rfl::encoding_status::invalid_character, result.status);
   // High surrogate followed by non-low-surrogate: does not consume
   // no output written, in_ptr points to the invalid sequence (can retry)
   EXPECT_EQ(output, result.out_ptr);
@@ -396,7 +396,7 @@ TEST(UtilsStringEncoding, Utf16ToUtf8BufferTooSmall) {
   char16_t input[] = u"\u4E2D";
   char8_t output[2] = {};
   auto result = rfl::utf16_to_utf8(output, output + 2, input, input + 1);
-  EXPECT_EQ(std::errc::value_too_large, result.ec);
+  EXPECT_EQ(rfl::encoding_status::buffer_run_out, result.status);
   // \u4E2D needs 3 bytes in UTF-8, buffer has 2: no output written, in_ptr NOT consumed
   EXPECT_EQ(output, result.out_ptr);
   EXPECT_EQ(input, result.in_ptr);
@@ -411,7 +411,7 @@ TEST(UtilsStringEncoding, Utf16ToUtf32Empty) {
   // No input processed, no output written
   EXPECT_EQ(output, result.out_ptr);
   EXPECT_EQ(input, result.in_ptr);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
 }
 
 TEST(UtilsStringEncoding, Utf16ToUtf32Bmp) {
@@ -421,7 +421,7 @@ TEST(UtilsStringEncoding, Utf16ToUtf32Bmp) {
   // 2 BMP chars: out_ptr advanced by 2, in_ptr advanced by 2
   EXPECT_EQ(output + 2, result.out_ptr);
   EXPECT_EQ(input + 2, result.in_ptr);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(U'\u00A9', output[0]);
   EXPECT_EQ(U'\u4E2D', output[1]);
 }
@@ -433,7 +433,7 @@ TEST(UtilsStringEncoding, Utf16ToUtf32SurrogatePair) {
   // 1 surrogate pair -> 1 code point: out_ptr advanced by 1, in_ptr advanced by 2
   EXPECT_EQ(output + 1, result.out_ptr);
   EXPECT_EQ(input + 2, result.in_ptr);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(U'\U0001F600', output[0]);
 }
 
@@ -441,7 +441,7 @@ TEST(UtilsStringEncoding, Utf16ToUtf32BufferTooSmall) {
   char16_t input[] = u"AB";
   char32_t output[1] = {};
   auto result = rfl::utf16_to_utf32(output, output + 1, input, input + 2);
-  EXPECT_EQ(std::errc::value_too_large, result.ec);
+  EXPECT_EQ(rfl::encoding_status::buffer_run_out, result.status);
   // 1 char converted before buffer full: out_ptr at output + 1, in_ptr at input + 1 (NOT consumed,
   // can retry)
   EXPECT_EQ(output + 1, result.out_ptr);
@@ -452,7 +452,7 @@ TEST(UtilsStringEncoding, Utf16ToUtf32InvalidSurrogate) {
   char16_t input[] = {static_cast<char16_t>(0xD800)};
   char32_t output[16] = {};
   auto result = rfl::utf16_to_utf32(output, output + 16, input, input + 1);
-  EXPECT_EQ(std::errc::invalid_argument, result.ec);
+  EXPECT_EQ(rfl::encoding_status::invalid_character, result.status);
   // High surrogate without low surrogate: does not consume
   // no output written, in_ptr points to the truncated surrogate (can retry)
   EXPECT_EQ(output, result.out_ptr);
@@ -468,7 +468,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf8Empty) {
   // No input processed, no output written
   EXPECT_EQ(output, result.out_ptr);
   EXPECT_EQ(input, result.in_ptr);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
 }
 
 TEST(UtilsStringEncoding, Utf32ToUtf8Ascii) {
@@ -478,7 +478,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf8Ascii) {
   // 2 ASCII chars: out_ptr advanced by 2, in_ptr advanced by 2
   EXPECT_EQ(output + 2, result.out_ptr);
   EXPECT_EQ(input + 2, result.in_ptr);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(u8'A', output[0]);
   EXPECT_EQ(u8'B', output[1]);
 }
@@ -490,7 +490,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf8TwoByte) {
   // 1 code point (2 bytes in UTF-8): out_ptr advanced by 2, in_ptr advanced by 1
   EXPECT_EQ(output + 2, result.out_ptr);
   EXPECT_EQ(input + 1, result.in_ptr);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(static_cast<char8_t>(0xC2), output[0]);
   EXPECT_EQ(static_cast<char8_t>(0xA9), output[1]);
 }
@@ -502,7 +502,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf8ThreeByte) {
   // 1 code point (3 bytes in UTF-8): out_ptr advanced by 3, in_ptr advanced by 1
   EXPECT_EQ(output + 3, result.out_ptr);
   EXPECT_EQ(input + 1, result.in_ptr);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
 }
 
 TEST(UtilsStringEncoding, Utf32ToUtf8FourByte) {
@@ -512,14 +512,14 @@ TEST(UtilsStringEncoding, Utf32ToUtf8FourByte) {
   // 1 code point (4 bytes in UTF-8): out_ptr advanced by 4, in_ptr advanced by 1
   EXPECT_EQ(output + 4, result.out_ptr);
   EXPECT_EQ(input + 1, result.in_ptr);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
 }
 
 TEST(UtilsStringEncoding, Utf32ToUtf8InvalidSurrogate) {
   char32_t input[] = {static_cast<char32_t>(0xD800)};
   char8_t output[16] = {};
   auto result = rfl::utf32_to_utf8(output, output + 16, input, input + 1);
-  EXPECT_EQ(std::errc::invalid_argument, result.ec);
+  EXPECT_EQ(rfl::encoding_status::invalid_character, result.status);
   // Surrogate code point is invalid: does not consume
   // no output written, in_ptr points to the invalid code point (can retry)
   EXPECT_EQ(output, result.out_ptr);
@@ -530,7 +530,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf8TooLarge) {
   char32_t input[] = {static_cast<char32_t>(0x110000)};
   char8_t output[16] = {};
   auto result = rfl::utf32_to_utf8(output, output + 16, input, input + 1);
-  EXPECT_EQ(std::errc::invalid_argument, result.ec);
+  EXPECT_EQ(rfl::encoding_status::invalid_character, result.status);
   // Code point > U+10FFFF is invalid: does not consume
   // no output written, in_ptr points to the invalid code point (can retry)
   EXPECT_EQ(output, result.out_ptr);
@@ -541,7 +541,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf8BufferTooSmall) {
   char32_t input[] = {U'\u4E2D'};
   char8_t output[2] = {};
   auto result = rfl::utf32_to_utf8(output, output + 2, input, input + 1);
-  EXPECT_EQ(std::errc::value_too_large, result.ec);
+  EXPECT_EQ(rfl::encoding_status::buffer_run_out, result.status);
   // \u4E2D needs 3 bytes in UTF-8, buffer has 2: no output written, in_ptr NOT consumed
   EXPECT_EQ(output, result.out_ptr);
   EXPECT_EQ(input, result.in_ptr);
@@ -556,7 +556,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf16Empty) {
   // No input processed, no output written
   EXPECT_EQ(output, result.out_ptr);
   EXPECT_EQ(input, result.in_ptr);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
 }
 
 TEST(UtilsStringEncoding, Utf32ToUtf16Bmp) {
@@ -566,7 +566,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf16Bmp) {
   // 2 BMP chars: out_ptr advanced by 2, in_ptr advanced by 2
   EXPECT_EQ(output + 2, result.out_ptr);
   EXPECT_EQ(input + 2, result.in_ptr);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(u'\u00A9', output[0]);
   EXPECT_EQ(u'\u4E2D', output[1]);
 }
@@ -578,7 +578,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf16Supplementary) {
   // 1 supplementary char -> surrogate pair: out_ptr advanced by 2, in_ptr advanced by 1
   EXPECT_EQ(output + 2, result.out_ptr);
   EXPECT_EQ(input + 1, result.in_ptr);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(static_cast<char16_t>(0xD83D), output[0]);
   EXPECT_EQ(static_cast<char16_t>(0xDE00), output[1]);
 }
@@ -587,7 +587,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf16InvalidSurrogate) {
   char32_t input[] = {static_cast<char32_t>(0xDC00)};
   char16_t output[16] = {};
   auto result = rfl::utf32_to_utf16(output, output + 16, input, input + 1);
-  EXPECT_EQ(std::errc::invalid_argument, result.ec);
+  EXPECT_EQ(rfl::encoding_status::invalid_character, result.status);
   // Surrogate code point is invalid: does not consume
   // no output written, in_ptr points to the invalid code point (can retry)
   EXPECT_EQ(output, result.out_ptr);
@@ -598,7 +598,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf16TooLarge) {
   char32_t input[] = {static_cast<char32_t>(0x200000)};
   char16_t output[16] = {};
   auto result = rfl::utf32_to_utf16(output, output + 16, input, input + 1);
-  EXPECT_EQ(std::errc::invalid_argument, result.ec);
+  EXPECT_EQ(rfl::encoding_status::invalid_character, result.status);
   // Code point > U+10FFFF is invalid: does not consume
   // no output written, in_ptr points to the invalid code point (can retry)
   EXPECT_EQ(output, result.out_ptr);
@@ -609,7 +609,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf16BufferTooSmall) {
   char32_t input[] = {U'\U0001F600'};
   char16_t output[1] = {};
   auto result = rfl::utf32_to_utf16(output, output + 1, input, input + 1);
-  EXPECT_EQ(std::errc::value_too_large, result.ec);
+  EXPECT_EQ(rfl::encoding_status::buffer_run_out, result.status);
   // Emoji needs 2 UTF-16 code units (surrogate pair), buffer has 1: no output written, in_ptr NOT
   // consumed
   EXPECT_EQ(output, result.out_ptr);
@@ -625,10 +625,10 @@ TEST(UtilsStringEncoding, RoundTripUtf8ToUtf16ToUtf8) {
   char8_t utf8_buf[16] = {};
 
   auto r1 = rfl::utf8_to_utf16(utf16_buf, utf16_buf + 16, original, original + len);
-  EXPECT_EQ(std::errc{}, r1.ec);
+  EXPECT_EQ(rfl::encoding_status::done, r1.status);
 
   auto r2 = rfl::utf16_to_utf8(utf8_buf, utf8_buf + 16, utf16_buf, r1.out_ptr);
-  EXPECT_EQ(std::errc{}, r2.ec);
+  EXPECT_EQ(rfl::encoding_status::done, r2.status);
   EXPECT_EQ(static_cast<ptrdiff_t>(len), r2.out_ptr - utf8_buf);
 
   for (size_t i = 0; i < len; ++i) {
@@ -643,10 +643,10 @@ TEST(UtilsStringEncoding, RoundTripUtf8ToUtf32ToUtf8) {
   char8_t utf8_buf[16] = {};
 
   auto r1 = rfl::utf8_to_utf32(utf32_buf, utf32_buf + 16, original, original + len);
-  EXPECT_EQ(std::errc{}, r1.ec);
+  EXPECT_EQ(rfl::encoding_status::done, r1.status);
 
   auto r2 = rfl::utf32_to_utf8(utf8_buf, utf8_buf + 16, utf32_buf, r1.out_ptr);
-  EXPECT_EQ(std::errc{}, r2.ec);
+  EXPECT_EQ(rfl::encoding_status::done, r2.status);
   EXPECT_EQ(static_cast<ptrdiff_t>(len), r2.out_ptr - utf8_buf);
 
   for (size_t i = 0; i < len; ++i) {
@@ -660,10 +660,10 @@ TEST(UtilsStringEncoding, RoundTripUtf16ToUtf32ToUtf16) {
   char16_t utf16_buf[16] = {};
 
   auto r1 = rfl::utf16_to_utf32(utf32_buf, utf32_buf + 16, original, original + 6);
-  EXPECT_EQ(std::errc{}, r1.ec);
+  EXPECT_EQ(rfl::encoding_status::done, r1.status);
 
   auto r2 = rfl::utf32_to_utf16(utf16_buf, utf16_buf + 16, utf32_buf, r1.out_ptr);
-  EXPECT_EQ(std::errc{}, r2.ec);
+  EXPECT_EQ(rfl::encoding_status::done, r2.status);
   EXPECT_EQ(6, r2.out_ptr - utf16_buf);
 
   for (ptrdiff_t i = 0; i < 6; ++i) {
@@ -779,7 +779,7 @@ TEST(UtilsStringEncoding, Utf8ToUtf16JsonEscapedBasic) {
   char8_t input[] = u8"Hello";
   char16_t output[16] = {};
   auto result = rfl::utf8_to_utf16_json_escaped(output, output + 16, input, input + 5);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(output + 5, result.out_ptr);
   EXPECT_EQ(input + 5, result.in_ptr);
 }
@@ -788,7 +788,7 @@ TEST(UtilsStringEncoding, Utf8ToUtf16JsonEscapedControlChar) {
   char8_t input[] = {char8_t(0x01), char8_t(0x0A), char8_t(0x7F)};
   char16_t output[32] = {};
   auto result = rfl::utf8_to_utf16_json_escaped(output, output + 32, input, input + 3);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 3, result.in_ptr);
 }
 
@@ -796,7 +796,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedBasic) {
   char32_t input[] = {U'A', U'B', U'C'};
   char8_t output[16] = {};
   auto result = rfl::utf32_to_utf8_json_escaped(output, output + 16, input, input + 3);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 3, result.in_ptr);
   EXPECT_EQ(output + 3, result.out_ptr);
 }
@@ -805,7 +805,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedControlChar) {
   char32_t input[] = {U'\n', U'\t'};
   char8_t output[16] = {};
   auto result = rfl::utf32_to_utf8_json_escaped(output, output + 16, input, input + 2);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 2, result.in_ptr);
 }
 
@@ -813,7 +813,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedDoubleQuote) {
   char32_t input[] = {U'"'};
   char8_t output[8] = {};
   auto result = rfl::utf32_to_utf8_json_escaped(output, output + 8, input, input + 1);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 1, result.in_ptr);
   EXPECT_EQ(u8'\\', output[0]);
   EXPECT_EQ(u8'"', output[1]);
@@ -823,7 +823,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedBackslash) {
   char32_t input[] = {U'\\'};
   char8_t output[8] = {};
   auto result = rfl::utf32_to_utf8_json_escaped(output, output + 8, input, input + 1);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 1, result.in_ptr);
   EXPECT_EQ(u8'\\', output[0]);
   EXPECT_EQ(u8'\\', output[1]);
@@ -833,7 +833,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedSlash) {
   char32_t input[] = {U'/'};
   char8_t output[8] = {};
   auto result = rfl::utf32_to_utf8_json_escaped(output, output + 8, input, input + 1);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 1, result.in_ptr);
   EXPECT_EQ(u8'\\', output[0]);
   EXPECT_EQ(u8'/', output[1]);
@@ -843,7 +843,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedBackspace) {
   char32_t input[] = {U'\b'};
   char8_t output[8] = {};
   auto result = rfl::utf32_to_utf8_json_escaped(output, output + 8, input, input + 1);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 1, result.in_ptr);
   EXPECT_EQ(u8'\\', output[0]);
   EXPECT_EQ(u8'b', output[1]);
@@ -853,7 +853,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedFormFeed) {
   char32_t input[] = {U'\f'};
   char8_t output[8] = {};
   auto result = rfl::utf32_to_utf8_json_escaped(output, output + 8, input, input + 1);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 1, result.in_ptr);
   EXPECT_EQ(u8'\\', output[0]);
   EXPECT_EQ(u8'f', output[1]);
@@ -863,7 +863,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedNewline) {
   char32_t input[] = {U'\n'};
   char8_t output[8] = {};
   auto result = rfl::utf32_to_utf8_json_escaped(output, output + 8, input, input + 1);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 1, result.in_ptr);
   EXPECT_EQ(u8'\\', output[0]);
   EXPECT_EQ(u8'n', output[1]);
@@ -873,7 +873,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedCarriageReturn) {
   char32_t input[] = {U'\r'};
   char8_t output[8] = {};
   auto result = rfl::utf32_to_utf8_json_escaped(output, output + 8, input, input + 1);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 1, result.in_ptr);
   EXPECT_EQ(u8'\\', output[0]);
   EXPECT_EQ(u8'r', output[1]);
@@ -883,7 +883,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedTab) {
   char32_t input[] = {U'\t'};
   char8_t output[8] = {};
   auto result = rfl::utf32_to_utf8_json_escaped(output, output + 8, input, input + 1);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 1, result.in_ptr);
   EXPECT_EQ(u8'\\', output[0]);
   EXPECT_EQ(u8't', output[1]);
@@ -893,7 +893,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedControlCharU0000) {
   char32_t input[] = {U'\x00'};
   char8_t output[16] = {};
   auto result = rfl::utf32_to_utf8_json_escaped(output, output + 16, input, input + 1);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 1, result.in_ptr);
   EXPECT_EQ(u8'\\', output[0]);
   EXPECT_EQ(u8'u', output[1]);
@@ -907,7 +907,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedControlCharU001F) {
   char32_t input[] = {U'\x1F'};
   char8_t output[16] = {};
   auto result = rfl::utf32_to_utf8_json_escaped(output, output + 16, input, input + 1);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 1, result.in_ptr);
   EXPECT_EQ(u8'\\', output[0]);
   EXPECT_EQ(u8'u', output[1]);
@@ -921,7 +921,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedNoEscapeForNormalChars) {
   char32_t input[] = {U'A', U'B', U'C'};
   char8_t output[16] = {};
   auto result = rfl::utf32_to_utf8_json_escaped(output, output + 16, input, input + 3);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 3, result.in_ptr);
   EXPECT_EQ(output + 3, result.out_ptr);
   EXPECT_EQ(u8'A', output[0]);
@@ -933,7 +933,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedNoEscapeForU007F) {
   char32_t input[] = {U'\x7F'};
   char8_t output[16] = {};
   auto result = rfl::utf32_to_utf8_json_escaped(output, output + 16, input, input + 1);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 1, result.in_ptr);
   EXPECT_EQ(u8'\x7F', output[0]);
 }
@@ -942,7 +942,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedEmpty) {
   char32_t input[] = {};
   char8_t output[4] = {};
   auto result = rfl::utf32_to_utf8_json_escaped(output, output + 4, input, input);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input, result.in_ptr);
   EXPECT_EQ(output, result.out_ptr);
 }
@@ -951,7 +951,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf8JsonEscapedMixed) {
   char32_t input[] = {U'A', U'"', U'B'};
   char8_t output[16] = {};
   auto result = rfl::utf32_to_utf8_json_escaped(output, output + 16, input, input + 3);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 3, result.in_ptr);
   EXPECT_EQ(u8'A', output[0]);
   EXPECT_EQ(u8'\\', output[1]);
@@ -963,7 +963,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedDoubleQuote) {
   char32_t input[] = {U'"'};
   char16_t output[8] = {};
   auto result = rfl::utf32_to_utf16_json_escaped(output, output + 8, input, input + 1);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 1, result.in_ptr);
   EXPECT_EQ(u'\\', output[0]);
   EXPECT_EQ(u'"', output[1]);
@@ -973,7 +973,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedBackslash) {
   char32_t input[] = {U'\\'};
   char16_t output[8] = {};
   auto result = rfl::utf32_to_utf16_json_escaped(output, output + 8, input, input + 1);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 1, result.in_ptr);
   EXPECT_EQ(u'\\', output[0]);
   EXPECT_EQ(u'\\', output[1]);
@@ -983,7 +983,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedSlash) {
   char32_t input[] = {U'/'};
   char16_t output[8] = {};
   auto result = rfl::utf32_to_utf16_json_escaped(output, output + 8, input, input + 1);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 1, result.in_ptr);
   EXPECT_EQ(u'\\', output[0]);
   EXPECT_EQ(u'/', output[1]);
@@ -993,7 +993,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedBackspace) {
   char32_t input[] = {U'\b'};
   char16_t output[8] = {};
   auto result = rfl::utf32_to_utf16_json_escaped(output, output + 8, input, input + 1);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 1, result.in_ptr);
   EXPECT_EQ(u'\\', output[0]);
   EXPECT_EQ(u'b', output[1]);
@@ -1003,7 +1003,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedFormFeed) {
   char32_t input[] = {U'\f'};
   char16_t output[8] = {};
   auto result = rfl::utf32_to_utf16_json_escaped(output, output + 8, input, input + 1);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 1, result.in_ptr);
   EXPECT_EQ(u'\\', output[0]);
   EXPECT_EQ(u'f', output[1]);
@@ -1013,7 +1013,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedNewline) {
   char32_t input[] = {U'\n'};
   char16_t output[8] = {};
   auto result = rfl::utf32_to_utf16_json_escaped(output, output + 8, input, input + 1);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 1, result.in_ptr);
   EXPECT_EQ(u'\\', output[0]);
   EXPECT_EQ(u'n', output[1]);
@@ -1023,7 +1023,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedCarriageReturn) {
   char32_t input[] = {U'\r'};
   char16_t output[8] = {};
   auto result = rfl::utf32_to_utf16_json_escaped(output, output + 8, input, input + 1);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 1, result.in_ptr);
   EXPECT_EQ(u'\\', output[0]);
   EXPECT_EQ(u'r', output[1]);
@@ -1033,7 +1033,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedTab) {
   char32_t input[] = {U'\t'};
   char16_t output[8] = {};
   auto result = rfl::utf32_to_utf16_json_escaped(output, output + 8, input, input + 1);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 1, result.in_ptr);
   EXPECT_EQ(u'\\', output[0]);
   EXPECT_EQ(u't', output[1]);
@@ -1043,7 +1043,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedControlCharU0000) {
   char32_t input[] = {U'\x00'};
   char16_t output[16] = {};
   auto result = rfl::utf32_to_utf16_json_escaped(output, output + 16, input, input + 1);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 1, result.in_ptr);
   EXPECT_EQ(u'\\', output[0]);
   EXPECT_EQ(u'u', output[1]);
@@ -1057,7 +1057,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedControlCharU001F) {
   char32_t input[] = {U'\x1F'};
   char16_t output[16] = {};
   auto result = rfl::utf32_to_utf16_json_escaped(output, output + 16, input, input + 1);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 1, result.in_ptr);
   EXPECT_EQ(u'\\', output[0]);
   EXPECT_EQ(u'u', output[1]);
@@ -1071,7 +1071,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedNoEscapeForNormalChars) {
   char32_t input[] = {U'A', U'B', U'C'};
   char16_t output[16] = {};
   auto result = rfl::utf32_to_utf16_json_escaped(output, output + 16, input, input + 3);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 3, result.in_ptr);
   EXPECT_EQ(output + 3, result.out_ptr);
   EXPECT_EQ(u'A', output[0]);
@@ -1083,7 +1083,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedNoEscapeForU007F) {
   char32_t input[] = {U'\x7F'};
   char16_t output[16] = {};
   auto result = rfl::utf32_to_utf16_json_escaped(output, output + 16, input, input + 1);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 1, result.in_ptr);
   EXPECT_EQ(u'\x7F', output[0]);
 }
@@ -1092,7 +1092,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedEmpty) {
   char32_t input[] = {};
   char16_t output[4] = {};
   auto result = rfl::utf32_to_utf16_json_escaped(output, output + 4, input, input);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input, result.in_ptr);
   EXPECT_EQ(output, result.out_ptr);
 }
@@ -1101,7 +1101,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedMixed) {
   char32_t input[] = {U'A', U'"', U'B'};
   char16_t output[16] = {};
   auto result = rfl::utf32_to_utf16_json_escaped(output, output + 16, input, input + 3);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 3, result.in_ptr);
   EXPECT_EQ(u'A', output[0]);
   EXPECT_EQ(u'\\', output[1]);
@@ -1113,7 +1113,7 @@ TEST(UtilsStringEncoding, Utf32ToUtf16JsonEscapedSurrogatePair) {
   char32_t input[] = {U'\U0001F600'};
   char16_t output[8] = {};
   auto result = rfl::utf32_to_utf16_json_escaped(output, output + 8, input, input + 1);
-  EXPECT_EQ(std::errc{}, result.ec);
+  EXPECT_EQ(rfl::encoding_status::done, result.status);
   EXPECT_EQ(input + 1, result.in_ptr);
   EXPECT_EQ(output + 2, result.out_ptr);
 }

@@ -96,6 +96,7 @@ REFLECT_CPP26_CTYPE_PREDICATE(isgraph, not_equal_to, ctype_graph_mask)
 REFLECT_CPP26_CTYPE_PREDICATE(isspace, not_equal_to, ctype_space_mask)
 REFLECT_CPP26_CTYPE_PREDICATE(isprint, not_equal_to, ctype_print_mask)
 REFLECT_CPP26_CTYPE_PREDICATE(ispunct, not_equal_to, ctype_punct_mask)
+
 #undef REFLECT_CPP26_CTYPE_PREDICATE
 
 namespace impl {

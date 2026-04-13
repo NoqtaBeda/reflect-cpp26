@@ -34,26 +34,42 @@
 namespace reflect_cpp26 {
 namespace impl {
 consteval bool is_serializable_type(std::meta::info T);
-consteval bool is_memberwise_serializable_type(std::meta::info T);
 
 template <class T>
-consteval bool is_memberwise_serializable_class_type();
+consteval bool is_serializable_class_type();
 }  // namespace impl
 
 template <class T>
 concept serializable = impl::is_serializable_type(remove_cv(^^T));
 
-template <class T>
-concept memberwise_serializable = impl::is_memberwise_serializable_type(remove_cv(^^T));
-
 namespace impl {
-consteval auto test_serializable_leaf_type(std::meta::info T) -> bool {
+consteval bool test_serializable_flattened_members(
+    std::span<const flattened_data_member_info> members) {
+  auto names = std::vector<std::string_view>{};
+  for (auto M : members) {
+    if (!extract<bool>(^^serializable, type_of(M.member))) {
+      return false;
+    }
+    names.push_back(identifier_of(M.member));
+  }
+  // Checks name duplication
+  std::ranges::sort(names);
+  return std::ranges::adjacent_find(names) == names.end();
+}
+
+// Precondition: T satisfies flattenable_class
+template <class T>
+consteval bool is_serializable_class_type() {
+  constexpr const auto& members = all_flattened_nonstatic_data_members_v<T>;
+  return test_serializable_flattened_members(members);
+}
+
+consteval bool is_serializable_type(std::meta::info T) {
   // (1) std::monostate serves as null in practice
   if (T == ^^std::monostate) {
     return true;
   }
-  // (2) Arithmetic types
-  // (3) Enum types
+  // (2) Arithmetic types; (3) Enum types
   if (is_arithmetic_type(T) || is_enum_type(T)) {
     return true;  // Including boolean and character types
   }
@@ -61,26 +77,20 @@ consteval auto test_serializable_leaf_type(std::meta::info T) -> bool {
   if (extract<bool>(^^string_like, T)) {
     return true;
   }
-  return false;
-}
-
-consteval auto test_serializable_container_type(std::meta::info T, std::meta::info target_concept)
-    -> std::optional<bool> {
-  // (5) Range types (including C-style arrays)
   if (is_array_type(T)) {
     auto U = remove_all_extents(T);
-    return extract<bool>(target_concept, U);
+    return extract<bool>(^^serializable, U);
   }
   if (extract<bool>(^^std::ranges::range, T)) {
     auto params_il = {T};
     auto U = substitute(^^std::ranges::range_value_t, params_il);
-    return extract<bool>(target_concept, U);
+    return extract<bool>(^^serializable, U);
   }
   // (6) Tuple-like types
   if (extract<bool>(^^tuple_like, T)) {
     auto n = tuple_size(T);
     for (auto i = 0zU; i < n; i++) {
-      if (!extract<bool>(target_concept, tuple_element(i, T))) {
+      if (!extract<bool>(^^serializable, tuple_element(i, T))) {
         return false;
       }
     }
@@ -89,50 +99,16 @@ consteval auto test_serializable_container_type(std::meta::info T, std::meta::in
   // (7) std::optional
   if (has_template_arguments(T) && template_of(T) == ^^std::optional) {
     auto U = template_arguments_of(T)[0];
-    return extract<bool>(target_concept, U);
+    return extract<bool>(^^serializable, U);
   }
   // (8) std::variant
   if (has_template_arguments(T) && template_of(T) == ^^std::variant) {
     auto Us = template_arguments_of(T);
-    return std::ranges::all_of(
-        Us, [target_concept](auto U) { return extract<bool>(target_concept, U); });
-  }
-  return std::nullopt;
-}
-
-consteval bool is_serializable_type(std::meta::info T) {
-  if (test_serializable_leaf_type(T)) {
-    return true;
-  }
-  if (auto res = test_serializable_container_type(T, ^^serializable); res.has_value()) {
-    return *res;
-  }
-  return false;
-}
-
-template <class T>
-consteval bool is_memberwise_serializable_class_type() {
-  template for (constexpr auto M : all_flattened_nonstatic_data_members_v<T>) {
-    using U = [:type_of(M.member):];
-    if (!memberwise_serializable<std::remove_cv_t<U>>) {
-      return false;
-    }
-  }
-  return true;
-}
-
-consteval bool is_memberwise_serializable_type(std::meta::info T) {
-  // (1) ~ (8) above
-  if (test_serializable_leaf_type(T)) {
-    return true;
-  }
-  if (auto res = test_serializable_container_type(T, ^^memberwise_serializable); res.has_value()) {
-    return *res;
+    return std::ranges::all_of(Us, [](auto U) { return extract<bool>(^^serializable, U); });
   }
   // (9) Flattenable class types
   if (extract<bool>(^^flattenable_class, T)) {
-    auto fn = extract<bool (*)()>(^^is_memberwise_serializable_class_type, T);
-    return fn();
+    return extract<bool (*)()>(^^is_serializable_class_type, T)();
   }
   return false;
 }

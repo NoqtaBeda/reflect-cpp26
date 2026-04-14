@@ -346,7 +346,7 @@ TEST(TypeOperationsDumpToJsonLike, VectorOfBoolsWithIndent) {
 
 TEST(TypeOperationsDumpToJsonLike, Monostate) {
   std::monostate m{};
-  EXPECT_EQ("null", rfl::dump_to_json_like(m));
+  EXPECT_EQ("monostate", rfl::dump_to_json_like(m));
 }
 
 TEST(TypeOperationsDumpToJsonLike, OptionalInVariant) {
@@ -716,5 +716,33 @@ TEST(TypeOperationsDumpToJsonLike, PointersToDataMemberWithInheritance) {
 
 TEST(TypeOperationsDumpToJsonLike, StructWithInheritance) {
   constexpr auto c = C{{1, 2}, {3, 4}, 5};
-  EXPECT_EQ("{a:1,x:2,b:3,x:4,c:5}", rfl::dump_to_json_like(c));
+  // Disambiguation
+  EXPECT_EQ("{a:1,A::x:2,b:3,B::x:4,c:5}", rfl::dump_to_json_like(c));
+  EXPECT_EQ(R"({
+    a: 1,
+    A::x: 2,
+    b: 3,
+    B::x: 4,
+    c: 5
+})",
+            rfl::dump_to_json_like(c, 4));
+}
+
+struct with_referenct_t {
+  intptr_t x;
+  int& r;
+};
+
+TEST(TypeOperationsDumpToJsonLike, StructWithReferences) {
+  int value = 42;
+  auto s = with_referenct_t{.x = 21, .r = value};
+  EXPECT_NE("{x:21,r:42}", rfl::dump_to_json_like(s));
+
+  reinterpret_cast<intptr_t*>(&s)[1] = 0x12345678;
+  EXPECT_EQ("{x:21,r:0x12345678}", rfl::dump_to_json_like(s));
+  EXPECT_EQ(R"({
+    x: 21,
+    r: 0x12345678
+})",
+            rfl::dump_to_json_like(s, 4));
 }

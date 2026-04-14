@@ -37,6 +37,47 @@
 
 namespace reflect_cpp26 {
 namespace impl::json {
+struct field_name_item {
+  std::string_view name;
+  size_t index;
+};
+
+// Note: uint8_t is used to avoid std::vector<bool> specialization
+consteval auto make_name_collision_table(std::span<const flattened_data_member_info> members)
+    -> meta_span<uint8_t> {
+  auto items = std::vector<field_name_item>{};
+  auto n = members.size();
+
+  items.reserve(n);
+  for (auto i = 0zU; i < n; i++) {
+    auto name = identifier_of(members[i].member);
+    items.push_back({.name = name, .index = i});
+  }
+  std::ranges::sort(items, {}, &field_name_item::name);
+
+  auto res = std::vector<uint8_t>(n);
+  for (auto pos = 0zU; pos + 1 < n;) {
+    if (items[pos + 1].name != items[pos].name) {
+      pos += 1;
+      continue;
+    }
+    res[items[pos].index] = true;
+    res[items[pos + 1].index] = true;
+    auto next = pos + 2;
+    while (next < n && items[next].name == items[pos].name) {
+      res[items[next].index] = true;
+      next += 1;
+    }
+    pos = next;
+  }
+  return reflect_cpp26::define_static_array(res);
+}
+
+template <class T>
+consteval auto make_name_collision_table() -> meta_span<uint8_t> {
+  return make_name_collision_table(all_flattened_nonstatic_data_members_v<T>);
+}
+
 template <class CharT, class Allocator, class T>
 constexpr void dump_char(basic_string_builder<CharT, Allocator>& dest, T value) {
   dest.append_char('\'');
@@ -100,6 +141,42 @@ void dump_pointer(basic_string_builder<CharT, Allocator>& dest, const volatile v
   }
 }
 
+// precondition: value != nullptr
+// pointers can not be dumped in constant evaluation
+template <class CharT, class Allocator, class MemT, class ClassT>
+void dump_pointer_to_member_function(basic_string_builder<CharT, Allocator>& dest,
+                                     MemT ClassT::* value) {
+  dest.append_utf_string("(...)");  // TODO: unimplemented yet
+}
+
+// precondition: value != nullptr
+// pointers can not be dumped in constant evaluation
+template <class CharT, class Allocator, class MemT, class ClassT>
+void dump_pointer_to_data_member(basic_string_builder<CharT, Allocator>& dest,
+                                 MemT ClassT::* value) {
+  auto offset = *reinterpret_cast<uintptr_t*>(&value);
+  constexpr const auto& all_members = all_flattened_nonstatic_data_members_v<ClassT>;
+  template for (constexpr auto M : all_members) {
+    constexpr auto is_candidate =
+        is_same_type(M.type(), ^^MemT) && is_addressable_class_member(M.member);
+
+    if constexpr (is_candidate) {
+      if (M.actual_offset_bytes() != offset) {
+        continue;  // Continues template-for
+      }
+      dest.append_char('&')
+          .append_utf_string(display_string_of(parent_of(M.member)))
+          .append_char(':', 2)
+          .append_utf_string(identifier_of(M.member));
+      return;
+    }
+  }
+  // Mismatch
+  dest.append_utf_string("(malformed: 0x")
+      .append_integer(*reinterpret_cast<uintptr_t*>(&value), 16)
+      .append_char(')');
+}
+
 // pointers can not be dumped in constant evaluation
 template <class CharT, class Allocator, class MemT, class ClassT>
 void dump_pointer_to_member(basic_string_builder<CharT, Allocator>& dest, MemT ClassT::* value) {
@@ -107,32 +184,13 @@ void dump_pointer_to_member(basic_string_builder<CharT, Allocator>& dest, MemT C
     dest.append_utf_string("nullptr");
     return;
   }
-  if constexpr (std::is_function_v<MemT>) {
-    // todo
-  } else if constexpr (partially_flattenable_class<ClassT>) {
-    auto offset = *reinterpret_cast<uintptr_t*>(&value);
-    constexpr const auto& all_members = all_flattened_nonstatic_data_members_v<ClassT>;
-    template for (constexpr auto M : all_members) {
-      constexpr auto is_candidate =
-          is_same_type(M.type(), ^^MemT) && is_addressable_class_member(M.member);
-
-      if constexpr (is_candidate) {
-        if (M.actual_offset_bytes() != offset) {
-          continue;  // Continues template-for
-        }
-        dest.append_char('&')
-            .append_utf_string(display_string_of(parent_of(M.member)))
-            .append_char(':', 2)
-            .append_utf_string(identifier_of(M.member));
-        return;
-      }
-    }
-  } else {
+  if constexpr (!partially_flattenable_class<ClassT>) {
     dest.append_utf_string("(...)");
-    return;
+  } else if constexpr (std::is_function_v<MemT>) {
+    dump_pointer_to_member_function(dest, value);
+  } else {
+    dump_pointer_to_data_member(dest, value);
   }
-  // Mismatch
-  dest.append_utf_string("(malformed pointer-to-member)");
 }
 
 template <class Parent, class CharT, class Allocator, class T, class... Args>
@@ -141,7 +199,7 @@ constexpr void dumper_dispatch(basic_string_builder<CharT, Allocator>& dest,
                                const Args&... args) {
   if constexpr (std::is_same_v<T, std::monostate>) {
     // (1) std::monostate
-    dest.append_utf_string("null");
+    dest.append_utf_string("monostate");
   } else if constexpr (std::is_arithmetic_v<T>) {
     // (2) arithmetic types
     dumper_dispatch_arithmetic(dest, value);
@@ -199,8 +257,6 @@ constexpr void dumper_dispatch(basic_string_builder<CharT, Allocator>& dest,
 }
 
 struct indented_dumper : indented_serializer_base<indented_dumper> {
-  static constexpr auto quotes_field_name = false;
-
   template <class CharT, class Allocator, class T>
   static constexpr bool operator()(basic_string_builder<CharT, Allocator>& dest,
                                    const T& value,
@@ -210,15 +266,82 @@ struct indented_dumper : indented_serializer_base<indented_dumper> {
     dumper_dispatch<indented_dumper>(dest, value, indent_level, indent_size, indent_char);
     return true;
   }
+
+  template <class CharT, class Allocator, class T>
+  static constexpr void append_struct(basic_string_builder<CharT, Allocator>& dest,
+                                      const T& value,
+                                      int indent_level,
+                                      int indent_size,
+                                      CharT indent_char) {
+    constexpr const auto& members = all_flattened_nonstatic_data_members_v<T>;
+    constexpr auto N = std::size(members);
+    constexpr auto has_name_collision = make_name_collision_table<T>();
+
+    dest.append_char('{');
+    indent_level += indent_size;
+
+    template for (constexpr auto I : std::views::iota(0zU, N)) {
+      constexpr auto M = members[I];
+      if constexpr (I > 0) {
+        dest.append_char(',');
+      }
+      dest.append_char('\n').append_char(indent_char, indent_level);
+      if constexpr (has_name_collision[I]) {
+        dest.append_utf_string(display_string_of(parent_of(M.member)));
+        dest.append_char(':', 2);
+      }
+      dest.append_utf_string(identifier_of(M.member));
+      dest.append_utf_string(": ");
+
+      const auto& elem = value.[:M.member:];
+      if constexpr (is_reference_type(type_of(M.member))) {
+        // References should be dumped as pointers in case of loop reference
+        dump_pointer(dest, &elem);
+      } else {
+        operator()(dest, elem, indent_level, indent_size, indent_char);
+      }
+    }
+    indent_level -= indent_size;
+    dest.append_char('\n').append_char(indent_char, indent_level).append_char('}');
+  }
 };
 
 struct unindented_dumper : unindented_serializer_base<unindented_dumper> {
-  static constexpr auto quotes_field_name = false;
-
   template <class CharT, class Allocator, class T>
   static constexpr bool operator()(basic_string_builder<CharT, Allocator>& dest, const T& value) {
     dumper_dispatch<unindented_dumper>(dest, value);
     return true;
+  }
+
+  template <class CharT, class Allocator, class T>
+  static constexpr void append_struct(basic_string_builder<CharT, Allocator>& dest,
+                                      const T& value) {
+    constexpr const auto& members = all_flattened_nonstatic_data_members_v<T>;
+    constexpr auto N = std::size(members);
+    constexpr auto has_name_collision = make_name_collision_table<T>();
+
+    dest.append_char('{');
+    template for (constexpr auto I : std::views::iota(0zU, N)) {
+      constexpr auto M = members[I];
+      if constexpr (I > 0) {
+        dest.append_char(',');
+      }
+      if constexpr (has_name_collision[I]) {
+        dest.append_utf_string(display_string_of(parent_of(M.member)));
+        dest.append_char(':', 2);
+      }
+      dest.append_utf_string(identifier_of(M.member));
+      dest.append_char(':');
+
+      const auto& elem = value.[:M.member:];
+      if constexpr (is_reference_type(type_of(M.member))) {
+        // References should be dumped as pointers in case of loop reference
+        dump_pointer(dest, &elem);
+      } else {
+        operator()(dest, elem);
+      }
+    }
+    dest.append_char('}');
   }
 };
 }  // namespace impl::json

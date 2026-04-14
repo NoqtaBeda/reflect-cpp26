@@ -140,25 +140,17 @@ concept memberwise_flattenable_aggregate_class =
 
 // -------- Flattened Member List --------
 
+// clang-format off
 // Reference to C-style array
 template <partially_flattenable_class T>
-constexpr const auto& all_flattened_nonstatic_data_members_v =  //
-[:impl::all_flattened_nonstatic_data_members_refl_v<std::remove_cv_t<T>>:];
+constexpr const auto& all_flattened_nonstatic_data_members_v =
+    [:impl::all_flattened_nonstatic_data_members_refl_v<std::remove_cv_t<T>>:];
 
 // Reference to C-style array
 template <partially_flattenable_class T>
-constexpr const auto& public_flattened_nonstatic_data_members_v =  //
-[:impl::public_flattened_nonstatic_data_members_refl_v<std::remove_cv_t<T>>:];
-
-// Size access
-template <partially_flattenable_class T>
-constexpr size_t num_all_flattened_nonstatic_data_members_v =
-    std::size(all_flattened_nonstatic_data_members_v<T>);
-
-// Size access
-template <partially_flattenable_class T>
-constexpr size_t num_public_flattened_nonstatic_data_members_v =
-    std::size(public_flattened_nonstatic_data_members_v<T>);
+constexpr const auto& public_flattened_nonstatic_data_members_v =
+    [:impl::public_flattened_nonstatic_data_members_refl_v<std::remove_cv_t<T>>:];
+// clang-format on
 
 namespace impl {
 consteval bool is_memberwise_partially_flattenable(std::meta::info T) {

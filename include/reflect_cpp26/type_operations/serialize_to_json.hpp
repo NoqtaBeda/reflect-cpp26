@@ -227,7 +227,6 @@ struct indented_serializer : indented_serializer_base<indented_serializer<Option
   using self_type = indented_serializer<Options>;
 
   static constexpr auto options = Options;
-  static constexpr auto quotes_field_name = true;
 
   template <class CharT, class Allocator, class T>
   static constexpr bool operator()(basic_string_builder<CharT, Allocator>& dest,
@@ -237,6 +236,36 @@ struct indented_serializer : indented_serializer_base<indented_serializer<Option
                                    CharT indent_char) {
     return serializer_dispatch<self_type>(dest, value, indent_level, indent_size, indent_char);
   }
+
+  template <class CharT, class Allocator, class T>
+  static constexpr bool append_struct(basic_string_builder<CharT, Allocator>& dest,
+                                      const T& value,
+                                      int indent_level,
+                                      int indent_size,
+                                      CharT indent_char) {
+    constexpr const auto& members = all_flattened_nonstatic_data_members_v<T>;
+    constexpr auto N = std::size(members);
+    dest.append_char('{');
+    indent_level += indent_size;
+
+    template for (constexpr auto I : std::views::iota(0zU, N)) {
+      if constexpr (I > 0) {
+        dest.append_char(',');
+      }
+      dest.append_char('\n').append_char(indent_char, indent_level);
+      constexpr auto cur_member = members[I];
+      dest.append_char('"');
+      dest.append_utf_string(identifier_of(cur_member.member));
+      dest.append_utf_string("\": ");
+      const auto& elem = value.[:cur_member.member:];
+      if (!operator()(dest, elem, indent_level, indent_size, indent_char)) [[unlikely]] {
+        return false;
+      }
+    }
+    indent_level -= indent_size;
+    dest.append_char('\n').append_char(indent_char, indent_level).append_char('}');
+    return true;
+  }
 };
 
 template <serialize_options Options>
@@ -244,11 +273,34 @@ struct unindented_serializer : unindented_serializer_base<unindented_serializer<
   using self_type = unindented_serializer<Options>;
 
   static constexpr auto options = Options;
-  static constexpr auto quotes_field_name = true;
 
   template <class CharT, class Allocator, class T>
   static constexpr bool operator()(basic_string_builder<CharT, Allocator>& dest, const T& value) {
     return serializer_dispatch<self_type>(dest, value);
+  }
+
+  template <class CharT, class Allocator, class T>
+  static constexpr bool append_struct(basic_string_builder<CharT, Allocator>& dest,
+                                      const T& value) {
+    constexpr const auto& members = all_flattened_nonstatic_data_members_v<T>;
+    constexpr auto N = std::size(members);
+    dest.append_char('{');
+
+    template for (constexpr auto I : std::views::iota(0zU, N)) {
+      if constexpr (I > 0) {
+        dest.append_char(',');
+      }
+      constexpr auto cur_member = members[I];
+      dest.append_char('"');
+      dest.append_utf_string(identifier_of(cur_member.member));
+      dest.append_utf_string("\":");
+      const auto& elem = value.[:cur_member.member:];
+      if (!operator()(dest, elem)) [[unlikely]] {
+        return false;
+      }
+    }
+    dest.append_char('}');
+    return true;
   }
 };
 }  // namespace impl::json

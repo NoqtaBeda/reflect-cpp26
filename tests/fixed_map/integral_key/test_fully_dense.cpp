@@ -32,15 +32,10 @@ TEST(FixedMap, SignedIntegralKeyFullyContinuous) {
     return std::vector<KVPair>{{-1, 123}, {1, 456}, {3, 789}, {-2, 12}, {0, 34}, {2, 56}};
   };
   constexpr auto map = FIXED_MAP(make_kv_pairs() /* with default options */);
-  static_assert(std::is_same_v<typename decltype(map)::result_type, const int32_t&>);
-  // Elements in _entries are expected to be int32_t (value type of KVPair),
-  // without is_valid flag.
-  EXPECT_EQ_STATIC(4, sizeof(typename decltype(map._entries)::value_type));
-  EXPECT_THAT(display_string_of(^^decltype(map)),
-              testing::HasSubstr("fully_dense_integral_key_map"));
+
+  EXPECT_THAT(display_string_of(^^decltype(map)), testing::HasSubstr("fully_dense_with_ikey"));
+  EXPECT_EQ_STATIC(sizeof(int32_t), sizeof(map.entries[0]));
   EXPECT_EQ_STATIC(6, map.size());
-  EXPECT_EQ_STATIC(-2, map.min_key());
-  EXPECT_EQ_STATIC(3, map.max_key());
 
   EXPECT_EQ_STATIC(12, map[-2]);
   EXPECT_FOUND_STATIC(123, map, -1);
@@ -68,7 +63,7 @@ struct point_t {
   constexpr bool operator==(const point_t&) const = default;
 };
 
-template <rfl::integral_key_fixed_map_options Options>
+template <bool A>
 constexpr void test_unsigned_integral_key_common() {
   using Value = point_t;
   using KVPair = std::pair<uint64_t, Value>;
@@ -81,26 +76,20 @@ constexpr void test_unsigned_integral_key_common() {
         {13, {6.25, -6.25, 6.0}},
     };
   };
-  constexpr auto map = FIXED_MAP(make_kv_pairs(), Options);
-  static_assert(std::is_same_v<typename decltype(map)::result_type, const Value&>);
+  constexpr auto options = rfl::integral_key_fixed_map_options{
+      .adjusts_alignment = A,
+  };
+  constexpr auto map = FIXED_MAP(make_kv_pairs(), options);
 
-  using UnderlyingElement = typename decltype(map._entries)::value_type;
-  if constexpr (Options.adjusts_alignment) {
-    EXPECT_EQ(32, sizeof(UnderlyingElement))
-        << "Expects sizeof(" << display_string_of(dealias(^^UnderlyingElement))
-        << ") to be 32 bytes after adjusting alignment, with map type = "
-        << display_string_of(^^decltype(map));
+  if constexpr (A) {
+    EXPECT_EQ(32, sizeof(map.entries[0]))
+        << "Expects 32 bytes per element after adjusting alignment";
   } else {
-    EXPECT_EQ(24, sizeof(UnderlyingElement))
-        << "Expects sizeof(" << display_string_of(dealias(^^UnderlyingElement))
-        << ") to be 24 bytes without adjusting alignment, with map type = "
-        << display_string_of(^^decltype(map));
+    EXPECT_EQ(24, sizeof(map.entries[0]))
+        << "Expects 24 bytes per element without adjusting alignment";
   }
-  EXPECT_THAT(display_string_of(^^decltype(map)),
-              testing::HasSubstr("fully_dense_integral_key_map"));
+  EXPECT_THAT(display_string_of(^^decltype(map)), testing::HasSubstr("fully_dense_with_ikey"));
   EXPECT_EQ_STATIC(5, map.size());
-  EXPECT_EQ_STATIC(10, map.min_key());
-  EXPECT_EQ_STATIC(14, map.max_key());
 
   EXPECT_EQ_STATIC(Value(1.25, -1.25, 2.0), map[10]);
   EXPECT_FOUND_STATIC(Value(3.75, -3.75, 4.0), map, 11);
@@ -114,16 +103,10 @@ constexpr void test_unsigned_integral_key_common() {
   EXPECT_NOT_FOUND_STATIC(Value(0.0, 0.0, 0.0), map, 0x1'0000'000aULL);
 }
 
-TEST(FixedMap, UnsignedIntegralKeyFullyContinuous1) {
-  constexpr auto options = rfl::integral_key_fixed_map_options{
-      .adjusts_alignment = false,
-  };
-  test_unsigned_integral_key_common<options>();
+TEST(FixedMap, UnsignedIntegralKeyFullyDense1) {
+  test_unsigned_integral_key_common<false>();
 }
 
-TEST(FixedMap, UnsignedIntegralKeyFullyContinuous2) {
-  constexpr auto options = rfl::integral_key_fixed_map_options{
-      .adjusts_alignment = true,
-  };
-  test_unsigned_integral_key_common<options>();
+TEST(FixedMap, UnsignedIntegralKeyFullyDense2) {
+  test_unsigned_integral_key_common<true>();
 }

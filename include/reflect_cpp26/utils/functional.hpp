@@ -24,7 +24,6 @@
 #define REFLECT_CPP26_UTILS_FUNCTIONAL_HPP
 
 #include <functional>
-#include <reflect_cpp26/type_traits/tuple_like_types.hpp>
 #include <reflect_cpp26/utils/compare.hpp>
 #include <reflect_cpp26/utils/utility.hpp>
 #include <type_traits>
@@ -48,7 +47,7 @@ constexpr auto is_less_comparable_v = is_operator_lt_comparable_v<T, U>;
 struct less_t {
   template <class T, class U>
     requires(is_less_comparable_v<T, U>)
-  static constexpr bool operator()(const T& t, const U& u) noexcept {
+  static constexpr bool operator()(const T& t, const U& u) {
     if constexpr (std::is_integral_v<T> && std::is_integral_v<U>) {
       return cmp_less(t, u);
     } else {
@@ -75,7 +74,7 @@ constexpr auto is_greater_comparable_v =
 struct greater_t {
   template <class T, class U>
     requires(is_greater_comparable_v<T, U>)
-  static constexpr bool operator()(const T& t, const U& u) noexcept {
+  static constexpr bool operator()(const T& t, const U& u) {
     if constexpr (std::is_integral_v<T> && std::is_integral_v<U>) {
       return cmp_greater(t, u);
     } else if constexpr (is_operator_gt_comparable_v<T, U>) {
@@ -106,7 +105,7 @@ struct less_equal_t {
   // Note: !(u < t) may be incorrect behavior for partial ordering.
   template <class T, class U>
     requires(is_less_equal_comparable_v<T, U>)
-  static constexpr bool operator()(const T& t, const U& u) noexcept {
+  static constexpr bool operator()(const T& t, const U& u) {
     if constexpr (std::is_integral_v<T> && std::is_integral_v<U>) {
       return cmp_less_equal(t, u);
     } else if constexpr (is_operator_le_comparable_v<T, U>) {
@@ -141,7 +140,7 @@ struct greater_equal_t {
   // Note: !(t < u) may be incorrect behavior for partial ordering
   template <class T, class U>
     requires(is_greater_equal_comparable_v<T, U>)
-  static constexpr bool operator()(const T& t, const U& u) noexcept {
+  static constexpr bool operator()(const T& t, const U& u) {
     if constexpr (std::is_integral_v<T> && std::is_integral_v<U>) {
       return cmp_greater_equal(t, u);
     } else if constexpr (is_operator_ge_comparable_v<T, U>) {
@@ -170,7 +169,7 @@ constexpr auto is_equal_comparable_v = is_operator_eq_comparable_v<T, U>;
 struct equal_t {
   template <class T, class U>
     requires(is_equal_comparable_v<T, U>)
-  static constexpr bool operator()(const T& t, const U& u) noexcept {
+  static constexpr bool operator()(const T& t, const U& u) {
     if constexpr (std::is_integral_v<T> && std::is_integral_v<U>) {
       return cmp_equal(t, u);
     } else {
@@ -195,7 +194,7 @@ constexpr auto is_not_equal_comparable_v =
 struct not_equal_t {
   template <class T, class U>
     requires(is_not_equal_comparable_v<T, U>)
-  static constexpr bool operator()(const T& t, const U& u) noexcept {
+  static constexpr bool operator()(const T& t, const U& u) {
     if constexpr (std::is_integral_v<T> && std::is_integral_v<U>) {
       return cmp_not_equal(t, u);
     } else if constexpr (is_operator_ne_comparable_v<T, U>) {
@@ -226,8 +225,7 @@ constexpr auto is_compare_three_way_comparable_v =
 struct compare_three_way_t {
 private:
   template <class T, class U>
-  static constexpr auto do_indirect_compare(const T& t, const U& u) noexcept
-      -> std::partial_ordering {
+  static constexpr auto do_indirect_compare(const T& t, const U& u) -> std::partial_ordering {
     if (less_t::operator()(t, u)) {
       return std::partial_ordering::less;
     }
@@ -243,7 +241,7 @@ private:
 public:
   template <class T, class U>
     requires(is_compare_three_way_comparable_v<T, U>)
-  static constexpr auto operator()(const T& t, const U& u) noexcept {
+  static constexpr auto operator()(const T& t, const U& u) {
     if constexpr (std::is_integral_v<T> && std::is_integral_v<U>) {
       return cmp_three_way(t, u);
     } else if constexpr (is_operator_3way_comparable_v<T, U>) {
@@ -262,55 +260,6 @@ constexpr auto greater_equal = greater_equal_t{};
 constexpr auto equal = equal_t{};
 constexpr auto not_equal = not_equal_t{};
 constexpr auto compare_three_way = compare_three_way_t{};
-
-/**
- * template <class T, class U>
- * concept *_comparable_with = is_*_comparable_v<T, U>;
- */
-REFLECT_CPP26_COMPARISON_CONCEPT(less)
-REFLECT_CPP26_COMPARISON_CONCEPT(greater)
-REFLECT_CPP26_COMPARISON_CONCEPT(less_equal)
-REFLECT_CPP26_COMPARISON_CONCEPT(greater_equal)
-REFLECT_CPP26_COMPARISON_CONCEPT(equal)
-REFLECT_CPP26_COMPARISON_CONCEPT(not_equal)
-REFLECT_CPP26_COMPARISON_CONCEPT(compare_three_way)
-
-// -------- Generic tuple-like access --------
-
-template <size_t I>
-struct get_ith_element_t {
-  template <class T>
-    requires(tuple_like<std::remove_cvref_t<T>> && I < std::tuple_size_v<std::remove_cvref_t<T>>)
-  static constexpr decltype(auto) operator()(T&& tuple) {
-    constexpr auto has_free_get = requires { get<I>(std::forward<T>(tuple)); };
-    constexpr auto has_member_get = requires { std::forward<T>(tuple).template get<I>(); };
-
-    if constexpr (has_free_get) {
-      return get<I>(std::forward<T>(tuple));
-    } else if constexpr (has_member_get) {
-      return std::forward<T>(tuple).template get<I>();
-    } else {
-      static_assert(false, "Not tuple-like.");
-    }
-  }
-};
-
-using get_first_t = get_ith_element_t<0>;
-using get_second_t = get_ith_element_t<1>;
-
-/**
- * Gets the first tuple element.
- */
-constexpr auto get_first = get_ith_element_t<0>{};
-/**
- * Gets the second tuple element.
- */
-constexpr auto get_second = get_ith_element_t<1>{};
-/**
- * Gets the i-th tuple element.
- */
-template <size_t I>
-constexpr auto get_ith_element = get_ith_element_t<I>{};
 }  // namespace reflect_cpp26
 
 #endif  // REFLECT_CPP26_UTILS_FUNCTIONAL_HPP

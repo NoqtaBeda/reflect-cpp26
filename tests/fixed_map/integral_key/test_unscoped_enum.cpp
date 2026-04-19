@@ -66,14 +66,17 @@ constexpr auto make_kv_pairs() {
   };
 }
 
-template <rfl::integral_key_fixed_map_options Options>
-constexpr void test_unscoped_enum_wrapper_common() {
-  constexpr auto map = FIXED_MAP(make_kv_pairs(), Options);
-  static_assert(std::is_same_v<typename decltype(map)::result_type, const double&>);
-  auto expected_regex = "enum_wrapper.*general_integral_key_map"s + ".*"
-                      + "fully_dense_integral_key_map"            // dense_part
-                      + ".*" + "linear_search_integral_key_map"   // left_sparse_part
-                      + ".*" + "binary_search_integral_key_map";  // right_sparse_part
+TEST(FixedMap, UnscopedEnumWrapper) {
+  constexpr auto options = rfl::integral_key_fixed_map_options{
+      .min_load_factor = 0.9,
+      .binary_search_threshold = 4,
+  };
+  constexpr auto map = FIXED_MAP(make_kv_pairs(), options);
+
+  auto expected_regex = "enum_wrapper.*general_with_ikey"s + ".*"
+                      + "fully_dense_with_ikey"            // dense_part
+                      + ".*" + "linear_search_with_ikey"   // left_sparse_part
+                      + ".*" + "binary_search_with_ikey";  // right_sparse_part
   EXPECT_THAT(display_string_of(^^decltype(map)), testing::ContainsRegex(expected_regex));
   EXPECT_EQ_STATIC(15, map.size());
 
@@ -98,44 +101,4 @@ constexpr void test_unscoped_enum_wrapper_common() {
   EXPECT_NOT_FOUND_STATIC(0.0, map, static_cast<opcode>(7));
   EXPECT_NOT_FOUND_STATIC(0.0, map, static_cast<opcode>(120));
   EXPECT_NOT_FOUND_STATIC(0.0, map, static_cast<opcode>(1023));
-}
-
-TEST(FixedMap, UnscopedEnumWrapper1) {
-  constexpr auto options = rfl::integral_key_fixed_map_options{
-      .adjusts_alignment = false,
-      .default_value_is_always_invalid = false,
-      .min_load_factor = 0.9,
-      .binary_search_threshold = 4,
-  };
-  test_unscoped_enum_wrapper_common<options>();
-}
-
-TEST(FixedMap, UnscopedEnumWrapper2) {
-  constexpr auto options = rfl::integral_key_fixed_map_options{
-      .adjusts_alignment = true,
-      .default_value_is_always_invalid = false,
-      .min_load_factor = 0.9,
-      .binary_search_threshold = 4,
-  };
-  test_unscoped_enum_wrapper_common<options>();
-}
-
-TEST(FixedMap, UnscopedEnumWrapper3) {
-  constexpr auto options = rfl::integral_key_fixed_map_options{
-      .adjusts_alignment = false,
-      .default_value_is_always_invalid = true,
-      .min_load_factor = 0.9,
-      .binary_search_threshold = 4,
-  };
-  test_unscoped_enum_wrapper_common<options>();
-}
-
-TEST(FixedMap, UnscopedEnumWrapper4) {
-  constexpr auto options = rfl::integral_key_fixed_map_options{
-      .adjusts_alignment = true,
-      .default_value_is_always_invalid = true,
-      .min_load_factor = 0.9,
-      .binary_search_threshold = 4,
-  };
-  test_unscoped_enum_wrapper_common<options>();
 }

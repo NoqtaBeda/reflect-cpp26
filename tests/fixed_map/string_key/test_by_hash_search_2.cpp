@@ -42,27 +42,28 @@ consteval auto make_kv_pairs() {
   };
 }
 
-template <class CharT, rfl::string_key_fixed_map_options Options>
-constexpr void test_by_hash_search_common() {
+template <class CharT, bool CI, bool AA>
+constexpr void test_by_hash_binary_search_common() {
   using Value = std::pair<size_t, size_t>;
-  constexpr auto CI = Options.ascii_case_insensitive;
-  constexpr auto AA = Options.adjusts_alignment;
-  constexpr auto map = FIXED_MAP(make_kv_pairs<CharT>(), Options);
+  constexpr auto options = rfl::string_key_fixed_map_options{
+      .ascii_case_insensitive = CI,
+      .adjusts_alignment = AA,
+      .max_n_iterations = 0,  // Disables hash table
+      .binary_search_threshold = 8,
+  };
+  constexpr auto map = FIXED_MAP(make_kv_pairs<CharT>(), options);
   EXPECT_THAT(display_string_of(^^decltype(map)),
-              testing::HasSubstr("string_key_map_by_hash_binary_search"));
-  static_assert(rfl::same_as_one_of<typename decltype(map)::result_type,
-                                    const rfl::meta_tuple<size_t, size_t>&,
-                                    const std::pair<size_t, size_t>&>);
+              testing::HasSubstr("binary_hash_search_with_skey"));
   EXPECT_EQ_STATIC(8, map.size());
 
   constexpr auto pointer_size = sizeof(void*);
   // Contents in each entry:
-  //   hash: uint64
+  //   hash: size_t
   //   key: {const CharT*, const CharT*}
   //   value: {size_t, size_t}
   constexpr auto expected_element_size =
-      Options.adjusts_alignment ? (pointer_size == 8 ? 64 : 32) : (pointer_size == 8 ? 40 : 24);
-  constexpr auto actual_element_size = sizeof(typename decltype(map._entries)::value_type);
+      AA ? (pointer_size == 8 ? 64 : 32) : (pointer_size == 8 ? 40 : 24);
+  constexpr auto actual_element_size = sizeof(map.entries[0]);
   EXPECT_EQ(expected_element_size, actual_element_size)
       << "Unexpected element size with fixed map type " << display_string_of(^^decltype(map));
 
@@ -92,27 +93,22 @@ constexpr void test_by_hash_search_common() {
   EXPECT_NOT_FOUND_STATIC(DEFAULT, map, to<CharT>("λόγος"));
 }
 
-template <class CharT, bool AA>
-constexpr void test_by_hash_binary_search_common() {
-  constexpr auto options = rfl::string_key_fixed_map_options{
-      // Cases where CI == false has been tested in test_by_hash_search_1.cpp
-      .ascii_case_insensitive = true,
-      .adjusts_alignment = AA,
-      .min_load_factor = 1.0,
-      .binary_search_threshold = 8,
-  };
-  test_by_hash_search_common<CharT, options>();
-}
-
-#define MAKE_MAP_TESTS(char_type, CharTypeName)                  \
-  TEST(FixedMap, StringKeyByHashBinarySearch2##CharTypeName) {   \
-    test_by_hash_binary_search_common<char_type, false>();       \
-  }                                                              \
-  TEST(FixedMap, StringKeyByHashBinarySearch2AA##CharTypeName) { \
-    test_by_hash_binary_search_common<char_type, true>();        \
+#define MAKE_MAP_TESTS(char_type, CharTypeName)                    \
+  TEST(FixedMap, StringKeyByHashBinarySearch2##CharTypeName) {     \
+    test_by_hash_binary_search_common<char_type, false, false>();  \
+  }                                                                \
+  TEST(FixedMap, StringKeyByHashBinarySearch2AA##CharTypeName) {   \
+    test_by_hash_binary_search_common<char_type, false, true>();   \
+  }                                                                \
+  TEST(FixedMap, StringKeyByHashBinarySearch2CI##CharTypeName) {   \
+    test_by_hash_binary_search_common<char_type, true, false>();   \
+  }                                                                \
+  TEST(FixedMap, StringKeyByHashBinarySearch2CIAA##CharTypeName) { \
+    test_by_hash_binary_search_common<char_type, true, true>();    \
   }
 
 MAKE_MAP_TESTS(char, Char)
+MAKE_MAP_TESTS(wchar_t, WChar)
 MAKE_MAP_TESTS(char8_t, Char8)
 MAKE_MAP_TESTS(char16_t, Char16)
 MAKE_MAP_TESTS(char32_t, Char32)

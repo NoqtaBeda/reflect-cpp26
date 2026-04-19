@@ -46,20 +46,14 @@ void test_by_hash_table_common_2() {
         {to<CharT>("ABCDEV"), {.value = 12}},     // 0x0000'024c'6c2c'6aaf
     };
   };
-  constexpr auto map = FIXED_MAP(make_kv_pairs(),
-                                 {
-                                     .ascii_case_insensitive = false,
-                                     .min_load_factor = 0.25,
-                                 });
-  static_assert(std::is_same_v<typename decltype(map)::result_type, const wrapper_t<int>&>);
+  constexpr auto options = rfl::string_key_fixed_map_options{
+      .ascii_case_insensitive = false,
+      .min_load_factor = 0.25,
+  };
+  constexpr auto map = FIXED_MAP(make_kv_pairs(), options);
+
   EXPECT_EQ_STATIC(13, map.size());
-  EXPECT_THAT(display_string_of(^^decltype(map)),
-              testing::HasSubstr("string_key_map_by_hash_table_fast"));
-  if constexpr (sizeof(CharT) <= 2) {
-    EXPECT_EQ_STATIC(15, map._bucket_size_mask);
-  } else {
-    EXPECT_EQ_STATIC(31, map._bucket_size_mask);
-  }
+  EXPECT_THAT(display_string_of(^^decltype(map)), testing::HasSubstr("hash_table_with_skey"));
 
   EXPECT_EQ_STATIC(0, map[to<CharT>("Apple")]);
   EXPECT_FOUND_STATIC(1, map, to<CharT>("Banana"));
@@ -102,20 +96,14 @@ void test_by_hash_table_common_ci_2() {
         {to<CharT>("ABCDEV"), {.value = 12}},     // 0x0000'036e'12be'c82f
     };
   };
-  constexpr auto map = FIXED_MAP(make_kv_pairs(),
-                                 {
-                                     .ascii_case_insensitive = true,
-                                     .min_load_factor = 0.25,
-                                 });
-  static_assert(std::is_same_v<typename decltype(map)::result_type, const wrapper_t<int>&>);
+  constexpr auto options = rfl::string_key_fixed_map_options{
+      .ascii_case_insensitive = true,
+      .min_load_factor = 0.25,
+  };
+  constexpr auto map = FIXED_MAP(make_kv_pairs(), options);
+
   EXPECT_EQ_STATIC(13, map.size());
-  EXPECT_THAT(display_string_of(^^decltype(map)),
-              testing::HasSubstr("string_key_map_by_hash_table_fast"));
-  if constexpr (sizeof(CharT) <= 2) {
-    EXPECT_EQ_STATIC(15, map._bucket_size_mask);
-  } else {
-    EXPECT_EQ_STATIC(31, map._bucket_size_mask);
-  }
+  EXPECT_THAT(display_string_of(^^decltype(map)), testing::HasSubstr("hash_table_with_skey"));
 
   EXPECT_EQ_STATIC(0, map[to<CharT>("Apple")]);
   EXPECT_FOUND_STATIC(1, map, to<CharT>("Banana"));

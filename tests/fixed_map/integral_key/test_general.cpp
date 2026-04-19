@@ -51,23 +51,23 @@ TEST(FixedMap, SignedIntegralKeyGeneral) {
         {INT_MAX, fn<11>},
     };
   };
-  constexpr auto map = FIXED_MAP(make_kv_pairs(),
-                                 {
-                                     .min_load_factor = 1.0,
-                                     .dense_lookup_threshold = 6,
-                                     .binary_search_threshold = 4,
-                                 });
-  static_assert(std::is_same_v<decltype(map)::result_type, size_t (*const&)()>);
-  auto expected_regex = "general_integral_key_map"s + ".*"
-                      + "linear_search_integral_key_map"          // left_sparse_part
-                      + ".*" + "binary_search_integral_key_map";  // right_sparse_part
+  constexpr auto options = rfl::integral_key_fixed_map_options{
+      .min_load_factor = 1.0,
+      .dense_lookup_threshold = 6,
+      .binary_search_threshold = 4,
+  };
+  constexpr auto map = FIXED_MAP(make_kv_pairs(), options);
+
+  auto expected_regex = "general_with_ikey"s               //
+                      + ".*" + "fully_dense_with_ikey"     // dense part
+                      + ".*" + "linear_search_with_ikey"   // left_sparse_part
+                      + ".*" + "binary_search_with_ikey";  // right_sparse_part
   EXPECT_THAT(display_string_of(^^decltype(map)), testing::ContainsRegex(expected_regex));
   EXPECT_EQ_STATIC(12, map.size());
-  EXPECT_EQ_STATIC(6, map._dense_part.size());
-  EXPECT_EQ_STATIC(2, map._left_sparse_part.size());
-  EXPECT_EQ_STATIC(4, map._right_sparse_part.size());
-  EXPECT_EQ_STATIC(INT_MIN, map.min_key());
-  EXPECT_EQ_STATIC(INT_MAX, map.max_key());
+
+  EXPECT_EQ_STATIC(6, map.dense_part.size());
+  EXPECT_EQ_STATIC(2, map.left_sparse_part.size());
+  EXPECT_EQ_STATIC(4, map.right_sparse_part.size());
 
   auto check_non_null = [&map](size_t expected_value, int key) {
     EXPECT_NE(nullptr, map[key]) << "failed with key = " << key;
@@ -94,30 +94,38 @@ TEST(FixedMap, SignedIntegralKeyGeneral) {
   EXPECT_EQ_STATIC(nullptr, map[static_cast<unsigned>(-1)]);
 }
 
-constexpr auto make_kv_pairs_for_unsigned_integral_key_general() {
-  using KVPair = std::pair<unsigned, size_t (*)()>;
-  return std::vector<KVPair>{
-      {UINT_MAX, fn<0>},
-      {0, fn<1>},
-      {2, fn<2>},
-      {4, fn<3>},
-      {6, fn<4>},
-      {9, fn<5>},
-      {12, fn<6>},
-      {15, fn<7>},
-      {18, fn<8>},
+TEST(FixedMap, UnsignedIntegralKeyGeneral) {
+  constexpr auto make_kv_pairs = []() consteval {
+    using KVPair = std::pair<unsigned, size_t (*)()>;
+    return std::vector<KVPair>{
+        {UINT_MAX, fn<0>},
+        {0, fn<1>},
+        {2, fn<2>},
+        {4, fn<3>},
+        {6, fn<4>},
+        {9, fn<5>},
+        {12, fn<6>},
+        {15, fn<7>},
+        {18, fn<8>},
+    };
   };
-}
+  constexpr auto options = rfl::integral_key_fixed_map_options{
+      .min_load_factor = 0.5,
+      .dense_lookup_threshold = 5,
+      .binary_search_threshold = 4,
+  };
+  constexpr auto map = FIXED_MAP(make_kv_pairs(), options);
+  // true: Uses value wrapper with flag 'is_valid'
+  auto expected_regex = "general_with_ikey"s               //
+                      + ".*" + "non_null_dense_with_ikey"  // dense_part
+                      + ".*" + "empty_with_ikey"           // left_sparse_part
+                      + ".*" + "binary_search_with_ikey";  // right_sparse_part
+  EXPECT_THAT(display_string_of(^^decltype(map)), testing::ContainsRegex(expected_regex));
 
-template <class FixedMap>
-constexpr auto test_unsigned_integral_key_general_common(const FixedMap& map) {
-  static_assert(std::is_same_v<typename FixedMap::result_type, size_t (*const&)()>);
-  EXPECT_EQ(9, map.size());
-  EXPECT_EQ(5, map._dense_part.size());
-  EXPECT_EQ(0, map._left_sparse_part.size());
-  EXPECT_EQ(4, map._right_sparse_part.size());
-  EXPECT_EQ(0, map.min_key());
-  EXPECT_EQ(UINT_MAX, map.max_key());
+  EXPECT_EQ_STATIC(9, map.size());
+  EXPECT_EQ_STATIC(5, map.dense_part.size());
+  EXPECT_EQ_STATIC(0, map.left_sparse_part.size());
+  EXPECT_EQ_STATIC(4, map.right_sparse_part.size());
 
   auto check_non_null = [&map](size_t expected_value, unsigned key) {
     EXPECT_NE(nullptr, map[key]) << "failed with key = " << key;
@@ -133,41 +141,10 @@ constexpr auto test_unsigned_integral_key_general_common(const FixedMap& map) {
   check_non_null(8, 18);
   check_non_null(0, UINT_MAX);
   // Holes: Value-initialized
-  EXPECT_EQ(nullptr, map[1]);
-  EXPECT_NOT_FOUND(nullptr, map, 10);
-  EXPECT_NOT_FOUND(nullptr, map, 16);
-  EXPECT_NOT_FOUND(nullptr, map, UINT_MAX - 1);
+  EXPECT_EQ_STATIC(nullptr, map[1]);
+  EXPECT_NOT_FOUND_STATIC(nullptr, map, 10);
+  EXPECT_NOT_FOUND_STATIC(nullptr, map, 16);
+  EXPECT_NOT_FOUND_STATIC(nullptr, map, UINT_MAX - 1);
   // Safe integral comparison is used
-  EXPECT_EQ(nullptr, map[-1]);
-}
-
-TEST(FixedMap, UnsignedIntegralKeyGeneral1) {
-  constexpr auto options = rfl::integral_key_fixed_map_options{
-      .min_load_factor = 0.5,
-      .dense_lookup_threshold = 5,
-      .binary_search_threshold = 4,
-  };
-  constexpr auto map = FIXED_MAP(make_kv_pairs_for_unsigned_integral_key_general(), options);
-  // true: Uses value wrapper with flag 'is_valid'
-  auto expected_regex = "general_integral_key_map"s + ".*" + "dense_integral_key_map"  // dense_part
-                      + ".*" + "empty_integral_key_map"           // left_sparse_part
-                      + ".*" + "binary_search_integral_key_map";  // right_sparse_part
-  EXPECT_THAT(display_string_of(^^decltype(map)), testing::ContainsRegex(expected_regex));
-  test_unsigned_integral_key_general_common(map);
-}
-
-TEST(FixedMap, UnsignedIntegralKeyGeneral2) {
-  constexpr auto options = rfl::integral_key_fixed_map_options{
-      .default_value_is_always_invalid = true,
-      .min_load_factor = 0.5,
-      .dense_lookup_threshold = 5,
-      .binary_search_threshold = 4,
-  };
-  constexpr auto map = FIXED_MAP(make_kv_pairs_for_unsigned_integral_key_general(), options);
-  // true: Noes not value wrapper with flag 'is_valid' as it's not needed.
-  auto expected_regex = "general_integral_key_map"s + ".*" + "dense_integral_key_map"  // dense_part
-                      + ".*" + "empty_integral_key_map"           // left_sparse_part
-                      + ".*" + "binary_search_integral_key_map";  // right_sparse_part
-  EXPECT_THAT(display_string_of(^^decltype(map)), testing::ContainsRegex(expected_regex));
-  test_unsigned_integral_key_general_common(map);
+  EXPECT_EQ_STATIC(nullptr, map[-1]);
 }

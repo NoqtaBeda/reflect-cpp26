@@ -20,38 +20,43 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_FIXED_MAP_IMPL_STRING_EMPTY_HPP
-#define REFLECT_CPP26_FIXED_MAP_IMPL_STRING_EMPTY_HPP
+#ifndef REFLECT_CPP26_FIXED_MAP_CANDIDATES_INTEGRAL_EMPTY_HPP
+#define REFLECT_CPP26_FIXED_MAP_CANDIDATES_INTEGRAL_EMPTY_HPP
 
 #include <reflect_cpp26/fixed_map/impl/common.hpp>
+#include <reflect_cpp26/type_traits/arithmetic_types.hpp>
+#include <reflect_cpp26/utils/concepts.hpp>
 
-namespace reflect_cpp26::impl {
-template <class KVPair>
-struct empty_string_key_map {
-  using key_type = std::tuple_element_t<0, KVPair>;
-  using value_type = std::tuple_element_t<1, KVPair>;
-  using result_type = const value_type&;
-  using character_type = char_type_t<key_type>;
+namespace reflect_cpp26::impl::map {
+template <class V>
+struct empty_with_ikey {
+  using key_type = int;  // Placeholder only
+  using value_type = V;
 
-  static constexpr size_t size() {
+private:
+  using result_type = std::pair<const V&, bool>;
+
+public:
+  static constexpr auto size() -> size_t {
     return 0;
   }
-  static constexpr auto get(std::basic_string_view<character_type>)
-      -> std::pair<result_type, bool> {
-    return {map_null_value_v<value_type>, false};
+
+  static constexpr auto get(non_bool_integral auto) -> result_type {
+    return {default_v<value_type>, false};
   }
 
-  static constexpr auto operator[](std::basic_string_view<character_type>) -> const value_type& {
-    return map_null_value_v<value_type>;
+  static constexpr auto operator[](non_bool_integral auto) -> const value_type& {
+    return default_v<value_type>;
   }
 };
 
 // -------- Builder --------
 
-template <class KVPair>
-consteval auto make_empty_string_key_map() -> std::meta::info {
-  return std::meta::reflect_constant(empty_string_key_map<KVPair>{});
+template <class V>
+consteval auto make_empty_with_ikey() -> std::meta::info {
+  auto obj = empty_with_ikey<V>{};
+  return std::meta::reflect_constant(obj);
 }
-}  // namespace reflect_cpp26::impl
+}  // namespace reflect_cpp26::impl::map
 
-#endif  // REFLECT_CPP26_FIXED_MAP_IMPL_STRING_EMPTY_HPP
+#endif  // REFLECT_CPP26_FIXED_MAP_CANDIDATES_INTEGRAL_EMPTY_HPP

@@ -20,37 +20,44 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_FIXED_MAP_IMPL_INTEGRAL_EMPTY_HPP
-#define REFLECT_CPP26_FIXED_MAP_IMPL_INTEGRAL_EMPTY_HPP
+#ifndef REFLECT_CPP26_FIXED_MAP_CANDIDATES_INTEGRAL_DENSE_HPP
+#define REFLECT_CPP26_FIXED_MAP_CANDIDATES_INTEGRAL_DENSE_HPP
 
-#include <reflect_cpp26/fixed_map/impl/integral_common.hpp>
+#include <cstddef>
+#include <type_traits>
+#include <utility>
 
-namespace reflect_cpp26::impl {
-template <class KVPair>
-struct empty_integral_key_map {
-  using kv_pair_type = KVPair;
-  using key_type = std::tuple_element_t<0, KVPair>;
-  using value_type = std::tuple_element_t<1, KVPair>;
+namespace reflect_cpp26::impl::map {
+// Precondition: std::to_underlying_t<E> is the same as Underlying::key_type
+template <class E, class Underlying>
+struct enum_wrapper {
+  using key_type = E;
+  using value_type = typename Underlying::value_type;
 
-  static constexpr size_t size() {
-    return 0;
+private:
+  using result_type = std::pair<const value_type&, bool>;
+
+public:
+  constexpr auto size() const -> size_t {
+    return underlying.size();
   }
 
-  static constexpr auto get(non_bool_integral auto) -> std::pair<const value_type&, bool> {
-    return {map_null_value_v<value_type>, false};
+  constexpr auto get(key_type key) const -> result_type {
+    return underlying.get(std::to_underlying(key));
   }
 
-  static constexpr auto operator[](non_bool_integral auto) -> const value_type& {
-    return map_null_value_v<value_type>;
+  constexpr auto operator[](key_type key) const -> const value_type& {
+    return underlying.operator[](std::to_underlying(key));
   }
+
+  Underlying underlying;
 };
 
 // -------- Builder --------
 
-template <class KVPair>
-consteval auto make_empty_integral_key_map() -> std::meta::info {
-  return std::meta::reflect_constant(empty_integral_key_map<KVPair>{});
-}
-}  // namespace reflect_cpp26::impl
+template <class E, auto Underlying>
+constexpr auto enum_wrapper_v =
+    enum_wrapper<E, std::remove_cvref_t<decltype(Underlying)>>{Underlying};
+}  // namespace reflect_cpp26::impl::map
 
-#endif  // REFLECT_CPP26_FIXED_MAP_IMPL_INTEGRAL_EMPTY_HPP
+#endif  // REFLECT_CPP26_FIXED_MAP_CANDIDATES_INTEGRAL_DENSE_HPP

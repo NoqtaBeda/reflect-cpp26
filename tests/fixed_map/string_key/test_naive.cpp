@@ -36,13 +36,12 @@ void test_naive_common() {
         {to<CharT>("Pen"), {.value = 37.5}},
     };
   };
-  constexpr auto map = FIXED_MAP(make_kv_pairs(),
-                                 {
-                                     .ascii_case_insensitive = CI,
-                                     .optimization_threshold = 4,
-                                 });
-  static_assert(std::is_same_v<typename decltype(map)::result_type, const wrapper_t<double>&>);
-  EXPECT_THAT(display_string_of(^^decltype(map)), testing::HasSubstr("naive_string_key_map"));
+  constexpr auto options = rfl::string_key_fixed_map_options{
+      .ascii_case_insensitive = CI,
+      .optimization_threshold = 4,
+  };
+  constexpr auto map = FIXED_MAP(make_kv_pairs(), options);
+  EXPECT_THAT(display_string_of(^^decltype(map)), testing::HasSubstr("naive_with_skey"));
   EXPECT_EQ_STATIC(3, map.size());
 
   EXPECT_EQ_STATIC(12.5, map[to<CharT>("Apple")]);
@@ -69,6 +68,8 @@ void test_naive_common() {
 #define FOR_EACH_CHARACTER_TYPE(F) \
   F(char, Char)                    \
   F(wchar_t, WChar)                \
-  F(char16_t, Char16)
+  F(char8_t, Char8)                \
+  F(char16_t, Char16)              \
+  F(char32_t, Char32)
 
 FOR_EACH_CHARACTER_TYPE(MAKE_NAIVE_MAP_TESTS)

@@ -29,8 +29,8 @@ namespace rfl = reflect_cpp26;
 TEST(FixedMap, IntegralKeyEmpty) {
   using KVPair = std::pair<int, const void*>;
   constexpr auto map_empty = FIXED_MAP(std::vector<KVPair>());
-  EXPECT_THAT(display_string_of(^^decltype(map_empty)),
-              testing::HasSubstr("empty_integral_key_map"));
+  EXPECT_THAT(display_string_of(^^decltype(map_empty)), testing::HasSubstr("empty_with_ikey"));
+
   EXPECT_EQ_STATIC(0, map_empty.size());
   EXPECT_EQ_STATIC(nullptr, map_empty[0]);
   EXPECT_NOT_FOUND_STATIC(nullptr, map_empty, -1);

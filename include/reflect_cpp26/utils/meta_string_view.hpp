@@ -148,6 +148,14 @@ public:
     return head + n;
   }
 
+  constexpr auto cbegin() const -> const CharT* {
+    return head;
+  }
+
+  constexpr auto cend() const -> const CharT* {
+    return head + n;
+  }
+
   // Note: remove_suffix(n) is not provided since we need to ensure
   // the constraint head[n] == '\0' is always satisfied.
   constexpr auto remove_prefix(size_t n) const -> meta_basic_string_view {

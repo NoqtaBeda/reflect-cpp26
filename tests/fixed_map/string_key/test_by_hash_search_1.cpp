@@ -41,12 +41,16 @@ consteval auto make_kv_pairs() {
   };
 }
 
-template <class CharT, rfl::string_key_fixed_map_options Options>
+template <class CharT, bool CI, size_t BT>
 constexpr void test_by_hash_search_common(const char* expected_type_name) {
-  constexpr auto CI = Options.ascii_case_insensitive;
-  constexpr auto map = FIXED_MAP(make_kv_pairs<CharT>(), Options);
+  constexpr auto options = rfl::string_key_fixed_map_options{
+      .ascii_case_insensitive = CI,
+      .max_n_iterations = 0,  // Disables hash table
+      .binary_search_threshold = BT,
+  };
+  constexpr auto map = FIXED_MAP(make_kv_pairs<CharT>(), options);
+
   EXPECT_THAT(display_string_of(^^decltype(map)), testing::HasSubstr(expected_type_name));
-  static_assert(std::is_same_v<typename decltype(map)::result_type, const wrapper_t<int>&>);
   EXPECT_EQ_STATIC(8, map.size());
 
   EXPECT_EQ_STATIC(0, map[to<CharT>("Apple")]);
@@ -73,22 +77,12 @@ constexpr void test_by_hash_search_common(const char* expected_type_name) {
 
 template <class CharT, bool CI>
 constexpr void test_by_hash_linear_search_common() {
-  constexpr auto options = rfl::string_key_fixed_map_options{
-      .ascii_case_insensitive = CI,
-      .min_load_factor = 1.0,
-      .binary_search_threshold = 9,
-  };
-  test_by_hash_search_common<CharT, options>("string_key_map_by_hash_linear_search");
+  test_by_hash_search_common<CharT, CI, 9>("linear_hash_search_with_skey");
 }
 
 template <class CharT, bool CI>
 constexpr void test_by_hash_binary_search_common() {
-  constexpr auto options = rfl::string_key_fixed_map_options{
-      .ascii_case_insensitive = CI,
-      .min_load_factor = 1.0,
-      .binary_search_threshold = 8,
-  };
-  test_by_hash_search_common<CharT, options>("string_key_map_by_hash_binary_search");
+  test_by_hash_search_common<CharT, CI, 8>("binary_hash_search_with_skey");
 }
 
 #define MAKE_MAP_TESTS(char_type, CharTypeName)                  \
@@ -106,4 +100,7 @@ constexpr void test_by_hash_binary_search_common() {
   }
 
 MAKE_MAP_TESTS(char, Char)
+MAKE_MAP_TESTS(wchar_t, WChar)
 MAKE_MAP_TESTS(char8_t, Char8)
+MAKE_MAP_TESTS(char16_t, Char16)
+MAKE_MAP_TESTS(char32_t, Char32)

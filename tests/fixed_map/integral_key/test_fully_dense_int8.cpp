@@ -20,6 +20,7 @@
  * SOFTWARE.
  **/
 
+#include <climits>
 #include <reflect_cpp26/fixed_map/integral_key.hpp>
 
 #include "tests/fixed_map/integral_key/integral_key_test_options.hpp"
@@ -40,12 +41,9 @@ TEST(FixedMap, IntegralKeyInt8Full) {
     return res;
   };
   constexpr auto map = FIXED_MAP(make_kv_pairs() /* with default options */);
-  static_assert(std::is_same_v<decltype(map)::result_type, const double&>);
-  EXPECT_THAT(display_string_of(^^decltype(map)),
-              testing::HasSubstr("fully_dense_integral_key_map"));
+  EXPECT_THAT(display_string_of(^^decltype(map)), testing::HasSubstr("fully_dense_with_ikey"));
+  EXPECT_EQ_STATIC(sizeof(double), sizeof(map.entries[0]));
   EXPECT_EQ_STATIC(1 << CHAR_BIT, map.size());
-  EXPECT_EQ_STATIC(SCHAR_MIN, map.min_key());
-  EXPECT_EQ_STATIC(SCHAR_MAX, map.max_key());
 
   for (auto i = SCHAR_MIN;; i++) {
     auto [v, found] = map.get(i);
@@ -70,12 +68,9 @@ TEST(FixedMap, IntegralKeyUInt8Full) {
     return res;
   };
   constexpr auto map = FIXED_MAP(make_kv_pairs() /* with default options */);
-  static_assert(std::is_same_v<decltype(map)::result_type, const double&>);
-  EXPECT_THAT(display_string_of(^^decltype(map)),
-              testing::HasSubstr("fully_dense_integral_key_map"));
+  EXPECT_THAT(display_string_of(^^decltype(map)), testing::HasSubstr("fully_dense_with_ikey"));
+  EXPECT_EQ_STATIC(sizeof(double), sizeof(map.entries[0]));
   EXPECT_EQ_STATIC(1 << CHAR_BIT, map.size());
-  EXPECT_EQ_STATIC(0, map.min_key());
-  EXPECT_EQ_STATIC(UCHAR_MAX, map.max_key());
 
   for (auto i = 0; i <= UCHAR_MAX; i++) {
     auto [v, found] = map.get(i);

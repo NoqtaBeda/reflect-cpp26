@@ -23,77 +23,44 @@
 #ifndef REFLECT_CPP26_FIXED_MAP_IMPL_STRING_POLICY_HPP
 #define REFLECT_CPP26_FIXED_MAP_IMPL_STRING_POLICY_HPP
 
-#include <reflect_cpp26/fixed_map/impl/string_common.hpp>
 #include <reflect_cpp26/utils/ctype.hpp>
+#include <reflect_cpp26/utils/meta_string_view.hpp>
 #include <reflect_cpp26/utils/string_hash.hpp>
 
-namespace reflect_cpp26::impl {
-struct string_key_identity_policy_t {
-  struct equal_length_tag_t {};
-  static constexpr auto equal_length = equal_length_tag_t{};
-
-  static constexpr uint64_t hash(const string_like auto& u) {
-    return bkdr_hash64(u);
+namespace reflect_cpp26::impl::map {
+template <class CharT>
+struct skey_identity_policy {
+  static constexpr size_t hash(std::basic_string_view<CharT> u) {
+    return bkdr_hash(u);
   }
 
-  static constexpr auto convert_char(char_type auto c) {
-    return c;
-  }
-
-  template <char_type CharT, string_like_of<CharT> StringU>
-  static constexpr bool equals(meta_basic_string_view<CharT> t, const StringU& u) {
+  static constexpr bool equals(meta_basic_string_view<CharT> t, std::basic_string_view<CharT> u) {
     return t == u;
   }
+};
 
-  template <char_type CharT, string_like_of<CharT> StringU>
-  static constexpr bool equals(meta_basic_string_view<CharT> t,
-                               const StringU& u,
-                               equal_length_tag_t) {
-    const auto* iu = std::ranges::data(u);
+// ASCII case-insensitive. Non-ASCII characters are NOT supported.
+template <class CharT>
+struct skey_case_insensitive_policy {
+  static constexpr size_t hash(std::basic_string_view<CharT> u) {
+    return ascii_ci_bkdr_hash(u);
+  }
+
+  static constexpr bool equals(meta_basic_string_view<CharT> t, std::basic_string_view<CharT> u) {
+    if (u.length() != t.length()) {
+      return false;
+    }
+    const auto* iu = u.data();
     for (const auto* it = t.head; it < t.head + t.n; ++it, ++iu) {
-      if (*it != *iu) {
-        return false;
-      }
+      if (*it != ascii_tolower(*iu)) return false;
     }
     return true;
   }
 };
 
-struct string_key_case_insensitive_policy_t {
-  struct equal_length_tag_t {};
-  static constexpr auto equal_length = equal_length_tag_t{};
-
-  static constexpr uint64_t hash(const string_like auto& u) {
-    return ascii_ci_bkdr_hash64(u);
-  }
-
-  static constexpr auto convert_char(char_type auto c) {
-    return ascii_tolower(c);
-  }
-
-  template <char_type CharT, string_like_of<CharT> StringU>
-  static constexpr bool equals(meta_basic_string_view<CharT> t, const StringU& u) {
-    return t.length() == u.length() && equals(t, u, equal_length);
-  }
-
-  // t has already been converted to all-lower case.
-  template <char_type CharT, string_like_of<CharT> StringU>
-  static constexpr bool equals(meta_basic_string_view<CharT> t,
-                               const StringU& u,
-                               equal_length_tag_t) {
-    const auto* iu = std::ranges::data(u);
-    for (const auto* it = t.head; it < t.head + t.n; ++it, ++iu) {
-      if (*it != ascii_tolower(*iu)) {
-        return false;
-      }
-    }
-    return true;
-  }
-};
-
-consteval auto string_key_policy_type(bool case_insensitive) {
-  return case_insensitive ? ^^string_key_case_insensitive_policy_t : ^^string_key_identity_policy_t;
+consteval auto get_skey_policy_template(bool case_insensitive) {
+  return case_insensitive ? ^^skey_case_insensitive_policy : ^^skey_identity_policy;
 }
-}  // namespace reflect_cpp26::impl
+}  // namespace reflect_cpp26::impl::map
 
 #endif  // REFLECT_CPP26_FIXED_MAP_IMPL_STRING_POLICY_HPP

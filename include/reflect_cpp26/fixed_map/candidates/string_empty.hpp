@@ -20,30 +20,42 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_FIXED_MAP_IMPL_STRING_COMMON_HPP
-#define REFLECT_CPP26_FIXED_MAP_IMPL_STRING_COMMON_HPP
+#ifndef REFLECT_CPP26_FIXED_MAP_CANDIDATES_STRING_EMPTY_HPP
+#define REFLECT_CPP26_FIXED_MAP_CANDIDATES_STRING_EMPTY_HPP
 
 #include <reflect_cpp26/fixed_map/impl/common.hpp>
-#include <reflect_cpp26/type_traits/string_like_types.hpp>
-#include <reflect_cpp26/type_traits/tuple_like_types.hpp>
+#include <reflect_cpp26/fixed_map/impl/string_policy.hpp>
 
-#define REFLECT_CPP26_STRING_KEY_MAP_COMMON_INTERFACE                                        \
-  constexpr auto operator[](std::basic_string_view<character_type> key) const->result_type { \
-    return get(key).first;                                                                   \
+namespace reflect_cpp26::impl::map {
+template <class CharT, class V>
+struct empty_with_skey {
+  using key_type = meta_basic_string_view<CharT>;
+  using value_type = V;
+
+private:
+  using result_type = std::pair<const V&, bool>;
+
+public:
+  static constexpr auto size() -> size_t {
+    return 0;
   }
 
-namespace reflect_cpp26::impl {
-template <class KVPair>
-concept string_key_kv_pair = pair_like<KVPair> && string_like<std::tuple_element_t<0, KVPair>>;
+  constexpr auto get(std::basic_string_view<CharT>) const -> result_type {
+    return {default_v<value_type>, false};
+  }
 
-template <class T>
-struct string_hash_wrapper {
-  uint64_t hash;
-  T underlying;
+  constexpr auto operator[](std::basic_string_view<CharT>) const -> const value_type& {
+    return default_v<value_type>;
+  }
 };
 
-template <class T>
-using alignment_adjusted_string_hash_wrapper = alignment_adjusted_wrapper<string_hash_wrapper<T>>;
-}  // namespace reflect_cpp26::impl
+// -------- Builder --------
 
-#endif  // REFLECT_CPP26_FIXED_MAP_IMPL_STRING_COMMON_HPP
+template <class CharT, class V>
+consteval auto make_empty_with_skey() -> std::meta::info {
+  auto obj = empty_with_skey<CharT, V>{};
+  return std::meta::reflect_constant(obj);
+}
+}  // namespace reflect_cpp26::impl::map
+
+#endif  // REFLECT_CPP26_FIXED_MAP_CANDIDATES_STRING_EMPTY_HPP

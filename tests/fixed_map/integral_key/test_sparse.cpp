@@ -28,19 +28,20 @@ namespace rfl = reflect_cpp26;
 
 TEST(FixedMap, SignedIntegralKeySparseLinearSearch) {
   using KVPair = std::pair<int64_t, double>;
+
   constexpr auto make_kv_pairs = []() constexpr {
-    return std::vector<KVPair>{{-100, 1.25}, {200, 3.5}, {-300, 5.75}, {400, 7.0}, {-500, 8.25}};
+    return std::vector<KVPair>{
+        {-100, 1.25},
+        {200, 3.5},
+        {-300, 5.75},
+        {400, 7.0},
+        {-500, 8.25},
+    };
   };
-  constexpr auto map = FIXED_MAP(make_kv_pairs(),
-                                 {
-                                     .binary_search_threshold = 100,
-                                 });
-  static_assert(std::is_same_v<decltype(map)::result_type, const double&>);
-  EXPECT_THAT(display_string_of(^^decltype(map)),
-              testing::HasSubstr("linear_search_integral_key_map"));
+  constexpr auto map = FIXED_MAP(make_kv_pairs(), {.binary_search_threshold = 100});
+
+  EXPECT_THAT(display_string_of(^^decltype(map)), testing::HasSubstr("linear_search_with_ikey"));
   EXPECT_EQ_STATIC(5, map.size());
-  EXPECT_EQ_STATIC(-500, map.min_key());
-  EXPECT_EQ_STATIC(400, map.max_key());
 
   EXPECT_EQ_STATIC(1.25, map[-100]);
   EXPECT_FOUND_STATIC(5.75, map, -300);
@@ -55,10 +56,11 @@ TEST(FixedMap, SignedIntegralKeySparseLinearSearch) {
   EXPECT_NOT_FOUND_STATIC(0.0, map, static_cast<unsigned>(-100));
 }
 
-template <rfl::integral_key_fixed_map_options Options>
+template <bool A>
 void test_binary_search_common() {
   using InputValueType = std::pair<uint64_t, int64_t>;
   using KVPair = std::pair<uint64_t, InputValueType>;
+
   constexpr auto make_kv_pairs = []() constexpr {
     return std::vector<KVPair>{
         {static_cast<uint64_t>(-200), {12, -12}},
@@ -68,19 +70,17 @@ void test_binary_search_common() {
         {500, {60, -60}},
     };
   };
-  constexpr auto map = FIXED_MAP(make_kv_pairs(), Options);
-  static_assert(rfl::same_as_one_of<typename decltype(map)::result_type,
-                                    const std::pair<uint64_t, int64_t>&,
-                                    const rfl::meta_tuple<uint64_t, int64_t>&>);
+  constexpr auto options = rfl::integral_key_fixed_map_options{
+      .adjusts_alignment = A,
+      .binary_search_threshold = 1,
+  };
+  constexpr auto map = FIXED_MAP(make_kv_pairs(), options);
 
-  EXPECT_THAT(display_string_of(^^decltype(map)),
-              testing::HasSubstr("binary_search_integral_key_map"));
+  EXPECT_THAT(display_string_of(^^decltype(map)), testing::HasSubstr("binary_search_with_ikey"));
   EXPECT_EQ_STATIC(5, map.size());
-  EXPECT_EQ_STATIC(100, map.min_key());
-  EXPECT_EQ_STATIC(static_cast<uint64_t>(-100), map.max_key());
 
-  constexpr auto expected_element_size = Options.adjusts_alignment ? 32 : 24;
-  constexpr auto actual_element_size = sizeof(typename decltype(map._entries)::value_type);
+  constexpr auto expected_element_size = options.adjusts_alignment ? 32 : 24;
+  constexpr auto actual_element_size = sizeof(map.entries[0]);
   EXPECT_EQ(expected_element_size, actual_element_size)
       << "Unexpected element size with fixed map type " << display_string_of(^^decltype(map));
 
@@ -97,17 +97,9 @@ void test_binary_search_common() {
 }
 
 TEST(FixedMap, UnsignedIntegralKeySparseBinarySearch1) {
-  constexpr auto options = rfl::integral_key_fixed_map_options{
-      .adjusts_alignment = false,
-      .binary_search_threshold = 1,
-  };
-  test_binary_search_common<options>();
+  test_binary_search_common<false>();
 }
 
 TEST(FixedMap, UnsignedIntegralKeySparseBinarySearch2) {
-  constexpr auto options = rfl::integral_key_fixed_map_options{
-      .adjusts_alignment = true,
-      .binary_search_threshold = 1,
-  };
-  test_binary_search_common<options>();
+  test_binary_search_common<true>();
 }

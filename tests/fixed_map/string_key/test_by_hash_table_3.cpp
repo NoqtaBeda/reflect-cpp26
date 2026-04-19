@@ -27,7 +27,7 @@
 namespace rfl = reflect_cpp26;
 using namespace std::string_literals;
 
-template <bool AA, class CharT>
+template <bool A, class CharT>
 void test_by_hash_table_common_3() {
   using Value = std::pair<size_t, size_t>;
   using KVPair = std::pair<std::basic_string<CharT>, Value>;
@@ -43,27 +43,20 @@ void test_by_hash_table_common_3() {
     }
     return res;
   };
-  constexpr auto map = FIXED_MAP(make_kv_pairs(),
-                                 {
-                                     .ascii_case_insensitive = false,
-                                     .adjusts_alignment = AA,
-                                     .min_load_factor = 0.25,
-                                 });
-  static_assert(rfl::same_as_one_of<typename decltype(map)::result_type,
-                                    const rfl::meta_tuple<size_t, size_t>&,
-                                    const std::pair<size_t, size_t>&>);
+  constexpr auto options = rfl::string_key_fixed_map_options{
+      .ascii_case_insensitive = false,
+      .adjusts_alignment = A,
+      .min_load_factor = 0.25,
+  };
+  constexpr auto map = FIXED_MAP(make_kv_pairs(), options);
 
-  constexpr auto expected_element_size = (sizeof(void*) == 8) ? (AA ? 64 : 40) : (AA ? 32 : 24);
-  constexpr auto actual_element_size = sizeof(typename decltype(map._entries)::value_type);
+  constexpr auto expected_element_size = (sizeof(void*) == 8) ? (A ? 64 : 40) : (A ? 32 : 24);
+  constexpr auto actual_element_size = sizeof(map.entries[0]);
   EXPECT_EQ(expected_element_size, actual_element_size)
       << "Unexpected element size with fixed map type " << display_string_of(^^decltype(map));
 
-  EXPECT_THAT(display_string_of(^^decltype(map)),
-              testing::HasSubstr("string_key_map_by_hash_table_slow"));
+  EXPECT_THAT(display_string_of(^^decltype(map)), testing::HasSubstr("hash_table_with_skey"));
   EXPECT_EQ_STATIC(28, map.size());
-  if constexpr (sizeof(CharT) == 1) {
-    EXPECT_EQ_STATIC(33, map._bucket_size);  // Modulo: 0 ~ 25, 31, 32
-  }
 
   EXPECT_FOUND_STATIC(Value('G', 'H'), map, to<CharT>("AG"));
   EXPECT_FOUND_STATIC(Value('T', 'U'), map, to<CharT>("AT"));
@@ -94,11 +87,13 @@ void test_by_hash_table_common_ci_3() {
     }
     return res;
   };
-  constexpr auto map =
-      FIXED_MAP(make_kv_pairs(), {.ascii_case_insensitive = true, .min_load_factor = 0.5});
-  static_assert(std::is_same_v<typename decltype(map)::result_type, const wrapper_t<int>&>);
-  EXPECT_THAT(display_string_of(^^decltype(map)),
-              testing::HasSubstr("string_key_map_by_hash_table_slow"));
+  constexpr auto options = rfl::string_key_fixed_map_options{
+      .ascii_case_insensitive = true,
+      .min_load_factor = 0.25,
+  };
+  constexpr auto map = FIXED_MAP(make_kv_pairs(), options);
+
+  EXPECT_THAT(display_string_of(^^decltype(map)), testing::HasSubstr("hash_table_with_skey"));
   EXPECT_EQ_STATIC(28, map.size());
 
   EXPECT_FOUND_STATIC('G', map, to<CharT>("ag"));
@@ -117,7 +112,7 @@ void test_by_hash_table_common_ci_3() {
   TEST(FixedMap, StringKeyByHashTable3##CharTypeName) {   \
     test_by_hash_table_common_3<false, char_type>();      \
   }                                                       \
-  TEST(FixedMap, StringKeyByHashTable3AA##CharTypeName) { \
+  TEST(FixedMap, StringKeyByHashTable3A##CharTypeName) {  \
     test_by_hash_table_common_3<true, char_type>();       \
   }                                                       \
   TEST(FixedMap, StringKeyByHashTable3CI##CharTypeName) { \

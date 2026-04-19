@@ -31,21 +31,6 @@
 #include <reflect_cpp26/utils/string_utility.hpp>
 
 namespace reflect_cpp26 {
-struct is_ascii_char_t {
-  static constexpr bool operator()(non_bool_integral auto c) {
-    return c >= 0 && c <= 127;
-  }
-};
-constexpr auto is_ascii_char = is_ascii_char_t{};
-
-struct is_ascii_string_t {
-  static constexpr bool operator()(const string_like auto& str) {
-    auto sv = std::basic_string_view{str};
-    return std::ranges::all_of(sv, is_ascii_char);
-  }
-};
-constexpr auto is_ascii_string = is_ascii_string_t{};
-
 namespace impl {
 constexpr uint8_t ctype_print_mask = 1u;
 constexpr uint8_t ctype_space_mask = 2u;
@@ -68,83 +53,158 @@ constexpr uint8_t ctype_flag_table[128] = {
     0x9,  0x91, 0x91, 0x91, 0x91, 0x91, 0x91, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
     0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x9,  0x9,  0x9,  0x9,  0x9,
     0x9,  0xa1, 0xa1, 0xa1, 0xa1, 0xa1, 0xa1, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21,
-    0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x9,  0x9,  0x9,  0x9,  0x0};
-
-template <class Comp, uint8_t Mask>
-struct ascii_ctype_predicate_t {
-  static constexpr auto comp = Comp{};
-
-  static constexpr bool operator()(non_bool_integral auto c) {
-    return is_ascii_char(c) && comp(ctype_flag_table[c] & Mask, uint8_t(0));
-  }
+    0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x9,  0x9,  0x9,  0x9,  0x0,
 };
 }  // namespace impl
 
-#define REFLECT_CPP26_CTYPE_PREDICATE(func, Comp, Mask)                                       \
-  struct ascii_##func##_t : impl::ascii_ctype_predicate_t<std::Comp<uint8_t>, impl::Mask> {}; \
-  constexpr auto ascii_##func = ascii_##func##_t{};
+struct is_ascii_char_t {
+  static constexpr bool operator()(non_bool_integral auto c) {
+    return c >= 0 && c <= 127;
+  }
+};
+constexpr auto is_ascii_char = is_ascii_char_t{};
 
-REFLECT_CPP26_CTYPE_PREDICATE(isalnum, not_equal_to, ctype_alnum_mask)
-REFLECT_CPP26_CTYPE_PREDICATE(isalpha, not_equal_to, ctype_alpha_mask)
-REFLECT_CPP26_CTYPE_PREDICATE(islower, not_equal_to, ctype_lower_mask)
-REFLECT_CPP26_CTYPE_PREDICATE(isupper, not_equal_to, ctype_upper_mask)
-REFLECT_CPP26_CTYPE_PREDICATE(isdigit, not_equal_to, ctype_digit_mask)
-REFLECT_CPP26_CTYPE_PREDICATE(isxdigit, not_equal_to, ctype_xdigit_mask)
-REFLECT_CPP26_CTYPE_PREDICATE(isblank, not_equal_to, ctype_blank_mask)
-REFLECT_CPP26_CTYPE_PREDICATE(iscntrl, equal_to, ctype_print_mask)
-REFLECT_CPP26_CTYPE_PREDICATE(isgraph, not_equal_to, ctype_graph_mask)
-REFLECT_CPP26_CTYPE_PREDICATE(isspace, not_equal_to, ctype_space_mask)
-REFLECT_CPP26_CTYPE_PREDICATE(isprint, not_equal_to, ctype_print_mask)
-REFLECT_CPP26_CTYPE_PREDICATE(ispunct, not_equal_to, ctype_punct_mask)
+struct is_ascii_string_t {
+  static constexpr bool operator()(const string_like auto& str) {
+    auto sv = make_string_view(str);
+    return std::ranges::all_of(sv, is_ascii_char);
+  }
+};
+constexpr auto is_ascii_string = is_ascii_string_t{};
 
-#undef REFLECT_CPP26_CTYPE_PREDICATE
+struct ascii_isalnum_t {
+  static constexpr bool operator()(non_bool_integral auto c) {
+    return is_ascii_char(c) && (impl::ctype_flag_table[c] & impl::ctype_alnum_mask) != 0;
+  }
+};
 
-namespace impl {
-template <class Derived>
-struct ascii_ctype_conversion_interface_t {
+struct ascii_isalpha_t {
+  static constexpr bool operator()(non_bool_integral auto c) {
+    return is_ascii_char(c) && (impl::ctype_flag_table[c] & impl::ctype_alpha_mask) != 0;
+  }
+};
+
+struct ascii_islower_t {
+  static constexpr bool operator()(non_bool_integral auto c) {
+    return is_ascii_char(c) && (impl::ctype_flag_table[c] & impl::ctype_lower_mask) != 0;
+  }
+};
+
+struct ascii_isupper_t {
+  static constexpr bool operator()(non_bool_integral auto c) {
+    return is_ascii_char(c) && (impl::ctype_flag_table[c] & impl::ctype_upper_mask) != 0;
+  }
+};
+
+struct ascii_isdigit_t {
+  static constexpr bool operator()(non_bool_integral auto c) {
+    return is_ascii_char(c) && (impl::ctype_flag_table[c] & impl::ctype_digit_mask) != 0;
+  }
+};
+
+struct ascii_isxdigit_t {
+  static constexpr bool operator()(non_bool_integral auto c) {
+    return is_ascii_char(c) && (impl::ctype_flag_table[c] & impl::ctype_xdigit_mask) != 0;
+  }
+};
+
+struct ascii_isblank_t {
+  static constexpr bool operator()(non_bool_integral auto c) {
+    return is_ascii_char(c) && (impl::ctype_flag_table[c] & impl::ctype_blank_mask) != 0;
+  }
+};
+
+struct ascii_iscntrl_t {
+  static constexpr bool operator()(non_bool_integral auto c) {
+    return is_ascii_char(c) && (impl::ctype_flag_table[c] & impl::ctype_print_mask) == 0;
+  }
+};
+
+struct ascii_isgraph_t {
+  static constexpr bool operator()(non_bool_integral auto c) {
+    return is_ascii_char(c) && (impl::ctype_flag_table[c] & impl::ctype_graph_mask) != 0;
+  }
+};
+
+struct ascii_isspace_t {
+  static constexpr bool operator()(non_bool_integral auto c) {
+    return is_ascii_char(c) && (impl::ctype_flag_table[c] & impl::ctype_space_mask) != 0;
+  }
+};
+
+struct ascii_isprint_t {
+  static constexpr bool operator()(non_bool_integral auto c) {
+    return is_ascii_char(c) && (impl::ctype_flag_table[c] & impl::ctype_print_mask) != 0;
+  }
+};
+
+struct ascii_ispunct_t {
+  static constexpr bool operator()(non_bool_integral auto c) {
+    return is_ascii_char(c) && (impl::ctype_flag_table[c] & impl::ctype_punct_mask) != 0;
+  }
+};
+
+constexpr auto ascii_isalnum = ascii_isalnum_t{};
+constexpr auto ascii_isalpha = ascii_isalpha_t{};
+constexpr auto ascii_islower = ascii_islower_t{};
+constexpr auto ascii_isupper = ascii_isupper_t{};
+constexpr auto ascii_isdigit = ascii_isdigit_t{};
+constexpr auto ascii_isxdigit = ascii_isxdigit_t{};
+constexpr auto ascii_isblank = ascii_isblank_t{};
+constexpr auto ascii_iscntrl = ascii_iscntrl_t{};
+constexpr auto ascii_isgraph = ascii_isgraph_t{};
+constexpr auto ascii_isspace = ascii_isspace_t{};
+constexpr auto ascii_isprint = ascii_isprint_t{};
+constexpr auto ascii_ispunct = ascii_ispunct_t{};
+
+struct ascii_tolower_t {
+  template <char_type CharT>
+  static constexpr auto operator()(CharT c) -> CharT {
+    return static_cast<CharT>(ascii_isupper(c) ? c + 'a' - 'A' : c);
+  }
+
   template <string_like StringT>
-  static constexpr auto operator()(const StringT& str)
-  /* -> std::basic_string<CharT> */
-  {
+  static constexpr auto operator()(const StringT& str) /* -> std::basic_string<CharT> */ {
     using CharT = char_type_t<StringT>;
     auto sv = make_string_view(str);
     auto res = std::basic_string<CharT>{};
     res.resize_and_overwrite(sv.length(), [sv](CharT* buffer, size_t n) {
       for (auto c : sv) {
-        *buffer++ = Derived::convert_char(c);
+        *buffer++ = operator()(c);
       }
       return n;
     });
     return res;
   }
-
-  static constexpr auto operator()(char_type auto c) {
-    return Derived::convert_char(c);
-  }
 };
-}  // namespace impl
 
-struct ascii_tolower_t : impl::ascii_ctype_conversion_interface_t<ascii_tolower_t> {
+struct ascii_toupper_t {
   template <char_type CharT>
-  static constexpr auto convert_char(CharT c) {
-    return static_cast<CharT>(ascii_isupper(c) ? c + 'a' - 'A' : c);
-  }
-};
-constexpr auto ascii_tolower = ascii_tolower_t{};
-
-struct ascii_toupper_t : impl::ascii_ctype_conversion_interface_t<ascii_toupper_t> {
-  template <char_type CharT>
-  static constexpr auto convert_char(CharT c) {
+  static constexpr auto operator()(CharT c) -> CharT {
     return static_cast<CharT>(ascii_islower(c) ? c + 'A' - 'a' : c);
   }
+
+  template <string_like StringT>
+  static constexpr auto operator()(const StringT& str) /* -> std::basic_string<CharT> */ {
+    using CharT = char_type_t<StringT>;
+    auto sv = make_string_view(str);
+    auto res = std::basic_string<CharT>{};
+    res.resize_and_overwrite(sv.length(), [sv](CharT* buffer, size_t n) {
+      for (auto c : sv) {
+        *buffer++ = operator()(c);
+      }
+      return n;
+    });
+    return res;
+  }
 };
+
+constexpr auto ascii_tolower = ascii_tolower_t{};
 constexpr auto ascii_toupper = ascii_toupper_t{};
 
 struct ascii_trim_t {
   template <string_like StringT>
-  static constexpr auto operator()(const StringT& str)
-  /* -> std::basic_string_view */
-  {
+  static constexpr auto operator()(const StringT& str) /* -> std::basic_string_view */ {
     auto sv = make_string_view(str);
     return do_trim(sv);
   }
@@ -153,19 +213,19 @@ private:
   template <class CharT, class Traits>
   static constexpr auto do_trim(std::basic_string_view<CharT, Traits> str)
       -> std::basic_string_view<CharT, Traits> {
-    if (str.empty()) {
-      return str;  // Empty check is necessary for constant evaluation
+    if consteval {
+      if (str.empty()) return str;
     }
     auto head = str.begin();
     auto before_tail = str.end() - 1;
-    for (; head <= before_tail && ascii_isspace(*head); ++head) {
-    }
-    for (; head <= before_tail && ascii_isspace(*before_tail); --before_tail) {
-    }
+    for (; head <= before_tail && ascii_isspace(*head); ++head);
+    for (; head <= before_tail && ascii_isspace(*before_tail); --before_tail);
     return {head, before_tail + 1};
   }
 };
+
 constexpr auto ascii_trim = ascii_trim_t{};
+
 }  // namespace reflect_cpp26
 
 #endif  // REFLECT_CPP26_UTILS_CTYPE_HPP

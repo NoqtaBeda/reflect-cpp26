@@ -43,7 +43,7 @@ consteval bool is_enum_flag_type(std::meta::info T) {
   }
   // Alternative: Annotate the enum type via macro REFLECT_CPP26_AS_ENUM_FLAG
   for (auto a : annotations_of(T)) {
-    if (type_of(a) == ^^enum_flag_annotation_tag_t) {
+    if (remove_const(type_of(a)) == ^^enum_flag_annotation_tag_t) {
       return true;  // TODO: Replace this for-loop with std::meta::annotations_of_with_type()
     }
   }

@@ -33,6 +33,7 @@
 #include <reflect_cpp26/type_traits/serializable_types.hpp>
 #include <reflect_cpp26/type_traits/template_instance.hpp>
 #include <reflect_cpp26/utils/addressable_member.hpp>
+#include <reflect_cpp26/utils/string_utils.hpp>
 #include <variant>
 
 namespace reflect_cpp26 {
@@ -208,7 +209,7 @@ constexpr void dumper_dispatch(basic_string_builder<CharT, Allocator>& dest,
     dump_enum(dest, value);
   } else if constexpr (string_like<T>) {
     // (4) String-like types
-    auto str = std::basic_string_view{value};
+    auto str = make_string_view(value);
     dest.append_char('"');
     dest.template append_utf_string_by<escaping_mode::display_string>(str);
     dest.append_char('"');

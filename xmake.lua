@@ -135,10 +135,12 @@ meta_test_cases = {
   "fixed_map/integral_key/test_unscoped_enum",
   "fixed_map/string_key/test_by_hash_search_1",
   "fixed_map/string_key/test_by_hash_search_2",
+  "fixed_map/string_key/test_by_hash_search_3",
   "fixed_map/string_key/test_by_hash_search_with_collision",
   "fixed_map/string_key/test_by_hash_table_1",
   "fixed_map/string_key/test_by_hash_table_2",
   "fixed_map/string_key/test_by_hash_table_3",
+  "fixed_map/string_key/test_by_hash_table_4",
   "fixed_map/string_key/test_empty",
   "fixed_map/string_key/test_naive",
   -- Lookup
@@ -173,7 +175,6 @@ meta_test_cases = {
   "lookup/namespace_member/string_key/test_references",
   "lookup/namespace_member/string_key/test_templates",
   -- Type Operations
-  "type_operations/test_comparison",
   "type_operations/test_dump_to_json_like",
   "type_operations/test_serialize_to_json",
   "type_operations/test_to_string",

@@ -29,24 +29,6 @@ namespace rfl = reflect_cpp26;
 
 constexpr int constant_int = 42;
 
-/**
- * Enables std::tuple_size and std::tuple_elements by:
- * (1) Include <reflect_cpp26/utils/type_tuple.hpp>;
- * (2) using tuple_elements = reflect_cpp26::type_tuple<...>.
- */
-template <rfl::tuple_like T>
-struct tuple_wrapper {
-  // => reflect_cpp26::type_tuple<Es...>
-  // where Es... are tuple element types of T.
-  using tuple_elements = rfl::tuple_elements_t<T>;
-  T underlying;
-
-  template <size_t I, class Self>
-  constexpr decltype(auto) get(this Self&& self) {
-    return rfl::get_ith_element<I>(std::forward_like<Self>(self.underlying));
-  }
-};
-
 TEST(UtilsTypeTuple, TupleElements) {
   using std_pair_t = std::pair<int, double>;
   static_assert(std::is_same_v<rfl::tuple_elements_t<std_pair_t>, rfl::type_tuple<int, double>>);
@@ -62,14 +44,5 @@ TEST(UtilsTypeTuple, TupleElements) {
 
   using meta_tuple_t = rfl::meta_tuple<int, const int*, const char*>;
   static_assert(std::is_same_v<rfl::tuple_elements_t<meta_tuple_t>,
-                               rfl::type_tuple<int, const int*, const char*>>);
-
-  using wrapped_meta_tuple_t = tuple_wrapper<meta_tuple_t>;
-  constexpr auto w = wrapped_meta_tuple_t{rfl::meta_tuple{1, &constant_int, "asdf"}};
-  static_assert(w.get<0>() == 1);
-  static_assert(w.get<1>() == &constant_int);
-  static_assert(w.get<2>() == std::string_view{"asdf"});
-
-  static_assert(std::is_same_v<rfl::tuple_elements_t<wrapped_meta_tuple_t>,
                                rfl::type_tuple<int, const int*, const char*>>);
 }

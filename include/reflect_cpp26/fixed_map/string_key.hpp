@@ -23,12 +23,11 @@
 #ifndef REFLECT_CPP26_FIXED_MAP_STRING_KEY_HPP
 #define REFLECT_CPP26_FIXED_MAP_STRING_KEY_HPP
 
-#include <reflect_cpp26/fixed_map/impl/string_by_hash_search.hpp>
-#include <reflect_cpp26/fixed_map/impl/string_by_hash_table.hpp>
-#include <reflect_cpp26/fixed_map/impl/string_empty.hpp>
-#include <reflect_cpp26/fixed_map/impl/string_naive.hpp>
-#include <reflect_cpp26/fixed_map/impl/string_with_hash_collision.hpp>
+#include <reflect_cpp26/fixed_map/candidates/string_by_hash_search.hpp>
+#include <reflect_cpp26/fixed_map/candidates/string_by_hash_table.hpp>
+#include <reflect_cpp26/fixed_map/candidates/string_naive.hpp>
 #include <reflect_cpp26/type_operations/to_structural.hpp>
+#include <reflect_cpp26/utils/ctype.hpp>
 
 namespace reflect_cpp26 {
 struct string_key_fixed_map_options {
@@ -37,23 +36,36 @@ struct string_key_fixed_map_options {
   bool ascii_case_insensitive = false;
   bool adjusts_alignment = false;
   double min_load_factor = 0.5;
+  size_t max_n_hash_probing_attempts = 3;
   size_t max_n_iterations = 64;
   size_t optimization_threshold = 4;
   size_t binary_search_threshold = 8;
 };
 
-namespace impl {
+namespace impl::map {
+consteval bool is_kv_pair_with_skey(std::meta::info T) {
+  if (!extract<bool>(^^pair_like, T)) {
+    return false;
+  }
+  auto K = remove_cvref(tuple_element(0, T));
+  return extract<bool>(^^string_like, K);
+}
+
+template <class KVPair>
+concept kv_pair_with_skey = is_kv_pair_with_skey(std::meta::remove_cv(^^KVPair));
+
+// Precondition: not hash_values.empty()
 constexpr bool has_hash_collision(std::vector<uint64_t> hash_values) {
   std::ranges::sort(hash_values);
-  return std::ranges::adjacent_find(hash_values) != hash_values.end();
+  return hash_values.front() == 0 || std::ranges::adjacent_find(hash_values) != hash_values.end();
 }
 
 // Precondition: All keys in kv_pairs are lower case
 // if options.ascii_case_insensitive is true.
-template <class KVPair>
-consteval auto make_string_key_fixed_map_impl(std::vector<KVPair> kv_pairs,
-                                              string_key_fixed_map_options options)
-    -> std::meta::info {
+template <class CharT, class V>
+consteval auto make_with_skey(std::vector<meta_tuple<meta_basic_string_view<CharT>, V>> kv_pairs,
+                              const string_key_fixed_map_options& options) -> std::meta::info {
+  // Input validation
   if (!options.already_unique) {
     std::ranges::sort(kv_pairs, {}, get_first);
     auto dup_pos = std::ranges::adjacent_find(kv_pairs, {}, get_first);
@@ -63,78 +75,70 @@ consteval auto make_string_key_fixed_map_impl(std::vector<KVPair> kv_pairs,
   }
   if (options.ascii_case_insensitive && !options.already_ascii_only) {
     for (const auto& [k, _] : kv_pairs) {
-      if (!is_ascii_string(k)) {
-        compile_error("Only ASCII strings allowed.");
-      }
+      if (is_ascii_string(k)) continue;
+      compile_error("Only ASCII strings allowed.");
     }
   }
-
-  // (1) Empty or naive
+  auto kv_pairs_cspan = std::span{std::as_const(kv_pairs)};
+  // (1) Empty
   if (kv_pairs.empty()) {
-    return make_empty_string_key_map<KVPair>();
+    return make_empty_with_skey<CharT, V>();
   }
+  // (2) Naive
   if (kv_pairs.size() < options.optimization_threshold) {
-    return make_naive_string_key_map(kv_pairs, options.ascii_case_insensitive);
-  }
-
-  auto hash_values = std::vector<uint64_t>{};
-  hash_values.reserve(kv_pairs.size());
-  for (const auto& [k, _] : kv_pairs) {
-    hash_values.push_back(bkdr_hash64(k));
-  }
-  // (2) Hash binary search: slow path due to hash collision
-  if (has_hash_collision(hash_values)) {
-    auto sub_options = string_key_map_with_hash_collision_options{
-        .case_insensitive = options.ascii_case_insensitive,
-        .adjusts_alignment = options.adjusts_alignment,
+    auto naive_options = naive_with_skey_options{
+        .ascii_case_insensitive = options.ascii_case_insensitive,
     };
-    return make_string_key_map_with_hash_collision(kv_pairs, hash_values, sub_options);
+    return make_naive_with_skey(kv_pairs_cspan, naive_options);
   }
-
-  // (3) Hash-table-based (hash collision is excluded)
-  auto hash_table_options = string_key_map_by_hash_table_options{
-      .case_insensitive = options.ascii_case_insensitive,
-      .adjusts_alignment = options.adjusts_alignment,
-      .min_load_factor = options.min_load_factor,
-      .max_n_iterations = options.max_n_iterations,
-  };
-  auto by_hash_table_opt =
-      try_make_string_key_map_by_hash_table(kv_pairs, hash_values, hash_table_options);
-  if (by_hash_table_opt) {
-    return *by_hash_table_opt;
+  auto n = kv_pairs.size();
+  auto hash_values = std::vector<size_t>(n);
+  for (size_t i = 0zU; i < n; i++) {
+    hash_values[i] = bkdr_hash(kv_pairs[i].elements.first);
   }
-
-  // (4) Hash linear or binary search: fast path without hash collision
-  auto hash_search_options = string_key_map_by_hash_search_options{
-      .case_insensitive = options.ascii_case_insensitive,
+  auto has_collision = has_hash_collision(hash_values);
+  // (3) Hash table
+  if (!has_collision && options.max_n_iterations > 0) {
+    auto hash_table_options = hash_table_with_skey_options{
+        .ascii_case_insensitive = options.ascii_case_insensitive,
+        .adjusts_alignment = options.adjusts_alignment,
+        .min_load_factor = options.min_load_factor,
+        .max_n_hash_probing_attempts = options.max_n_hash_probing_attempts,
+        .max_n_iterations = options.max_n_iterations,
+    };
+    if (auto res = try_make_hash_table_with_skey(kv_pairs_cspan, hash_values, hash_table_options)) {
+      return *res;
+    }
+  }
+  // (4) Hash search
+  auto hash_search_options = hash_search_with_skey_options{
+      .ascii_case_insensitive = options.ascii_case_insensitive,
       .adjusts_alignment = options.adjusts_alignment,
       .binary_search_threshold = options.binary_search_threshold,
   };
-  return make_string_key_map_by_hash_search(kv_pairs, hash_values, hash_search_options);
+  return make_hash_search_with_skey(
+      kv_pairs_cspan, hash_values, has_collision, hash_search_options);
 }
-}  // namespace impl
+}  // namespace impl::map
 
 template <std::ranges::input_range KVPairRange>
-  requires(impl::string_key_kv_pair<std::ranges::range_value_t<KVPairRange>>)
-consteval auto make_string_key_fixed_map(KVPairRange&& kv_pairs,
-                                         string_key_fixed_map_options options = {})
+  requires(impl::map::kv_pair_with_skey<std::ranges::range_value_t<KVPairRange>>)
+consteval auto make_string_key_fixed_map(const KVPairRange& kv_pairs,
+                                         const string_key_fixed_map_options& options = {})
     -> std::meta::info {
   if (options.ascii_case_insensitive) {
     auto transform_fn = [](const auto& kv_pair) {
       const auto& [k, v] = kv_pair;
       auto k_lower = reflect_cpp26::define_static_string(ascii_tolower(k));
-      return std::pair{k_lower, to_structural(v)};
+      return meta_tuple{k_lower, to_structural(v)};
     };
-    return impl::make_string_key_fixed_map_impl(
-        kv_pairs | std::views::transform(transform_fn) | std::ranges::to<std::vector>(), options);
+    auto converted =
+        kv_pairs | std::views::transform(transform_fn) | std::ranges::to<std::vector>();
+    return impl::map::make_with_skey(converted, options);
   } else {
-    auto transform_fn = [](const auto& kv_pair) {
-      const auto& [k, v] = kv_pair;
-      auto k_static = reflect_cpp26::define_static_string(k);
-      return std::pair{k_static, to_structural(v)};
-    };
-    return impl::make_string_key_fixed_map_impl(
-        kv_pairs | std::views::transform(transform_fn) | std::ranges::to<std::vector>(), options);
+    auto converted =
+        kv_pairs | std::views::transform(to_structural) | std::ranges::to<std::vector>();
+    return impl::map::make_with_skey(std::move(converted), options);
   }
 }
 }  // namespace reflect_cpp26

@@ -50,20 +50,19 @@ consteval auto make_kv_pairs() {
   return res;
 }
 
-template <bool AlignmentAdjusted, class CharT>
+template <class CharT, bool AA>
 void test_by_hash_search_with_collision_common() {
   using Value = std::pair<size_t, size_t>;
-  constexpr auto map = FIXED_MAP(make_kv_pairs<CharT>(),
-                                 {
-                                     .ascii_case_insensitive = false,
-                                     .adjusts_alignment = AlignmentAdjusted,
-                                     .min_load_factor = 1e-10,
-                                 });
-  static_assert(rfl::same_as_one_of<typename decltype(map)::result_type,
-                                    const rfl::meta_tuple<size_t, size_t>&,
-                                    const std::pair<size_t, size_t>&>);
+  constexpr auto options = rfl::string_key_fixed_map_options{
+      .ascii_case_insensitive = false,
+      .adjusts_alignment = AA,
+      .min_load_factor = 1e-10,
+      .binary_search_threshold = 100000,
+  };
+  constexpr auto map = FIXED_MAP(make_kv_pairs<CharT>(), options);
+
   EXPECT_THAT(display_string_of(^^decltype(map)),
-              testing::HasSubstr("string_key_map_with_hash_collision"));
+              testing::HasSubstr("binary_hash_search_with_skey"));
   EXPECT_EQ_STATIC(strings_with_hash_collision.size(), map.size());
 
   constexpr auto pointer_size = sizeof(void*);
@@ -72,8 +71,8 @@ void test_by_hash_search_with_collision_common() {
   //   key: {const CharT*, const CharT*}
   //   value: {size_t, size_t}
   constexpr auto expected_element_size =
-      AlignmentAdjusted ? (pointer_size == 8 ? 64 : 32) : (pointer_size == 8 ? 40 : 24);
-  constexpr auto actual_element_size = sizeof(typename decltype(map._entries)::value_type);
+      AA ? (pointer_size == 8 ? 64 : 32) : (pointer_size == 8 ? 40 : 24);
+  constexpr auto actual_element_size = sizeof(map.entries[0]);
   EXPECT_EQ(expected_element_size, actual_element_size)
       << "Unexpected element size with fixed map type " << display_string_of(^^decltype(map));
 
@@ -87,13 +86,16 @@ void test_by_hash_search_with_collision_common() {
   EXPECT_NOT_FOUND_STATIC(Value(0, 0), map, to<CharT>("_zdYtgKeY1l7CFyd_"));
 }
 
-#define MAKE_MAP_TESTS(char_type, CharTypeName)                       \
-  TEST(FixedMap, StringKeyByHashSearchWithCollision1##CharTypeName) { \
-    test_by_hash_search_with_collision_common<false, char_type>();    \
-  }                                                                   \
-  TEST(FixedMap, StringKeyByHashSearchWithCollision2##CharTypeName) { \
-    test_by_hash_search_with_collision_common<true, char_type>();     \
+#define MAKE_MAP_TESTS(char_type, CharTypeName)                        \
+  TEST(FixedMap, StringKeyByHashSearchWithCollision##CharTypeName) {   \
+    test_by_hash_search_with_collision_common<char_type, false>();     \
+  }                                                                    \
+  TEST(FixedMap, StringKeyByHashSearchWithCollisionAA##CharTypeName) { \
+    test_by_hash_search_with_collision_common<char_type, true>();      \
   }
 
 MAKE_MAP_TESTS(char, Char)
+MAKE_MAP_TESTS(wchar_t, WChar)
 MAKE_MAP_TESTS(char8_t, Char8)
+MAKE_MAP_TESTS(char16_t, Char16)
+MAKE_MAP_TESTS(char32_t, Char32)

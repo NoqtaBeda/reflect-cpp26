@@ -29,15 +29,14 @@ namespace rfl = reflect_cpp26;
 template <class CharT>
 void test_empty_common() {
   using KVPair = std::pair<std::basic_string<CharT>, wrapper_t<int>>;
+  constexpr auto ci_options = rfl::string_key_fixed_map_options{
+      .ascii_case_insensitive = true,
+  };
   constexpr auto map_empty = FIXED_MAP(std::vector<KVPair>{});
-  constexpr auto ci_map_empty = FIXED_MAP(std::vector<KVPair>{},
-                                          {
-                                              .ascii_case_insensitive = true,
-                                          });
+  constexpr auto ci_map_empty = FIXED_MAP(std::vector<KVPair>{}, ci_options);
 
-  EXPECT_THAT(display_string_of(^^decltype(map_empty)), testing::HasSubstr("empty_string_key_map"));
-  EXPECT_THAT(display_string_of(^^decltype(ci_map_empty)),
-              testing::HasSubstr("empty_string_key_map"));
+  EXPECT_THAT(display_string_of(^^decltype(map_empty)), testing::HasSubstr("empty_with_skey"));
+  EXPECT_THAT(display_string_of(^^decltype(ci_map_empty)), testing::HasSubstr("empty_with_skey"));
 
   EXPECT_EQ_STATIC(0, map_empty.size());
   EXPECT_EQ_STATIC(magic_value, map_empty[to<CharT>("")]);

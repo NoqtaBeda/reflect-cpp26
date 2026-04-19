@@ -26,51 +26,36 @@
 
 namespace rfl = reflect_cpp26;
 
-// Expected hash table layout:
-// [0] ""       (0)
-// [1] "Dog"    (8)
-// [2] "Apple"  (a)
-// [3] "Cat"    (2)
-// [4]
-// [5] Banana   (5)
-// [6] Horse    (d)
-// [7] Rabbit   (e)
-// [8] Sheep    (7)
-template <bool AA, class CharT>
+template <bool A, class CharT>
 void test_by_hash_table_common_1() {
   using Value = std::pair<size_t, size_t>;
   using KVPair = std::pair<std::basic_string<CharT>, Value>;
   constexpr auto make_kv_pairs = []() constexpr {
     return std::vector<KVPair>{
-        {to<CharT>("Apple"), {0, 1}},    //   0x4'841a'c9fa
-        {to<CharT>("Banana"), {1, 10}},  // 0x257'8da4'8005
-        {to<CharT>("Cat"), {2, 20}},     //       0x11'bd72
-        {to<CharT>("Dog"), {3, 30}},     //       0x12'0798
-        {to<CharT>("Horse"), {4, 40}},   //   0x4'fed9'023d
-        {to<CharT>("Rabbit"), {5, 50}},  // 0x2e7'444d'd47e
-        {to<CharT>(""), {6, 60}},        //             0x0
-        {to<CharT>("Sheep"), {7, 70}},   //   0x5'befc'49e7
+        {to<CharT>("Apple"), {0, 1}},
+        {to<CharT>("Banana"), {1, 10}},
+        {to<CharT>("Cat"), {2, 20}},
+        {to<CharT>("Dog"), {3, 30}},
+        {to<CharT>("Horse"), {4, 40}},
+        {to<CharT>("Rabbit"), {5, 50}},
+        {to<CharT>("Squirrow"), {6, 60}},
+        {to<CharT>("Sheep"), {7, 70}},
     };
   };
-  constexpr auto map = FIXED_MAP(make_kv_pairs(),
-                                 {
-                                     .ascii_case_insensitive = false,
-                                     .adjusts_alignment = AA,
-                                     .min_load_factor = 0.5,
-                                 });
-  static_assert(rfl::same_as_one_of<typename decltype(map)::result_type,
-                                    const rfl::meta_tuple<size_t, size_t>&,
-                                    const std::pair<size_t, size_t>&>);
+  constexpr auto options = rfl::string_key_fixed_map_options{
+      .ascii_case_insensitive = false,
+      .adjusts_alignment = A,
+      .min_load_factor = 0.5,
+  };
+  constexpr auto map = FIXED_MAP(make_kv_pairs(), options);
 
-  constexpr auto expected_element_size = (sizeof(void*) == 8) ? (AA ? 64 : 40) : (AA ? 32 : 24);
-  constexpr auto actual_element_size = sizeof(typename decltype(map._entries)::value_type);
+  constexpr auto expected_element_size = (sizeof(void*) == 8) ? (A ? 64 : 40) : (A ? 32 : 24);
+  constexpr auto actual_element_size = sizeof(map.entries[0]);
   EXPECT_EQ(expected_element_size, actual_element_size)
       << "Unexpected element size with fixed map type " << display_string_of(^^decltype(map));
 
-  EXPECT_THAT(display_string_of(^^decltype(map)),
-              testing::HasSubstr("string_key_map_by_hash_table_fast"));
+  EXPECT_THAT(display_string_of(^^decltype(map)), testing::HasSubstr("hash_table_with_skey"));
   EXPECT_EQ_STATIC(8, map.size());
-  EXPECT_EQ_STATIC(7, map._bucket_size_mask);
 
   EXPECT_EQ_STATIC(Value(0, 1), map[to<CharT>("Apple")]);
   EXPECT_FOUND_STATIC(Value(1, 10), map, to<CharT>("Banana"));
@@ -78,7 +63,7 @@ void test_by_hash_table_common_1() {
   EXPECT_FOUND_STATIC(Value(3, 30), map, to<CharT>("Dog"));
   EXPECT_FOUND_STATIC(Value(4, 40), map, to<CharT>("Horse"));
   EXPECT_FOUND_STATIC(Value(5, 50), map, to<CharT>("Rabbit"));
-  EXPECT_FOUND_STATIC(Value(6, 60), map, to<CharT>(""));
+  EXPECT_FOUND_STATIC(Value(6, 60), map, to<CharT>("Squirrow"));
   EXPECT_FOUND_STATIC(Value(7, 70), map, to<CharT>("Sheep"));
 
   constexpr auto DEFAULT = Value(0, 0);
@@ -93,26 +78,24 @@ void test_by_hash_table_common_ci_1() {
   using KVPair = std::pair<std::basic_string<CharT>, wrapper_t<int>>;
   constexpr auto make_kv_pairs = []() constexpr {
     return std::vector<KVPair>{
-        {to<CharT>("Apple"), {.value = 0}},   //   0x6'b5d1'941a
-        {to<CharT>("BANANA"), {.value = 1}},  // 0x376'fe2d'ee65
-        {to<CharT>("CAT"), {.value = 2}},     //       0x1a'1e92
-        {to<CharT>("dog"), {.value = 3}},     //       0x1a'68b8
-        {to<CharT>("HORSE"), {.value = 4}},   //   0x7'308f'cc5d
-        {to<CharT>("RaBbIt"), {.value = 5}},  // 0x406'b4d7'42de
-        {to<CharT>(""), {.value = 6}},        //             0x0
-        {to<CharT>("shEEp"), {.value = 7}},   //   0x7'f0b3'1407
+        {to<CharT>("Apple"), {.value = 0}},
+        {to<CharT>("BANANA"), {.value = 1}},
+        {to<CharT>("CAT"), {.value = 2}},
+        {to<CharT>("dog"), {.value = 3}},
+        {to<CharT>("HORSE"), {.value = 4}},
+        {to<CharT>("RaBbIt"), {.value = 5}},
+        {to<CharT>("Squirrow"), {.value = 6}},
+        {to<CharT>("shEEp"), {.value = 7}},
     };
   };
-  constexpr auto map = FIXED_MAP(make_kv_pairs(),
-                                 {
-                                     .ascii_case_insensitive = true,
-                                     .min_load_factor = 0.5,
-                                 });
-  static_assert(std::is_same_v<typename decltype(map)::result_type, const wrapper_t<int>&>);
-  EXPECT_THAT(display_string_of(^^decltype(map)),
-              testing::HasSubstr("string_key_map_by_hash_table_fast"));
+  constexpr auto options = rfl::string_key_fixed_map_options{
+      .ascii_case_insensitive = true,
+      .min_load_factor = 0.5,
+  };
+  constexpr auto map = FIXED_MAP(make_kv_pairs(), options);
+
+  EXPECT_THAT(display_string_of(^^decltype(map)), testing::HasSubstr("hash_table_with_skey"));
   EXPECT_EQ_STATIC(8, map.size());
-  EXPECT_EQ_STATIC(7, map._bucket_size_mask);
 
   EXPECT_EQ_STATIC(0, map[to<CharT>("Apple")]);
   EXPECT_FOUND_STATIC(1, map, to<CharT>("Banana"));
@@ -120,7 +103,7 @@ void test_by_hash_table_common_ci_1() {
   EXPECT_FOUND_STATIC(3, map, to<CharT>("Dog"));
   EXPECT_FOUND_STATIC(4, map, to<CharT>("Horse"));
   EXPECT_FOUND_STATIC(5, map, to<CharT>("Rabbit"));
-  EXPECT_FOUND_STATIC(6, map, to<CharT>(""));
+  EXPECT_FOUND_STATIC(6, map, to<CharT>("SQuiRRoW"));
   EXPECT_FOUND_STATIC(7, map, to<CharT>("Sheep"));
 
   EXPECT_EQ_STATIC(magic_value, map[to<CharT>("Donkey")]);  // 0x26a'7a6f'a930
@@ -132,7 +115,7 @@ void test_by_hash_table_common_ci_1() {
   TEST(FixedMap, StringKeyByHashTable1##CharTypeName) {   \
     test_by_hash_table_common_1<false, char_type>();      \
   }                                                       \
-  TEST(FixedMap, StringKeyByHashTable1AA##CharTypeName) { \
+  TEST(FixedMap, StringKeyByHashTable1A##CharTypeName) {  \
     test_by_hash_table_common_1<true, char_type>();       \
   }                                                       \
   TEST(FixedMap, StringKeyByHashTable1CI##CharTypeName) { \
@@ -140,4 +123,7 @@ void test_by_hash_table_common_ci_1() {
   }
 
 MAKE_MAP_TESTS(char, Char)
+MAKE_MAP_TESTS(wchar_t, WChar)
 MAKE_MAP_TESTS(char8_t, Char8)
+MAKE_MAP_TESTS(char16_t, Char16)
+MAKE_MAP_TESTS(char32_t, Char32)

@@ -7,15 +7,16 @@ reflect_cpp26 contains a series of utility components for various usages.
 ### Structural Alternative Types
 
 Defined in headers:
-* `<reflect_cpp26/utils/meta_span.hpp>`;
-* `<reflect_cpp26/utils/meta_string_view.hpp>`;
-* `<reflect_cpp26/utils/meta_tuple.hpp>`.
+
+- `<reflect_cpp26/utils/meta_span.hpp>`;
+- `<reflect_cpp26/utils/meta_string_view.hpp>`;
+- `<reflect_cpp26/utils/meta_tuple.hpp>`.
 
 These headers define structural alternative types to `std::span`, `std::basic_string_view`, and `std::tuple` respectively. A structural type is a type whose value can be used as a non-type template parameter (see [cppreference](https://en.cppreference.com/w/cpp/language/template_parameters) for details).
 
-* `meta_span<T>` - A structural alternative to `std::span<const T>`, which stores two pointers `head` and `tail`. For default-constructed `meta_span` instances, both `head` and `tail` are null pointers denoting an empty range; Otherwise, these 2 pointers denote the range `[head, tail)`. It is designed for contiguous ranges with static constant storage only.
-* `meta_basic_string_view<CharT>` - A structural alternative to `std::basic_string_view<CharT>`, which stores two pointers (`head` and `tail`): For default-constructed `meta_basic_string_view` instances, both `head` and `tail` are null pointers denoting an empty string; Otherwise, these 2 pointers denote the character range `[head, tail)`. It is ensured that the referenced string is always null-terminated (i.e., `tail == nullptr || *tail == '\0'` always holds). Type aliases are provided for all character types: `meta_string_view`, `meta_u8string_view`, etc.
-* `meta_tuple<Args...>` - A structural alternative to `std::tuple<Args...>`, which uses `define_aggregate` to create an underlying aggregate type at compile time, making the tuple itself a structural type.
+- `meta_span<T>` - A structural alternative to `std::span<const T>`, which stores two pointers `head` and `tail`. For default-constructed `meta_span` instances, both `head` and `tail` are null pointers denoting an empty range; Otherwise, these 2 pointers denote the range `[head, tail)`. It is designed for contiguous ranges with static constant storage only.
+- `meta_basic_string_view<CharT>` - A structural alternative to `std::basic_string_view<CharT>`, which stores two pointers (`head` and `tail`): For default-constructed `meta_basic_string_view` instances, both `head` and `tail` are null pointers denoting an empty string; Otherwise, these 2 pointers denote the character range `[head, tail)`. It is ensured that the referenced string is always null-terminated (i.e., `tail == nullptr || *tail == '\0'` always holds). Type aliases are provided for all character types: `meta_string_view`, `meta_u8string_view`, etc.
+- `meta_tuple<Args...>` - A structural alternative to `std::tuple<Args...>`, which uses `define_aggregate` to create an underlying aggregate type at compile time, making the tuple itself a structural type (as long as all of its elements are structural).
 
 ### Testing Addressable Members
 
@@ -30,23 +31,25 @@ consteval bool is_addressable_non_class_member(std::meta::info member);
 }  // namespace reflect_cpp26
 ```
 
-`is_addressable_class_member(member)` checks whether `member` is some *class* member which is addressable, i.e. `&[:member:]` is a valid constant expression. Addressable class member is one of the following:
-* Non-static data member which is:
-  * not template;
-  * neither reference nor bit-field;
-* Static data member (can be reference) which is not template;
-* Non-static member function which is:
-  * not template;
-  * neither of constructor, destructor, or deleted;
-* Static member function which is:
-  * not template;
-  * not deleted.
+`is_addressable_class_member(member)` checks whether `member` is some _class_ member which is addressable, i.e. `&[:member:]` is a valid constant expression. Addressable class member is one of the following:
 
-`is_addressable_non_class_member(member)` checks whether `member` is some *non-class* member which is addressable, i.e. `&[:member:]` is a valid constant expression. Addressable non-class member is one of the following:
-* Variable (can be reference) which is not template;
-* Function which is:
-  * not template;
-  * not deleted.
+- Non-static data member which is:
+  - not template;
+  - neither reference nor bit-field;
+- Static data member (can be reference) which is not template;
+- Non-static member function which is:
+  - not template;
+  - neither of constructor, destructor, or deleted;
+- Static member function which is:
+  - not template;
+  - not deleted.
+
+`is_addressable_non_class_member(member)` checks whether `member` is some _non-class_ member which is addressable, i.e. `&[:member:]` is a valid constant expression. Addressable non-class member is one of the following:
+
+- Variable (can be reference) which is not template;
+- Function which is:
+  - not template;
+  - not deleted.
 
 Detailed examples are shown in [unit test cases](../tests/utils/test_addressable_member.cpp).
 
@@ -278,6 +281,7 @@ constexpr auto utf_convert_json_escaped = utf_convert_json_escaped_t{};
 #### Result Semantics
 
 `encode_result_t<OutT, InT>` contains:
+
 - `out_ptr`: Pointer past the last output character written.
 - `in_ptr`: Pointer to the next input character to process.
 - `status`: `encoding_status` value:
@@ -289,27 +293,27 @@ constexpr auto utf_convert_json_escaped = utf_convert_json_escaped_t{};
 
 Each conversion functor supports multiple character type combinations:
 
-| Direction | Output Types | Input Types |
-|-----------|--------------|-------------|
-| UTF-8 → UTF-16 | `char16_t`, `uint16_t` | `char8_t`, `char`, `uint8_t` |
-| UTF-8 → UTF-32 | `char32_t`, `uint32_t` | `char8_t`, `char`, `uint8_t` |
-| UTF-16 → UTF-8 | `char8_t`, `char`, `uint8_t` | `char16_t`, `uint16_t` |
-| UTF-16 → UTF-32 | `char32_t`, `uint32_t` | `char16_t`, `uint16_t` |
-| UTF-32 → UTF-8 | `char8_t`, `char`, `uint8_t` | `char32_t`, `uint32_t` |
-| UTF-32 → UTF-16 | `char16_t`, `uint16_t` | `char32_t`, `uint32_t` |
+| Direction       | Output Types                 | Input Types                  |
+| --------------- | ---------------------------- | ---------------------------- |
+| UTF-8 → UTF-16  | `char16_t`, `uint16_t`       | `char8_t`, `char`, `uint8_t` |
+| UTF-8 → UTF-32  | `char32_t`, `uint32_t`       | `char8_t`, `char`, `uint8_t` |
+| UTF-16 → UTF-8  | `char8_t`, `char`, `uint8_t` | `char16_t`, `uint16_t`       |
+| UTF-16 → UTF-32 | `char32_t`, `uint32_t`       | `char16_t`, `uint16_t`       |
+| UTF-32 → UTF-8  | `char8_t`, `char`, `uint8_t` | `char32_t`, `uint32_t`       |
+| UTF-32 → UTF-16 | `char16_t`, `uint16_t`       | `char32_t`, `uint32_t`       |
 
 #### Dispatcher
 
 `utf_convert_t` uses `sizeof(InT)` and `sizeof(OutT)` to select the appropriate conversion:
 
-| Input Size | Output Size | Conversion |
-|------------|-------------|------------|
-| 1 (UTF-8) | 2 (UTF-16) | UTF-8 → UTF-16 |
-| 1 (UTF-8) | 4 (UTF-32) | UTF-8 → UTF-32 |
-| 2 (UTF-16) | 1 (UTF-8) | UTF-16 → UTF-8 |
-| 2 (UTF-16) | 4 (UTF-32) | UTF-16 → UTF-32 |
-| 4 (UTF-32) | 1 (UTF-8) | UTF-32 → UTF-8 |
-| 4 (UTF-32) | 2 (UTF-16) | UTF-32 → UTF-16 |
+| Input Size | Output Size | Conversion      |
+| ---------- | ----------- | --------------- |
+| 1 (UTF-8)  | 2 (UTF-16)  | UTF-8 → UTF-16  |
+| 1 (UTF-8)  | 4 (UTF-32)  | UTF-8 → UTF-32  |
+| 2 (UTF-16) | 1 (UTF-8)   | UTF-16 → UTF-8  |
+| 2 (UTF-16) | 4 (UTF-32)  | UTF-16 → UTF-32 |
+| 4 (UTF-32) | 1 (UTF-8)   | UTF-32 → UTF-8  |
+| 4 (UTF-32) | 2 (UTF-16)  | UTF-32 → UTF-16 |
 
 #### Escaping Modes
 
@@ -325,14 +329,16 @@ enum class escaping_mode {
 ```
 
 The `_json_escaped` variants apply RFC 8259 JSON escaping during conversion:
+
 - Required by RFC 8259 standard: `"` → `"\""`, `\` → `"\\"`, control chars (U+0000 to U+001F) → `"\\uXXXX"`;
 - Others in common practice: `\b` → `"\\b"`, `\f` → `"\\f"`, `\n` → `"\\n"`, `\r` → `"\\r"`, `\t` → `"\\t"`, `/` → `"\\/"`.
 
 #### Examples
 
 Example of typical usage can be found in the implementation of `<reflect_cpp26/utils/string_builder.hpp>`:
-* `basic_string_builder<CharT, Allocator>::append_utf_string()`;
-* `basic_string_builder<CharT, Allocator>::append_utf_string_json_escaped()`.
+
+- `basic_string_builder<CharT, Allocator>::append_utf_string()`;
+- `basic_string_builder<CharT, Allocator>::append_utf_string_json_escaped()`.
 
 ### UTF Encoding/Decoding Helpers
 
@@ -352,6 +358,7 @@ constexpr bool is_valid_code_point(char32_t code_point);
 ```
 
 Valid Unicode code points are in the range:
+
 - BMP (Basic Multilingual Plane): U+0000 to U+D7FF
 - Supplementary: U+E000 to U+10FFFF
 
@@ -501,16 +508,19 @@ constexpr auto encode_code_point_unsafe = encode_code_point_unsafe_t{};
 **Call Signature**
 
 Safe variants take three parameters: `dest`, `dest_end`, and `code_point`. They validate code point validity and buffer size before writing. Returns `std::pair<OutT*, encoding_status>`:
+
 - `first`: Pointer past the last output character written
 - `second`: `encoding_status::done` on success; `encoding_status::invalid_character` if code point is invalid; `encoding_status::buffer_run_out` if buffer is too small
 
 Unsafe variants take one of the following forms:
-* Three parameters: `dest`, `dest_end`, `code_point` (for consistency with the safe variants only. `dest_end` is actually unused). Result type is consistent with safe variants although the status is always `encoding_status::done`;
-* Two parameters: `dest`, `code_point` (assumes buffer is sufficient). Returns the pointer past the last output character written.
+
+- Three parameters: `dest`, `dest_end`, `code_point` (for consistency with the safe variants only. `dest_end` is actually unused). Result type is consistent with safe variants although the status is always `encoding_status::done`;
+- Two parameters: `dest`, `code_point` (assumes buffer is sufficient). Returns the pointer past the last output character written.
 
 **Safe Variants**
 
 These function objects validate code point and buffer size before writing:
+
 - `encode_code_point_to_utf8`: Encodes to UTF-8 (char8_t[], char[], uint8_t[])
 - `encode_code_point_to_utf16`: Encodes to UTF-16 (char16_t[], uint16_t[])
 - `encode_code_point`: Dispatcher that uses `sizeof(OutT)` to select encoding:
@@ -521,8 +531,10 @@ These function objects validate code point and buffer size before writing:
 **Unsafe Variants**
 
 These function objects perform no validation. Caller must ensure:
+
 1. Code point is valid (see `is_valid_code_point`)
 2. Buffer has sufficient space
+
 - `encode_code_point_to_utf8_unsafe`: UTF-8 encoding without validation
 - `encode_code_point_to_utf16_unsafe`: UTF-16 encoding without validation
 - `encode_code_point_unsafe`: Dispatcher that uses `sizeof(OutT)` to select encoding:
@@ -631,20 +643,22 @@ constexpr auto write_escaped_character_for_string_unsafe = write_escaped_charact
 Safe variants take three parameters: `dest`, `dest_end`, and `c`. They validate buffer size before writing.
 
 Unsafe variants come in two forms:
+
 - Three parameters: `dest`, `dest_end`, `c` (for consistency with the safe variants only. `dest_end` is actually unused);
 - Two parameters: `dest`, `c` (assumes buffer is sufficient).
 
 Both variants return `std::pair<escaping_status, CharT*>`:
+
 - `first`: `escaping_status::done` on success; `escaping_status::no_escape` if no escaping needed; `escaping_status::error` if buffer too small
 - `second`: Pointer past the last written character
 
 **Escaping Modes**
 
-| Mode | Escaped Characters |
-|------|-------------------|
-| `escaping_mode::json` | `'"'` → `R"(\")"`<br>`'\\'` → `R"(\\)"`<br>`'/'` → `R"(\/)"`<br>`'\b'` → `R"(\b)"`<br>`'\f'` → `R"(\f)"`<br>`'\n'` → `R"(\n)"`<br>`'\r'` → `R"(\r)"`<br>`'\t'` → `R"(\t)"`<br>other control chars (< 0x20) → `R"(\uXXXX)"` |
-| `escaping_mode::display_char` | `'\''` → `"R(\')"` <br> `'\\'` → `R"(\)"`<br>`'\a'` → `R"(\a)"`<br>`'\b'` → `R"(\b)"`<br>`'\f'` → `R"(\f)"`<br>`'\n'` → `R"(\n)"`<br>`'\r'` → `R"(\r)"`<br>`'\t'` → `R"(\t)"`<br>`'\v'` → `R"(\v)"`<br>non-printable ASCII (0x80-0xFF) → `R"(\xHH)"` |
-| `escaping_mode::display_string` | `'"'` → `"R(\")"` <br> `'\''` not escaped <br> Others same as `display_char` |
+| Mode                            | Escaped Characters                                                                                                                                                                                                                                   |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `escaping_mode::json`           | `'"'` → `R"(\")"`<br>`'\\'` → `R"(\\)"`<br>`'/'` → `R"(\/)"`<br>`'\b'` → `R"(\b)"`<br>`'\f'` → `R"(\f)"`<br>`'\n'` → `R"(\n)"`<br>`'\r'` → `R"(\r)"`<br>`'\t'` → `R"(\t)"`<br>other control chars (< 0x20) → `R"(\uXXXX)"`                           |
+| `escaping_mode::display_char`   | `'\''` → `"R(\')"` <br> `'\\'` → `R"(\)"`<br>`'\a'` → `R"(\a)"`<br>`'\b'` → `R"(\b)"`<br>`'\f'` → `R"(\f)"`<br>`'\n'` → `R"(\n)"`<br>`'\r'` → `R"(\r)"`<br>`'\t'` → `R"(\t)"`<br>`'\v'` → `R"(\v)"`<br>non-printable ASCII (0x80-0xFF) → `R"(\xHH)"` |
+| `escaping_mode::display_string` | `'"'` → `"R(\")"` <br> `'\''` not escaped <br> Others same as `display_char`                                                                                                                                                                         |
 
 #### Invalid Sequence Consumers
 
@@ -707,16 +721,17 @@ All functions take two parameters to represent the input range `[input, input_en
 **Dispatcher Behavior**
 
 `consume_utf_invalid_sequence` uses `sizeof(CharT)` to select the appropriate consumer:
+
 - `sizeof(CharT) == 1`: UTF-8 consumer (char8_t[], char[], uint8_t[])
 - `sizeof(CharT) == 2`: UTF-16 consumer (char16_t[], uint16_t[])
 - `sizeof(CharT) == 4`: UTF-32 consumer (char32_t[], uint32_t[])
 
 **Behavior Details**
 
-| Function | Invalid Sequences Consumed |
-|----------|-------------------------|
-| `consume_utf8_invalid_sequence` | Orphaned trailing bytes, overlong sequences, bytes >= 0xF5 |
-| `consume_utf16_invalid_sequence` | Orphaned surrogates (unpaired high/low surrogates) |
+| Function                         | Invalid Sequences Consumed                                    |
+| -------------------------------- | ------------------------------------------------------------- |
+| `consume_utf8_invalid_sequence`  | Orphaned trailing bytes, overlong sequences, bytes >= 0xF5    |
+| `consume_utf16_invalid_sequence` | Orphaned surrogates (unpaired high/low surrogates)            |
 | `consume_utf32_invalid_sequence` | Invalid code points (surrogates 0xD800-0xDFFF, or > 0x10FFFF) |
 
 ### String Builder
@@ -807,59 +822,60 @@ The `basic_string_builder` class provides a constexpr-compatible string builder 
 
 #### Type Aliases
 
-| Type Alias | Character Type | Allocator |
-|-----------|-----------------|-----------|
-| `string_builder` | `char` | `std::allocator<char>` |
-| `u8string_builder` | `char8_t` | `std::allocator<char8_t>` |
-| `u16string_builder` | `char16_t` | `std::allocator<char16_t>` |
-| `u32string_builder` | `char32_t` | `std::allocator<char32_t>` |
-| `wstring_builder` | `wchar_t` | `std::allocator<wchar_t>` |
-| `pmr_*_builder` | Same as above | `std::pmr::polymorphic_allocator` |
+| Type Alias          | Character Type | Allocator                         |
+| ------------------- | -------------- | --------------------------------- |
+| `string_builder`    | `char`         | `std::allocator<char>`            |
+| `u8string_builder`  | `char8_t`      | `std::allocator<char8_t>`         |
+| `u16string_builder` | `char16_t`     | `std::allocator<char16_t>`        |
+| `u32string_builder` | `char32_t`     | `std::allocator<char32_t>`        |
+| `wstring_builder`   | `wchar_t`      | `std::allocator<wchar_t>`         |
+| `pmr_*_builder`     | Same as above  | `std::pmr::polymorphic_allocator` |
 
 Note: `wstring_builder` does not support UTF conversion because `wchar_t` size varies by platform.
 
 #### Core Methods
 
-* `size()`: Returns the current number of characters in the builder.
-* `str()`: Returns a `std::basic_string<CharT>` with a copy of the current content.
-* `strview()`: Returns a `std::basic_string_view<CharT>` referencing the current content.
+- `size()`: Returns the current number of characters in the builder.
+- `str()`: Returns a `std::basic_string<CharT>` with a copy of the current content.
+- `strview()`: Returns a `std::basic_string_view<CharT>` referencing the current content.
 
 #### Appending Characters
 
-* `append_char(c)`: Appends a single character.
-* `append_char(c, count)`: Appends `count` copies of character `c`.
-* `append_char_json_escaped(c)`: Appends a single character with JSON escaping (if needed).
-* `append_utf_code_point(code_point)`: Appends a Unicode code point, encoding it appropriately for the builder's character type. Invalid code points are replaced with U+FFFD.
-* `append_utf_code_point_json_escaped(code_point)`: Appends a Unicode code point with JSON escaping.
+- `append_char(c)`: Appends a single character.
+- `append_char(c, count)`: Appends `count` copies of character `c`.
+- `append_char_json_escaped(c)`: Appends a single character with JSON escaping (if needed).
+- `append_utf_code_point(code_point)`: Appends a Unicode code point, encoding it appropriately for the builder's character type. Invalid code points are replaced with U+FFFD.
+- `append_utf_code_point_json_escaped(code_point)`: Appends a Unicode code point with JSON escaping.
 
 #### Appending Strings
 
 The builder supports three types of string append operations:
 
 1. **`append_string`**: Appends raw characters without UTF conversion or escaping.
-   * Overloads: pointer with end, null-terminated pointer, `std::basic_string_view`
+   - Overloads: pointer with end, null-terminated pointer, `std::basic_string_view`
 
 2. **`append_string_json_escaped`**: Appends raw characters with JSON escaping.
-   * Overloads: pointer with end, null-terminated pointer, `std::basic_string_view`
+   - Overloads: pointer with end, null-terminated pointer, `std::basic_string_view`
 
 3. **`append_utf_string`**: Appends strings with automatic UTF encoding conversion. Invalid UTF sequences are replaced with U+FFFD.
-   * Overloads: pointer with end, null-terminated pointer, `std::basic_string_view`, `std::basic_string`
-   * Supports all UTF conversions (UTF-8↔UTF-16, UTF-8↔UTF-32, UTF-16↔UTF-32, and same-type)
+   - Overloads: pointer with end, null-terminated pointer, `std::basic_string_view`, `std::basic_string`
+   - Supports all UTF conversions (UTF-8↔UTF-16, UTF-8↔UTF-32, UTF-16↔UTF-32, and same-type)
 
 4. **`append_utf_string_json_escaped`**: Combines UTF conversion and JSON escaping.
-   * Overloads: pointer with end, null-terminated pointer, `std::basic_string_view`, `std::basic_string`
+   - Overloads: pointer with end, null-terminated pointer, `std::basic_string_view`, `std::basic_string`
 
 #### Appending Numbers
 
-* `append_bool(value)`: Appends "true" or "false".
-* `append_integer(value, base)`: Appends an integer in the specified base (default: decimal). Supports bases 2-36.
-* `append_floating_point(value)`: Appends a floating-point number.
-* `append_floating_point(value, fmt)`: Appends with specified format (`std::chars_format::general`, `scientific`, `fixed`, `hex`).
-* `append_floating_point(value, fmt, precision)`: Appends with specified format and precision.
+- `append_bool(value)`: Appends "true" or "false".
+- `append_integer(value, base)`: Appends an integer in the specified base (default: decimal). Supports bases 2-36.
+- `append_floating_point(value)`: Appends a floating-point number.
+- `append_floating_point(value, fmt)`: Appends with specified format (`std::chars_format::general`, `scientific`, `fixed`, `hex`).
+- `append_floating_point(value, fmt, precision)`: Appends with specified format and precision.
 
 #### Buffer Management
 
 The builder manages a buffer allocated via the provided allocator:
+
 - Initial size can be specified in the constructor
 - When the buffer is full, it grows exponentially (doubles capacity)
 - All operations are constexpr-compatible
@@ -884,6 +900,7 @@ auto result = rfl::u8string_builder{}
 #### Error Handling for UTF Conversion
 
 When `append_utf_string` encounters invalid UTF sequences, it:
+
 1. Replaces the invalid sequence with the Unicode replacement character (U+FFFD, which is '�')
 2. Continues processing the remaining input
 
@@ -955,18 +972,20 @@ inline constexpr auto to_*_case_opt = to_*_case_opt_t{};
 ```
 
 (1) `is_valid_identifier(std::string_view identifier)` checks whether `identifier` is valid by the following rules:
-* `identifier` should be non-empty;
-* Each character in `identifier` should be one of:
-  * Letters: `[A-Za-z]`;
-  * Digits: `[0-9]`;
-  * Dollar, underscore or hyphen: `[$_-]`.
-* The first character is not a digit.
+
+- `identifier` should be non-empty;
+- Each character in `identifier` should be one of:
+  - Letters: `[A-Za-z]`;
+  - Digits: `[0-9]`;
+  - Dollar, underscore or hyphen: `[$_-]`.
+- The first character is not a digit.
 
 (2) The function `to_*_case` converts the input identifier to specified form. If input identifier is invalid (checked by `is_valid_identifier()`), then an empty string is returned.
 
 (3) The function `to_*_case_opt` converts the input identifier to specified form. If input identifier is invalid (checked by `is_valid_identifier()`), then `std::nullopt` is returned.
 
 All supported identifier cases:
+
 1. `to_snake_case` and `to_snake_case_opt`: Converts to `snake_case`;
 2. `to_all_caps_snake_case` and `to_all_caps_snake_case_opt`: Converts to `ALL_CAPS_SNAKE_CASE`;
 3. `to_kebab_case` and `to_kebab_case_opt`: Converts to `kebab-case`;
@@ -978,20 +997,24 @@ All supported identifier cases:
 9. `to_http_header_case` and `to_http_header_case_opt`: Converts to `Http-Header-Case`.
 
 For each valid identifier, conversion is done by the following steps:
+
 1. Split input identifier to word segments:
-  1.1. Split input identifier by `'-'` and `'_'`;
-  1.2. For each segment obtained from step 1.1, split again by letter case (details see example below).
+   1.1. Split input identifier by `'-'` and `'_'`;
+   1.2. For each segment obtained from step 1.1, split again by letter case (details see example below).
 2. Convert each segment by the specified destination case;
 3. Concatenate the converted segments.
 
 Example:
+
 1. Let input identifier be `"exampleInput_ParseJSONDocument_TestCase1"`;
 2. After step 1.1: `["exampleInput", "ParseJSONDocument", "TestCase1"]`;
 3. After step 1.2:
-  * `"exampleInput" -> ["example", "Input"]`;
-  * `"ParseJSONDocument" -> ["Parse", "JSON", "Document"]`. Note that for consecutive $N+1$ upper-case letters, the first $N$ forms a single word, then the last one leads the next word;
-  * `"TestCase1" -> ["Test", "Case1"]` for overload (2.1) and (3.1) which handles non-letter characters (i.e. digits or `'$'`) as lower-case letters, or
-  * `"TestCase1" -> ["Test", "Case", "1"]` for overload (2.2) and (3.2) which handles non-letter characters as upper-case ones.
+
+- `"exampleInput" -> ["example", "Input"]`;
+- `"ParseJSONDocument" -> ["Parse", "JSON", "Document"]`. Note that for consecutive $N+1$ upper-case letters, the first $N$ forms a single word, then the last one leads the next word;
+- `"TestCase1" -> ["Test", "Case1"]` for overload (2.1) and (3.1) which handles non-letter characters (i.e. digits or `'$'`) as lower-case letters, or
+- `"TestCase1" -> ["Test", "Case", "1"]` for overload (2.2) and (3.2) which handles non-letter characters as upper-case ones.
+
 4. Assume we are converting to upper camel case with overload (2.1). For each word obtained in step 1.2, we convert the first character to upper-case and all following letters to lower-case. Finally, words are converted to `"Example", "Input", "Parse", "Json", "Document", "Test", "Case1"` (Note that `JSON` is converted to `Json`: The uniform conversion rule is applied to each word regardless of its input form);
 5. After concatenation: `"ExampleInputParseJsonDocumentTestCase1"`.
 
@@ -1067,34 +1090,34 @@ These functors provide constexpr, locale-independent alternatives to the charact
 
 #### ASCII Character/String Check
 
-* `is_ascii_char(c)`: Returns `true` if `c` is in range `[0, 127]`.
-* `is_ascii_string(str)`: Returns `true` if all characters in `str` are in range `[0, 127]`.
+- `is_ascii_char(c)`: Returns `true` if `c` is in range `[0, 127]`.
+- `is_ascii_string(str)`: Returns `true` if all characters in `str` are in range `[0, 127]`.
 
 #### ASCII Character Classification
 
 These predicates match the behavior of their `std::` counterparts for ASCII characters (0-127). For non-ASCII values, they always return `false`:
 
-| Functor | Description |
-|---------|-------------|
-| `ascii_isalnum` | Alphanumeric character (`[0-9A-Za-z]`) |
-| `ascii_isalpha` | Alphabetic character (`[A-Za-z]`) |
-| `ascii_islower` | Lowercase letter (`[a-z]`) |
-| `ascii_isupper` | Uppercase letter (`[A-Z]`) |
-| `ascii_isdigit` | Decimal digit (`[0-9]`) |
-| `ascii_isxdigit` | Hexadecimal digit (`[0-9A-Fa-f]`) |
-| `ascii_isblank` | Blank character (space or tab) |
-| `ascii_iscntrl` | Control character (`[0-31, 127]`) |
-| `ascii_isgraph` | Graphical character (printable except space) |
-| `ascii_isspace` | Whitespace character (`[ \f\n\r\t\v]`) |
-| `ascii_isprint` | Printable character (`[32-126]`) |
-| `ascii_ispunct` | Punctuation character |
+| Functor          | Description                                  |
+| ---------------- | -------------------------------------------- |
+| `ascii_isalnum`  | Alphanumeric character (`[0-9A-Za-z]`)       |
+| `ascii_isalpha`  | Alphabetic character (`[A-Za-z]`)            |
+| `ascii_islower`  | Lowercase letter (`[a-z]`)                   |
+| `ascii_isupper`  | Uppercase letter (`[A-Z]`)                   |
+| `ascii_isdigit`  | Decimal digit (`[0-9]`)                      |
+| `ascii_isxdigit` | Hexadecimal digit (`[0-9A-Fa-f]`)            |
+| `ascii_isblank`  | Blank character (space or tab)               |
+| `ascii_iscntrl`  | Control character (`[0-31, 127]`)            |
+| `ascii_isgraph`  | Graphical character (printable except space) |
+| `ascii_isspace`  | Whitespace character (`[ \f\n\r\t\v]`)       |
+| `ascii_isprint`  | Printable character (`[32-126]`)             |
+| `ascii_ispunct`  | Punctuation character                        |
 
 #### ASCII Case Conversion
 
-* `ascii_tolower(c)`: Converts uppercase ASCII letter to lowercase, otherwise returns `c` unchanged.
-* `ascii_toupper(c)`: Converts lowercase ASCII letter to uppercase, otherwise returns `c` unchanged.
-* `ascii_tolower(str)`: Returns a new string with all ASCII letters converted to lowercase.
-* `ascii_toupper(str)`: Returns a new string with all ASCII letters converted to uppercase.
+- `ascii_tolower(c)`: Converts uppercase ASCII letter to lowercase, otherwise returns `c` unchanged.
+- `ascii_toupper(c)`: Converts lowercase ASCII letter to uppercase, otherwise returns `c` unchanged.
+- `ascii_tolower(str)`: Returns a new string with all ASCII letters converted to lowercase.
+- `ascii_toupper(str)`: Returns a new string with all ASCII letters converted to uppercase.
 
 For non-ASCII characters, the functions above always return the character unchanged.
 
@@ -1103,6 +1126,7 @@ For non-ASCII characters, the functions above always return the character unchan
 `ascii_trim(str)` removes leading and trailing ASCII whitespace characters (`' '`, `'\f'`, `'\n'`, `'\r'`, `'\t'`, `'\v'`). Returns a `std::basic_string_view`.
 
 Example:
+
 ```cpp
 namespace refl = reflect_cpp26;
 
@@ -1131,74 +1155,43 @@ Defined in header `<reflect_cpp26/utils/string_hash.hpp>`.
 namespace reflect_cpp26 {
 
 // BKDR hash functors (case-sensitive)
-struct bkdr_hash32_t {
+struct bkdr_hash_t {
   template </* char_type */ class CharT>
-  static constexpr auto operator()(const CharT* begin, const CharT* end) -> uint32_t;
-  template </* char_type */ class CharT>
-  static constexpr auto operator()(const CharT* str) -> uint32_t;
+  static constexpr auto operator()(const CharT* begin, const CharT* end) -> size_t;
   template </* string_like */ class StringT>
-  static constexpr auto operator()(const StringT& str) -> uint32_t;
-};
-
-struct bkdr_hash64_t {
-  template </* char_type */ class CharT>
-  static constexpr auto operator()(const CharT* begin, const CharT* end) -> uint64_t;
-  template </* char_type */ class CharT>
-  static constexpr auto operator()(const CharT* str) -> uint64_t;
-  template </* string_like */ class StringT>
-  static constexpr auto operator()(const StringT& str) -> uint64_t;
+  static constexpr auto operator()(const StringT& str) -> size_t;
 };
 
 // ASCII case-insensitive, locale-independent
-struct ascii_ci_bkdr_hash32_t {
+struct ascii_ci_bkdr_hash_t {
   template </* char_type */ class CharT>
-  static constexpr auto operator()(const CharT* begin, const CharT* end) -> uint32_t;
-  template </* char_type */ class CharT>
-  static constexpr auto operator()(const CharT* str) -> uint32_t;
+  static constexpr auto operator()(const CharT* begin, const CharT* end) -> size_t;
   template </* string_like */ class StringT>
-  static constexpr auto operator()(const StringT& str) -> uint32_t;
+  static constexpr auto operator()(const StringT& str) -> size_t;
 };
-
-struct ascii_ci_bkdr_hash64_t {
-  template </* char_type */ class CharT>
-  static constexpr auto operator()(const CharT* begin, const CharT* end) -> uint64_t;
-  template </* char_type */ class CharT>
-  static constexpr auto operator()(const CharT* str) -> uint64_t;
-  template </* string_like */ class StringT>
-  static constexpr auto operator()(const StringT& str) -> uint64_t;
-};
-
-// Case-insensitive, locale-dependent (char and wchar_t only)
-struct ci_bkdr_hash32_t { /* ... */ };
-struct ci_bkdr_hash64_t { /* ... */ };
 
 constexpr auto bkdr_hash32 = bkdr_hash32_t{};
-constexpr auto bkdr_hash64 = bkdr_hash64_t{};
-constexpr auto ascii_ci_bkdr_hash32 = ascii_ci_bkdr_hash32_t{};
 constexpr auto ascii_ci_bkdr_hash64 = ascii_ci_bkdr_hash64_t{};
-constexpr auto ci_bkdr_hash32 = ci_bkdr_hash32_t{};
-constexpr auto ci_bkdr_hash64 = ci_bkdr_hash64_t{};
 
 }  // namespace reflect_cpp26
 ```
 
 These functors implement the modified BKDR hash algorithm for string hashing:
+
 ```
 result = 0
 for each c in the input string:
-    result = result * P + c
+    result = result * 131 + c
 return result
 ```
-where $P = 131$ for 1-byte character types, $P = 32771$ for 2-byte character types, $P = 2097169$ for 4-byte character types.
 
-* `bkdr_hash32` / `bkdr_hash64`: Case-sensitive BKDR hash. Returns 32-bit or 64-bit hash value.
-* `ascii_ci_bkdr_hash32` / `ascii_ci_bkdr_hash64`: ASCII case-insensitive BKDR hash which uses `ascii_tolower` to convert characters to lowercase before hashing. Works with all character types.
-* `ci_bkdr_hash32` / `ci_bkdr_hash64`: Locale-dependent case-insensitive BKDR hash which uses `std::tolower` / `std::towlower`, whose behavior may be affected by the runtime locale. Only supports `char` and `wchar_t` character types.
+- `bkdr_hash`: Case-sensitive BKDR hash. Returns hash value of `size_t`. Works with all character types.
+- `ascii_ci_bkdr_hash` : ASCII case-insensitive BKDR hash which uses `ascii_tolower` to convert characters to lowercase before hashing. Works with all character types.
 
 Each functor provides three overloads:
+
 1. Pointer range `[begin, end)`
-2. Null-terminated C-string
-3. Any string-like type (see [String-like Types](#string-like-types))
+2. Any string-like type (including C-style null-terminated strings. See [String-like Types](#string-like-types))
 
 ### Alternatives to `<utility>` Components
 
@@ -1265,6 +1258,7 @@ constexpr auto sign_extend = sign_extend_t<To>{};
 The integer comparison functors (`cmp_equal`, `cmp_not_equal`, `cmp_less`, `cmp_greater`, `cmp_less_equal`, `cmp_greater_equal`, `cmp_three_way`) are relaxed alternatives to `std::cmp_*` functions. Unlike the standard library versions which only accept integer types (excluding `bool` and character types), these functors accept all integral types including `bool`, `char`, `wchar_t`, `char8_t`, `char16_t`, `char32_t`, etc.
 
 Example:
+
 ```cpp
 // Standard library rejects these:
 // std::cmp_less('a', 100);  // Error: char not allowed
@@ -1282,6 +1276,7 @@ reflect_cpp26::cmp_less(true, 1);   // OK: compares as int
 The `in_range_t<bool>` specialization checks whether the value is exactly `0` or `1`, since `bool` can only represent these two values.
 
 Example:
+
 ```cpp
 reflect_cpp26::in_range<uint8_t>(255);   // true
 reflect_cpp26::in_range<uint8_t>(256);   // false
@@ -1299,6 +1294,7 @@ reflect_cpp26::in_range<bool>(-1);       // false
 `to_underlying(e)` is a functor wrapper for `std::to_underlying(e)`, which converts an enum value to its underlying type.
 
 Example:
+
 ```cpp
 enum class color : uint8_t { red = 1, green = 2, blue = 3 };
 auto r = reflect_cpp26::to_underlying(color::red);  // r is uint8_t{1}
@@ -1308,10 +1304,11 @@ auto r = reflect_cpp26::to_underlying(color::red);  // r is uint8_t{1}
 
 `zero_extend<To>(from)` and `sign_extend<To>(from)` convert an integer value to a larger integer type with zero-extension or sign-extension respectively:
 
-* `zero_extend<To>(from)`: Converts `from` to unsigned type `To`, interpreting the source as unsigned.
-* `sign_extend<To>(from)`: Converts `from` to signed type `To`, preserving the sign.
+- `zero_extend<To>(from)`: Converts `from` to unsigned type `To`, interpreting the source as unsigned.
+- `sign_extend<To>(from)`: Converts `from` to signed type `To`, preserving the sign.
 
 Example:
+
 ```cpp
 int8_t x = -1;
 // x = int8_t(0xFF). Zero-extends to uint64_t(0x00'00'00'FF)
@@ -1397,15 +1394,15 @@ constexpr auto identifier_of = identifier_of_t{};
 
 These functions are wrappers of special access contexts:
 
-* `unprivileged_context()`: Returns an access context with no special privileges. Equivalent to `std::meta::access_context::unprivileged()`.
-* `unchecked_context()`: Returns an access context that bypasses all access checks. Equivalent to `std::meta::access_context::unchecked()`.
+- `unprivileged_context()`: Returns an access context with no special privileges. Equivalent to `std::meta::access_context::unprivileged()`.
+- `unchecked_context()`: Returns an access context that bypasses all access checks. Equivalent to `std::meta::access_context::unchecked()`.
 
 #### Member Query Functions
 
 These functions query members of a type with different access levels:
 
-* `public_direct_*_of(a)`: Returns all direct members accessible in global scope (equivalent to `std::meta::*_of(a, unprivileged_context())`).
-* `all_direct_*_of(a)`: Returns all direct members regardless of accessibility (equivalent to `std::meta::*_of(a, unchecked_context())`).
+- `public_direct_*_of(a)`: Returns all direct members accessible in global scope (equivalent to `std::meta::*_of(a, unprivileged_context())`).
+- `all_direct_*_of(a)`: Returns all direct members regardless of accessibility (equivalent to `std::meta::*_of(a, unchecked_context())`).
 
 The `*` can be one of: `members`, `bases`, `static_data_members`, `nonstatic_data_members`.
 
@@ -1413,10 +1410,11 @@ The `*` can be one of: `members`, `bases`, `static_data_members`, `nonstatic_dat
 
 These variable templates store the results of member queries as static arrays:
 
-* `public_direct_*_v<T>`: Equivalent to `std::define_static_array(public_direct_*_of(^^T))`.
-* `all_direct_*_v<T>`: Equivalent to `std::define_static_array(all_direct_*_of(^^T))`.
+- `public_direct_*_v<T>`: Equivalent to `std::define_static_array(public_direct_*_of(^^T))`.
+- `all_direct_*_v<T>`: Equivalent to `std::define_static_array(all_direct_*_of(^^T))`.
 
 Example:
+
 ```cpp
 namespace refl = reflect_cpp26;
 
@@ -1435,6 +1433,7 @@ template for (constexpr auto m : refl::public_direct_nonstatic_data_members_v<My
 `extract<T>(templ, params...)` is a convenience function equivalent to `extract<T>(substitute(templ, {params...}))`. It substitutes template parameters and extracts the result in one call.
 
 Example:
+
 ```cpp
 namespace refl = reflect_cpp26;
 
@@ -1449,6 +1448,7 @@ static_assert(refl::extract<bool>(^^std::ranges::range, T));
 `identifier_of(m, alt)` returns the identifier of a reflection `m` if it has one, otherwise returns `alt`.
 
 Example:
+
 ```cpp
 namespace refl = reflect_cpp26;
 

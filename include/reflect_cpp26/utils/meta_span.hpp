@@ -111,6 +111,14 @@ struct meta_span {
     return head + n;
   }
 
+  constexpr auto cbegin() const -> const T* {
+    return head;
+  }
+
+  constexpr auto cend() const -> const T* {
+    return head + n;
+  }
+
   constexpr auto first(size_t n) const -> meta_span {
     return subspan(0, n);
   }

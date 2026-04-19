@@ -24,70 +24,49 @@
 #define REFLECT_CPP26_FIXED_MAP_IMPL_COMMON_HPP
 
 #include <bit>
-#include <reflect_cpp26/utils/define_static_values.hpp>
-#include <reflect_cpp26/utils/functional.hpp>
-#include <reflect_cpp26/utils/meta_span.hpp>
+#include <ranges>
+#include <utility>
 
-namespace reflect_cpp26::impl {
-template <class Value>
-constexpr auto map_null_value_v = Value{};
+namespace reflect_cpp26::impl::map {
+template <class V>
+constexpr auto default_v = V{};
 
 template <class T>
-struct alignment_adjusted_wrapper {
-  static constexpr auto adjusted_alignment = std::bit_ceil(sizeof(T));
-  alignas(adjusted_alignment) T underlying;
+struct aligned {
+  static constexpr auto alignment = std::bit_ceil(sizeof(T));
+  alignas(alignment) T underlying;
+};
 
-  static constexpr auto make(T value) -> alignment_adjusted_wrapper<T> {
-    return {.underlying = std::move(value)};
-  }
-
-  template <class InputIter>
-  static constexpr auto make_static_array(InputIter first, InputIter last)
-      -> meta_span<alignment_adjusted_wrapper<T>> {
-    auto res = std::vector<alignment_adjusted_wrapper<T>>{};
-    for (; first != last; ++first) {
-      res.push_back(make(*first));
-    }
-    return reflect_cpp26::define_static_array(res);
-  }
-
-  template <class InputRange>
-  static constexpr auto make_static_array(const InputRange& range) {
-    auto begin = std::ranges::begin(range);
-    auto end = std::ranges::end(range);
-    return make_static_array(begin, end);
+struct to_aligned_t {
+  template <class T>
+  static constexpr auto operator()(T value) -> aligned<T> {
+    return {std::move(value)};
   }
 };
 
 template <class T>
-constexpr decltype(auto) unwrap(T&& value) {
-  return std::forward<T>(value);  // End of recursion
+constexpr auto unwrap(T& value) -> const T& {
+  return value;
 }
 
 template <class T>
-constexpr decltype(auto) unwrap_once(T&& value) {
-  return std::forward<T>(value);  // End of recursion
-}
-
-template <class T>
-constexpr auto unwrap(const alignment_adjusted_wrapper<T>& wrapper) -> const T& {
-  return unwrap(wrapper.underlying);
-}
-
-template <class T>
-constexpr auto unwrap(alignment_adjusted_wrapper<T>&& wrapper) -> T {
-  return unwrap(std::move(wrapper.underlying));
-}
-
-template <class T>
-constexpr auto unwrap_once(const alignment_adjusted_wrapper<T>& wrapper) -> const T& {
+constexpr auto unwrap(const aligned<T>& wrapper) -> const T& {
   return wrapper.underlying;
 }
 
-template <class T>
-constexpr auto unwrap_once(alignment_adjusted_wrapper<T>&& wrapper) -> T {
-  return std::move(wrapper.underlying);
-}
-}  // namespace reflect_cpp26::impl
+constexpr auto to_aligned = std::views::transform(to_aligned_t{});
+
+// Note: std::views::keys can not be applied to meta_tuple in libstdc++
+//       since std::views::keys requires an internal constraint __is_tuple_like_v
+//       which recognizes std components (std::pair, std::tuple, etc) only.
+constexpr auto to_keys =
+    std::views::transform([](const auto& meta_tuple) { return meta_tuple.elements.first; });
+
+// Note: std::views::values can not be applied to meta_tuple in libstdc++
+//       since std::views::values requires an internal constraint __is_tuple_like_v
+//       which recognizes std components (std::pair, std::tuple, etc) only.
+constexpr auto to_values =
+    std::views::transform([](const auto& meta_tuple) { return meta_tuple.elements.second; });
+}  // namespace reflect_cpp26::impl::map
 
 #endif  // REFLECT_CPP26_FIXED_MAP_IMPL_COMMON_HPP

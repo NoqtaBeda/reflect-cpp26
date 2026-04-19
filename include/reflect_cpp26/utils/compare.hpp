@@ -25,38 +25,51 @@
 
 #include <compare>
 
-// Reused by multiple headers in reflect_cpp26
-#define REFLECT_CPP26_COMPARISON_CONCEPT(type) \
-  template <class T, class... Us>              \
-  concept type##_comparable_with = (is_##type##_comparable_v<T, Us> && ...);
-
 namespace reflect_cpp26 {
 /**
  * Whether T (possibly with cv-qualifiers) is some result type of C++
  * three-way comparison.
  */
 template <class T>
-concept three_way_comparison_result = std::is_same_v<std::remove_cv_t<T>, std::strong_ordering>
-                                   || std::is_same_v<std::remove_cv_t<T>, std::weak_ordering>
-                                   || std::is_same_v<std::remove_cv_t<T>, std::partial_ordering>;
-
-#define REFLECT_CPP26_IS_OPERATOR_COMPARABLE(op_name, op)                                  \
-  template <class T, class U>                                                              \
-  constexpr bool is_operator_##op_name##_comparable_v = requires(const T& t, const U& u) { \
-    { t op u } -> std::same_as<bool>;                                                      \
-  };
+concept three_way_comparison_result =  //
+    std::is_same_v<std::remove_cv_t<T>, std::strong_ordering>
+    || std::is_same_v<std::remove_cv_t<T>, std::weak_ordering>
+    || std::is_same_v<std::remove_cv_t<T>, std::partial_ordering>;
 
 /**
  * is_operator_*_comparable_v<T, U>:
  * Whether (t op u) is a valid boolean expression where op is
  * ==, !=, <, >, <=, >= respectively.
  */
-REFLECT_CPP26_IS_OPERATOR_COMPARABLE(eq, ==)
-REFLECT_CPP26_IS_OPERATOR_COMPARABLE(ne, !=)
-REFLECT_CPP26_IS_OPERATOR_COMPARABLE(lt, <)
-REFLECT_CPP26_IS_OPERATOR_COMPARABLE(gt, >)
-REFLECT_CPP26_IS_OPERATOR_COMPARABLE(le, <=)
-REFLECT_CPP26_IS_OPERATOR_COMPARABLE(ge, >=)
+template <class T, class U>
+constexpr bool is_operator_eq_comparable_v = requires(const T& t, const U& u) {
+  { t == u } -> std::same_as<bool>;
+};
+
+template <class T, class U>
+constexpr bool is_operator_ne_comparable_v = requires(const T& t, const U& u) {
+  { t != u } -> std::same_as<bool>;
+};
+
+template <class T, class U>
+constexpr bool is_operator_lt_comparable_v = requires(const T& t, const U& u) {
+  { t < u } -> std::same_as<bool>;
+};
+
+template <class T, class U>
+constexpr bool is_operator_gt_comparable_v = requires(const T& t, const U& u) {
+  { t > u } -> std::same_as<bool>;
+};
+
+template <class T, class U>
+constexpr bool is_operator_le_comparable_v = requires(const T& t, const U& u) {
+  { t <= u } -> std::same_as<bool>;
+};
+
+template <class T, class U>
+constexpr bool is_operator_ge_comparable_v = requires(const T& t, const U& u) {
+  { t >= u } -> std::same_as<bool>;
+};
 
 /**
  * Whether (t <=> u) is a valid three-way comparison expression.
@@ -69,20 +82,6 @@ template <class T, class U>
 constexpr bool is_operator_3way_comparable_v = requires(const T& t, const U& u) {
   { t <=> u } -> three_way_comparison_result;
 };
-
-/**
- * operator_*_comparable_with<T, U1, U2, ...>
- * Whether (t op u) is valid comparison expression where:
- * (1) u is of any type in {U1, U2, ...};
- * (2) op is ==, !=, <, >, <=, >=, <=> respectively.
- */
-REFLECT_CPP26_COMPARISON_CONCEPT(operator_eq)
-REFLECT_CPP26_COMPARISON_CONCEPT(operator_ne)
-REFLECT_CPP26_COMPARISON_CONCEPT(operator_lt)
-REFLECT_CPP26_COMPARISON_CONCEPT(operator_le)
-REFLECT_CPP26_COMPARISON_CONCEPT(operator_gt)
-REFLECT_CPP26_COMPARISON_CONCEPT(operator_ge)
-REFLECT_CPP26_COMPARISON_CONCEPT(operator_3way)
 }  // namespace reflect_cpp26
 
 #endif  // REFLECT_CPP26_UTILS_COMPARE_HPP

@@ -31,6 +31,7 @@
 #include <reflect_cpp26/type_traits/enum_types.hpp>
 #include <reflect_cpp26/type_traits/serializable_types.hpp>
 #include <reflect_cpp26/type_traits/template_instance.hpp>
+#include <reflect_cpp26/utils/string_utils.hpp>
 #include <variant>
 
 namespace reflect_cpp26 {
@@ -180,7 +181,7 @@ constexpr bool serializer_dispatch(basic_string_builder<CharT, Allocator>& dest,
     return res;
   } else if constexpr (string_like<T>) {
     // (4) String-like types
-    auto str = std::basic_string_view{value};
+    auto str = make_string_view(value);
     dest.append_char('"').append_utf_string_json_escaped(str).append_char('"');
     return true;
   } else if constexpr (template_instance_of<T, std::optional>) {

@@ -43,28 +43,30 @@ struct wrapper_t {
 
 #define EXPECT_FOUND(expected_res, flat_map, key) \
   do {                                            \
-    auto p = flat_map.get(key);                   \
-    EXPECT_TRUE(p.second);                        \
-    EXPECT_EQ(expected_res, p.first);             \
+    const auto* p = flat_map.find(key);           \
+    EXPECT_NE(nullptr, p);                        \
+    if (p != nullptr) {                           \
+      EXPECT_EQ(expected_res, *p);                \
+    }                                             \
   } while (false)
 
 #define EXPECT_NOT_FOUND(expected_res, flat_map, key) \
   do {                                                \
-    auto p = flat_map.get(key);                       \
-    EXPECT_FALSE(p.second);                           \
-    EXPECT_EQ(expected_res, p.first);                 \
+    auto p = flat_map.find(key);                      \
+    EXPECT_EQ(nullptr, p);                            \
   } while (false)
 
 #define EXPECT_FOUND_STATIC(expected_res, flat_map, key) \
   do {                                                   \
-    constexpr auto p = flat_map.get(key);                \
-    EXPECT_TRUE_STATIC(p.second);                        \
-    EXPECT_EQ_STATIC(expected_res, p.first);             \
+    constexpr const auto* p = flat_map.find(key);        \
+    EXPECT_NE_STATIC(nullptr, p);                        \
+    if constexpr (p != nullptr) {                        \
+      EXPECT_EQ_STATIC(expected_res, *p);                \
+    }                                                    \
   } while (false)
 
 #define EXPECT_NOT_FOUND_STATIC(expected_res, flat_map, key) \
   do {                                                       \
-    constexpr auto p = flat_map.get(key);                    \
-    EXPECT_FALSE_STATIC(p.second);                           \
-    EXPECT_EQ_STATIC(expected_res, p.first);                 \
+    constexpr const auto* p = flat_map.find(key);            \
+    EXPECT_EQ_STATIC(nullptr, p);                            \
   } while (false)

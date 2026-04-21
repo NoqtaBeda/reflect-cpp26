@@ -37,24 +37,24 @@ struct naive_with_skey {
 
 private:
   using element_type = meta_tuple<key_type, V>;
-  using result_type = std::pair<const V&, bool>;
 
 public:
   constexpr auto size() const -> size_t {
     return entries.size();
   }
 
-  constexpr auto get(std::basic_string_view<CharT> key) const -> result_type {
+  constexpr auto find(std::basic_string_view<CharT> key) const -> const value_type* {
     for (const auto& cur : entries) {
       if (Policy<CharT>::equals(cur.elements.first, key)) {
-        return {cur.elements.second, true};
+        return std::addressof(cur.elements.second);
       }
     }
-    return {default_v<value_type>, false};
+    return nullptr;
   }
 
   constexpr auto operator[](std::basic_string_view<CharT> key) const -> const value_type& {
-    return get(key).first;
+    auto* p = find(key);
+    return p ? *p : default_v<value_type>;
   }
 
   meta_span<element_type> entries;

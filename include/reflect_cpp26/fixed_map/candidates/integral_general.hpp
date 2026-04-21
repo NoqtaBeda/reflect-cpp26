@@ -32,33 +32,31 @@ struct general_with_ikey {
   using key_type = typename Dense::key_type;
   using value_type = typename Dense::value_type;
 
-private:
-  using result_type = std::pair<const value_type&, bool>;
-
 public:
   constexpr auto size() const -> size_t {
     return dense_part.size() + left_sparse_part.size() + right_sparse_part.size();
   }
 
-  constexpr auto get(key_type key) const -> result_type {
+  constexpr auto find(key_type key) const -> const value_type* {
     if (key < dense_part.min_key) {
-      return left_sparse_part.get(key);
+      return left_sparse_part.find(key);
     }
     if (key > dense_part.max_key) {
-      return right_sparse_part.get(key);
+      return right_sparse_part.find(key);
     }
-    return dense_part.get(key);
+    return dense_part.find(key);
   }
 
-  constexpr auto get(non_bool_integral auto key) const -> result_type {
+  constexpr auto find(non_bool_integral auto key) const -> const value_type* {
     if (!in_range<key_type>(key)) {
-      return {default_v<value_type>, false};
+      return nullptr;
     }
-    return get(static_cast<key_type>(key));
+    return find(static_cast<key_type>(key));
   }
 
   constexpr auto operator[](non_bool_integral auto key) const -> const value_type& {
-    return get(key).first;
+    auto* p = find(key);
+    return p ? *p : default_v<value_type>;
   }
 
   Dense dense_part;

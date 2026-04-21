@@ -38,31 +38,31 @@ struct linear_hash_search_with_skey {
 
 private:
   using element_type = meta_tuple<size_t, meta_basic_string_view<CharT>, V>;
-  using result_type = std::pair<const value_type&, bool>;
 
 public:
   constexpr auto size() const -> size_t {
     return entries.size();
   }
 
-  constexpr auto get(std::basic_string_view<CharT> key) const -> result_type {
+  constexpr auto find(std::basic_string_view<CharT> key) const -> const value_type* {
     auto len = key.length();
     if (len < min_length || len > max_length) {
-      return {default_v<value_type>, false};
+      return nullptr;
     }
     auto hash = Policy<CharT>::hash(key);
     for (const auto& cur : entries) {
       if (hash != cur.elements.first) continue;
       if (Policy<CharT>::equals(cur.elements.second, key)) {
-        return {cur.elements.third, true};
+        return std::addressof(cur.elements.third);
       }
       break;
     }
-    return {default_v<value_type>, false};
+    return nullptr;
   }
 
   constexpr auto operator[](std::basic_string_view<CharT> key) const -> const value_type& {
-    return get(key).first;
+    auto* p = find(key);
+    return p ? *p : default_v<value_type>;
   }
 
   meta_span<element_type> entries;
@@ -78,17 +78,16 @@ struct binary_hash_search_with_skey {
 private:
   using raw_element_type = meta_tuple<size_t, meta_basic_string_view<CharT>, V>;
   using element_type = std::conditional_t<A, aligned<raw_element_type>, raw_element_type>;
-  using result_type = std::pair<const value_type&, bool>;
 
 public:
   constexpr auto size() const -> size_t {
     return entries.size();
   }
 
-  constexpr auto get(std::basic_string_view<CharT> key) const -> result_type {
+  constexpr auto find(std::basic_string_view<CharT> key) const -> const value_type* {
     auto len = key.length();
     if (len < min_length || len > max_length) {
-      return {default_v<value_type>, false};
+      return nullptr;
     }
     auto hash = Policy<CharT>::hash(key);
     constexpr auto hash_proj = [](const auto& entry) { return unwrap(entry).elements.first; };
@@ -96,24 +95,25 @@ public:
       auto range = std::ranges::equal_range(entries, hash, {}, hash_proj);
       for (const auto& entry : range) {
         const auto& [_, k, v] = unwrap(entry);
-        if (Policy<CharT>::equals(k, key)) return {v, true};
+        if (Policy<CharT>::equals(k, key)) return std::addressof(v);
       }
-      return {default_v<value_type>, false};
+      return nullptr;
     } else {
       auto pos = std::ranges::lower_bound(entries, hash, {}, hash_proj);
       if (entries.end() == pos) {
-        return {default_v<value_type>, false};
+        return nullptr;
       }
       const auto& cur = unwrap(*pos).elements;
       if (cur.first == hash && Policy<CharT>::equals(cur.second, key)) {
-        return {cur.third, true};
+        return std::addressof(cur.third);
       }
-      return {default_v<value_type>, false};
+      return nullptr;
     }
   }
 
   constexpr auto operator[](std::basic_string_view<CharT> key) const -> const value_type& {
-    return get(key).first;
+    auto* p = find(key);
+    return p ? *p : default_v<value_type>;
   }
 
   meta_span<element_type> entries;

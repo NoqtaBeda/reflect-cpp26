@@ -32,16 +32,13 @@ struct empty_with_skey {
   using key_type = meta_basic_string_view<CharT>;
   using value_type = V;
 
-private:
-  using result_type = std::pair<const V&, bool>;
-
 public:
   static constexpr auto size() -> size_t {
     return 0;
   }
 
-  constexpr auto get(std::basic_string_view<CharT>) const -> result_type {
-    return {default_v<value_type>, false};
+  constexpr auto find(std::basic_string_view<CharT>) const -> const value_type* {
+    return nullptr;
   }
 
   constexpr auto operator[](std::basic_string_view<CharT>) const -> const value_type& {

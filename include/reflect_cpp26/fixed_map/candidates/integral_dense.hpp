@@ -29,7 +29,6 @@
 #include <reflect_cpp26/utils/meta_tuple.hpp>
 #include <reflect_cpp26/utils/meta_utility.hpp>
 #include <reflect_cpp26/utils/utility.hpp>
-#include <utility>
 
 namespace reflect_cpp26::impl::map {
 template <bool A, class K, class V>
@@ -39,29 +38,29 @@ struct fully_dense_with_ikey {
 
 private:
   using element_type = std::conditional_t<A, aligned<V>, V>;
-  using result_type = std::pair<const V&, bool>;
 
 public:
   constexpr auto size() const -> size_t {
     return static_cast<size_t>(max_key - min_key + 1);
   }
 
-  constexpr auto get(key_type key) const -> result_type {
+  constexpr auto find(key_type key) const -> const value_type* {
     if (key >= min_key && key <= max_key) {
-      return {unwrap(entries[key - min_key]), true};
+      return std::addressof(unwrap(entries[key - min_key]));
     }
-    return {default_v<value_type>, false};
+    return nullptr;
   }
 
-  constexpr auto get(non_bool_integral auto key) const -> result_type {
+  constexpr auto find(non_bool_integral auto key) const -> const value_type* {
     if (!in_range<key_type>(key)) {
-      return {default_v<value_type>, false};
+      return nullptr;
     }
-    return get(static_cast<key_type>(key));
+    return find(static_cast<key_type>(key));
   }
 
   constexpr auto operator[](non_bool_integral auto key) const -> const value_type& {
-    return get(key).first;
+    auto* p = find(key);
+    return p ? *p : default_v<value_type>;
   }
 
   const element_type* entries;
@@ -76,31 +75,32 @@ struct non_null_dense_with_ikey {
 
 private:
   using element_type = std::conditional_t<A, aligned<V>, V>;
-  using result_type = std::pair<const V&, bool>;
 
 public:
   constexpr auto size() const -> size_t {
     return actual_size;
   }
 
-  constexpr auto get(key_type key) const -> result_type {
+  constexpr auto find(key_type key) const -> const value_type* {
     if (key >= min_key && key <= max_key) {
       const auto& target = unwrap(entries[key - min_key]);
-      auto found = !(target == default_v<value_type>);
-      return {target, found};
+      if (!(target == default_v<value_type>)) {
+        return std::addressof(target);
+      }
     }
-    return {default_v<value_type>, false};
+    return nullptr;
   }
 
-  constexpr auto get(non_bool_integral auto key) const -> result_type {
+  constexpr auto find(non_bool_integral auto key) const -> const value_type* {
     if (!in_range<key_type>(key)) {
-      return {default_v<value_type>, false};
+      return nullptr;
     }
-    return get(static_cast<key_type>(key));
+    return find(static_cast<key_type>(key));
   }
 
   constexpr auto operator[](non_bool_integral auto key) const -> const value_type& {
-    return get(key).first;
+    auto* p = find(key);
+    return p ? *p : default_v<value_type>;
   }
 
   const element_type* entries;
@@ -117,32 +117,32 @@ struct dense_with_ikey {
 private:
   using element_pair_type = meta_tuple<V, bool>;
   using element_type = std::conditional_t<A, aligned<element_pair_type>, element_pair_type>;
-  using result_type = std::pair<const V&, bool>;
 
 public:
   constexpr auto size() const -> size_t {
     return actual_size;
   }
 
-  constexpr auto get(key_type key) const -> result_type {
+  constexpr auto find(key_type key) const -> const value_type* {
     if (key >= min_key && key <= max_key) {
       const auto& target_entry = unwrap(entries[key - min_key]);
-      const auto& target = target_entry.elements.first;
-      auto found = target_entry.elements.second;
-      return {target, found};
+      if (target_entry.elements.second) {
+        return std::addressof(target_entry.elements.first);
+      }
     }
-    return {default_v<value_type>, false};
+    return nullptr;
   }
 
-  constexpr auto get(non_bool_integral auto key) const -> result_type {
+  constexpr auto find(non_bool_integral auto key) const -> const value_type* {
     if (!in_range<key_type>(key)) {
-      return {default_v<value_type>, false};
+      return nullptr;
     }
-    return get(static_cast<key_type>(key));
+    return find(static_cast<key_type>(key));
   }
 
   constexpr auto operator[](non_bool_integral auto key) const -> const value_type& {
-    return get(key).first;
+    auto* p = find(key);
+    return p ? *p : default_v<value_type>;
   }
 
   const element_type* entries;

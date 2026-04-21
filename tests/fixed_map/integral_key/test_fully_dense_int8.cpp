@@ -46,9 +46,9 @@ TEST(FixedMap, IntegralKeyInt8Full) {
   EXPECT_EQ_STATIC(1 << CHAR_BIT, map.size());
 
   for (auto i = SCHAR_MIN;; i++) {
-    auto [v, found] = map.get(i);
-    EXPECT_TRUE(found) << "Failed with i = " << i;
-    EXPECT_EQ(i + delta, v) << "Failed with i = " << i;
+    const auto* p = map.find(i);
+    ASSERT_NE(nullptr, p) << "Failed with i = " << i;
+    ASSERT_EQ(i + delta, *p) << "Failed with i = " << i;
     if (i == SCHAR_MAX) {
       break;
     }
@@ -72,10 +72,13 @@ TEST(FixedMap, IntegralKeyUInt8Full) {
   EXPECT_EQ_STATIC(sizeof(double), sizeof(map.entries[0]));
   EXPECT_EQ_STATIC(1 << CHAR_BIT, map.size());
 
-  for (auto i = 0; i <= UCHAR_MAX; i++) {
-    auto [v, found] = map.get(i);
-    EXPECT_TRUE(found) << "Failed with i = " << i;
-    EXPECT_EQ(i + delta, v) << "Failed with i = " << i;
+  for (auto i = SCHAR_MIN;; i++) {
+    const auto* p = map.find(i);
+    ASSERT_NE(nullptr, p) << "Failed with i = " << i;
+    ASSERT_EQ(i + delta, *p) << "Failed with i = " << i;
+    if (i == SCHAR_MAX) {
+      break;
+    }
   }
   EXPECT_EQ_STATIC(0.0, map[-1]);
   EXPECT_NOT_FOUND_STATIC(0.0, map, UCHAR_MAX + 1);

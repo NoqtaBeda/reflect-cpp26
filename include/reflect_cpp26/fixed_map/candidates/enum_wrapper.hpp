@@ -25,7 +25,7 @@
 
 #include <cstddef>
 #include <type_traits>
-#include <utility>
+#include <utility>  // std::to_underlying
 
 namespace reflect_cpp26::impl::map {
 // Precondition: std::to_underlying_t<E> is the same as Underlying::key_type
@@ -34,16 +34,13 @@ struct enum_wrapper {
   using key_type = E;
   using value_type = typename Underlying::value_type;
 
-private:
-  using result_type = std::pair<const value_type&, bool>;
-
 public:
   constexpr auto size() const -> size_t {
     return underlying.size();
   }
 
-  constexpr auto get(key_type key) const -> result_type {
-    return underlying.get(std::to_underlying(key));
+  constexpr auto find(key_type key) const -> const value_type* {
+    return underlying.find(std::to_underlying(key));
   }
 
   constexpr auto operator[](key_type key) const -> const value_type& {

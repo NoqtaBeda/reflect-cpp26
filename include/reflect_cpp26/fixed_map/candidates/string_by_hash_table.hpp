@@ -40,35 +40,37 @@ struct hash_table_with_skey {
 private:
   using raw_element_type = meta_tuple<size_t, meta_basic_string_view<CharT>, V>;
   using element_type = std::conditional_t<A, aligned<raw_element_type>, raw_element_type>;
-  using result_type = std::pair<const V&, bool>;
 
 public:
   constexpr auto size() const -> size_t {
     return actual_size;
   }
 
-  constexpr auto get(std::basic_string_view<CharT> key) const -> result_type {
+  constexpr auto find(std::basic_string_view<CharT> key) const -> const value_type* {
     auto len = key.length();
     if (len < min_length || len > max_length) {
-      return {default_v<value_type>, false};
+      return nullptr;
     }
     auto key_hash = Policy<CharT>::hash(key);
     auto start_index = key_hash % modulo;
     template for (constexpr auto I : std::views::iota(0zU, P)) {
       const auto& cur = unwrap(entries[start_index + I * I]).elements;
       if (cur.first == 0) {
-        return {default_v<value_type>, false};
+        return nullptr;
       }
       if (cur.first == key_hash) {
-        if (Policy<CharT>::equals(cur.second, key)) return {cur.third, true};
-        return {default_v<value_type>, false};
+        if (Policy<CharT>::equals(cur.second, key)) {
+          return std::addressof(cur.third);
+        }
+        return nullptr;
       }
     }
-    return {default_v<value_type>, false};
+    return nullptr;
   }
 
   constexpr auto operator[](std::basic_string_view<CharT> key) const -> const value_type& {
-    return get(key).first;
+    auto* p = find(key);
+    return p ? *p : default_v<value_type>;
   }
 
   const element_type* entries;  // Entry range size = modulo + P^2

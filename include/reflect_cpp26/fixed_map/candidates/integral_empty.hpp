@@ -33,16 +33,13 @@ struct empty_with_ikey {
   using key_type = int;  // Placeholder only
   using value_type = V;
 
-private:
-  using result_type = std::pair<const V&, bool>;
-
 public:
   static constexpr auto size() -> size_t {
     return 0;
   }
 
-  static constexpr auto get(non_bool_integral auto) -> result_type {
-    return {default_v<value_type>, false};
+  static constexpr auto find(non_bool_integral auto) -> const value_type* {
+    return nullptr;
   }
 
   static constexpr auto operator[](non_bool_integral auto) -> const value_type& {

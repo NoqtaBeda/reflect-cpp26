@@ -28,7 +28,6 @@
 #include <reflect_cpp26/utils/meta_tuple.hpp>
 #include <reflect_cpp26/utils/meta_utility.hpp>
 #include <reflect_cpp26/utils/utility.hpp>
-#include <utility>
 
 namespace reflect_cpp26::impl::map {
 template <class K, class V>
@@ -38,31 +37,31 @@ struct linear_search_with_ikey {
 
 private:
   using element_type = meta_tuple<K, V>;
-  using result_type = std::pair<const V&, bool>;
 
 public:
   constexpr auto size() const -> size_t {
     return entries.size();
   }
 
-  constexpr auto get(key_type key) const -> result_type {
+  constexpr auto find(key_type key) const -> const value_type* {
     for (const auto& cur : entries) {
       if (key == cur.elements.first) {
-        return {cur.elements.second, true};
+        return std::addressof(cur.elements.second);
       }
     }
-    return {default_v<value_type>, false};
+    return nullptr;
   }
 
-  constexpr auto get(non_bool_integral auto key) const -> result_type {
+  constexpr auto find(non_bool_integral auto key) const -> const value_type* {
     if (!in_range<key_type>(key)) {
-      return {default_v<value_type>, false};
+      return nullptr;
     }
-    return get(static_cast<key_type>(key));
+    return find(static_cast<key_type>(key));
   }
 
   constexpr auto operator[](non_bool_integral auto key) const -> const value_type& {
-    return get(key).first;
+    auto* p = find(key);
+    return p ? *p : default_v<value_type>;
   }
 
   meta_span<element_type> entries;
@@ -75,21 +74,20 @@ struct binary_search_with_ikey {
 
 private:
   using element_type = std::conditional_t<A, aligned<meta_tuple<K, V>>, meta_tuple<K, V>>;
-  using result_type = std::pair<const value_type&, bool>;
 
 public:
   constexpr auto size() const -> size_t {
     return entries.size();
   }
 
-  constexpr auto get(key_type key) const -> result_type {
+  constexpr auto find(key_type key) const -> const value_type* {
     const auto* head = entries.begin();
     const auto* tail = entries.end();
     while (head < tail) {
       const auto* mid = head + (tail - head) / 2;
       const auto& entry = unwrap(*mid);
       if (key == entry.elements.first) {
-        return {entry.elements.second, true};
+        return std::addressof(entry.elements.second);
       }
       if (key > entry.elements.first) {
         head = mid + 1;
@@ -97,18 +95,19 @@ public:
         tail = mid;
       }
     }
-    return {default_v<value_type>, false};
+    return nullptr;
   }
 
-  constexpr auto get(non_bool_integral auto key) const -> result_type {
+  constexpr auto find(non_bool_integral auto key) const -> const value_type* {
     if (!in_range<key_type>(key)) {
-      return {default_v<value_type>, false};
+      return nullptr;
     }
-    return get(static_cast<key_type>(key));
+    return find(static_cast<key_type>(key));
   }
 
   constexpr auto operator[](non_bool_integral auto key) const -> const value_type& {
-    return get(key).first;
+    auto* p = find(key);
+    return p ? *p : default_v<value_type>;
   }
 
   meta_span<element_type> entries;

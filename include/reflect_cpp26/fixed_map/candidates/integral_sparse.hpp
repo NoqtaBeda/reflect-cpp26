@@ -20,8 +20,8 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_FIXED_MAP_IMPL_INTEGRAL_SPARSE_HPP
-#define REFLECT_CPP26_FIXED_MAP_IMPL_INTEGRAL_SPARSE_HPP
+#ifndef REFLECT_CPP26_FIXED_MAP_CANDIDATES_INTEGRAL_SPARSE_HPP
+#define REFLECT_CPP26_FIXED_MAP_CANDIDATES_INTEGRAL_SPARSE_HPP
 
 #include <reflect_cpp26/fixed_map/candidates/integral_empty.hpp>
 #include <reflect_cpp26/utils/define_static_values.hpp>
@@ -149,4 +149,4 @@ consteval auto make_sparse_with_ikey(std::span<const meta_tuple<K, V>> sorted_en
 }
 }  // namespace reflect_cpp26::impl::map
 
-#endif  // REFLECT_CPP26_FIXED_MAP_IMPL_INTEGRAL_SPARSE_HPP
+#endif  // REFLECT_CPP26_FIXED_MAP_CANDIDATES_INTEGRAL_SPARSE_HPP

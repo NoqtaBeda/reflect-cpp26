@@ -26,8 +26,10 @@
 #include <reflect_cpp26/type_traits/arithmetic_types.hpp>
 #include <reflect_cpp26/type_traits/class_types.hpp>
 #include <reflect_cpp26/type_traits/cvref.hpp>
+#include <reflect_cpp26/type_traits/enum_types.hpp>
 #include <reflect_cpp26/type_traits/is_invocable.hpp>
 #include <reflect_cpp26/type_traits/reduction.hpp>
+#include <reflect_cpp26/type_traits/serializable_types.hpp>
 #include <reflect_cpp26/type_traits/string_like_types.hpp>
 #include <reflect_cpp26/type_traits/structural_types.hpp>
 #include <reflect_cpp26/type_traits/template_instance.hpp>

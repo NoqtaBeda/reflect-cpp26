@@ -23,7 +23,6 @@
 #ifndef REFLECT_CPP26_TYPE_OPERATIONS_HPP
 #define REFLECT_CPP26_TYPE_OPERATIONS_HPP
 
-#include <reflect_cpp26/type_operations/comparison.hpp>
 #include <reflect_cpp26/type_operations/dump_to_json_like.hpp>
 #include <reflect_cpp26/type_operations/serialize_to_json.hpp>
 #include <reflect_cpp26/type_operations/to_string.hpp>

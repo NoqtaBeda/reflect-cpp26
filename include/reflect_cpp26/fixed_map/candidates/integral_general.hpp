@@ -20,8 +20,8 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_FIXED_MAP_IMPL_INTEGRAL_GENERAL_HPP
-#define REFLECT_CPP26_FIXED_MAP_IMPL_INTEGRAL_GENERAL_HPP
+#ifndef REFLECT_CPP26_FIXED_MAP_CANDIDATES_INTEGRAL_GENERAL_HPP
+#define REFLECT_CPP26_FIXED_MAP_CANDIDATES_INTEGRAL_GENERAL_HPP
 
 #include <reflect_cpp26/fixed_map/candidates/integral_dense.hpp>
 #include <reflect_cpp26/fixed_map/candidates/integral_sparse.hpp>
@@ -98,4 +98,4 @@ consteval auto make_general_with_ikey(std::span<const meta_tuple<K, V>> left_spa
 }
 }  // namespace reflect_cpp26::impl::map
 
-#endif  // REFLECT_CPP26_FIXED_MAP_IMPL_INTEGRAL_GENERAL_HPP
+#endif  // REFLECT_CPP26_FIXED_MAP_CANDIDATES_INTEGRAL_GENERAL_HPP

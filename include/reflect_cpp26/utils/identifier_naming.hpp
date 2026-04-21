@@ -503,4 +503,5 @@ inline constexpr auto convert_identifier = convert_identifier_t{};
 inline constexpr auto convert_identifier_opt = convert_identifier_opt_t{};
 
 }  // namespace reflect_cpp26
-#endif
+
+#endif  // REFLECT_CPP26_UTILS_IDENTIFIER_NAMING_HPP

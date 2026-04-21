@@ -23,6 +23,7 @@
 #ifndef REFLECT_CPP26_FIXED_MAP_HPP
 #define REFLECT_CPP26_FIXED_MAP_HPP
 
-#include <reflect_cpp26/fixed_map/all.hpp>
+#include <reflect_cpp26/fixed_map/integral_key.hpp>
+#include <reflect_cpp26/fixed_map/string_key.hpp>
 
 #endif  // REFLECT_CPP26_FIXED_MAP_HPP

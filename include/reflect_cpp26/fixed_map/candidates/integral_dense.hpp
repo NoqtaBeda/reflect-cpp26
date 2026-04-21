@@ -20,8 +20,8 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_FIXED_MAP_IMPL_INTEGRAL_DENSE_HPP
-#define REFLECT_CPP26_FIXED_MAP_IMPL_INTEGRAL_DENSE_HPP
+#ifndef REFLECT_CPP26_FIXED_MAP_CANDIDATES_INTEGRAL_DENSE_HPP
+#define REFLECT_CPP26_FIXED_MAP_CANDIDATES_INTEGRAL_DENSE_HPP
 
 #include <reflect_cpp26/fixed_map/candidates/integral_empty.hpp>
 #include <reflect_cpp26/utils/define_static_values.hpp>
@@ -224,4 +224,4 @@ consteval auto make_dense_with_ikey(std::span<const meta_tuple<K, V>> sorted_ent
 }
 }  // namespace reflect_cpp26::impl::map
 
-#endif  // REFLECT_CPP26_FIXED_MAP_IMPL_INTEGRAL_DENSE_HPP
+#endif  // REFLECT_CPP26_FIXED_MAP_CANDIDATES_INTEGRAL_DENSE_HPP

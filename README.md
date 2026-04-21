@@ -1,6 +1,7 @@
 # Prerequisites
 
-[Experimental LLVM compiler with C++26 Reflection support](https://github.com/bloomberg/clang-p2996/tree/p2996) should be installed.
+- Recommended: GCC Trunk
+- Legacy: [Experimental LLVM fork with C++26 Reflection support](https://github.com/bloomberg/clang-p2996/tree/p2996)
 
 # Build & Run Test Cases
 
@@ -21,12 +22,9 @@ xmake build --group=tests/**
 LD_LIBRARY_PATH=<path-to-libc++> xmake run --group=tests/**
 ```
 
-# Possibly Redundant Components
-
-- `structural_type` can be replaced by [`std::is_structural_type_v` proposed by P3856](https://www.open-std.org/JTC1/SC22/WG21/docs/papers/2025/p3856r3.pdf) once it is adopted by C++ standard.
-
 # TODO
 
+- Replace `structural_type` to the standard [`std::is_structural_type_v`](https://www.open-std.org/JTC1/SC22/WG21/docs/papers/2025/p3856r3.pdf) once it is implemented by the compiler.
 - `fixed_set`
 - utils:
   - `to_string` redesign

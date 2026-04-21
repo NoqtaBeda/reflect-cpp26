@@ -20,8 +20,8 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_FIXED_MAP_CANDIDATES_INTEGRAL_DENSE_HPP
-#define REFLECT_CPP26_FIXED_MAP_CANDIDATES_INTEGRAL_DENSE_HPP
+#ifndef REFLECT_CPP26_FIXED_MAP_CANDIDATES_ENUM_WRAPPER_HPP
+#define REFLECT_CPP26_FIXED_MAP_CANDIDATES_ENUM_WRAPPER_HPP
 
 #include <cstddef>
 #include <type_traits>
@@ -60,4 +60,4 @@ constexpr auto enum_wrapper_v =
     enum_wrapper<E, std::remove_cvref_t<decltype(Underlying)>>{Underlying};
 }  // namespace reflect_cpp26::impl::map
 
-#endif  // REFLECT_CPP26_FIXED_MAP_CANDIDATES_INTEGRAL_DENSE_HPP
+#endif  // REFLECT_CPP26_FIXED_MAP_CANDIDATES_ENUM_WRAPPER_HPP

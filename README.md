@@ -28,6 +28,12 @@ LD_LIBRARY_PATH=<path-to-libc++> xmake run --group=tests/**
 - `fixed_set`
 - utils:
   - `to_string` redesign
+  - `append_*_unsafe` and `reserve_and_append` for string builder
+- enum:
+  - `enum_flags_name_to` with string builder
+- lookup:
+  - Complete redesign
 - type_operations
   - Serialize to YAML
   - Deserialize from JSON or YAML
+  - Performance fix to JSON serializer & dumper

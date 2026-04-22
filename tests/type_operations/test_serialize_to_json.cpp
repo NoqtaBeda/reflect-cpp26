@@ -23,6 +23,7 @@
 #include <gmock/gmock-matchers.h>
 
 #include <optional>
+#include <print>
 #include <reflect_cpp26/enum/enum_bitwise_operators.hpp>
 #include <reflect_cpp26/type_operations/serialize_to_json.hpp>
 #include <variant>

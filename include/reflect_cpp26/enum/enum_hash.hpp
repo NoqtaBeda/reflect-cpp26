@@ -27,17 +27,9 @@
 #include <reflect_cpp26/utils/string_hash.hpp>
 
 namespace reflect_cpp26 {
-namespace impl {
-template <class E>
-constexpr uint64_t enum_hash() {
-  constexpr auto Order = enum_entry_order::by_name;
-  auto repr_str = reflect_cpp26::enum_json<E, Order>();
-  return bkdr_hash64(repr_str);
-}
-}  // namespace impl
-
 template <enum_type E>
-constexpr uint64_t enum_hash_v = impl::enum_hash<std::remove_cv_t<E>>();
+constexpr size_t enum_hash_v =
+    bkdr_hash(enum_json<std::remove_cv_t<E>, enum_entry_order::by_name>());
 }  // namespace reflect_cpp26
 
 #endif  // REFLECT_CPP26_ENUM_ENUM_HASH_HPP

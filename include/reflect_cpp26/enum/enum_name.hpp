@@ -30,17 +30,17 @@ namespace reflect_cpp26 {
 struct enum_name_t {
   template <enum_type E>
   static constexpr auto operator()(E value) -> std::string_view {
-    const auto& [name, found] = impl::enum_name_map_v<E>.get(impl::to_int64_or_uint64(value));
-    return found ? static_cast<std::string_view>(name) : std::string_view{};
+    auto* p = impl::enum_name_map_v<E>.find(impl::promoted(value));
+    return p ? static_cast<std::string_view>(*p) : std::string_view{};
   }
 };
 
 struct enum_name_opt_t {
   template <enum_type E>
   static constexpr auto operator()(E value) -> std::optional<std::string_view> {
-    const auto& [name, found] = impl::enum_name_map_v<E>.get(impl::to_int64_or_uint64(value));
-    if (found) {
-      return static_cast<std::string_view>(name);
+    auto* p = impl::enum_name_map_v<E>.find(impl::promoted(value));
+    if (p != nullptr) {
+      return static_cast<std::string_view>(*p);
     }
     return std::nullopt;
   }

@@ -32,42 +32,35 @@
 
 namespace reflect_cpp26::impl {
 template <class T>
-struct to_int64_or_uint64_traits;
+struct promoted_traits;
 
 template <std::signed_integral T>
-struct to_int64_or_uint64_traits<T> {
-  using type = int64_t;
+struct promoted_traits<T> {
+  using type = std::conditional_t<sizeof(T) <= sizeof(ssize_t), ssize_t, T>;
 };
 
 template <std::unsigned_integral T>
-struct to_int64_or_uint64_traits<T> {
-  using type = uint64_t;
+struct promoted_traits<T> {
+  using type = std::conditional_t<sizeof(T) <= sizeof(size_t), size_t, T>;
 };
 
 template <enum_type T>
-struct to_int64_or_uint64_traits<T> {
-  using underlying_type = std::underlying_type_t<T>;
-  using type = typename to_int64_or_uint64_traits<underlying_type>::type;
+struct promoted_traits<T> {
+  using type = typename promoted_traits<std::underlying_type_t<T>>::type;
 };
 
 template <class T>
-using to_int64_or_uint64_t = typename to_int64_or_uint64_traits<T>::type;
+using promoted_t = typename promoted_traits<T>::type;
 
 template <class T>
-constexpr auto to_int64_or_uint64(T value) {
+constexpr auto promoted(T value) {
   static_assert(sizeof(T) <= sizeof(int64_t), "Extended big integer types are not supported.");
-  if constexpr (std::is_enum_v<T>) {
-    return to_int64_or_uint64(std::to_underlying(value));
-  } else if constexpr (std::is_signed_v<T>) {
-    return static_cast<int64_t>(value);  // Sign bit extension
-  } else {
-    return static_cast<uint64_t>(value);  // Zero extension
-  }
+  return static_cast<promoted_t<T>>(value);
 }
 
 template <class E>
 consteval auto make_enum_name_map_kv_pairs() {
-  using kv_pair_t = std::pair<to_int64_or_uint64_t<E>, meta_string_view>;
+  using kv_pair_t = std::pair<promoted_t<E>, meta_string_view>;
   auto res = std::vector<kv_pair_t>{};
   res.reserve(enum_count_v<E>);
 
@@ -76,7 +69,7 @@ consteval auto make_enum_name_map_kv_pairs() {
   for (auto i = 0zU, n = enum_count_v<E>; i < n; i++) {
     auto ev = extract<E>(entries[i]);
     auto msv = meta_string_view::from_std_string_view(names[i]);
-    res.emplace_back(to_int64_or_uint64(ev), msv);
+    res.emplace_back(promoted(ev), msv);
   }
   // Original order is preserved for multiple entries with the same underlying value
   std::ranges::stable_sort(res, {}, get_first);
@@ -95,40 +88,39 @@ consteval auto make_enum_name_map() {
   return REFLECT_CPP26_INTEGRAL_KEY_FIXED_MAP(make_enum_name_map_kv_pairs<E>(), options);
 }
 
-template <class E, bool CaseInsensitive>
+template <class E>
 consteval auto make_enum_from_string_kv_pairs() {
-  using kv_pair_t = std::pair<meta_string_view, to_int64_or_uint64_t<E>>;
+  using kv_pair_t = std::pair<meta_string_view, promoted_t<E>>;
   auto res = std::vector<kv_pair_t>{};
   res.reserve(enum_count_v<E>);
 
   auto entries = enumerators_of(^^E);
-  const auto& names = []() -> const auto& {
-    if constexpr (CaseInsensitive) {
-      return enum_names_tolower_v<E>;
-    } else {
-      return enum_names_v<E>;
-    }
-  }();
   for (auto i = 0zU, n = enum_count_v<E>; i < n; i++) {
     auto ev = extract<E>(entries[i]);
-    auto msv = meta_string_view::from_std_string_view(names[i]);
-    res.emplace_back(msv, to_int64_or_uint64(ev));
+    auto msv = meta_string_view::from_std_string_view(enum_names_v<E>[i]);
+    res.emplace_back(msv, promoted(ev));
   }
   return res;
 }
 
 template <class E>
 consteval auto make_enum_from_string_map() {
-  return REFLECT_CPP26_STRING_KEY_FIXED_MAP(make_enum_from_string_kv_pairs<E, false>());
+  constexpr auto options = string_key_fixed_map_options{
+      .already_unique = true,
+      .ascii_case_insensitive = false,
+      .adjusts_alignment = true,
+  };
+  return REFLECT_CPP26_STRING_KEY_FIXED_MAP(make_enum_from_string_kv_pairs<E>(), options);
 }
 
 template <class E>
 consteval auto make_enum_from_ci_string_map() {
   constexpr auto options = string_key_fixed_map_options{
+      .already_unique = false,
       .ascii_case_insensitive = true,
       .adjusts_alignment = true,
   };
-  return REFLECT_CPP26_STRING_KEY_FIXED_MAP(make_enum_from_string_kv_pairs<E, true>(), options);
+  return REFLECT_CPP26_STRING_KEY_FIXED_MAP(make_enum_from_string_kv_pairs<E>(), options);
 }
 
 union enum_indices_t {
@@ -164,12 +156,12 @@ consteval auto make_enum_index_map_kv_pairs() {
     entry_tuples.emplace_back(i, std::meta::identifier_of(entries[i]));
   }
 
-  using kv_pair_t = std::pair<to_int64_or_uint64_t<E>, enum_indices_t>;
+  using kv_pair_t = std::pair<promoted_t<E>, enum_indices_t>;
   auto res = std::vector<kv_pair_t>{};
   res.reserve(entries.size());
   for (auto i = 0zU, n = entries.size(); i < n; i++) {
     auto cur = entries[i];
-    res.emplace_back(to_int64_or_uint64(extract<E>(cur)),
+    res.emplace_back(promoted(extract<E>(cur)),
                      enum_indices_t{.original = static_cast<uint16_t>(i)});
   }
   std::ranges::sort(entry_tuples, {}, get_second);

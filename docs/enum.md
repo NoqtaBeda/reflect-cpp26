@@ -1,11 +1,12 @@
 ## Introduction
 
 reflect_cpp26 provides common functionality for enum types, including but not limited to:
-* enum metadata: `enum_entries`, `enum_names`, `enum_values`, `enum_type_name`, etc.;
-* conversion between enum value and string: `enum_name`, `enum_cast`, etc.;
-* enum flag value decomposition and string parsing: `enum_flags_name`, `enum_flags_cast`, etc.;
-* `std::format` and `fmt::format` support;
-* operator overloading support (including bitwise and comparison operators).
+
+- enum metadata: `enum_entries`, `enum_names`, `enum_values`, `enum_type_name`, etc.;
+- conversion between enum value and string: `enum_name`, `enum_cast`, etc.;
+- enum flag value decomposition and string parsing: `enum_flags_name`, `enum_flags_cast`, etc.;
+- `std::format` and `fmt::format` support;
+- operator overloading support (including bitwise and comparison operators).
 
 Part of API design resembles [magic_enum](https://github.com/Neargye/magic_enum), a well-known enum static reflection library based on compiler magic before C++26.
 
@@ -27,10 +28,10 @@ enum class enum_entry_order {
 }  // namespace reflect_cpp26
 ```
 
-* `enum_entry_order` is used for customized ordering when accessing entry list of enum type:
-  * `original`: Keeps the order of enum definition (which is the default option);
-  * `by_value`: Sorts enum entries by their underlying values in ascending order. For multiple entries with the same underlying value, their original order is preserved;
-  * `by_name`: Sorts enum entries by their names, case-sensitive in ascending order.
+- `enum_entry_order` is used for customized ordering when accessing entry list of enum type:
+  - `original`: Keeps the order of enum definition (which is the default option);
+  - `by_value`: Sorts enum entries by their underlying values in ascending order. For multiple entries with the same underlying value, their original order is preserved;
+  - `by_name`: Sorts enum entries by their names, case-sensitive in ascending order.
 
 ### Enum Metadata
 
@@ -50,10 +51,11 @@ constexpr std::string_view enum_type_display_string_v;
 }  // namespace reflect_cpp26
 ```
 
-* `enum_type_name_v<E>` gets the type name (dealiased, cv-qualifiers discarded) of given enum type.
-* `enum_type_display_string_v<E>` gets the prettier type name of given enum type, which is implementation-defined by the compiler.
+- `enum_type_name_v<E>` gets the type name (dealiased, cv-qualifiers discarded) of given enum type.
+- `enum_type_display_string_v<E>` gets the prettier type name of given enum type, which is implementation-defined by the compiler.
 
 Example:
+
 ```cpp
 enum class foo: int;
 namespace bar {
@@ -85,10 +87,11 @@ constexpr size_t enum_unique_count_v;
 }  // namespace reflect_cpp26
 ```
 
-* `enum_count_v<E>` gets the number of entries in given enum type.
-* `enum_unique_count_v<E>` gets the number of unique entries (i.e. with distinct underlying values).
+- `enum_count_v<E>` gets the number of entries in given enum type.
+- `enum_unique_count_v<E>` gets the number of unique entries (i.e. with distinct underlying values).
 
 Example:
+
 ```cpp
 enum class foo {
   zero = 0,
@@ -119,9 +122,10 @@ constexpr std::span<const enum_entry_t<E>> enum_entries_v;
 }  // namespace reflect_cpp26
 ```
 
-* `enum_entries_v<E>` gets the (value, string) pair list of given enum type.
+- `enum_entries_v<E>` gets the (value, string) pair list of given enum type.
 
 Example:
+
 ```cpp
 enum class foo {
   three = 3,
@@ -163,12 +167,13 @@ constexpr std::span<const std::string_view> enum_names_tolower_v;
 }  // namespace reflect_cpp26
 ```
 
-* `enum_names_v<E>` gets the name list of given enum type.
-* `enum_names_tolower_v<E>` gets the case-insensitive name list of given enum type where each name is converted to all-lower-case. Note:
-  * Duplicated strings may exist in `enum_names_tolower_v<E>` if multiple enum names are equal by case-insensitive comparison;
-  * **ASCII only**: Non-ASCII characters are NOT supported.
+- `enum_names_v<E>` gets the name list of given enum type.
+- `enum_names_tolower_v<E>` gets the case-insensitive name list of given enum type where each name is converted to all-lower-case. Note:
+  - Duplicated strings may exist in `enum_names_tolower_v<E>` if multiple enum names are equal by case-insensitive comparison;
+  - **ASCII only**: Non-ASCII characters are NOT supported.
 
 Example:
+
 ```cpp
 enum foo {
   foo_First = 1,
@@ -208,8 +213,8 @@ constexpr std::span<const std::remove_cv_t<E>> enum_values_v;
 }  // namespace reflect_cpp26
 ```
 
-* `enum_values_v<E>` gets the value list of given enum type.
-Example see below (combined with the next section "Enum Reflection Entry List").
+- `enum_values_v<E>` gets the value list of given enum type.
+  Example see below (combined with the next section "Enum Reflection Entry List").
 
 #### Enum Reflection Entry List
 
@@ -224,10 +229,11 @@ constexpr std::span<const std::meta::info> enum_meta_entries_v;
 }  // namespace reflect_cpp26
 ```
 
-* `enum_meta_entries_v<E>` gets the reflector list of entries in given enum type.
-For the default order, `enum_meta_entries_v<E>` is equivalent to `std::define_static_array(enumerators_of(^^E))` with less typing.
+- `enum_meta_entries_v<E>` gets the reflector list of entries in given enum type.
+  For the default order, `enum_meta_entries_v<E>` is equivalent to `std::define_static_array(enumerators_of(^^E))` with less typing.
 
 Example:
+
 ```cpp
 enum class foo {
   three = 3,
@@ -263,16 +269,18 @@ constexpr uint64_t enum_hash_v;
 }  // namespace reflect_cpp26
 ```
 
-* `enum_hash_v<E>` gets the 64-bit hash value of given enum type.
+- `enum_hash_v<E>` gets the 64-bit hash value of given enum type.
 
 Any change to the entry set (including insertion, deletion and modification to entry name or value) will change the hash value. But only changing entry order or name of the enum type itself will not.
 Enum hash is useful to guard an enum type from unexpected updates with:
-* new entries added, until the developer finishes work with this new entry;
-* existing entries deleted, until the developer finishes cleanup work with the deleted entry;
-* entry name change, to enforce semantic consistency;
-* entry value change.
+
+- new entries added, until the developer finishes work with this new entry;
+- existing entries deleted, until the developer finishes cleanup work with the deleted entry;
+- entry name change, to enforce semantic consistency;
+- entry value change.
 
 Example:
+
 ```cpp
 enum class foo_0 { one = 1, two = 2, three = 3 };
 enum class foo_1 { one = 1, two = 2, three = 3 };
@@ -309,10 +317,11 @@ constexpr std::string_view enum_json_static_v;
 }  // namespace reflect_cpp26
 ```
 
-* `enum_json<E>()` gets the JSON representation of given enum class in compact style. The returned `std::string` is built (possibly) during runtime.
-* `enum_json_static_v<E>` gets the same string which is built during compile-time and guaranteed to be null-terminated.
+- `enum_json<E>()` gets the JSON representation of given enum class in compact style. The returned `std::string` is built (possibly) during runtime.
+- `enum_json_static_v<E>` gets the same string which is built during compile-time and guaranteed to be null-terminated.
 
 Example:
+
 ```cpp
 enum class foo {
   three = 3,
@@ -356,12 +365,13 @@ constexpr auto enum_name_opt = enum_name_opt_t{};
 }  // namespace reflect_cpp26
 ```
 
-* (1) `enum_name(e)` gets the name of given enum value `e`, or `std::string_view{}` if no such value defined in the enum type.
-* (2) `enum_name_opt(e)` gets the name of given enum value, or `std::nullopt` if no such value defined in the enum type. This version is helpful with monadic operations of `std::optional` since C++23.
+- (1) `enum_name(e)` gets the name of given enum value `e`, or `std::string_view{}` if no such value defined in the enum type.
+- (2) `enum_name_opt(e)` gets the name of given enum value, or `std::nullopt` if no such value defined in the enum type. This version is helpful with monadic operations of `std::optional` since C++23.
 
 If multiple enum entries have the same value as `e`, name of the first one by definition order is returned.
 
 Example:
+
 ```cpp
 enum class foo {
   one = 1,
@@ -424,11 +434,12 @@ constexpr auto enum_cast = enum_cast_t<std::remove_cv_t<E>>{};
 }  // namespace reflect_cpp26
 ```
 
-* (1.1) `enum_cast<E>(str)` converts given string to the enum value whose name matches, or `std::nullopt` if such enum entry does not exist;
-* (1.2) `enum_cast<E>(ascii_case_insensitive, str)` is similar to (1.1) yet finds enum entry in a case-insensitive manner. Compilation error will be raised in case of entry name duplication or non-ASCII characters in enum entry definition;
-* (2) `enum_cast<E>(value)` converts given integer to the enum value whose underlying value matches, or `std::nullopt` if such enum entry does not exist. signedness-safe and narrowing-safe comparison is performed.
+- (1.1) `enum_cast<E>(str)` converts given string to the enum value whose name matches, or `std::nullopt` if such enum entry does not exist;
+- (1.2) `enum_cast<E>(ascii_case_insensitive, str)` is similar to (1.1) yet finds enum entry in a case-insensitive manner. Compilation error will be raised in case of entry name duplication or non-ASCII characters in enum entry definition;
+- (2) `enum_cast<E>(value)` converts given integer to the enum value whose underlying value matches, or `std::nullopt` if such enum entry does not exist. signedness-safe and narrowing-safe comparison is performed.
 
 Examples:
+
 ```cpp
 enum class foo : int {
   one = 1,
@@ -478,12 +489,13 @@ constexpr auto enum_contains = enum_contains_t<std::remove_cv_t<E>>{};
 }  // namespace reflect_cpp26
 ```
 
-* (1) `enum_contains<E>(e)` checks whether given enum value is defined in the enum type;
-* (2) `enum_contains<E>(value)` checks whether some enum entry with given underlying value exists in the enum type. Signedness-safe and narrowing-safe comparison is performed;
-* (3.1) `enum_contains<E>(str)` checks whether some enum entry with given name exists in the enum type;
-* (3.2) `enum_contains<E>(ascii_case_insensitive, str)` is similar to (3.1) yet in a case-insensitive manner. Compilation error will be raised in case of non-ASCII characters in enum entry definition.
+- (1) `enum_contains<E>(e)` checks whether given enum value is defined in the enum type;
+- (2) `enum_contains<E>(value)` checks whether some enum entry with given underlying value exists in the enum type. Signedness-safe and narrowing-safe comparison is performed;
+- (3.1) `enum_contains<E>(str)` checks whether some enum entry with given name exists in the enum type;
+- (3.2) `enum_contains<E>(ascii_case_insensitive, str)` is similar to (3.1) yet in a case-insensitive manner. Compilation error will be raised in case of non-ASCII characters in enum entry definition.
 
 Example:
+
 ```cpp
 enum class foo : int {
   one = 1,
@@ -553,12 +565,13 @@ constexpr auto enum_unique_index_opt = enum_unique_index_opt_t{};
 }  // namespace reflect_cpp26
 ```
 
-* (1) `enum_index_by<Order>(e)` or `enum_index(e)` (taking the original definition order) gets the index (0-based) of given enum value by specific order, or returns `npos` (which is -1 of type `size_t`) if such enum value is not defined. For multiple enum entries with duplicated underlying value, the first one is taken.
-* (2) `enum_index_opt_by<Order>(e)` or `enum_index_opt(e)` (taking the original definition order) is similar to (1) yet returns `std::nullopt` on undefined enum values, which is useful for monadic operations;
-* (3) `enum_unique_index(e)` gets the index (0-based) of given value after sorting all the enum entries by underlying value and removing all duplicated entries, or `npos` if such enum value is not defined;
-* (4) `enum_unique_index_opt(e)` is similar to (3) yet returns `std::nullopt` on undefined enum values.
+- (1) `enum_index_by<Order>(e)` or `enum_index(e)` (taking the original definition order) gets the index (0-based) of given enum value by specific order, or returns `npos` (which is -1 of type `size_t`) if such enum value is not defined. For multiple enum entries with duplicated underlying value, the first one is taken.
+- (2) `enum_index_opt_by<Order>(e)` or `enum_index_opt(e)` (taking the original definition order) is similar to (1) yet returns `std::nullopt` on undefined enum values, which is useful for monadic operations;
+- (3) `enum_unique_index(e)` gets the index (0-based) of given value after sorting all the enum entries by underlying value and removing all duplicated entries, or `npos` if such enum value is not defined;
+- (4) `enum_unique_index_opt(e)` is similar to (3) yet returns `std::nullopt` on undefined enum values.
 
 Example:
+
 ```cpp
 enum class foo : int {  // | original | by_value | by_name | enum_unique_index |
   one = 1,              // |     0    |     1    |    4    |         1         |
@@ -639,18 +652,19 @@ constexpr auto enum_flags_name_to = enum_flags_name_to_t{};
 }  // namespace reflect_cpp26
 ```
 
-* (1.1, 1.2) `enum_flags_name(e, delim)` gets the string representation of given enum flags value, entries separated by given delimiter (which is `'|'` by default). If `e` can not be decomposed as disjunction of enum entries defined, `std::nullopt` is returned;
-* (2.1, 2.2) `enum_flags_name_to(iter, sentinel, e, delim)` writes the string representation of given enum flags value to buffer `[iter, sentinel)`, entries separated by given delimiter (which is `'|'` by default). Return value contains two fields `{ec, out}` by the following rules:
-  * If `e` can be decomposed as disjunction of enum entries defined, and given buffer `[iter, sentinel)` is enough to hold the result string, then `ec = std::errc{}` and `out` points to end position of the string written, i.e. `[iter, out)` contains the result string;
-  * If `e` can be decomposed as disjunction of enum entries defined, but given buffer `[iter, sentinel)` can not hold the result string, then `ec = std::errc::value_too_large` and `out` (along with the partial string written to `[iter, out)`) is unspecified;
-  * If `e` can not be decomposed as disjunction of enum entries defined, then `ec = std::errc::invalid_argument` and `out = iter`, i.e. nothing will be written.
-* (2.3, 2.4) `enum_flags_name_to(out, e, delim)` writes the string representation of given enum flags value to given output stream, entries separated by given delimiter (which is `'|'` by default). Return value is an error code by the following rules:
-  * If `e` can be decomposed as disjunction of enum entries defined, then `std::errc{}` is returned;
-  * Otherwise, `std::errc::invalid_argument` is returned and nothing is written to the given output stream.
+- (1.1, 1.2) `enum_flags_name(e, delim)` gets the string representation of given enum flags value, entries separated by given delimiter (which is `'|'` by default). If `e` can not be decomposed as disjunction of enum entries defined, `std::nullopt` is returned;
+- (2.1, 2.2) `enum_flags_name_to(iter, sentinel, e, delim)` writes the string representation of given enum flags value to buffer `[iter, sentinel)`, entries separated by given delimiter (which is `'|'` by default). Return value contains two fields `{ec, out}` by the following rules:
+  - If `e` can be decomposed as disjunction of enum entries defined, and given buffer `[iter, sentinel)` is enough to hold the result string, then `ec = std::errc{}` and `out` points to end position of the string written, i.e. `[iter, out)` contains the result string;
+  - If `e` can be decomposed as disjunction of enum entries defined, but given buffer `[iter, sentinel)` can not hold the result string, then `ec = std::errc::value_too_large` and `out` (along with the partial string written to `[iter, out)`) is unspecified;
+  - If `e` can not be decomposed as disjunction of enum entries defined, then `ec = std::errc::invalid_argument` and `out = iter`, i.e. nothing will be written.
+- (2.3, 2.4) `enum_flags_name_to(out, e, delim)` writes the string representation of given enum flags value to given output stream, entries separated by given delimiter (which is `'|'` by default). Return value is an error code by the following rules:
+  - If `e` can be decomposed as disjunction of enum entries defined, then `std::errc{}` is returned;
+  - Otherwise, `std::errc::invalid_argument` is returned and nothing is written to the given output stream.
 
 For overload (2.1) and (2.2), `std::unreachable_sentinel` can be used as the second argument for better performance (boundary checks eliminated) when it's ensured that the destination buffer is large enough to hold all possible values.
 
 Example:
+
 ```cpp
 enum class permissions {
   read = 1,
@@ -737,11 +751,12 @@ constexpr auto enum_flags_cast = enum_flags_cast_t<std::remove_cv_t<E>>{};
 }  // namespace reflect_cpp26
 ```
 
-* (1.1, 1.2) `enum_flags_cast<E>(str, delim)` Returns the enum flag value if input str can be decomposed as enum entry names split by given delimiter, or `std::nullopt` otherwise. Each segment in input `str` is trimmed before parsing such that leading and trailing ASCII space characters of the segment are removed;
-* (2.1, 2.2) `enum_flags_cast<E>(ascii_case_insensitive, str, delim)` is similar to (1.1) while input segments are case-insensitive. Compilation error will be raised if duplicated names exist in enum definition;
-* (3) `enum_flags_cast<E>(value)` casts value to enum type `E` if it can be decomposed as disjunction of enum entries defined in `E`, or returns `std::nullopt` otherwise. Signedness-safe and narrowing-safe comparison is performed.
+- (1.1, 1.2) `enum_flags_cast<E>(str, delim)` Returns the enum flag value if input str can be decomposed as enum entry names split by given delimiter, or `std::nullopt` otherwise. Each segment in input `str` is trimmed before parsing such that leading and trailing ASCII space characters of the segment are removed;
+- (2.1, 2.2) `enum_flags_cast<E>(ascii_case_insensitive, str, delim)` is similar to (1.1) while input segments are case-insensitive. Compilation error will be raised if duplicated names exist in enum definition;
+- (3) `enum_flags_cast<E>(value)` casts value to enum type `E` if it can be decomposed as disjunction of enum entries defined in `E`, or returns `std::nullopt` otherwise. Signedness-safe and narrowing-safe comparison is performed.
 
 Example:
+
 ```cpp
 enum class permissions {
   read = 1,
@@ -826,16 +841,17 @@ constexpr auto enum_switch(Func&& func, E e, T&& default_value) -> std::decay_t<
 }  // namespace reflect_cpp26
 ```
 
-* (1) `enum_switch(func, e)` invokes `func(std::integral_constant<E, e>{}) -> void`, or no-op if `e` does not exist in enum type definition;
-* (2) `enum_switch(func, e)` invokes `func(std::integral_constant<E, e>{}) -> void`, or invokes `fallback(e)` if `e` does not exist in enum type definition;
-* (3) `enum_switch<T>(func, e)` invokes `func(std::integral_constant<E, e>{}) -> T'`, or returns `std::nullopt` if `e` does not exist in enum type definition. Return type `T'` of `func` will be converted to destination type `T`;
-* (4) `enum_switch<T>(func, e, default_value)` invokes `func(std::integral_constant<E, e>{}) -> T'`, or returns `default_value` if `e` does not exist in enum type definition. Keep an eye on the type `T` of `default_value` as the return type `T'` of `func` will be converted to destination type `T`.
+- (1) `enum_switch(func, e)` invokes `func(std::cw<e>) -> void`, or no-op if `e` does not exist in enum type definition;
+- (2) `enum_switch(func, e)` invokes `func(std::cw<e>) -> void`, or invokes `fallback(e)` if `e` does not exist in enum type definition;
+- (3) `enum_switch<T>(func, e)` invokes `func(std::cw<e>) -> T'`, or returns `std::nullopt` if `e` does not exist in enum type definition. Return type `T'` of `func` will be converted to destination type `T`;
+- (4) `enum_switch<T>(func, e, default_value)` invokes `func(std::cw<e>) -> T'`, or returns `default_value` if `e` does not exist in enum type definition. Keep an eye on the type `T` of `default_value` as the return type `T'` of `func` will be converted to destination type `T`.
 
 The function object should be invocable with single argument of type `std::integral_constant<E, e>` for each `e` defined in the enum type.
 
 For GCC and Clang, always-inline attributes are used to ensure the same performance as hand-written switch-case sequence.
 
 Example:
+
 ```cpp
 enum class opcode : uint8_t {
   nop, mov,
@@ -907,12 +923,14 @@ struct fmt::formatter<E>;
 ```
 
 reflect_cpp26 provides formatting support for both `std::format` and `fmt::format`. Include this header to enable enum formatting.
-* For enum non-flag values, no format specifier is needed;
-* For enum flag values, the format specifier should start with character `'f'` or `'F'`, then optionally follows the delimiter string.
+
+- For enum non-flag values, no format specifier is needed;
+- For enum flag values, the format specifier should start with character `'f'` or `'F'`, then optionally follows the delimiter string.
 
 `enum_name` and `enum_flags_name` are used respectively. Undefined enum values (or enum flag values not decomposable to disjunction of enum entries defined) will be output by pattern `(%1)%2`, where `%1` is the type name and `%2` is the underlying value.
 
 Example:
+
 ```cpp
 // Include this header to enable enum formatting
 #include <reflect_cpp26/enum/enum_format.hpp>
@@ -945,16 +963,16 @@ std::println("{:F}", static_cast<permissions>(-1));
 
 Defined in header `<reflect_cpp26/enum/enum_bitwise_operators.hpp>`.
 
-* (1) The macro `REFLECT_CPP26_DEFINE_ENUM_BITWISE_BINARY_OPERATORS(E)` defines overloads of the following operators for enum type `E`:
-  * `operator&` and `operator&=`;
-  * `operator|` and `operator|=`;
-  * `operator^` and `operator^=`.
-* (2) The macro `REFLECT_CPP26_DEFINE_ENUM_BITWISE_OPERATORS(E)` defines overloads of `operator~` along with all the binary operators in (1) for enum type `E`;
-* (3) `using namespace reflect_cpp26::enum_bitwise_operators` enables all the bitwise operators in (2) for enum types in the `using` scope.
+- (1) The macro `REFLECT_CPP26_DEFINE_ENUM_BITWISE_BINARY_OPERATORS(E)` defines overloads of the following operators for enum type `E`:
+  - `operator&` and `operator&=`;
+  - `operator|` and `operator|=`;
+  - `operator^` and `operator^=`.
+- (2) The macro `REFLECT_CPP26_DEFINE_ENUM_BITWISE_OPERATORS(E)` defines overloads of `operator~` along with all the binary operators in (1) for enum type `E`;
+- (3) `using namespace reflect_cpp26::enum_bitwise_operators` enables all the bitwise operators in (2) for enum types in the `using` scope.
 
 #### Enum Comparison Operators Support
 
 Defined in header `<reflect_cpp26/enum/enum_comparison_operators.hpp>`.
 
-* (1) The macro `REFLECT_CPP26_DEFINE_ENUM_COMPARISON_OPERATORS(E)` defines overloads of `operator<=>` and `operator==` for enum type `E` by its underlying value;
-* (2) `using namespace reflect_cpp26::enum_comparison_operators` enables `operator<=>` and `operator==` for enum types in the `using` scope.
+- (1) The macro `REFLECT_CPP26_DEFINE_ENUM_COMPARISON_OPERATORS(E)` defines overloads of `operator<=>` and `operator==` for enum type `E` by its underlying value;
+- (2) `using namespace reflect_cpp26::enum_comparison_operators` enables `operator<=>` and `operator==` for enum types in the `using` scope.

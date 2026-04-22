@@ -31,7 +31,7 @@
 #include <reflect_cpp26/type_traits/enum_types.hpp>
 #include <reflect_cpp26/type_traits/serializable_types.hpp>
 #include <reflect_cpp26/type_traits/template_instance.hpp>
-#include <reflect_cpp26/utils/string_utils.hpp>
+#include <reflect_cpp26/utils/string_utility.hpp>
 #include <variant>
 
 namespace reflect_cpp26 {

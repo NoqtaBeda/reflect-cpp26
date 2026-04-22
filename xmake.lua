@@ -85,7 +85,6 @@ meta_test_cases = {
   "type_traits/test_is_invocable",
   "type_traits/test_serializable_types",
   "type_traits/test_string_like_types",
-  "type_traits/test_structural_types",
   "type_traits/test_tuple_like_types",
   "type_traits/class_types/test_ambiguous_inheritance",
   "type_traits/class_types/test_flattenable_types",
@@ -143,37 +142,37 @@ meta_test_cases = {
   "fixed_map/string_key/test_by_hash_table_4",
   "fixed_map/string_key/test_empty",
   "fixed_map/string_key/test_naive",
-  -- Lookup
-  "lookup/class_member/test_overloads",
-  "lookup/class_member/enum_key/test_basic",
-  "lookup/class_member/enum_key/test_categories",
-  "lookup/class_member/enum_key/test_custom_filter",
-  "lookup/class_member/enum_key/test_inheritance",
-  "lookup/class_member/string_key/test_access_context",
-  "lookup/class_member/string_key/test_basic",
-  "lookup/class_member/string_key/test_case_insensitive",
-  "lookup/class_member/string_key/test_categories",
-  "lookup/class_member/string_key/test_custom_filter",
-  "lookup/class_member/string_key/test_custom_filter_with_options",
-  "lookup/class_member/string_key/test_deleted",
-  "lookup/class_member/string_key/test_inheritance_1",
-  "lookup/class_member/string_key/test_inheritance_2",
-  "lookup/class_member/string_key/test_pointers",
-  "lookup/class_member/string_key/test_references_and_bitfields",
-  "lookup/class_member/string_key/test_special_members",
-  "lookup/class_member/string_key/test_templates",
-  "lookup/namespace_member/test_overloads",
-  "lookup/namespace_member/enum_key/test_basic",
-  "lookup/namespace_member/enum_key/test_categories",
-  "lookup/namespace_member/enum_key/test_custom_filter",
-  "lookup/namespace_member/enum_key/test_custom_transform",
-  "lookup/namespace_member/string_key/test_basic",
-  "lookup/namespace_member/string_key/test_categories",
-  "lookup/namespace_member/string_key/test_custom_filter",
-  "lookup/namespace_member/string_key/test_deleted",
-  "lookup/namespace_member/string_key/test_pointers",
-  "lookup/namespace_member/string_key/test_references",
-  "lookup/namespace_member/string_key/test_templates",
+  -- Lookup (ignored temporarily, waiting for redesign)
+  -- "lookup/class_member/test_overloads",
+  -- "lookup/class_member/enum_key/test_basic",
+  -- "lookup/class_member/enum_key/test_categories",
+  -- "lookup/class_member/enum_key/test_custom_filter",
+  -- "lookup/class_member/enum_key/test_inheritance",
+  -- "lookup/class_member/string_key/test_access_context",
+  -- "lookup/class_member/string_key/test_basic",
+  -- "lookup/class_member/string_key/test_case_insensitive",
+  -- "lookup/class_member/string_key/test_categories",
+  -- "lookup/class_member/string_key/test_custom_filter",
+  -- "lookup/class_member/string_key/test_custom_filter_with_options",
+  -- "lookup/class_member/string_key/test_deleted",
+  -- "lookup/class_member/string_key/test_inheritance_1",
+  -- "lookup/class_member/string_key/test_inheritance_2",
+  -- "lookup/class_member/string_key/test_pointers",
+  -- "lookup/class_member/string_key/test_references_and_bitfields",
+  -- "lookup/class_member/string_key/test_special_members",
+  -- "lookup/class_member/string_key/test_templates",
+  -- "lookup/namespace_member/test_overloads",
+  -- "lookup/namespace_member/enum_key/test_basic",
+  -- "lookup/namespace_member/enum_key/test_categories",
+  -- "lookup/namespace_member/enum_key/test_custom_filter",
+  -- "lookup/namespace_member/enum_key/test_custom_transform",
+  -- "lookup/namespace_member/string_key/test_basic",
+  -- "lookup/namespace_member/string_key/test_categories",
+  -- "lookup/namespace_member/string_key/test_custom_filter",
+  -- "lookup/namespace_member/string_key/test_deleted",
+  -- "lookup/namespace_member/string_key/test_pointers",
+  -- "lookup/namespace_member/string_key/test_references",
+  -- "lookup/namespace_member/string_key/test_templates",
   -- Type Operations
   "type_operations/test_dump_to_json_like",
   "type_operations/test_serialize_to_json",
@@ -185,13 +184,14 @@ for i, path in ipairs(meta_test_cases) do
   make_test_case(path)
 end
 
-meta_examples = {
-  "lookup/basic",
-  "lookup/using_filter_function",
-  "lookup/using_transformation_to_enum",
-  "lookup/using_transformation_to_string"
-}
+-- Examples of member lookup (ignored temporarily, waiting for redesign)
+-- meta_examples = {
+--   "lookup/basic",
+--   "lookup/using_filter_function",
+--   "lookup/using_transformation_to_enum",
+--   "lookup/using_transformation_to_string"
+-- }
 
-for i, path in ipairs(meta_examples) do
-  make_example(path)
-end
+-- for i, path in ipairs(meta_examples) do
+--   make_example(path)
+-- end

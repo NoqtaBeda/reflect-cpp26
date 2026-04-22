@@ -57,31 +57,3 @@ TEST(UtilsUtility, InRangeBool) {
   EXPECT_FALSE_STATIC(reflect_cpp26::in_range<bool>(100));
   EXPECT_FALSE_STATIC(reflect_cpp26::in_range<bool>(-100));
 }
-
-// Examples from docs/utils.md - Underlying Type Conversion section
-enum class color : uint8_t {
-  red = 1,
-  green = 2,
-  blue = 3
-};
-
-TEST(UtilsUtility, ToUnderlying) {
-  constexpr auto r = reflect_cpp26::to_underlying(color::red);  // r is uint8_t{1}
-  EXPECT_EQ_STATIC(r, uint8_t{1});
-  EXPECT_TRUE_STATIC((std::is_same_v<decltype(r), const uint8_t>));
-}
-
-// Examples from docs/utils.md - Zero/Sign Extension section
-TEST(UtilsUtility, ZeroSignExtend) {
-  constexpr int8_t x = -1;
-  // x = int8_t(0xFF). Zero-extends to uint64_t(0x00'00'00'FF)
-  EXPECT_EQ_STATIC(reflect_cpp26::zero_extend<uint64_t>(x), uint64_t{255});
-  // x = int8_t(0xFF). Sign-extends to int64_t(0xFF'FF'FF'FF)
-  EXPECT_EQ_STATIC(reflect_cpp26::sign_extend<int64_t>(x), int64_t{-1});
-
-  constexpr uint8_t y = 255;
-  // y = uint8_t(0xFF). Zero-extends to uint64_t(0x00'00'00'FF)
-  EXPECT_EQ_STATIC(reflect_cpp26::zero_extend<uint64_t>(y), uint64_t{255});
-  // y = uint8_t(0xFF). Sign-extends to int64_t(0xFF'FF'FF'FF)
-  EXPECT_EQ_STATIC(reflect_cpp26::sign_extend<int64_t>(y), int64_t{-1});
-}

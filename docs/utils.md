@@ -1226,30 +1226,6 @@ struct in_range_t {
 template <class R>
 constexpr auto in_range = in_range_t<R>{};
 
-// Underlying type conversion
-struct to_underlying_t {
-  template <enum_type E>
-  static constexpr auto operator()(E e);
-};
-constexpr auto to_underlying = to_underlying_t{};
-
-// Zero/sign extension functors
-template <std::unsigned_integral To>
-struct zero_extend_t {
-  template <std::integral From>
-  static constexpr auto operator()(From from);
-};
-template <class To>
-constexpr auto zero_extend = zero_extend_t<To>{};
-
-template <std::signed_integral To>
-struct sign_extend_t {
-  template <std::integral From>
-  static constexpr auto operator()(From from);
-};
-template <class To>
-constexpr auto sign_extend = sign_extend_t<To>{};
-
 }  // namespace reflect_cpp26
 ```
 
@@ -1287,40 +1263,6 @@ reflect_cpp26::in_range<bool>(0);        // true
 reflect_cpp26::in_range<bool>(1);        // true
 reflect_cpp26::in_range<bool>(2);        // false
 reflect_cpp26::in_range<bool>(-1);       // false
-```
-
-#### Underlying Type Conversion
-
-`to_underlying(e)` is a functor wrapper for `std::to_underlying(e)`, which converts an enum value to its underlying type.
-
-Example:
-
-```cpp
-enum class color : uint8_t { red = 1, green = 2, blue = 3 };
-auto r = reflect_cpp26::to_underlying(color::red);  // r is uint8_t{1}
-```
-
-#### Zero/Sign Extension
-
-`zero_extend<To>(from)` and `sign_extend<To>(from)` convert an integer value to a larger integer type with zero-extension or sign-extension respectively:
-
-- `zero_extend<To>(from)`: Converts `from` to unsigned type `To`, interpreting the source as unsigned.
-- `sign_extend<To>(from)`: Converts `from` to signed type `To`, preserving the sign.
-
-Example:
-
-```cpp
-int8_t x = -1;
-// x = int8_t(0xFF). Zero-extends to uint64_t(0x00'00'00'FF)
-reflect_cpp26::zero_extend<uint64_t>(x);  // uint64_t{255}
-// x = int8_t(0xFF). Sign-extends to int64_t(0xFF'FF'FF'FF)
-reflect_cpp26::sign_extend<int64_t>(x);   // int64_t{-1}
-
-uint8_t y = 255;
-// y = uint8_t(0xFF). Zero-extends to uint64_t(0x00'00'00'FF)
-reflect_cpp26::zero_extend<uint64_t>(y);  // uint64_t{255}
-// y = uint8_t(0xFF). Sign-extends to int64_t(0xFF'FF'FF'FF)
-reflect_cpp26::sign_extend<int64_t>(y);   // int64_t{-1}
 ```
 
 ### Wrappers of `<meta>` Components

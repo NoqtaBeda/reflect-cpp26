@@ -64,9 +64,8 @@ TEST(EnumSwitch, WithReturnValue) {
 struct underlying_to_string_t {
   std::string* dest;
 
-  template <class E, auto V>
-  void operator()(std::integral_constant<E, V>) {
-    *dest = "<match> " + std::to_string(std::to_underlying(V));
+  void operator()(auto ec) {
+    *dest = "<match> " + std::to_string(std::to_underlying(ec.value));
   }
 };
 
@@ -104,7 +103,7 @@ constexpr auto constant_tuple = std::tuple{
 
 struct get_from_constant_tuple_t {
   static constexpr auto operator()(auto ec) {
-    constexpr auto I = std::to_underlying(ec());
+    constexpr auto I = std::to_underlying(ec.value);
     return get<I>(constant_tuple);
   }
 };
@@ -127,7 +126,7 @@ TEST(EnumSwitch, Dereference) {
   auto array = std::array{"abc"s, "def"s, "ghi"s, "jkl"s};
   auto default_str = "<n/a>"s;
 
-  get_from_non_constant_tuple_t{}(&array, constant_v<array_index::zero>) += "<test>";
+  get_from_non_constant_tuple_t{}(&array, std::cw<array_index::zero>) += "<test>";
   EXPECT_EQ("abc<test>", array[0]) << "Implementation error with test case.";
 
   auto&& str1 = enum_switch(

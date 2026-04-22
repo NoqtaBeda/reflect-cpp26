@@ -41,30 +41,11 @@ constexpr auto enum_names() /* -> std::array<std::string_view, N> */
 }
 
 template <class E, enum_entry_order Order>
-constexpr auto enum_ci_names() /* -> std::array<std::string_view, N> */
-{
-  auto res = std::array<std::string_view, enum_count_v<E>>{};
-  auto index = 0zU;
-  for (auto e : enum_meta_entries_v<E, Order>) {
-    auto s = ascii_tolower(std::meta::identifier_of(e));
-    res[index++] = std::define_static_string(s);
-  }
-  return res;
-}
-
-template <class E, enum_entry_order Order>
 constexpr auto enum_names_array_v = enum_names<E, Order>();
-
-template <class E, enum_entry_order Order>
-constexpr auto enum_names_tolower_array_v = enum_ci_names<E, Order>();
 }  // namespace impl
 
 template <enum_type E, enum_entry_order Order = enum_entry_order::original>
 constexpr auto enum_names_v = std::span{impl::enum_names_array_v<std::remove_cv_t<E>, Order>};
-
-template <enum_type E, enum_entry_order Order = enum_entry_order::original>
-constexpr auto enum_names_tolower_v =
-    std::span{impl::enum_names_tolower_array_v<std::remove_cv_t<E>, Order>};
 }  // namespace reflect_cpp26
 
 #endif  // REFLECT_CPP26_ENUM_ENUM_NAMES_HPP

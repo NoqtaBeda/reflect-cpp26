@@ -34,7 +34,7 @@ template <class R, class E, class Func>
 constexpr auto enum_switch_is_invocable_r() -> bool {
   template for (constexpr auto entry : enum_meta_entries_v<E>) {
     constexpr auto ev = extract<E>(entry);
-    if (!std::is_invocable_r_v<R, Func, constant_t<ev>>) {
+    if (!std::is_invocable_r_v<R, Func, std::constant_wrapper<ev>>) {
       return false;
     }
   }
@@ -49,7 +49,7 @@ REFLECT_CPP26_ALWAYS_INLINE constexpr auto enum_switch_void(Func&& func, E value
   template for (constexpr auto entry : enum_meta_entries_v<E>) {
     constexpr auto ev = extract<E>(entry);
     if (ev == value) {
-      REFLECT_CPP26_ALWAYS_INLINE_CALL func(constant_v<ev>);
+      REFLECT_CPP26_ALWAYS_INLINE_CALL func(std::cw<ev>);
       return;
     }
   }
@@ -61,7 +61,7 @@ REFLECT_CPP26_ALWAYS_INLINE constexpr auto enum_switch_void_with_fallback_func(
   template for (constexpr auto entry : enum_meta_entries_v<E>) {
     constexpr auto ev = extract<E>(entry);
     if (ev == value) {
-      REFLECT_CPP26_ALWAYS_INLINE_CALL func(constant_v<ev>);
+      REFLECT_CPP26_ALWAYS_INLINE_CALL func(std::cw<ev>);
       return;
     }
   }
@@ -75,8 +75,8 @@ REFLECT_CPP26_ALWAYS_INLINE constexpr auto enum_switch_optional(Func&& func, E v
   template for (constexpr auto entry : enum_meta_entries_v<E>) {
     constexpr auto ev = extract<E>(entry);
     if (ev == value) {
-      REFLECT_CPP26_ALWAYS_INLINE_CALL res = func(constant_v<ev>);
-      break;
+      REFLECT_CPP26_ALWAYS_INLINE_CALL res = func(std::cw<ev>);
+      return res;
     }
   }
   return res;
@@ -87,29 +87,28 @@ REFLECT_CPP26_ALWAYS_INLINE constexpr auto enum_switch_value(Func&& func, E valu
   template for (constexpr auto entry : enum_meta_entries_v<E>) {
     constexpr auto ev = extract<E>(entry);
     if (ev == value) {
-      REFLECT_CPP26_ALWAYS_INLINE_CALL return func(constant_v<ev>);
+      REFLECT_CPP26_ALWAYS_INLINE_CALL return func(std::cw<ev>);
     }
   }
   return init;
 }
 }  // namespace impl
 
-template <enum_type E, class Func, class FallbackFunc>
-  requires(impl::enum_switch_invocable_r<void, E, Func>
-           && std::is_invocable_r_v<void, FallbackFunc, E>)
-REFLECT_CPP26_ALWAYS_INLINE constexpr auto enum_switch(Func&& func,
-                                                       FallbackFunc&& fallback,
-                                                       E value) {
+template <enum_type E, class Func, class Fallback>
+  requires(impl::enum_switch_invocable_r<void, E, Func> && std::is_invocable_r_v<void, Fallback, E>)
+REFLECT_CPP26_ALWAYS_INLINE constexpr void enum_switch(Func&& func, Fallback&& fallback, E value) {
   return impl::enum_switch_void_with_fallback_func(
-      std::forward<Func>(func), std::forward<FallbackFunc>(fallback), value);
+      std::forward<Func>(func), std::forward<Fallback>(fallback), value);
 }
 
 template <non_reference_type T = void, enum_type E, class Func>
   requires(impl::enum_switch_invocable_r<T, E, Func>)
 REFLECT_CPP26_ALWAYS_INLINE constexpr auto enum_switch(Func&& func, E value) {
   if constexpr (std::is_void_v<T>) {
+    // -> void
     return impl::enum_switch_void(std::forward<Func>(func), value);
   } else {
+    // -> std::optional<T>
     return impl::enum_switch_optional<T>(std::forward<Func>(func), value);
   }
 }

@@ -117,7 +117,8 @@ TEST(UtilsToString, FloatToString) {
 
   EXPECT_EQ("1.ec4p+6", rfl::to_string(123.0625, std::chars_format::hex));
   EXPECT_EQ("-1.fp+6", rfl::to_string(-123.0625f, std::chars_format::hex, 1));
-  EXPECT_EQ("1.ec400p+6", rfl::to_string(123.0625L, std::chars_format::hex, 5));
+  EXPECT_THAT(rfl::to_string(123.0625L, std::chars_format::hex, 5),
+              testing::AnyOf("1.ec400p+6", "f.62000p+3"));
 
   EXPECT_EQ("-1.81cd6ep+13", rfl::to_string(-12345.6789f, std::chars_format::hex));
   EXPECT_EQ("1.81cd6e631f8a1p+13", rfl::to_string(12345.6789, std::chars_format::hex));

@@ -151,44 +151,6 @@ constexpr auto cmp_not_equal = cmp_not_equal_t{};
 constexpr auto cmp_three_way = cmp_three_way_t{};
 template <class R>
 constexpr auto in_range = in_range_t<R>{};
-
-struct to_underlying_t {
-  template <enum_type E>
-  static constexpr auto operator()(E e) {
-    return std::to_underlying(e);
-  }
-};
-constexpr auto to_underlying = to_underlying_t{};
-
-template <std::unsigned_integral To>
-struct zero_extend_t {
-  template <std::integral From>
-  static constexpr auto operator()(From from) {
-    if constexpr (std::is_signed_v<From>) {
-      auto u = std::make_unsigned_t<From>(from);
-      return static_cast<To>(u);
-    } else {
-      return static_cast<To>(from);
-    }
-  }
-};
-template <class To>
-constexpr auto zero_extend = zero_extend_t<To>{};
-
-template <std::signed_integral To>
-struct sign_extend_t {
-  template <std::integral From>
-  static constexpr auto operator()(From from) {
-    if constexpr (std::is_signed_v<From>) {
-      return static_cast<To>(from);
-    } else {
-      auto s = std::make_signed_t<From>(from);
-      return static_cast<To>(s);
-    }
-  }
-};
-template <class To>
-constexpr auto sign_extend = sign_extend_t<To>{};
 }  // namespace reflect_cpp26
 
 #endif  // REFLECT_CPP26_UTILS_UTILITY_HPP

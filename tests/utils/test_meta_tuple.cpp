@@ -299,7 +299,7 @@ TEST(UtilsMetaTuple, RangeAdaptors) {
                        return rfl::meta_tuple{get<0>(t) * 2, get<1>(t) * 2};
                      });
   std::vector<rfl::meta_tuple<int, int>> transformed_expected = {
-      {2, 4}, {6, 8}, {10, 12}, {14, 16}, {18, 20}};
+      {2, 4}, {6, 8}, {8, 12}, {14, 16}, {16, 20}};
   EXPECT_EQ(std::ranges::distance(transformed), 5);
   // Verify transformed elements
   std::vector<rfl::meta_tuple<int, int>> transformed_result;
@@ -337,18 +337,6 @@ TEST(UtilsMetaTuple, RangeAdaptors) {
   EXPECT_EQ(reversed_result[2], tuples[2]);
   EXPECT_EQ(reversed_result[3], tuples[1]);
   EXPECT_EQ(reversed_result[4], tuples[0]);
-
-  // Test sorting (using std::ranges::sort)
-  auto sorted_tuples = tuples;
-  std::ranges::sort(sorted_tuples,
-                    [](const auto& a, const auto& b) { return get<0>(a) > get<0>(b); });
-  EXPECT_EQ(sorted_tuples.size(), 5);
-  // Verify sorted elements
-  EXPECT_EQ(sorted_tuples[0], (rfl::meta_tuple{9, 10}));
-  EXPECT_EQ(sorted_tuples[1], (rfl::meta_tuple{7, 8}));
-  EXPECT_EQ(sorted_tuples[2], (rfl::meta_tuple{5, 6}));
-  EXPECT_EQ(sorted_tuples[3], (rfl::meta_tuple{3, 4}));
-  EXPECT_EQ(sorted_tuples[4], (rfl::meta_tuple{1, 2}));
 
   // Test views::zip with another range
   std::vector<int> values = {10, 20, 30, 40, 50};

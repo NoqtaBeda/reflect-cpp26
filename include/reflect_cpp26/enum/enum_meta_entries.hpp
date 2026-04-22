@@ -53,7 +53,7 @@ template <class E>
 consteval auto make_enum_meta_entries_sorted_by_value()
 /* -> std::array<std::meta::info, N> */
 {
-  constexpr auto orig_order = enum_meta_entries_array_v<E, enum_entry_order::original>;
+  constexpr const auto& orig_order = enum_meta_entries_array_v<E, enum_entry_order::original>;
   constexpr auto N = orig_order.size();
 
   if constexpr (N == 0) {
@@ -83,7 +83,7 @@ template <class E>
 consteval auto make_enum_meta_entries_sorted_by_name()
 /* -> std::array<std::meta::info, N> */
 {
-  constexpr auto orig_order = enum_meta_entries_array_v<E, enum_entry_order::original>;
+  constexpr const auto& orig_order = enum_meta_entries_array_v<E, enum_entry_order::original>;
   constexpr auto N = orig_order.size();
 
   if constexpr (N == 0) {

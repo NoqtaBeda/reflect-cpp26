@@ -86,8 +86,8 @@ constexpr bool do_copy_segment(Iter& iter, std::unreachable_sentinel_t, char del
 template <class Iter, class Sentinel, class E, class Delim>
 constexpr auto regular_enum_flags_name_to_impl(Iter iter, Sentinel sentinel, E flags, Delim delim)
     -> enum_flags_name_to_result<Iter> {
-  constexpr auto decomp = enum_flags_decomposer_v<E>;
-  auto remaining = zero_extend<uint64_t>(std::to_underlying(flags));
+  constexpr const auto& decomp = enum_flags_decomposer_v<E>;
+  auto remaining = unsigned_promoted(flags);
   if (remaining == 0) {
     return {.ec = std::errc{}, .out = iter};  // Nothing to copy from ""
   }
@@ -97,7 +97,7 @@ constexpr auto regular_enum_flags_name_to_impl(Iter iter, Sentinel sentinel, E f
 
   // First pass checks whether flags can be decomposed
   template for (constexpr auto e : decomp.units) {
-    if constexpr (e.popcount != 1) {
+    if constexpr (std::popcount(e.underlying) != 1) {
       auto intersection = remaining & e.underlying;
       if (intersection != e.underlying && intersection != 0) {
         return {.ec = std::errc::invalid_argument, .out = iter};
@@ -123,8 +123,8 @@ constexpr auto regular_enum_flags_name_to_impl(Iter iter, Sentinel sentinel, E f
 template <class Iter, class Sentinel, class E, class Delim>
 constexpr auto irregular_enum_flags_name_to_impl(Iter iter, Sentinel sentinel, E flags, Delim delim)
     -> enum_flags_name_to_result<Iter> {
-  constexpr auto decomp = enum_flags_decomposer_v<E>;
-  auto underlying = zero_extend<uint64_t>(std::to_underlying(flags));
+  constexpr const auto& decomp = enum_flags_decomposer_v<E>;
+  auto underlying = unsigned_promoted(flags);
   if (underlying == 0) {
     return {.ec = std::errc{}, .out = iter};  // Nothing to copy from ""
   }
@@ -133,7 +133,7 @@ constexpr auto irregular_enum_flags_name_to_impl(Iter iter, Sentinel sentinel, E
   }
 
   // First passchecks whether flags can be decomposed properly
-  auto covered = uint64_t{0};
+  auto covered = unsigned_promoted_t<E>{0};
   for (auto i = 0zU, n = decomp.units.size(); i < n; i++) {
     auto u = decomp.units[i].underlying;
     if ((underlying & u) == u && (covered |= u) == underlying) {
@@ -191,8 +191,9 @@ constexpr auto enum_flags_name_impl(E flags, Delim delim) -> std::optional<std::
     }
     return std::nullopt;
   } else {
-    constexpr auto decomp = enum_flags_decomposer_v<E>;
-    auto reserved_size = decomp.sum_name_length + delim_length(delim) * decomp.units.size();
+    constexpr const auto& decomp = enum_flags_decomposer_v<E>;
+    auto reserved_size =
+        enum_flag_names_sum_length_v<E> + delim_length(delim) * decomp.units.size();
     auto res = std::string{};
     auto ok = false;
     res.resize_and_overwrite(reserved_size, [&](char* buffer, size_t) {
@@ -221,6 +222,7 @@ struct enum_flags_name_t {
 };
 
 struct enum_flags_name_to_t {
+  // Including but not limited to char[] buffer.
   template <std::output_iterator<char> Iter, std::sentinel_for<Iter> Sentinel, enum_type E>
   static constexpr auto operator()(Iter iter, Sentinel sentinel, E value, char delim = '|')
       -> enum_flags_name_to_result<Iter> {

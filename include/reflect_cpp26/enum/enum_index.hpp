@@ -31,9 +31,9 @@ template <enum_entry_order Order>
 struct enum_index_by_t {
   template <enum_type E>
   static constexpr size_t operator()(E value) {
-    auto key = impl::to_int64_or_uint64(value);
-    auto [indices, found] = impl::enum_index_map_v<E>.get(key);
-    return found ? get<Order>(indices) : npos;
+    auto key = impl::promoted(value);
+    auto* p = impl::enum_index_map_v<E>.find(key);
+    return p ? get<Order>(*p) : npos;
   }
 };
 
@@ -41,10 +41,10 @@ template <enum_entry_order Order>
 struct enum_index_opt_by_t {
   template <enum_type E>
   static constexpr auto operator()(E value) -> std::optional<size_t> {
-    auto key = impl::to_int64_or_uint64(value);
-    auto [indices, found] = impl::enum_index_map_v<E>.get(key);
-    if (found) {
-      return get<Order>(indices);
+    auto key = impl::promoted(value);
+    auto* p = impl::enum_index_map_v<E>.find(key);
+    if (p != nullptr) {
+      return get<Order>(*p);
     }
     return std::nullopt;
   }
@@ -53,19 +53,19 @@ struct enum_index_opt_by_t {
 struct enum_unique_index_t {
   template <enum_type E>
   static constexpr size_t operator()(E value) {
-    auto key = impl::to_int64_or_uint64(value);
-    auto [indices, found] = impl::enum_index_map_v<E>.get(key);
-    return found ? indices.by_value_unique : npos;
+    auto key = impl::promoted(value);
+    auto* p = impl::enum_index_map_v<E>.find(key);
+    return p ? p->by_value_unique : npos;
   }
 };
 
 struct enum_unique_index_opt_t {
   template <enum_type E>
   static constexpr auto operator()(E value) -> std::optional<size_t> {
-    auto key = impl::to_int64_or_uint64(value);
-    auto [indices, found] = impl::enum_index_map_v<E>.get(key);
-    if (found) {
-      return indices.by_value_unique;
+    auto key = impl::promoted(value);
+    auto* p = impl::enum_index_map_v<E>.find(key);
+    if (p != nullptr) {
+      return p->by_value_unique;
     }
     return std::nullopt;
   }

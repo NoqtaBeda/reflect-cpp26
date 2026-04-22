@@ -34,10 +34,10 @@
 #endif  // __cplusplus
 
 #ifdef __clang__
-#define REFLECT_CPP26_ALWAYS_INLINE __attribute__((always_inline))
+#define REFLECT_CPP26_ALWAYS_INLINE [[clang::always_inline]]
 #define REFLECT_CPP26_ALWAYS_INLINE_CALL [[clang::always_inline]]
 #elifdef __GNUC__
-#define REFLECT_CPP26_ALWAYS_INLINE __attribute__((always_inline))
+#define REFLECT_CPP26_ALWAYS_INLINE [[gnu::always_inline]]
 #define REFLECT_CPP26_ALWAYS_INLINE_CALL
 #else
 #define REFLECT_CPP26_ALWAYS_INLINE

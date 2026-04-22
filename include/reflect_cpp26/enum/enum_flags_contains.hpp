@@ -34,13 +34,13 @@
 namespace reflect_cpp26 {
 namespace impl {
 template <class E>
-constexpr bool regular_enum_flags_contains_impl(uint64_t input_underlying) {
+constexpr bool regular_enum_flags_contains_impl(impl::unsigned_promoted_t<E> input_underlying) {
   constexpr const auto& decomp = enum_flags_decomposer_v<E>;
   if ((input_underlying & decomp.full_set) != input_underlying) {
     return false;
   }
   template for (constexpr auto u : decomp.units) {
-    if constexpr (u.popcount > 1) {
+    if constexpr (std::popcount(u.underlying) > 1) {
       auto i = u.underlying & input_underlying;
       if (i != 0 && i != u.underlying) {
         return false;
@@ -51,7 +51,7 @@ constexpr bool regular_enum_flags_contains_impl(uint64_t input_underlying) {
 }
 
 template <class E>
-constexpr bool irregular_enum_flags_contains_impl(uint64_t input_underlying) {
+constexpr bool irregular_enum_flags_contains_impl(impl::unsigned_promoted_t<E> input_underlying) {
   constexpr const auto& decomp = enum_flags_decomposer_v<E>;
   if (input_underlying == 0) {
     return true;
@@ -59,7 +59,7 @@ constexpr bool irregular_enum_flags_contains_impl(uint64_t input_underlying) {
   if ((input_underlying & decomp.full_set) != input_underlying) {
     return false;
   }
-  auto covered = uint64_t{0};
+  auto covered = impl::unsigned_promoted_t<E>{0};
   template for (constexpr auto u : decomp.units) {
     if ((u.underlying & input_underlying) == u.underlying) {
       covered |= u.underlying;
@@ -72,7 +72,7 @@ constexpr bool irregular_enum_flags_contains_impl(uint64_t input_underlying) {
 }
 
 template <class E>
-constexpr bool enum_flags_contains_impl(uint64_t underlying) {
+constexpr bool enum_flags_contains_impl(impl::unsigned_promoted_t<E> underlying) {
   if constexpr (enum_flags_is_empty_v<E>) {
     return underlying == 0;
   } else if constexpr (enum_flags_is_regular_v<E>) {
@@ -115,12 +115,12 @@ private:
 
 public:
   static constexpr bool operator()(E flags) {
-    auto u = zero_extend<uint64_t>(std::to_underlying(flags));
+    auto u = impl::unsigned_promoted(flags);
     return impl::enum_flags_contains_impl<ENoCV>(u);
   }
 
   static constexpr bool operator()(std::integral auto flags) {
-    auto u = zero_extend<uint64_t>(flags);
+    auto u = impl::unsigned_promoted(flags);
     return impl::enum_flags_contains_impl<ENoCV>(u);
   }
 

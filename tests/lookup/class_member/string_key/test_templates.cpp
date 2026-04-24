@@ -21,7 +21,7 @@
  **/
 
 #include <reflect_cpp26/lookup/lookup_table.hpp>
-#include <reflect_cpp26/utils/to_string.hpp>
+#include <string>
 
 #include "tests/lookup/lookup_test_options.hpp"
 
@@ -72,15 +72,15 @@ struct with_templates_t : with_templates_simple_t {
     return std::max({x, y, static_cast<size_t>(z)});
   }
 
-  static constexpr std::string sum_to_string(size_t x, size_t y) {
-    return rfl::to_string(x + y);
+  static std::string sum_to_string(size_t x, size_t y) {
+    return std::to_string(x + y);
   }
-  static constexpr std::string product_to_string(size_t x, size_t y) {
-    return rfl::to_string(x * y);
+  static std::string product_to_string(size_t x, size_t y) {
+    return std::to_string(x * y);
   }
   template <class T>
-  static constexpr std::string max_to_string(T x, T y) {
-    return rfl::to_string(std::max(x, y));
+  static std::string max_to_string(T x, T y) {
+    return std::to_string(std::max(x, y));
   }
 };
 

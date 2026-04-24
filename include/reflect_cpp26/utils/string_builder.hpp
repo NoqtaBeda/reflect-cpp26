@@ -378,6 +378,14 @@ private:
   }
 
   constexpr void reserve_at_least(size_t n) {
+    if consteval {
+      if (cur_ == nullptr) {
+        buffer_ = alloc_.allocate(n);
+        cur_ = buffer_;
+        end_ = buffer_ + n;
+        return;
+      }
+    }
     if (cur_ + n <= end_) [[likely]] {
       return;
     }

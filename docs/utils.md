@@ -57,21 +57,26 @@ Detailed examples are shown in [unit test cases](../tests/utils/test_addressable
 
 Defined in header `<reflect_cpp26/utils/string_encoding.hpp>`.
 
-This module provides constexpr-compatible UTF encoding conversion between UTF-8, UTF-16, and UTF-32. It also supports JSON escaping for use in JSON serialization.
+This module provides constexpr-compatible UTF encoding conversion between UTF-8, UTF-16, and UTF-32. It also supports escaping by various modes (including but not limited to JSON escaping rule).
 
 #### Synopsis
 
 ```cpp
 namespace reflect_cpp26 {
 
-// Status for encoding operations
+enum class escaping_mode {
+  none = 0,
+  json = 1,
+  display_char = 2,
+  display_string = 3,
+};
+
 enum class encoding_status {
   done = 0,
   invalid_character = 1,
   buffer_run_out = 2,
 };
 
-// Result type for encoding conversion
 template <class OutT, class InT>
 struct encode_result_t {
   OutT* out_ptr;
@@ -79,551 +84,225 @@ struct encode_result_t {
   encoding_status status;
 };
 
-// UTF-8 to UTF-16 converter
 template <escaping_mode Mode>
 struct utf8_to_utf16_base_t {
-  // char8_t[] -> char16_t[]
-  static constexpr auto operator()(char16_t* dest, char16_t* dest_end,
-                                   const char8_t* input, const char8_t* input_end)
-      -> encode_result_t<char16_t, char8_t>;
-  // char8_t[] -> uint16_t[]
-  static constexpr auto operator()(uint16_t* dest, uint16_t* dest_end,
-                                   const char8_t* input, const char8_t* input_end)
-      -> encode_result_t<uint16_t, char8_t>;
-  // char[] -> char16_t[]
-  static constexpr auto operator()(char16_t* dest, char16_t* dest_end,
-                                   const char* input, const char* input_end)
-      -> encode_result_t<char16_t, char>;
-  // char[] -> uint16_t[]
-  static constexpr auto operator()(uint16_t* dest, uint16_t* dest_end,
-                                   const char* input, const char* input_end)
-      -> encode_result_t<uint16_t, char>;
-  // uint8_t[] -> char16_t[]
-  static constexpr auto operator()(char16_t* dest, char16_t* dest_end,
-                                   const uint8_t* input, const uint8_t* input_end)
-      -> encode_result_t<char16_t, uint8_t>;
-  // uint8_t[] -> uint16_t[]
-  static constexpr auto operator()(uint16_t* dest, uint16_t* dest_end,
-                                   const uint8_t* input, const uint8_t* input_end)
-      -> encode_result_t<uint16_t, uint8_t>;
+  template <class OutT, class InT>
+  static constexpr auto operator()(OutT* dest, const OutT* dest_end,
+                                   const InT* input, const InT* input_end)
+      -> encode_result_t<OutT, InT>;
 };
-using utf8_to_utf16_t = utf8_to_utf16_base_t<escaping_mode::none>;
-using utf8_to_utf16_json_escaped_t = utf8_to_utf16_base_t<escaping_mode::json>;
-constexpr auto utf8_to_utf16 = utf8_to_utf16_t{};
-constexpr auto utf8_to_utf16_json_escaped = utf8_to_utf16_json_escaped_t{};
-
-// UTF-8 to UTF-32 converter
 template <escaping_mode Mode>
 struct utf8_to_utf32_base_t {
-  // char8_t[] -> char32_t[]
-  static constexpr auto operator()(char32_t* dest, char32_t* dest_end,
-                                   const char8_t* input, const char8_t* input_end)
-      -> encode_result_t<char32_t, char8_t>;
-  // char8_t[] -> uint32_t[]
-  static constexpr auto operator()(uint32_t* dest, uint32_t* dest_end,
-                                   const char8_t* input, const char8_t* input_end)
-      -> encode_result_t<uint32_t, char8_t>;
-  // char[] -> char32_t[]
-  static constexpr auto operator()(char32_t* dest, char32_t* dest_end,
-                                   const char* input, const char* input_end)
-      -> encode_result_t<char32_t, char>;
-  // char[] -> uint32_t[]
-  static constexpr auto operator()(uint32_t* dest, uint32_t* dest_end,
-                                   const char* input, const char* input_end)
-      -> encode_result_t<uint32_t, char>;
-  // uint8_t[] -> char32_t[]
-  static constexpr auto operator()(char32_t* dest, char32_t* dest_end,
-                                   const uint8_t* input, const uint8_t* input_end)
-      -> encode_result_t<char32_t, uint8_t>;
-  // uint8_t[] -> uint32_t[]
-  static constexpr auto operator()(uint32_t* dest, uint32_t* dest_end,
-                                   const uint8_t* input, const uint8_t* input_end)
-      -> encode_result_t<uint32_t, uint8_t>;
+  template <class OutT, class InT>
+  static constexpr auto operator()(OutT* dest, const OutT* dest_end,
+                                   const InT* input, const InT* input_end)
+      -> encode_result_t<OutT, InT>;
 };
-using utf8_to_utf32_t = utf8_to_utf32_base_t<escaping_mode::none>;
-using utf8_to_utf32_json_escaped_t = utf8_to_utf32_base_t<escaping_mode::json>;
-constexpr auto utf8_to_utf32 = utf8_to_utf32_t{};
-constexpr auto utf8_to_utf32_json_escaped = utf8_to_utf32_json_escaped_t{};
-
-// UTF-16 to UTF-8 converter
 template <escaping_mode Mode>
 struct utf16_to_utf8_base_t {
-  // char16_t[] -> char8_t[]
-  static constexpr auto operator()(char8_t* dest, char8_t* dest_end,
-                                   const char16_t* input, const char16_t* input_end)
-      -> encode_result_t<char8_t, char16_t>;
-  // char16_t[] -> char[]
-  static constexpr auto operator()(char* dest, char* dest_end,
-                                   const char16_t* input, const char16_t* input_end)
-      -> encode_result_t<char, char16_t>;
-  // char16_t[] -> uint8_t[]
-  static constexpr auto operator()(uint8_t* dest, uint8_t* dest_end,
-                                   const char16_t* input, const char16_t* input_end)
-      -> encode_result_t<uint8_t, char16_t>;
-  // uint16_t[] -> char8_t[]
-  static constexpr auto operator()(char8_t* dest, char8_t* dest_end,
-                                   const uint16_t* input, const uint16_t* input_end)
-      -> encode_result_t<char8_t, uint16_t>;
-  // uint16_t[] -> char[]
-  static constexpr auto operator()(char* dest, char* dest_end,
-                                   const uint16_t* input, const uint16_t* input_end)
-      -> encode_result_t<char, uint16_t>;
-  // uint16_t[] -> uint8_t[]
-  static constexpr auto operator()(uint8_t* dest, uint8_t* dest_end,
-                                   const uint16_t* input, const uint16_t* input_end)
-      -> encode_result_t<uint8_t, uint16_t>;
+  template <class OutT, class InT>
+  static constexpr auto operator()(OutT* dest, const OutT* dest_end,
+                                   const InT* input, const InT* input_end)
+      -> encode_result_t<OutT, InT>;
 };
-using utf16_to_utf8_t = utf16_to_utf8_base_t<escaping_mode::none>;
-using utf16_to_utf8_json_escaped_t = utf16_to_utf8_base_t<escaping_mode::json>;
-constexpr auto utf16_to_utf8 = utf16_to_utf8_t{};
-constexpr auto utf16_to_utf8_json_escaped = utf16_to_utf8_json_escaped_t{};
-
-// UTF-16 to UTF-32 converter
 template <escaping_mode Mode>
 struct utf16_to_utf32_base_t {
-  // char16_t[] -> char32_t[]
-  static constexpr auto operator()(char32_t* dest, char32_t* dest_end,
-                                   const char16_t* input, const char16_t* input_end)
-      -> encode_result_t<char32_t, char16_t>;
-  // char16_t[] -> uint32_t[]
-  static constexpr auto operator()(uint32_t* dest, uint32_t* dest_end,
-                                   const char16_t* input, const char16_t* input_end)
-      -> encode_result_t<uint32_t, char16_t>;
-  // uint16_t[] -> char32_t[]
-  static constexpr auto operator()(char32_t* dest, char32_t* dest_end,
-                                   const uint16_t* input, const uint16_t* input_end)
-      -> encode_result_t<char32_t, uint16_t>;
-  // uint16_t[] -> uint32_t[]
-  static constexpr auto operator()(uint32_t* dest, uint32_t* dest_end,
-                                   const uint16_t* input, const uint16_t* input_end)
-      -> encode_result_t<uint32_t, uint16_t>;
+  template <class OutT, class InT>
+  static constexpr auto operator()(OutT* dest, const OutT* dest_end,
+                                   const InT* input, const InT* input_end)
+      -> encode_result_t<OutT, InT>;
 };
-using utf16_to_utf32_t = utf16_to_utf32_base_t<escaping_mode::none>;
-using utf16_to_utf32_json_escaped_t = utf16_to_utf32_base_t<escaping_mode::json>;
-constexpr auto utf16_to_utf32 = utf16_to_utf32_t{};
-constexpr auto utf16_to_utf32_json_escaped = utf16_to_utf32_json_escaped_t{};
-
-// UTF-32 to UTF-8 converter
 template <escaping_mode Mode>
 struct utf32_to_utf8_base_t {
-  // char32_t[] -> char8_t[]
-  static constexpr auto operator()(char8_t* dest, char8_t* dest_end,
-                                   const char32_t* input, const char32_t* input_end)
-      -> encode_result_t<char8_t, char32_t>;
-  // char32_t[] -> char[]
-  static constexpr auto operator()(char* dest, char* dest_end,
-                                   const char32_t* input, const char32_t* input_end)
-      -> encode_result_t<char, char32_t>;
-  // char32_t[] -> uint8_t[]
-  static constexpr auto operator()(uint8_t* dest, uint8_t* dest_end,
-                                   const char32_t* input, const char32_t* input_end)
-      -> encode_result_t<uint8_t, char32_t>;
-  // uint32_t[] -> char8_t[]
-  static constexpr auto operator()(char8_t* dest, char8_t* dest_end,
-                                   const uint32_t* input, const uint32_t* input_end)
-      -> encode_result_t<char8_t, uint32_t>;
-  // uint32_t[] -> char[]
-  static constexpr auto operator()(char* dest, char* dest_end,
-                                   const uint32_t* input, const uint32_t* input_end)
-      -> encode_result_t<char, uint32_t>;
-  // uint32_t[] -> uint8_t[]
-  static constexpr auto operator()(uint8_t* dest, uint8_t* dest_end,
-                                   const uint32_t* input, const uint32_t* input_end)
-      -> encode_result_t<uint8_t, uint32_t>;
+  template <class OutT, class InT>
+  static constexpr auto operator()(OutT* dest, const OutT* dest_end,
+                                   const InT* input, const InT* input_end)
+      -> encode_result_t<OutT, InT>;
 };
-using utf32_to_utf8_t = utf32_to_utf8_base_t<escaping_mode::none>;
-using utf32_to_utf8_json_escaped_t = utf32_to_utf8_base_t<escaping_mode::json>;
-constexpr auto utf32_to_utf8 = utf32_to_utf8_t{};
-constexpr auto utf32_to_utf8_json_escaped = utf32_to_utf8_json_escaped_t{};
-
-// UTF-32 to UTF-16 converter
 template <escaping_mode Mode>
 struct utf32_to_utf16_base_t {
-  // char32_t[] -> char16_t[]
-  static constexpr auto operator()(char16_t* dest, char16_t* dest_end,
-                                   const char32_t* input, const char32_t* input_end)
-      -> encode_result_t<char16_t, char32_t>;
-  // char32_t[] -> uint16_t[]
-  static constexpr auto operator()(uint16_t* dest, uint16_t* dest_end,
-                                   const char32_t* input, const char32_t* input_end)
-      -> encode_result_t<uint16_t, char32_t>;
-  // uint32_t[] -> char16_t[]
-  static constexpr auto operator()(char16_t* dest, char16_t* dest_end,
-                                   const uint32_t* input, const uint32_t* input_end)
-      -> encode_result_t<char16_t, uint32_t>;
-  // uint32_t[] -> uint16_t[]
-  static constexpr auto operator()(uint16_t* dest, uint16_t* dest_end,
-                                   const uint32_t* input, const uint32_t* input_end)
-      -> encode_result_t<uint16_t, uint32_t>;
+  template <class OutT, class InT>
+  static constexpr auto operator()(OutT* dest, const OutT* dest_end,
+                                   const InT* input, const InT* input_end)
+      -> encode_result_t<OutT, InT>;
 };
-using utf32_to_utf16_t = utf32_to_utf16_base_t<escaping_mode::none>;
-using utf32_to_utf16_json_escaped_t = utf32_to_utf16_base_t<escaping_mode::json>;
-constexpr auto utf32_to_utf16 = utf32_to_utf16_t{};
-constexpr auto utf32_to_utf16_json_escaped = utf32_to_utf16_json_escaped_t{};
-
-// Dispatcher
 template <escaping_mode Mode>
 struct utf_convert_base_t {
-  // InT[] -> OutT[]
   template <class OutT, class InT>
   static constexpr auto operator()(OutT* dest, OutT* dest_end,
                                    const InT* input, const InT* input_end)
       -> encode_result_t<OutT, InT>;
 };
+
+using utf8_to_utf16_t = utf8_to_utf16_base_t<escaping_mode::none>;
+using utf8_to_utf16_json_escaped_t = utf8_to_utf16_base_t<escaping_mode::json>;
+
+using utf8_to_utf32_t = utf8_to_utf32_base_t<escaping_mode::none>;
+using utf8_to_utf32_json_escaped_t = utf8_to_utf32_base_t<escaping_mode::json>;
+
+using utf16_to_utf8_t = utf16_to_utf8_base_t<escaping_mode::none>;
+using utf16_to_utf8_json_escaped_t = utf16_to_utf8_base_t<escaping_mode::json>;
+
+using utf16_to_utf32_t = utf16_to_utf32_base_t<escaping_mode::none>;
+using utf16_to_utf32_json_escaped_t = utf16_to_utf32_base_t<escaping_mode::json>;
+
+using utf32_to_utf8_t = utf32_to_utf8_base_t<escaping_mode::none>;
+using utf32_to_utf8_json_escaped_t = utf32_to_utf8_base_t<escaping_mode::json>;
+
+using utf32_to_utf16_t = utf32_to_utf16_base_t<escaping_mode::none>;
+using utf32_to_utf16_json_escaped_t = utf32_to_utf16_base_t<escaping_mode::json>;
+
 using utf_convert_t = utf_convert_base_t<escaping_mode::none>;
 using utf_convert_json_escaped_t = utf_convert_base_t<escaping_mode::json>;
+
+constexpr auto utf8_to_utf16 = utf8_to_utf16_t{};
+constexpr auto utf8_to_utf16_json_escaped = utf8_to_utf16_json_escaped_t{};
+template <escaping_mode Mode>
+constexpr auto utf8_to_utf16_by = utf8_to_utf16_base_t<Mode>{};
+
+constexpr auto utf8_to_utf32 = utf8_to_utf32_t{};
+constexpr auto utf8_to_utf32_json_escaped = utf8_to_utf32_json_escaped_t{};
+template <escaping_mode Mode>
+constexpr auto utf8_to_utf32_by = utf8_to_utf32_base_t<Mode>{};
+
+constexpr auto utf16_to_utf8 = utf16_to_utf8_t{};
+constexpr auto utf16_to_utf8_json_escaped = utf16_to_utf8_json_escaped_t{};
+template <escaping_mode Mode>
+constexpr auto utf16_to_utf8_by = utf16_to_utf8_base_t<Mode>{};
+
+constexpr auto utf16_to_utf32 = utf16_to_utf32_t{};
+constexpr auto utf16_to_utf32_json_escaped = utf16_to_utf32_json_escaped_t{};
+template <escaping_mode Mode>
+constexpr auto utf16_to_utf32_by = utf16_to_utf32_base_t<Mode>{};
+
+constexpr auto utf32_to_utf8 = utf32_to_utf8_t{};
+constexpr auto utf32_to_utf8_json_escaped = utf32_to_utf8_json_escaped_t{};
+template <escaping_mode Mode>
+constexpr auto utf32_to_utf8_by = utf32_to_utf8_base_t<Mode>{};
+
+constexpr auto utf32_to_utf16 = utf32_to_utf16_t{};
+constexpr auto utf32_to_utf16_json_escaped = utf32_to_utf16_json_escaped_t{};
+template <escaping_mode Mode>
+constexpr auto utf32_to_utf16_by = utf32_to_utf16_base_t<Mode>{};
+
 constexpr auto utf_convert = utf_convert_t{};
 constexpr auto utf_convert_json_escaped = utf_convert_json_escaped_t{};
+template <escaping_mode Mode>
+constexpr auto utf_convert_by = utf_convert_base_t<Mode>{};
 
 }  // namespace reflect_cpp26
 ```
+
+#### Description
+
+This submodule provides range-based transcoding between UTF-8, UTF-16, and UTF-32. The public API is organized around dedicated converters such as `utf8_to_utf16` and the size-based dispatcher `utf_convert`.
+
+Each converter reads from an explicit input range `[input, input_end)` and writes to an explicit destination range `[dest, dest_end)`. Conversion stops when:
+
+- the whole input range has been consumed successfully;
+- an invalid input sequence is encountered;
+- the destination buffer has insufficient remaining space.
+
+Besides the default non-escaping variants, the header also provides `_json_escaped` function objects and `*_by<Mode>` variable templates for explicitly selecting an `escaping_mode`.
 
 #### Result Semantics
 
 `encode_result_t<OutT, InT>` contains:
 
-- `out_ptr`: Pointer past the last output character written.
-- `in_ptr`: Pointer to the next input character to process.
-- `status`: `encoding_status` value:
-  - **Success (`status == encoding_status::done`)**: All input consumed.
-  - **Invalid input (`status == encoding_status::invalid_character`)**: Points to the invalid UTF sequence. The converter does NOT consume invalid bytes, allowing retry from the same position.
-  - **Buffer overflow (`status == encoding_status::buffer_run_out`)**: Points to the character that couldn't fit. The converter does NOT consume this character.
+- `out_ptr`: one-past-the-end of the output already written;
+- `in_ptr`: next input position to process;
+- `status`: operation status.
+
+Its status semantics are:
+
+- `encoding_status::done`: all input in `[input, input_end)` was consumed;
+- `encoding_status::invalid_character`: `in_ptr` points at the first invalid code unit sequence;
+- `encoding_status::buffer_run_out`: `in_ptr` points at the next still-unprocessed input position.
 
 #### Character Type Support
 
-Each conversion functor supports multiple character type combinations:
+The converter templates are constrained by `impl::non_bool_integral_of_size`, defined as:
 
-| Direction       | Output Types                 | Input Types                  |
-| --------------- | ---------------------------- | ---------------------------- |
-| UTF-8 → UTF-16  | `char16_t`, `uint16_t`       | `char8_t`, `char`, `uint8_t` |
-| UTF-8 → UTF-32  | `char32_t`, `uint32_t`       | `char8_t`, `char`, `uint8_t` |
-| UTF-16 → UTF-8  | `char8_t`, `char`, `uint8_t` | `char16_t`, `uint16_t`       |
-| UTF-16 → UTF-32 | `char32_t`, `uint32_t`       | `char16_t`, `uint16_t`       |
-| UTF-32 → UTF-8  | `char8_t`, `char`, `uint8_t` | `char32_t`, `uint32_t`       |
-| UTF-32 → UTF-16 | `char16_t`, `uint16_t`       | `char32_t`, `uint32_t`       |
+```cpp
+// Accepts integral type (except bool) whose size is one of SizeCandidates...
+template <class T, size_t... SizeCandidates>
+concept non_bool_integral_of_size =
+    non_bool_integral<T> && ((sizeof(T) == SizeCandidates) || ...);
+```
 
-#### Dispatcher
+The accepted types are not limited to the usual character types. Any integral type (excluding `bool`) is accepted as long as its size matches the required UTF code unit width:
 
-`utf_convert_t` uses `sizeof(InT)` and `sizeof(OutT)` to select the appropriate conversion:
+- UTF-8 code units: any non-`bool` integral type of size 1 (`char8_t`, `char`, `signed char`, `unsigned char`, `int8_t`, `uint8_t`);
+- UTF-16 code units: any non-`bool` integral type of size 2 (`char16_t`, `int16_t`, `uint16_t`);
+- UTF-32 code units: any non-`bool` integral type of size 4 (`char32_t`, `int32_t`, `uint32_t`, etc.).
 
-| Input Size | Output Size | Conversion      |
-| ---------- | ----------- | --------------- |
-| 1 (UTF-8)  | 2 (UTF-16)  | UTF-8 → UTF-16  |
-| 1 (UTF-8)  | 4 (UTF-32)  | UTF-8 → UTF-32  |
-| 2 (UTF-16) | 1 (UTF-8)   | UTF-16 → UTF-8  |
-| 2 (UTF-16) | 4 (UTF-32)  | UTF-16 → UTF-32 |
-| 4 (UTF-32) | 1 (UTF-8)   | UTF-32 → UTF-8  |
-| 4 (UTF-32) | 2 (UTF-16)  | UTF-32 → UTF-16 |
+The dedicated converters further restrict source and destination size bytes by encoding direction:
+
+- `utf8_to_utf16`: output type size 2, input type size 1
+- `utf8_to_utf32`: output type size 4, input type size 1
+- `utf16_to_utf8`: output type size 1, input type size 2
+- `utf16_to_utf32`: output type size 4, input type size 2
+- `utf32_to_utf8`: output type size 1, input type size 4
+- `utf32_to_utf16`: output type size 2, input type size 4
+- `utf_convert`: dispatches to one of above by `sizeof(OutT)` and `sizeof(InT)`
 
 #### Escaping Modes
 
-The library uses an `escaping_mode` enum to control character escaping behavior:
+For transcoding, `escaping_mode::json` escapes `"`, `\\`, `/`, `\b`, `\f`, `\n`, `\r`, `\t`, and other ASCII control characters in range `[0x0, 0x1F]` as the standard pattern `\u00XX`. Details of all `escaping_mode` candidates are shown below in section "UTF Encoding/Decoding Helpers - Writing Escaped Characters".
 
-```cpp
-enum class escaping_mode {
-  none = 0,        // No escaping
-  json = 1,        // JSON escaping (RFC 8259 standard)
-  display_char = 2,    // Display character values during local debugging
-  display_string = 3,  // Display string values during local debugging
-};
-```
-
-The `_json_escaped` variants apply RFC 8259 JSON escaping during conversion:
-
-- Required by RFC 8259 standard: `"` → `"\""`, `\` → `"\\"`, control chars (U+0000 to U+001F) → `"\\uXXXX"`;
-- Others in common practice: `\b` → `"\\b"`, `\f` → `"\\f"`, `\n` → `"\\n"`, `\r` → `"\\r"`, `\t` → `"\\t"`, `/` → `"\\/"`.
-
-#### Examples
-
-Example of typical usage can be found in the implementation of `<reflect_cpp26/utils/string_builder.hpp>`:
-
-- `basic_string_builder<CharT, Allocator>::append_utf_string()`;
-- `basic_string_builder<CharT, Allocator>::append_utf_string_json_escaped()`.
+The transcoding path is constexpr-friendly and is used internally by `<reflect_cpp26/utils/string_builder.hpp>`, especially in `append_utf_string()` and `append_utf_string_json_escaped()`.
 
 ### UTF Encoding/Decoding Helpers
 
-This section documents all other public API components in `<reflect_cpp26/utils/string_encoding.hpp>`.
+This section documents the other public API components in `<reflect_cpp26/utils/string_encoding.hpp>`, including code point validation, single-code-point encode/decode, escaping helpers, and invalid-sequence consumers.
 
-#### Constants
-
-```cpp
-constexpr auto invalid_code_point = static_cast<char32_t>(-1);
-constexpr auto placement_code_point = static_cast<char32_t>(0xFFFD);  // '�'
-```
-
-#### Code Point Validation
-
-```cpp
-constexpr bool is_valid_code_point(char32_t code_point);
-```
-
-Valid Unicode code points are in the range:
-
-- BMP (Basic Multilingual Plane): U+0000 to U+D7FF
-- Supplementary: U+E000 to U+10FFFF
-
-Surrogates (U+D800 to U+DFFF) and code points > U+10FFFF are invalid.
-
-#### Decoding Functions
-
-Decodes a single Unicode code point from UTF-8 or UTF-16 input.
+#### Synopsis
 
 ```cpp
 namespace reflect_cpp26 {
 
-struct decode_code_point_from_utf8_t {
-  // char8_t[] input
-  static constexpr auto operator()(const char8_t* input, const char8_t* input_end)
-      -> std::pair<char32_t, const char8_t*>;
-  // char[] input
-  static constexpr auto operator()(const char* input, const char* input_end)
-      -> std::pair<char32_t, const char*>;
-  // uint8_t[] input
-  static constexpr auto operator()(const uint8_t* input, const uint8_t* input_end)
-      -> std::pair<char32_t, const uint8_t*>;
+enum class escaping_mode {
+  none = 0,
+  json = 1,
+  display_char = 2,
+  display_string = 3,
 };
-
-struct decode_code_point_from_utf16_t {
-  // char16_t[] input
-  static constexpr auto operator()(const char16_t* input, const char16_t* input_end)
-      -> std::pair<char32_t, const char16_t*>;
-  // uint16_t[] input
-  static constexpr auto operator()(const uint16_t* input, const uint16_t* input_end)
-      -> std::pair<char32_t, const uint16_t*>;
-};
-
-// Dispatcher
-struct decode_code_point_t {
-  // InT[] input
-  template <class InT>
-  static constexpr auto operator()(const InT* input, const InT* input_end)
-      -> std::pair<char32_t, const InT*>;
-};
-
-constexpr auto decode_code_point_from_utf8 = decode_code_point_from_utf8_t{};
-constexpr auto decode_code_point_from_utf16 = decode_code_point_from_utf16_t{};
-constexpr auto decode_code_point = decode_code_point_t{};
-
-}  // namespace reflect_cpp26
-```
-
-- `decode_code_point_from_utf8_t`: Decodes a single UTF-8 code point. Returns `{code_point, next_position}`. Returns `{invalid_code_point, original}` on error (invalid sequence, overlong encoding, etc.).
-- `decode_code_point_from_utf16_t`: Decodes a single UTF-16 code point (including surrogate pairs). Returns `{code_point, next_position}`. Returns `{invalid_code_point, original}` on error (orphaned surrogate, etc.).
-- `decode_code_point_t`: Dispatcher that uses `sizeof(InT)` to select the appropriate decoder:
-  - `sizeof(InT) == 1`: UTF-8 decoder (char8_t[], char[], uint8_t[])
-  - `sizeof(InT) == 2`: UTF-16 decoder (char16_t[], uint16_t[])
-  - `sizeof(InT) == 4`: Direct copy (char32_t[], uint32_t[]) - validates code point and returns `{*input, input + 1}` if valid, otherwise `{invalid_code_point, input}`
-
-#### Encoding Single Code Points
-
-Encodes a single Unicode code point to UTF-8 or UTF-16 output.
-
-```cpp
-namespace reflect_cpp26 {
-
-// Definition of encoding_status see above.
-
-struct encode_code_point_to_utf8_t {
-  // char8_t[] output
-  static constexpr auto operator()(char8_t* dest, const char8_t* dest_end, char32_t code_point)
-      -> std::pair<char8_t*, encoding_status>;
-  // char[] output
-  static constexpr auto operator()(char* dest, const char* dest_end, char32_t code_point)
-      -> std::pair<char*, encoding_status>;
-  // uint8_t[] output
-  static constexpr auto operator()(uint8_t* dest, const uint8_t* dest_end, char32_t code_point)
-      -> std::pair<uint8_t*, encoding_status>;
-};
-
-struct encode_code_point_to_utf16_t {
-  // char16_t[] output
-  static constexpr auto operator()(char16_t* dest, const char16_t* dest_end, char32_t code_point)
-      -> std::pair<char16_t*, encoding_status>;
-  // uint16_t[] output
-  static constexpr auto operator()(uint16_t* dest, const uint16_t* dest_end, char32_t code_point)
-      -> std::pair<uint16_t*, encoding_status>;
-};
-
-// Dispatcher
-struct encode_code_point_t {
-  // OutT[] output
-  template <class OutT>
-  static constexpr auto operator()(OutT* dest, const OutT* dest_end, char32_t code_point)
-      -> std::pair<OutT*, encoding_status>;
-};
-
-struct encode_code_point_to_utf8_unsafe_t {
-  // char8_t[] output
-  static constexpr auto operator()(char8_t* dest, char32_t code_point)
-      -> char8_t*;
-  static constexpr auto operator()(char8_t* dest, const char8_t* dest_end, char32_t code_point)
-      -> std::pair<char8_t*, encoding_status>;
-  // char[] output
-  static constexpr auto operator()(char* dest, char32_t code_point)
-      -> char*;
-  static constexpr auto operator()(char* dest, const char* dest_end, char32_t code_point)
-      -> std::pair<char*, encoding_status>;
-  // uint8_t[] output
-  static constexpr auto operator()(uint8_t* dest, char32_t code_point)
-      -> uint8_t*;
-  static constexpr auto operator()(uint8_t* dest, const uint8_t* dest_end, char32_t code_point)
-      -> std::pair<uint8_t*, encoding_status>;
-};
-
-struct encode_code_point_to_utf16_unsafe_t {
-  // char16_t[] output
-  static constexpr auto operator()(char16_t* dest, char32_t code_point)
-      -> char16_t*;
-  static constexpr auto operator()(char16_t* dest, const char16_t* dest_end, char32_t code_point)
-      -> std::pair<char16_t*, encoding_status>;
-  // uint16_t[] output
-  static constexpr auto operator()(uint16_t* dest, char32_t code_point)
-      -> uint16_t*;
-  static constexpr auto operator()(uint16_t* dest, const uint16_t* dest_end, char32_t code_point)
-      -> std::pair<uint16_t*, encoding_status>;
-};
-
-// Dispatcher
-struct encode_code_point_unsafe_t {
-  // OutT[] output
-  template <class OutT>
-  static constexpr auto operator()(OutT* dest, char32_t code_point)
-      -> OutT*;
-  template <class OutT>
-  static constexpr auto operator()(OutT* dest, const OutT* dest_end, char32_t code_point)
-      -> std::pair<OutT*, encoding_status>;
-};
-
-constexpr auto encode_code_point_to_utf8 = encode_code_point_to_utf8_t{};
-constexpr auto encode_code_point_to_utf16 = encode_code_point_to_utf16_t{};
-constexpr auto encode_code_point = encode_code_point_t{};
-
-constexpr auto encode_code_point_to_utf8_unsafe = encode_code_point_to_utf8_unsafe_t{};
-constexpr auto encode_code_point_to_utf16_unsafe = encode_code_point_to_utf16_unsafe_t{};
-constexpr auto encode_code_point_unsafe = encode_code_point_unsafe_t{};
-
-}  // namespace reflect_cpp26
-```
-
-**Call Signature**
-
-Safe variants take three parameters: `dest`, `dest_end`, and `code_point`. They validate code point validity and buffer size before writing. Returns `std::pair<OutT*, encoding_status>`:
-
-- `first`: Pointer past the last output character written
-- `second`: `encoding_status::done` on success; `encoding_status::invalid_character` if code point is invalid; `encoding_status::buffer_run_out` if buffer is too small
-
-Unsafe variants take one of the following forms:
-
-- Three parameters: `dest`, `dest_end`, `code_point` (for consistency with the safe variants only. `dest_end` is actually unused). Result type is consistent with safe variants although the status is always `encoding_status::done`;
-- Two parameters: `dest`, `code_point` (assumes buffer is sufficient). Returns the pointer past the last output character written.
-
-**Safe Variants**
-
-These function objects validate code point and buffer size before writing:
-
-- `encode_code_point_to_utf8`: Encodes to UTF-8 (char8_t[], char[], uint8_t[])
-- `encode_code_point_to_utf16`: Encodes to UTF-16 (char16_t[], uint16_t[])
-- `encode_code_point`: Dispatcher that uses `sizeof(OutT)` to select encoding:
-  - `sizeof(OutT) == 1`: UTF-8 encoding (char8_t[], char[], uint8_t[])
-  - `sizeof(OutT) == 2`: UTF-16 encoding (char16_t[], uint16_t[])
-  - `sizeof(OutT) == 4`: Direct copy (char32_t[], uint32_t[]) - validates code point and copies it directly
-
-**Unsafe Variants**
-
-These function objects perform no validation. Caller must ensure:
-
-1. Code point is valid (see `is_valid_code_point`)
-2. Buffer has sufficient space
-
-- `encode_code_point_to_utf8_unsafe`: UTF-8 encoding without validation
-- `encode_code_point_to_utf16_unsafe`: UTF-16 encoding without validation
-- `encode_code_point_unsafe`: Dispatcher that uses `sizeof(OutT)` to select encoding:
-  - `sizeof(OutT) == 1`: UTF-8 encoding (char8_t[], char[], uint8_t[])
-  - `sizeof(OutT) == 2`: UTF-16 encoding (char16_t[], uint16_t[])
-  - `sizeof(OutT) == 4`: Direct copy (char32_t[], uint32_t[])
-
-#### Writing Escaped Characters
-
-Writes a single escaped character to the destination buffer.
-
-```cpp
-namespace reflect_cpp26 {
 
 enum class escaping_status {
-  done = 0,      // Escaping character written successfully
-  no_escape = 1, // No escaping needed
-  error = 2,     // Buffer too small
+  done = 0,
+  no_escape = 1,
+  error = 2,
 };
 
-// Safe variants (validate buffer size)
-struct write_escaped_character_for_json_t {
-  template <class CharT>
-  static constexpr auto operator()(CharT* dest, CharT* dest_end, char32_t c)
-      -> std::pair<escaping_status, CharT*>;
+enum class encoding_status {
+  done = 0,
+  invalid_character = 1,
+  buffer_run_out = 2,
 };
 
-struct write_escaped_character_for_char_t {
-  template <class CharT>
-  static constexpr auto operator()(CharT* dest, CharT* dest_end, char32_t c)
-      -> std::pair<escaping_status, CharT*>;
-};
+constexpr auto invalid_code_point = static_cast<char32_t>(-1);
+constexpr auto replacement_code_point = static_cast<char32_t>(0xFFFD);
 
-struct write_escaped_character_for_string_t {
-  template <class CharT>
-  static constexpr auto operator()(CharT* dest, CharT* dest_end, char32_t c)
-      -> std::pair<escaping_status, CharT*>;
-};
+constexpr bool is_valid_code_point(char32_t code_point);
 
-// Dispatcher
 template <escaping_mode Mode>
-struct write_escaped_character_t {
-  template <class CharT>
-  static constexpr auto operator()(CharT* dest, CharT* dest_end, char32_t c)
-      -> std::pair<escaping_status, CharT*>;
-};
-
-// Unsafe variants (no buffer validation)
-struct write_escaped_character_for_json_unsafe_t {
-  template <class CharT>
-  static constexpr auto operator()(CharT* dest, CharT* dest_end, char32_t c)
-      -> std::pair<escaping_status, CharT*>;
-  template <class CharT>
-  static constexpr auto operator()(CharT* dest, char32_t c)
-      -> std::pair<escaping_status, CharT*>;
-};
-
-struct write_escaped_character_for_char_unsafe_t {
-  template <class CharT>
-  static constexpr auto operator()(CharT* dest, CharT* dest_end, char32_t c)
-      -> std::pair<escaping_status, CharT*>;
-  template <class CharT>
-  static constexpr auto operator()(CharT* dest, char32_t c)
-      -> std::pair<escaping_status, CharT*>;
-};
-
-struct write_escaped_character_for_string_unsafe_t {
-  template <class CharT>
-  static constexpr auto operator()(CharT* dest, CharT* dest_end, char32_t c)
-      -> std::pair<escaping_status, CharT*>;
-  template <class CharT>
-  static constexpr auto operator()(CharT* dest, char32_t c)
-      -> std::pair<escaping_status, CharT*>;
-};
-
-// Dispatcher
+using write_escaped_character_t = /* implementation-defined */;
 template <escaping_mode Mode>
-struct write_escaped_character_unsafe_t {
-  template <class CharT>
-  static constexpr auto operator()(CharT* dest, CharT* dest_end, char32_t c)
-      -> std::pair<escaping_status, CharT*>;
-  template <class CharT>
-  static constexpr auto operator()(CharT* dest, char32_t c)
-      -> std::pair<escaping_status, CharT*>;
-};
+struct write_escaped_character_unsafe_t;
+
+using write_escaped_character_for_json_t = write_escaped_character_t<escaping_mode::json>;
+using write_escaped_character_for_char_t = write_escaped_character_t<escaping_mode::display_char>;
+using write_escaped_character_for_string_t = write_escaped_character_t<escaping_mode::display_string>;
+
+using write_escaped_character_for_json_unsafe_t =
+    write_escaped_character_unsafe_t<escaping_mode::json>;
+using write_escaped_character_for_char_unsafe_t =
+    write_escaped_character_unsafe_t<escaping_mode::display_char>;
+using write_escaped_character_for_string_unsafe_t =
+    write_escaped_character_unsafe_t<escaping_mode::display_string>;
 
 template <escaping_mode Mode>
 constexpr auto write_escaped_character = write_escaped_character_t<Mode>{};
-
 template <escaping_mode Mode>
 constexpr auto write_escaped_character_unsafe = write_escaped_character_unsafe_t<Mode>{};
 
@@ -631,108 +310,208 @@ constexpr auto write_escaped_character_for_json = write_escaped_character_for_js
 constexpr auto write_escaped_character_for_char = write_escaped_character_for_char_t{};
 constexpr auto write_escaped_character_for_string = write_escaped_character_for_string_t{};
 
-constexpr auto write_escaped_character_for_json_unsafe = write_escaped_character_for_json_unsafe_t{};
-constexpr auto write_escaped_character_for_char_unsafe = write_escaped_character_for_char_unsafe_t{};
-constexpr auto write_escaped_character_for_string_unsafe = write_escaped_character_for_string_unsafe_t{};
+constexpr auto write_escaped_character_for_json_unsafe =
+    write_escaped_character_for_json_unsafe_t{};
+constexpr auto write_escaped_character_for_char_unsafe =
+    write_escaped_character_for_char_unsafe_t{};
+constexpr auto write_escaped_character_for_string_unsafe =
+    write_escaped_character_for_string_unsafe_t{};
 
-}  // namespace reflect_cpp26
-```
+struct decode_code_point_t {
+  template <class CharT>
+  static constexpr auto operator()(const CharT* input, const CharT* input_end)
+      -> std::pair<char32_t, const CharT*>;
+};
 
-**Call Signature**
+struct decode_code_point_from_utf8_t {
+  template <class CharT>
+  static constexpr auto operator()(const CharT* input, const CharT* input_end)
+      -> std::pair<char32_t, const CharT*>;
+};
 
-Safe variants take three parameters: `dest`, `dest_end`, and `c`. They validate buffer size before writing.
+struct decode_code_point_from_utf16_t {
+  template <class CharT>
+  static constexpr auto operator()(const CharT* input, const CharT* input_end)
+      -> std::pair<char32_t, const CharT*>;
+};
 
-Unsafe variants come in two forms:
+constexpr auto decode_code_point = decode_code_point_t{};
+constexpr auto decode_code_point_from_utf8 = decode_code_point_from_utf8_t{};
+constexpr auto decode_code_point_from_utf16 = decode_code_point_from_utf16_t{};
 
-- Three parameters: `dest`, `dest_end`, `c` (for consistency with the safe variants only. `dest_end` is actually unused);
-- Two parameters: `dest`, `c` (assumes buffer is sufficient).
+struct encode_code_point_t {
+  template <class CharT>
+  static constexpr auto operator()(CharT* dest, const CharT* dest_end, char32_t code_point)
+      -> std::pair<CharT*, encoding_status>;
+};
 
-Both variants return `std::pair<escaping_status, CharT*>`:
+struct encode_code_point_unsafe_t {
+  template <class CharT>
+  static constexpr auto operator()(CharT* dest, const CharT* dest_end, char32_t code_point)
+      -> CharT*;
+  template <class CharT>
+  static constexpr auto operator()(CharT* dest, char32_t code_point) -> CharT*;
+};
 
-- `first`: `escaping_status::done` on success; `escaping_status::no_escape` if no escaping needed; `escaping_status::error` if buffer too small
-- `second`: Pointer past the last written character
+struct encode_code_point_to_utf8_t {
+  template <class CharT>
+  static constexpr auto operator()(CharT* dest, const CharT* dest_end, char32_t code_point)
+      -> std::pair<CharT*, encoding_status>;
+};
 
-**Escaping Modes**
+struct encode_code_point_to_utf8_unsafe_t {
+  template <class CharT>
+  static constexpr auto operator()(CharT* dest, const CharT* dest_end, char32_t code_point)
+      -> CharT*;
+  template <class CharT>
+  static constexpr auto operator()(CharT* dest, char32_t code_point) -> CharT*;
+};
 
-| Mode                            | Escaped Characters                                                                                                                                                                                                                                   |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `escaping_mode::json`           | `'"'` → `R"(\")"`<br>`'\\'` → `R"(\\)"`<br>`'/'` → `R"(\/)"`<br>`'\b'` → `R"(\b)"`<br>`'\f'` → `R"(\f)"`<br>`'\n'` → `R"(\n)"`<br>`'\r'` → `R"(\r)"`<br>`'\t'` → `R"(\t)"`<br>other control chars (< 0x20) → `R"(\uXXXX)"`                           |
-| `escaping_mode::display_char`   | `'\''` → `"R(\')"` <br> `'\\'` → `R"(\)"`<br>`'\a'` → `R"(\a)"`<br>`'\b'` → `R"(\b)"`<br>`'\f'` → `R"(\f)"`<br>`'\n'` → `R"(\n)"`<br>`'\r'` → `R"(\r)"`<br>`'\t'` → `R"(\t)"`<br>`'\v'` → `R"(\v)"`<br>non-printable ASCII (0x80-0xFF) → `R"(\xHH)"` |
-| `escaping_mode::display_string` | `'"'` → `"R(\")"` <br> `'\''` not escaped <br> Others same as `display_char`                                                                                                                                                                         |
+struct encode_code_point_to_utf16_t {
+  template <class CharT>
+  static constexpr auto operator()(CharT* dest, const CharT* dest_end, char32_t code_point)
+      -> std::pair<CharT*, encoding_status>;
+};
 
-#### Invalid Sequence Consumers
+struct encode_code_point_to_utf16_unsafe_t {
+  template <class CharT>
+  static constexpr auto operator()(CharT* dest, const CharT* dest_end, char32_t code_point)
+      -> CharT*;
+  template <class CharT>
+  static constexpr auto operator()(CharT* dest, char32_t code_point) -> CharT*;
+};
 
-Consumes the maximal prefix of continuous invalid UTF sequences. These functions are typically used in error handling to skip invalid bytes and resume conversion from the next valid sequence.
+constexpr auto encode_code_point = encode_code_point_t{};
+constexpr auto encode_code_point_unsafe = encode_code_point_unsafe_t{};
+constexpr auto encode_code_point_to_utf8 = encode_code_point_to_utf8_t{};
+constexpr auto encode_code_point_to_utf8_unsafe = encode_code_point_to_utf8_unsafe_t{};
+constexpr auto encode_code_point_to_utf16 = encode_code_point_to_utf16_t{};
+constexpr auto encode_code_point_to_utf16_unsafe = encode_code_point_to_utf16_unsafe_t{};
 
-```cpp
-namespace reflect_cpp26 {
+struct consume_utf_invalid_sequence_t {
+  template <class CharT>
+  static constexpr auto operator()(const CharT* input, const CharT* input_end) -> const CharT*;
+};
 
 struct consume_utf8_invalid_sequence_t {
-  // char8_t[] input
-  static constexpr auto operator()(const char8_t* input, const char8_t* input_end)
-      -> const char8_t*;
-  // char[] input
-  static constexpr auto operator()(const char* input, const char* input_end)
-      -> const char*;
-  // uint8_t[] input
-  static constexpr auto operator()(const uint8_t* input, const uint8_t* input_end)
-      -> const uint8_t*;
+  template <class CharT>
+  static constexpr auto operator()(const CharT* input, const CharT* input_end) -> const CharT*;
 };
 
 struct consume_utf16_invalid_sequence_t {
-  // char16_t[] input
-  static constexpr auto operator()(const char16_t* input, const char16_t* input_end)
-      -> const char16_t*;
-  // uint16_t[] input
-  static constexpr auto operator()(const uint16_t* input, const uint16_t* input_end)
-      -> const uint16_t*;
+  template <class CharT>
+  static constexpr auto operator()(const CharT* input, const CharT* input_end) -> const CharT*;
 };
 
 struct consume_utf32_invalid_sequence_t {
-  // char32_t[] input
-  static constexpr auto operator()(const char32_t* input, const char32_t* input_end)
-      -> const char32_t*;
-  // uint32_t[] input
-  static constexpr auto operator()(const uint32_t* input, const uint32_t* input_end)
-      -> const uint32_t*;
-};
-
-// Dispatcher
-struct consume_utf_invalid_sequence_t {
-  // CharT[] input
   template <class CharT>
-  static constexpr auto operator()(const CharT* input, const CharT* input_end)
-      -> const CharT*;
+  static constexpr auto operator()(const CharT* input, const CharT* input_end) -> const CharT*;
 };
 
 constexpr auto consume_utf8_invalid_sequence = consume_utf8_invalid_sequence_t{};
 constexpr auto consume_utf16_invalid_sequence = consume_utf16_invalid_sequence_t{};
 constexpr auto consume_utf32_invalid_sequence = consume_utf32_invalid_sequence_t{};
-// Dispatcher
 constexpr auto consume_utf_invalid_sequence = consume_utf_invalid_sequence_t{};
 
 }  // namespace reflect_cpp26
 ```
 
-**Call Signature**
+#### Constants
 
-All functions take two parameters to represent the input range `[input, input_end)`. They return a pointer to the first valid character after the invalid prefix.
+These constants are shared by the decoding, encoding, and recovery helpers.
 
-**Dispatcher Behavior**
+- `invalid_code_point` is the sentinel returned by the decoders on failure.
+- `replacement_code_point` is the Unicode replacement character U+FFFD (which is '�'), typically used by higher-level recovery code after `consume_utf*_invalid_sequence`.
 
-`consume_utf_invalid_sequence` uses `sizeof(CharT)` to select the appropriate consumer:
+#### Code Point Validation
 
-- `sizeof(CharT) == 1`: UTF-8 consumer (char8_t[], char[], uint8_t[])
-- `sizeof(CharT) == 2`: UTF-16 consumer (char16_t[], uint16_t[])
-- `sizeof(CharT) == 4`: UTF-32 consumer (char32_t[], uint32_t[])
+This helper checks whether a `char32_t` value is a valid Unicode scalar value.
 
-**Behavior Details**
+`is_valid_code_point(code_point)` accepts exactly `U+0000..U+D7FF` and `U+E000..U+10FFFF`. Surrogates and values above `U+10FFFF` are invalid.
 
-| Function                         | Invalid Sequences Consumed                                    |
-| -------------------------------- | ------------------------------------------------------------- |
-| `consume_utf8_invalid_sequence`  | Orphaned trailing bytes, overlong sequences, bytes >= 0xF5    |
-| `consume_utf16_invalid_sequence` | Orphaned surrogates (unpaired high/low surrogates)            |
-| `consume_utf32_invalid_sequence` | Invalid code points (surrogates 0xD800-0xDFFF, or > 0x10FFFF) |
+#### Decoding Functions
+
+These helpers decode one code point from the input range `[input, input_end)`.
+
+- `decode_code_point_from_utf8` decodes one UTF-8 scalar value from a 1-byte code unit sequence (`char8_t`, `char`, `uint8_t`, etc.).
+- `decode_code_point_from_utf16` decodes one UTF-16 scalar value from a 2-byte code unit sequence (`char16_t`, `uint16_t`, etc.).
+- `decode_code_point` dispatches by `sizeof(CharT)`:
+  - `1` byte: UTF-8
+  - `2` bytes: UTF-16
+  - `4` bytes: UTF-32 validation + direct return
+
+All decoders returns `{code_point, next}` whose type is `std::pair<char32_t, const CharT*>`.
+
+- The first element `code_point` is the decoded result code point, or `invalid_code_point` on failure.
+- The second element `next` is an input pointer:
+  - on success, it points to the first unconsumed code unit after the decoded character;
+  - on failure, it is exactly the original `input` pointer passed to the function.
+
+So `{code_point, next}` means "one scalar value was decoded and the input cursor advanced to `next`", while `{invalid_code_point, next = input}` means "decoding failed and no input was consumed".
+
+#### Encoding Single Code Points
+
+These helpers encode one Unicode code point into the destination range `[dest, dest_end)`.
+
+- `encode_code_point_to_utf8` / `encode_code_point_to_utf16` validate both `code_point` and output capacity, then return `{next_dest, status}` whose type is `std::pair<CharT*, encoding_status>`.
+- `encode_code_point` dispatches by `sizeof(CharT)` and also supports trivial UTF-32 output (after validation).
+- `*_unsafe` variants skip validation and return only `next_dest` (in this case `status` is always `encoding_status::done`). They **assume** a valid code point and enough buffer space.
+
+For the safe variants, the returned pair has the following meaning:
+
+- the first element `next_dest` is the first output position after the written code units on success, or `dest` unchanged on failure;
+- the second element `status` is the corresponding `encoding_status`.
+
+So `{next_dest, status}` means "writing stopped at `next_dest` and produced status `status`".
+
+The possible status values are:
+
+- `encoding_status::done`: the code point was written successfully;
+- `encoding_status::invalid_character`: the input code point is not a valid Unicode scalar value;
+- `encoding_status::buffer_run_out`: the destination range is too small.
+
+#### Writing Escaped Characters
+
+These helpers try to write an escaped form of a single character value `c` into the destination range `[dest, dest_end)`.
+
+`write_escaped_character*` returns a `std::pair<escaping_status, CharT*>`.
+
+- Safe variants take `(dest, dest_end, c)` and check capacity.
+- Unsafe variants additionally support `(dest, c)` and assume enough space.
+
+For the returned pair:
+
+- the first element is the escape result status;
+- the second element is the first output position after the characters written; below this pointer is denoted as `next_dest`.
+
+So `{status, next_dest}` means "the escape attempt finished with status `status`, and the output cursor is now `next_dest`".
+
+`escaping_status` is one of the following:
+
+- `done`: an escaped form was written;
+- `no_escape`: `c` does not need escaping in the selected mode;
+- `error`: the destination buffer is too small.
+
+Escaping behavior:
+
+| Mode                            | Behavior                                                                                                           |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `escaping_mode::json`           | Escapes `"`, `\\`, `/`, `\b`, `\f`, `\n`, `\r`, `\t`, and other ASCII control characters as `\u00XX`.              |
+| `escaping_mode::display_char`   | Escapes `\\`, `\0`, `\a`, `\b`, `\f`, `\n`, `\r`, `\t`, `\v`, and other non-printable ASCII bytes as `\xHH`.       |
+| `escaping_mode::display_string` | Escapes `"`,, `\0`, `\\`, `\a`, `\b`, `\f`, `\n`, `\r`, `\t`, `\v`, and other non-printable ASCII bytes as `\xHH`. |
+
+#### Invalid Sequence Consumers
+
+These helpers are used for recovery after a decoding failure. They inspect the input range `[input, input_end)` and consume the maximal invalid prefix starting at `input`.
+
+`consume_utf*_invalid_sequence` consumes the maximal continuous invalid prefix starting at `input` and returns the first position where normal decoding may resume.
+
+- `consume_utf8_invalid_sequence`: consumes invalid UTF-8 leading / continuation patterns, overlong forms, truncated sequences, surrogates encoded in UTF-8, and values above `U+10FFFF`.
+- `consume_utf16_invalid_sequence`: consumes orphaned UTF-16 surrogates until a valid BMP code unit or a valid surrogate pair is reached.
+- `consume_utf32_invalid_sequence`: consumes consecutive invalid UTF-32 code points.
+- `consume_utf_invalid_sequence`: dispatches by `sizeof(CharT)`.
+
+These helpers are intended for replacement-based recovery, where the whole consumed invalid slice is typically replaced by a single `replacement_code_point` (common practice according to Unicode 11 standard).
 
 ### String Builder
 

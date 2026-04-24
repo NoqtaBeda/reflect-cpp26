@@ -25,7 +25,6 @@
 
 #include <reflect_cpp26/type_traits/class_types/ambiguous_inheritance.hpp>
 #include <reflect_cpp26/type_traits/class_types/flattened_nsdm.hpp>
-#include <reflect_cpp26/type_traits/class_types/member_access.hpp>
 #include <reflect_cpp26/type_traits/class_types/non_public_nsdm.hpp>
 #include <reflect_cpp26/type_traits/class_types/virtual_inheritance.hpp>
 

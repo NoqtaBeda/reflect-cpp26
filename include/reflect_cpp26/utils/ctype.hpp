@@ -213,8 +213,8 @@ private:
   template <class CharT, class Traits>
   static constexpr auto do_trim(std::basic_string_view<CharT, Traits> str)
       -> std::basic_string_view<CharT, Traits> {
-    if consteval {
-      if (str.empty()) return str;
+    if (str.empty()) {
+      return str;  // In case of null string-view {nullptr, nullptr}
     }
     auto head = str.begin();
     auto before_tail = str.end() - 1;

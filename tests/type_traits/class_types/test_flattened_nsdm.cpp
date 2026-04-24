@@ -21,9 +21,9 @@
  **/
 
 #include <cassert>
+#include <reflect_cpp26/type_operations/dump_to_json_like.hpp>
 #include <reflect_cpp26/type_traits/class_types/flattened_nsdm.hpp>
 #include <reflect_cpp26/utils/define_static_values.hpp>
-#include <reflect_cpp26/utils/to_string.hpp>
 
 #include "tests/test_options.hpp"
 
@@ -77,24 +77,6 @@ consteval ptrdiff_t get_bf_offset(std::span<const rfl::flattened_data_member_inf
 consteval ptrdiff_t get_bf_size(std::span<const rfl::flattened_data_member_info> members,
                                 size_t index) {
   return bit_size_of(members[index].member);
-}
-
-template <size_t N>
-consteval auto dump_member_list(const std::array<rfl::flattened_data_member_info, N>& members)
-    -> std::string {
-  auto res = "# of members = " + rfl::to_string(N);
-  for (auto i = 0zU; i < N; i++) {
-    auto [member, actual_offset] = members[i];
-    res += "\n[" + rfl::to_string(i) + "] ";
-    res += display_string_of(type_of(member));
-    res += ' ';
-    res += display_string_of(parent_of(member));
-    res += "::"s + rfl::identifier_of(member, "(anonymous data member)");
-    res += ": ";
-    res += rfl::to_string(actual_offset.bytes) + " bytes + ";
-    res += rfl::to_string(actual_offset.bits) + " bits";
-  }
-  return res;
 }
 
 TEST(TypeTraitsClassTypes, PublicNSDMListMonostate) {
@@ -215,7 +197,7 @@ struct bar_2_t : std::pair<int32_t, int32_t>, protected bar_1_t {
     res += "; ";
     res += bar_1_t::dump();
     res += "; ";
-    res += std::format("first = {}, d2 = {}", first, rfl::to_display_string(d2));
+    res += std::format("first = {}, d2 = {}", first, rfl::dump_to_json_like(d2));
     return res;
   }
 
@@ -303,9 +285,9 @@ public:
     return std::format("std::array = {}; std::pair = {}; d3 = {}, first = {}, d4 = {}",
                        *static_cast<const std::array<int16_t, 6>*>(this),
                        *static_cast<const std::pair<int32_t, int32_t>*>(this),
-                       rfl::to_display_string(d3),
+                       rfl::dump_to_json_like(d3),
                        first,
-                       rfl::to_display_string(d4));
+                       rfl::dump_to_json_like(d4));
   }
 
 protected:

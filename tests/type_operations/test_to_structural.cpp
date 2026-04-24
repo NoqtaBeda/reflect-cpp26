@@ -24,11 +24,16 @@
 #include <numeric>
 #include <print>
 #include <reflect_cpp26/type_operations/to_structural.hpp>
-#include <reflect_cpp26/utils/to_string.hpp>
 
 #include "tests/test_options.hpp"
 
 namespace rfl = reflect_cpp26;
+
+constexpr auto my_to_string(std::integral auto value) -> std::string {
+  char buffer[72];
+  const char* pos = std::to_chars(buffer, buffer + 72, value).ptr;
+  return std::string{buffer, pos - buffer};
+}
 
 // Examples in docs/type_operations.md
 namespace examples {
@@ -184,7 +189,7 @@ constexpr auto fib_str_until(unsigned x) -> std::vector<std::string> {
   }
   auto res = std::vector<std::string>{};
   for (auto i = 0zU, n = values.size(); i < n; i++) {
-    res.push_back("[" + rfl::to_string(i) + "]=" + rfl::to_string(values[i]));
+    res.push_back("[" + my_to_string(i) + "]=" + my_to_string(values[i]));
   }
   return res;
 }
@@ -198,7 +203,7 @@ static_assert(fib_str_100_conv.back() == "[9]=89");
 //            std::wstring, std::vector<std::wstring>>
 constexpr auto make_ds_tuple_1(unsigned n) {
   auto to_wstring = [](auto value) {
-    auto str = rfl::to_string(value);
+    auto str = my_to_string(value);
     auto wstr = std::wstring{};
     wstr.assign_range(str);
     return wstr;

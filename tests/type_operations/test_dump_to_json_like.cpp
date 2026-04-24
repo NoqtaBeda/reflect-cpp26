@@ -57,9 +57,9 @@ template <>
 constexpr auto rfl::is_enum_flag_v<permissions_t> = true;
 
 TEST(TypeOperationsDumpToJsonLike, BasicIntegers) {
-  EXPECT_EQ("42", rfl::dump_to_json_like(42));
-  EXPECT_EQ("-123", rfl::dump_to_json_like(-123));
-  EXPECT_EQ("0", rfl::dump_to_json_like(0));
+  EXPECT_EQ_STATIC("42", rfl::dump_to_json_like(42));
+  EXPECT_EQ_STATIC("-123", rfl::dump_to_json_like(-123));
+  EXPECT_EQ_STATIC("0", rfl::dump_to_json_like(0));
 }
 
 TEST(TypeOperationsDumpToJsonLike, BasicFloats) {
@@ -69,101 +69,100 @@ TEST(TypeOperationsDumpToJsonLike, BasicFloats) {
 }
 
 TEST(TypeOperationsDumpToJsonLike, BasicBool) {
-  EXPECT_EQ("true", rfl::dump_to_json_like(true));
-  EXPECT_EQ("false", rfl::dump_to_json_like(false));
+  EXPECT_EQ_STATIC("true", rfl::dump_to_json_like(true));
+  EXPECT_EQ_STATIC("false", rfl::dump_to_json_like(false));
 }
 
 TEST(TypeOperationsDumpToJsonLike, BasicString) {
-  EXPECT_EQ("\"hello\"", rfl::dump_to_json_like(std::string{"hello"}));
-  EXPECT_EQ("\"world\"", rfl::dump_to_json_like(std::string_view{"world"}));
+  EXPECT_EQ_STATIC("\"hello\"", rfl::dump_to_json_like(std::string{"hello"}));
+  EXPECT_EQ_STATIC("\"world\"", rfl::dump_to_json_like(std::string_view{"world"}));
 }
 
 TEST(TypeOperationsDumpToJsonLike, CharToString) {
-  EXPECT_EQ("'a'", rfl::dump_to_json_like('a'));
+  EXPECT_EQ_STATIC("'a'", rfl::dump_to_json_like('a'));
 }
 
 TEST(TypeOperationsDumpToJsonLike, OptionalWithValue) {
-  std::optional<int> opt{42};
-  EXPECT_EQ("42", rfl::dump_to_json_like(opt));
+  constexpr std::optional<int> opt{42};
+  EXPECT_EQ_STATIC("42", rfl::dump_to_json_like(opt));
 }
 
 TEST(TypeOperationsDumpToJsonLike, OptionalEmpty) {
-  std::optional<int> opt{std::nullopt};
-  EXPECT_EQ("nullopt", rfl::dump_to_json_like(opt));
+  constexpr std::optional<int> opt{std::nullopt};
+  EXPECT_EQ_STATIC("nullopt", rfl::dump_to_json_like(opt));
 }
 
 TEST(TypeOperationsDumpToJsonLike, VectorOfInts) {
-  std::vector<int> vec{1, 2, 3};
-  EXPECT_EQ("[1,2,3]", rfl::dump_to_json_like(vec));
+  constexpr auto make_vec = [] constexpr { return std::vector<int>{1, 2, 3}; };
+  EXPECT_EQ_STATIC("[1,2,3]", rfl::dump_to_json_like(make_vec()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, VectorOfBools) {
-  std::vector<bool> vec{true, false, true};
-  EXPECT_EQ("[true,false,true]", rfl::dump_to_json_like(vec));
+  constexpr auto make_vec = [] constexpr { return std::vector<bool>{true, false, true}; };
+  EXPECT_EQ_STATIC("[true,false,true]", rfl::dump_to_json_like(make_vec()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, VectorOfBoolsEmpty) {
-  std::vector<bool> vec{};
-  EXPECT_EQ("[]", rfl::dump_to_json_like(vec));
+  constexpr auto make_vec = [] constexpr { return std::vector<bool>{}; };
+  EXPECT_EQ_STATIC("[]", rfl::dump_to_json_like(make_vec()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, VectorOfBoolsAllTrue) {
-  std::vector<bool> vec{true, true, true};
-  EXPECT_EQ("[true,true,true]", rfl::dump_to_json_like(vec));
+  constexpr auto make_vec = [] constexpr { return std::vector<bool>{true, true, true}; };
+  EXPECT_EQ_STATIC("[true,true,true]", rfl::dump_to_json_like(make_vec()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, VectorOfBoolsAllFalse) {
-  std::vector<bool> vec{false, false, false};
-  EXPECT_EQ("[false,false,false]", rfl::dump_to_json_like(vec));
+  constexpr auto make_vec = [] constexpr { return std::vector<bool>{false, false, false}; };
+  EXPECT_EQ_STATIC("[false,false,false]", rfl::dump_to_json_like(make_vec()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, EmptyVector) {
-  std::vector<int> vec{};
-  EXPECT_EQ("[]", rfl::dump_to_json_like(vec));
+  constexpr auto make_vec = [] constexpr { return std::vector<int>{}; };
+  EXPECT_EQ_STATIC("[]", rfl::dump_to_json_like(make_vec()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, VectorOfStrings) {
-  std::vector<std::string> vec{"apple", "banana"};
-  EXPECT_EQ(R"(["apple","banana"])", rfl::dump_to_json_like(vec));
+  constexpr auto make_vec = [] constexpr { return std::vector<std::string>{"apple", "banana"}; };
+  EXPECT_EQ_STATIC(R"(["apple","banana"])", rfl::dump_to_json_like(make_vec()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, Pair) {
-  std::pair<int, std::string> p{42, "hello"};
-  EXPECT_EQ(R"([42,"hello"])", rfl::dump_to_json_like(p));
+  constexpr auto make_pair = [] constexpr { return std::pair<int, std::string>{42, "hello"}; };
+  EXPECT_EQ_STATIC(R"([42,"hello"])", rfl::dump_to_json_like(make_pair()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, Tuple) {
-  auto t = std::make_tuple(1, "hello", 3.14);
-  EXPECT_EQ(R"([1,"hello",3.14])", rfl::dump_to_json_like(t));
+  constexpr auto make_tuple = [] constexpr {
+    return std::make_tuple(1, std::string{"hello"}, 'a');
+  };
+  EXPECT_EQ_STATIC(R"([1,"hello",'a'])", rfl::dump_to_json_like(make_tuple()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, EmptyTuple) {
-  std::tuple<> t{};
-  EXPECT_EQ("[]", rfl::dump_to_json_like(t));
+  constexpr std::tuple<> t{};
+  EXPECT_EQ_STATIC("[]", rfl::dump_to_json_like(t));
 }
 
 TEST(TypeOperationsDumpToJsonLike, Struct) {
-  person_t p{"Alice", 30};
-  EXPECT_EQ(R"({name:"Alice",age:30})", rfl::dump_to_json_like(p));
+  constexpr auto make_person = [] constexpr { return person_t{"Alice", 30}; };
+  EXPECT_EQ_STATIC(R"({name:"Alice",age:30})", rfl::dump_to_json_like(make_person()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, NestedStruct) {
-  nested_t n{{"Bob", 25}, {90, 85, 92}};
-  EXPECT_EQ(R"({person:{name:"Bob",age:25},scores:[90,85,92]})", rfl::dump_to_json_like(n));
+  constexpr auto make_nested = [] constexpr { return nested_t{{"Bob", 25}, {90, 85, 92}}; };
+  EXPECT_EQ_STATIC(R"({person:{name:"Bob",age:25},scores:[90,85,92]})",
+                   rfl::dump_to_json_like(make_nested()));
 }
 
-TEST(TypeOperationsDumpToJsonLike, EnumToInt) {
-  EXPECT_EQ("red", rfl::dump_to_json_like(color_t::red));
-  EXPECT_EQ("green", rfl::dump_to_json_like(color_t::green));
-  EXPECT_EQ("blue", rfl::dump_to_json_like(color_t::blue));
+TEST(TypeOperationsDumpToJsonLike, Enum) {
+  EXPECT_EQ_STATIC("red", rfl::dump_to_json_like(color_t::red));
+  EXPECT_EQ_STATIC("green", rfl::dump_to_json_like(color_t::green));
+  EXPECT_EQ_STATIC("blue", rfl::dump_to_json_like(color_t::blue));
 }
 
-TEST(TypeOperationsDumpToJsonLike, EnumToString) {
-  EXPECT_EQ("red", rfl::dump_to_json_like(color_t::red));
-}
-
-TEST(TypeOperationsDumpToJsonLike, EnumFlagAsInteger) {
-  EXPECT_EQ("read", rfl::dump_to_json_like(permissions_t::read));
+TEST(TypeOperationsDumpToJsonLike, EnumFlag) {
+  EXPECT_EQ_STATIC("read", rfl::dump_to_json_like(permissions_t::read));
   EXPECT_THAT(rfl::dump_to_json_like(permissions_t::read | permissions_t::write),
               testing::AnyOf("read|write", "write|read"));
   EXPECT_THAT(
@@ -176,26 +175,8 @@ TEST(TypeOperationsDumpToJsonLike, EnumFlagAsInteger) {
                      "execute|write|read"));
 }
 
-TEST(TypeOperationsDumpToJsonLike, EnumFlagToString) {
-  EXPECT_EQ("read", rfl::dump_to_json_like(permissions_t::read));
-  EXPECT_THAT(rfl::dump_to_json_like(permissions_t::read | permissions_t::write),
-              testing::AnyOf("read|write", "write|read"));
-  EXPECT_THAT(
-      rfl::dump_to_json_like(permissions_t::read | permissions_t::write | permissions_t::execute),
-      testing::AnyOf("read|write|execute",
-                     "read|execute|write",
-                     "write|read|execute",
-                     "write|execute|read",
-                     "execute|read|write",
-                     "execute|write|read"));
-}
-
-TEST(TypeOperationsDumpToJsonLike, EnumFlagToStringInvalidHalts) {
-  EXPECT_EQ("(permissions_t)8", rfl::dump_to_json_like(static_cast<permissions_t>(8)));
-}
-
-TEST(TypeOperationsDumpToJsonLike, EnumFlagToStringInvalidNull) {
-  EXPECT_EQ("(permissions_t)8", rfl::dump_to_json_like(static_cast<permissions_t>(8)));
+TEST(TypeOperationsDumpToJsonLike, EnumFlagToStringInvalid) {
+  EXPECT_EQ_STATIC("(permissions_t)8", rfl::dump_to_json_like(static_cast<permissions_t>(8)));
 }
 
 TEST(TypeOperationsDumpToJsonLike, EnumFlagInStruct) {
@@ -204,28 +185,31 @@ TEST(TypeOperationsDumpToJsonLike, EnumFlagInStruct) {
     permissions_t mode;
   };
   file_t f{"script.sh", permissions_t::read | permissions_t::execute};
-  auto result = rfl::dump_to_json_like(f);
-  EXPECT_TRUE(result == R"({name:"script.sh",mode:read|execute})"
-              || result == R"({name:"script.sh",mode:execute|read})");
+  EXPECT_THAT(rfl::dump_to_json_like(f),
+              testing::AnyOf(R"({name:"script.sh",mode:read|execute})",
+                             R"({name:"script.sh",mode:execute|read})"));
 }
 
 TEST(TypeOperationsDumpToJsonLike, EnumFlagInVector) {
   std::vector<permissions_t> vec{
       permissions_t::read, permissions_t::write, permissions_t::read | permissions_t::write};
-  auto result = rfl::dump_to_json_like(vec);
-  EXPECT_TRUE(result == "[read,write,read|write]" || result == "[read,write,write|read]");
+  EXPECT_THAT(rfl::dump_to_json_like(vec),
+              testing::AnyOf("[read,write,read|write]", "[read,write,write|read]"));
 }
 
 TEST(TypeOperationsDumpToJsonLike, EnumFlagEmptySet) {
-  EXPECT_EQ("", rfl::dump_to_json_like(static_cast<permissions_t>(0)));
+  EXPECT_EQ_STATIC("", rfl::dump_to_json_like(static_cast<permissions_t>(0)));
 }
 
 TEST(TypeOperationsDumpToJsonLike, EnumFlagAllFlags) {
   auto all = permissions_t::read | permissions_t::write | permissions_t::execute;
-  auto result = rfl::dump_to_json_like(all);
-  EXPECT_TRUE(result == "read|write|execute" || result == "read|execute|write"
-              || result == "write|read|execute" || result == "write|execute|read"
-              || result == "execute|read|write" || result == "execute|write|read");
+  EXPECT_THAT(rfl::dump_to_json_like(all),
+              testing::AnyOf("read|write|execute",
+                             "read|execute|write",
+                             "write|read|execute",
+                             "write|execute|read",
+                             "execute|read|write",
+                             "execute|write|read"));
 }
 
 TEST(TypeOperationsDumpToJsonLike, EnumFlagMixedWithRegularEnum) {
@@ -234,54 +218,53 @@ TEST(TypeOperationsDumpToJsonLike, EnumFlagMixedWithRegularEnum) {
     permissions_t perms;
   };
   config_t c{color_t::blue, permissions_t::read | permissions_t::write};
-  auto result = rfl::dump_to_json_like(c);
-  EXPECT_TRUE(result == "{color:blue,perms:read|write}"
-              || result == "{color:blue,perms:write|read}");
+  EXPECT_THAT(
+      rfl::dump_to_json_like(c),
+      testing::AnyOf(R"({color:blue,perms:read|write})", R"({color:blue,perms:write|read})"));
 }
 
 TEST(TypeOperationsDumpToJsonLike, EnumFlagInOptional) {
-  std::optional<permissions_t> present{permissions_t::read | permissions_t::execute};
-  std::optional<permissions_t> empty{std::nullopt};
-  auto result1 = rfl::dump_to_json_like(present);
-  EXPECT_TRUE(result1 == "read|execute" || result1 == "execute|read");
-  EXPECT_EQ("nullopt", rfl::dump_to_json_like(empty));
+  constexpr std::optional<permissions_t> present{permissions_t::read | permissions_t::execute};
+  constexpr std::optional<permissions_t> empty{std::nullopt};
+  EXPECT_THAT(rfl::dump_to_json_like(present), testing::AnyOf("read|execute", "execute|read"));
+  EXPECT_EQ_STATIC("nullopt", rfl::dump_to_json_like(empty));
 }
 
 TEST(TypeOperationsDumpToJsonLike, EnumFlagInVariant) {
-  std::variant<permissions_t, int> v1{permissions_t::write};
-  std::variant<permissions_t, int> v2{42};
-  EXPECT_THAT(rfl::dump_to_json_like(v1), testing::AnyOf("write", "read", "execute"));
-  EXPECT_EQ("42", rfl::dump_to_json_like(v2));
+  constexpr std::variant<permissions_t, int> v1{permissions_t::write};
+  constexpr std::variant<permissions_t, int> v2{42};
+  EXPECT_EQ_STATIC("write", rfl::dump_to_json_like(v1));
+  EXPECT_EQ_STATIC("42", rfl::dump_to_json_like(v2));
 }
 
 TEST(TypeOperationsDumpToJsonLike, EnumFlagWithChar16T) {
   auto result = rfl::dump_to_json_like<char16_t>(permissions_t::read | permissions_t::write);
-  EXPECT_TRUE(result == u"read|write" || result == u"write|read");
+  EXPECT_THAT(result, testing::AnyOf(u"read|write", u"write|read"));
 }
 
 TEST(TypeOperationsDumpToJsonLike, EnumFlagWithChar32T) {
   auto result = rfl::dump_to_json_like<char32_t>(permissions_t::read | permissions_t::write);
-  EXPECT_TRUE(result == U"read|write" || result == U"write|read");
+  EXPECT_THAT(result, testing::AnyOf(U"read|write", U"write|read"));
 }
 
 TEST(TypeOperationsDumpToJsonLike, Variant1) {
-  std::variant<int, std::string> v1{42};
-  std::variant<int, std::string> v2{"hello"};
-  EXPECT_EQ("42", rfl::dump_to_json_like(v1));
-  EXPECT_EQ("\"hello\"", rfl::dump_to_json_like(v2));
+  constexpr auto make_v1 = [] constexpr { return std::variant<int, std::string>{42}; };
+  constexpr auto make_v2 = [] constexpr { return std::variant<int, std::string>{"hello"}; };
+  EXPECT_EQ_STATIC("42", rfl::dump_to_json_like(make_v1()));
+  EXPECT_EQ_STATIC("\"hello\"", rfl::dump_to_json_like(make_v2()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, Variant2) {
   struct S {
     int x;
   };
-  std::variant<S, int> v{S{}};
-  EXPECT_EQ(R"({x:0})", rfl::dump_to_json_like(v));
+  constexpr std::variant<S, int> v{S{}};
+  EXPECT_EQ_STATIC(R"({x:0})", rfl::dump_to_json_like(v));
 }
 
 TEST(TypeOperationsDumpToJsonLike, NestedOptional) {
-  std::optional<std::optional<int>> nested{std::nullopt};
-  EXPECT_EQ("nullopt", rfl::dump_to_json_like(nested));
+  constexpr std::optional<std::optional<int>> nested{std::nullopt};
+  EXPECT_EQ_STATIC("nullopt", rfl::dump_to_json_like(nested));
 }
 
 TEST(TypeOperationsDumpToJsonLike, OptionalInStruct) {
@@ -289,29 +272,29 @@ TEST(TypeOperationsDumpToJsonLike, OptionalInStruct) {
     std::string name;
     std::optional<int> age;
   };
-  with_optional_t w1{"Carol", 25};
-  with_optional_t w2{"Dave", std::nullopt};
-  EXPECT_EQ(R"({name:"Carol",age:25})", rfl::dump_to_json_like(w1));
-  EXPECT_EQ(R"({name:"Dave",age:nullopt})", rfl::dump_to_json_like(w2));
+  constexpr auto make_w1 = [] constexpr { return with_optional_t{"Carol", 25}; };
+  constexpr auto make_w2 = [] constexpr { return with_optional_t{"Dave", std::nullopt}; };
+  EXPECT_EQ_STATIC(R"({name:"Carol",age:25})", rfl::dump_to_json_like(make_w1()));
+  EXPECT_EQ_STATIC(R"({name:"Dave",age:nullopt})", rfl::dump_to_json_like(make_w2()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, Array) {
-  std::array<int, 3> arr{1, 2, 3};
-  EXPECT_EQ("[1,2,3]", rfl::dump_to_json_like(arr));
+  constexpr std::array<int, 3> arr{1, 2, 3};
+  EXPECT_EQ_STATIC("[1,2,3]", rfl::dump_to_json_like(arr));
 }
 
 TEST(TypeOperationsDumpToJsonLike, WithIndent) {
-  person_t p{"Eve", 28};
-  EXPECT_EQ(R"({
+  constexpr auto make_person = [] constexpr { return person_t{"Eve", 28}; };
+  EXPECT_EQ_STATIC(R"({
   name: "Eve",
   age: 28
 })",
-            rfl::dump_to_json_like(p, 2, ' '));
+                   rfl::dump_to_json_like(make_person(), 2, ' '));
 }
 
 TEST(TypeOperationsDumpToJsonLike, NestedWithIndent) {
-  nested_t n{{"Frank", 35}, {100, 95}};
-  EXPECT_EQ(R"({
+  constexpr auto make_nested = [] constexpr { return nested_t{{"Frank", 35}, {100, 95}}; };
+  EXPECT_EQ_STATIC(R"({
   person: {
     name: "Frank",
     age: 35
@@ -321,52 +304,56 @@ TEST(TypeOperationsDumpToJsonLike, NestedWithIndent) {
     95
   ]
 })",
-            rfl::dump_to_json_like(n, 2, ' '));
+                   rfl::dump_to_json_like(make_nested(), 2, ' '));
 }
 
 TEST(TypeOperationsDumpToJsonLike, VectorWithIndent) {
-  std::vector<int> vec{10, 20, 30};
-  EXPECT_EQ(R"([
+  constexpr auto make_vec = [] constexpr { return std::vector<int>{10, 20, 30}; };
+  EXPECT_EQ_STATIC(R"([
   10,
   20,
   30
 ])",
-            rfl::dump_to_json_like(vec, 2, ' '));
+                   rfl::dump_to_json_like(make_vec(), 2, ' '));
 }
 
 TEST(TypeOperationsDumpToJsonLike, VectorOfBoolsWithIndent) {
-  std::vector<bool> vec{true, false, true};
-  EXPECT_EQ(R"([
+  constexpr auto make_vec = [] constexpr { return std::vector<bool>{true, false, true}; };
+  EXPECT_EQ_STATIC(R"([
   true,
   false,
   true
 ])",
-            rfl::dump_to_json_like(vec, 2, ' '));
+                   rfl::dump_to_json_like(make_vec(), 2, ' '));
 }
 
 TEST(TypeOperationsDumpToJsonLike, Monostate) {
-  std::monostate m{};
-  EXPECT_EQ("monostate", rfl::dump_to_json_like(m));
+  constexpr std::monostate m{};
+  EXPECT_EQ_STATIC("monostate", rfl::dump_to_json_like(m));
 }
 
 TEST(TypeOperationsDumpToJsonLike, OptionalInVariant) {
-  std::variant<std::optional<int>, std::string> v{std::nullopt};
-  EXPECT_EQ("nullopt", rfl::dump_to_json_like(v));
+  constexpr auto make_v = [] constexpr {
+    return std::variant<std::optional<int>, std::string>{std::nullopt};
+  };
+  EXPECT_EQ_STATIC("nullopt", rfl::dump_to_json_like(make_v()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, VectorOfOptionals) {
-  std::vector<std::optional<int>> vec{1, std::nullopt, 3};
-  EXPECT_EQ(R"([1,nullopt,3])", rfl::dump_to_json_like(vec));
+  constexpr auto make_vec = [] constexpr {
+    return std::vector<std::optional<int>>{1, std::nullopt, 3};
+  };
+  EXPECT_EQ_STATIC(R"([1,nullopt,3])", rfl::dump_to_json_like(make_vec()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, StringWithSpecialChars) {
-  std::string s{"hello\nworld\ttab"};
-  EXPECT_EQ(R"("hello\nworld\ttab")", rfl::dump_to_json_like(s));
+  constexpr auto make_s = [] constexpr { return std::string{"hello\nworld\ttab"}; };
+  EXPECT_EQ_STATIC(R"("hello\nworld\ttab")", rfl::dump_to_json_like(make_s()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, StringWithMixedContent) {
-  std::string s = "Hello \"World\"\nLine2\tTabbed";
-  EXPECT_EQ(R"("Hello \"World\"\nLine2\tTabbed")", rfl::dump_to_json_like(s));
+  constexpr auto make_s = [] constexpr { return std::string{"Hello \"World\"\nLine2\tTabbed"}; };
+  EXPECT_EQ_STATIC(R"("Hello \"World\"\nLine2\tTabbed")", rfl::dump_to_json_like(make_s()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, VariantValuelessByException) {
@@ -394,111 +381,142 @@ TEST(TypeOperationsDumpToJsonLike, VariantValuelessByException) {
 }
 
 TEST(TypeOperationsDumpToJsonLike, VariantIndex) {
-  std::variant<int, std::string, double> v1{42};
-  std::variant<int, std::string, double> v2{"hello"};
-  std::variant<int, std::string, double> v3{3.14};
-  EXPECT_EQ("42", rfl::dump_to_json_like(v1));
-  EXPECT_EQ("\"hello\"", rfl::dump_to_json_like(v2));
-  EXPECT_EQ("3.14", rfl::dump_to_json_like(v3));
+  constexpr auto make_v1 = [] constexpr { return std::variant<int, std::string, double>{42}; };
+  constexpr auto make_v2 = [] constexpr { return std::variant<int, std::string, double>{"hello"}; };
+  constexpr auto make_v3 = [] constexpr { return std::variant<int, std::string, double>{3.14}; };
+  EXPECT_EQ_STATIC("42", rfl::dump_to_json_like(make_v1()));
+  EXPECT_EQ_STATIC("\"hello\"", rfl::dump_to_json_like(make_v2()));
+  EXPECT_EQ("3.14", rfl::dump_to_json_like(make_v3()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, NestedStructInVector) {
-  std::vector<person_t> people{{"Alice", 30}, {"Bob", 25}, {"Charlie", 35}};
-  EXPECT_EQ(R"([{name:"Alice",age:30},{name:"Bob",age:25},{name:"Charlie",age:35}])",
-            rfl::dump_to_json_like(people));
+  constexpr auto make_vec = [] constexpr {
+    return std::vector<person_t>{{"Alice", 30}, {"Bob", 25}, {"Charlie", 35}};
+  };
+  EXPECT_EQ_STATIC(R"([{name:"Alice",age:30},{name:"Bob",age:25},{name:"Charlie",age:35}])",
+                   rfl::dump_to_json_like(make_vec()));
 }
+
+namespace test_nested_struct_in_struct {
+struct company_t {
+  std::string name;
+  person_t ceo;
+  int founded_year;
+};
+}  // namespace test_nested_struct_in_struct
 
 TEST(TypeOperationsDumpToJsonLike, NestedStructInStruct) {
-  struct company_t {
-    std::string name;
-    person_t ceo;
-    int founded_year;
+  constexpr auto make_company = [] constexpr {
+    return test_nested_struct_in_struct::company_t{"Acme Corp", {"John", 50}, 2020};
   };
-  company_t company{"Acme Corp", {"John", 50}, 2020};
-  EXPECT_EQ(R"({name:"Acme Corp",ceo:{name:"John",age:50},founded_year:2020})",
-            rfl::dump_to_json_like(company));
+  EXPECT_EQ_STATIC(R"({name:"Acme Corp",ceo:{name:"John",age:50},founded_year:2020})",
+                   rfl::dump_to_json_like(make_company()));
 }
 
+namespace test_triple_nested_struct {
+struct address_t {
+  std::string street;
+  std::string city;
+};
+struct employee_t {
+  std::string name;
+  address_t address;
+};
+struct company_t {
+  std::string name;
+  employee_t ceo;
+};
+}  // namespace test_triple_nested_struct
+
 TEST(TypeOperationsDumpToJsonLike, TripleNestedStruct) {
-  struct address_t {
-    std::string street;
-    std::string city;
+  constexpr auto make_company = [] constexpr {
+    return test_triple_nested_struct::company_t{"TechCorp", {"Alice", {"123 Main St", "New York"}}};
   };
-  struct employee_t {
-    std::string name;
-    address_t address;
-  };
-  struct company_t {
-    std::string name;
-    employee_t ceo;
-  };
-  company_t company{"TechCorp", {"Alice", {"123 Main St", "New York"}}};
-  auto result = rfl::dump_to_json_like(company);
-  EXPECT_TRUE(
-      result
-          == R"({name:"TechCorp",ceo:{name:"Alice",address:{street:"123 Main St",city:"New York"}}})"
-      || result
-             == R"({name:"TechCorp",ceo:{name:"Alice",address:{city:"New York",street:"123 Main St"}}})");
+  EXPECT_EQ_STATIC(
+      R"({name:"TechCorp",ceo:{name:"Alice",address:{street:"123 Main St",city:"New York"}}})",
+      rfl::dump_to_json_like(make_company()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, NestedOptionalInVector) {
-  std::vector<std::optional<person_t>> people{
-      person_t{"Alice", 30}, std::nullopt, person_t{"Bob", 25}};
-  EXPECT_EQ(R"([{name:"Alice",age:30},nullopt,{name:"Bob",age:25}])",
-            rfl::dump_to_json_like(people));
+  constexpr auto make_people = [] constexpr {
+    return std::vector<std::optional<person_t>>{
+        person_t{"Alice", 30}, std::nullopt, person_t{"Bob", 25}};
+  };
+  EXPECT_EQ_STATIC(R"([{name:"Alice",age:30},nullopt,{name:"Bob",age:25}])",
+                   rfl::dump_to_json_like(make_people()));
 }
 
+namespace test_optional_struct_with_value {
+struct config_t {
+  std::string name;
+  std::optional<int> port;
+};
+}  // namespace test_optional_struct_with_value
+
 TEST(TypeOperationsDumpToJsonLike, OptionalStructWithValue) {
-  struct config_t {
-    std::string name;
-    std::optional<int> port;
+  constexpr auto make_c1 = [] constexpr {
+    return test_optional_struct_with_value::config_t{"server", 8080};
   };
-  config_t c1{"server", 8080};
-  config_t c2{"client", std::nullopt};
-  EXPECT_EQ(R"({name:"server",port:8080})", rfl::dump_to_json_like(c1));
-  EXPECT_EQ(R"({name:"client",port:nullopt})", rfl::dump_to_json_like(c2));
+  constexpr auto make_c2 = [] constexpr {
+    return test_optional_struct_with_value::config_t{"client", std::nullopt};
+  };
+  EXPECT_EQ_STATIC(R"({name:"server",port:8080})", rfl::dump_to_json_like(make_c1()));
+  EXPECT_EQ_STATIC(R"({name:"client",port:nullopt})", rfl::dump_to_json_like(make_c2()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, VectorOfVariants) {
-  std::vector<std::variant<int, std::string>> vec{42, "hello", 100, "world"};
-  EXPECT_EQ(R"([42,"hello",100,"world"])", rfl::dump_to_json_like(vec));
+  constexpr auto make_vec = [] constexpr {
+    return std::vector<std::variant<int, std::string>>{42, "hello", 100, "world"};
+  };
+  EXPECT_EQ_STATIC(R"([42,"hello",100,"world"])", rfl::dump_to_json_like(make_vec()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, MapLikeWithVector) {
-  std::vector<std::pair<std::string, int>> pairs{{"a", 1}, {"b", 2}, {"c", 3}};
-  EXPECT_EQ(R"([["a",1],["b",2],["c",3]])", rfl::dump_to_json_like(pairs));
+  constexpr auto make_pairs = [] constexpr {
+    return std::vector<std::pair<std::string, int>>{{"a", 1}, {"b", 2}, {"c", 3}};
+  };
+  EXPECT_EQ_STATIC(R"([["a",1],["b",2],["c",3]])", rfl::dump_to_json_like(make_pairs()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, TupleWithNestedTypes) {
-  auto t =
-      std::make_tuple(42, std::string{"hello"}, std::vector<int>{1, 2, 3}, person_t{"Alice", 30});
-  EXPECT_EQ(R"([42,"hello",[1,2,3],{name:"Alice",age:30}])", rfl::dump_to_json_like(t));
+  constexpr auto make_tuple = [] constexpr {
+    return std::make_tuple(
+        42, std::string{"hello"}, std::vector<int>{1, 2, 3}, person_t{"Alice", 30});
+  };
+  EXPECT_EQ_STATIC(R"([42,"hello",[1,2,3],{name:"Alice",age:30}])",
+                   rfl::dump_to_json_like(make_tuple()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, DeepNestedTuples) {
-  auto inner = std::make_tuple(1, 2);
-  auto outer = std::make_tuple(inner, 3);
-  EXPECT_EQ(R"([[1,2],3])", rfl::dump_to_json_like(outer));
+  constexpr auto inner = std::make_tuple(1, 2);
+  constexpr auto outer = std::make_tuple(inner, 3);
+  EXPECT_EQ_STATIC(R"([[1,2],3])", rfl::dump_to_json_like(outer));
 }
+
+namespace test_struct_with_all_types {
+struct mixed_t {
+  int i;
+  double d;
+  bool b;
+  std::string s;
+  std::vector<int> arr;
+  person_t p;
+};
+}  // namespace test_struct_with_all_types
 
 TEST(TypeOperationsDumpToJsonLike, StructWithAllTypes) {
-  struct mixed_t {
-    int i;
-    double d;
-    bool b;
-    std::string s;
-    std::vector<int> arr;
-    person_t p;
+  constexpr auto make_mixed = [] constexpr {
+    return test_struct_with_all_types::mixed_t{42, 3.14, true, "test", {1, 2, 3}, {"Alice", 30}};
   };
-  mixed_t m{42, 3.14, true, "test", {1, 2, 3}, {"Alice", 30}};
   EXPECT_EQ(R"({i:42,d:3.14,b:true,s:"test",arr:[1,2,3],)"
             R"(p:{name:"Alice",age:30}})",
-            rfl::dump_to_json_like(m));
+            rfl::dump_to_json_like(make_mixed()));
 }
 
-// The expected result shall be INDENTED by 2 spaces. Also, make the expected as raw string.
 TEST(TypeOperationsDumpToJsonLike, NestedWithIndentComplex) {
-  std::vector<person_t> people{{"Alice", 30}, {"Bob", 25}};
+  constexpr auto make_people = [] constexpr {
+    return std::vector<person_t>{{"Alice", 30}, {"Bob", 25}};
+  };
   EXPECT_EQ(R"([
   {
     name: "Alice",
@@ -509,116 +527,94 @@ TEST(TypeOperationsDumpToJsonLike, NestedWithIndentComplex) {
     age: 25
   }
 ])",
-            rfl::dump_to_json_like(people, 2, ' '));
-}
-
-TEST(TypeOperationsDumpToJsonLike, EmptyOptional) {
-  std::optional<std::string> opt{std::nullopt};
-  EXPECT_EQ("nullopt", rfl::dump_to_json_like(opt));
-}
-
-TEST(TypeOperationsDumpToJsonLike, OptionalWithString) {
-  std::optional<std::string> opt{"hello"};
-  EXPECT_EQ("\"hello\"", rfl::dump_to_json_like(opt));
-}
-
-TEST(TypeOperationsDumpToJsonLike, DoubleNestedOptional) {
-  std::optional<std::optional<int>> opt1{42};
-  std::optional<std::optional<int>> opt2{std::nullopt};
-  std::optional<std::optional<int>> opt3{std::nullopt};
-  EXPECT_EQ("42", rfl::dump_to_json_like(opt1));
-  EXPECT_EQ("nullopt", rfl::dump_to_json_like(opt2));
-  EXPECT_EQ("nullopt", rfl::dump_to_json_like(opt3));
-}
-
-TEST(TypeOperationsDumpToJsonLike, TripleNestedOptional) {
-  std::optional<std::optional<std::optional<int>>> opt{42};
-  EXPECT_EQ("42", rfl::dump_to_json_like(opt));
+            rfl::dump_to_json_like(make_people(), 2, ' '));
 }
 
 TEST(TypeOperationsDumpToJsonLike, EmptyStruct) {
   struct empty_t {};
-  EXPECT_EQ("{}", rfl::dump_to_json_like(empty_t{}));
+  EXPECT_EQ_STATIC("{}", rfl::dump_to_json_like(empty_t{}));
 }
 
 TEST(TypeOperationsDumpToJsonLike, EmptyString) {
-  EXPECT_EQ("\"\"", rfl::dump_to_json_like(std::string{""}));
+  EXPECT_EQ_STATIC("\"\"", rfl::dump_to_json_like(std::string{""}));
 }
 
 TEST(TypeOperationsDumpToJsonLike, LargeInteger) {
-  EXPECT_EQ("2147483647", rfl::dump_to_json_like(2147483647));
-  EXPECT_EQ("-2147483648", rfl::dump_to_json_like(-2147483648));
+  EXPECT_EQ_STATIC("2147483647", rfl::dump_to_json_like(2147483647));
+  EXPECT_EQ_STATIC("-2147483648", rfl::dump_to_json_like(-2147483648));
 }
 
 TEST(TypeOperationsDumpToJsonLike, NegativeZeroFloat) {
   EXPECT_EQ("-0", rfl::dump_to_json_like(-0.0));
 }
 
-TEST(TypeOperationsDumpToJsonLike, ScientificNotation) {
-  EXPECT_EQ("1e+10", rfl::dump_to_json_like(1e10));
-  EXPECT_EQ("1e-05", rfl::dump_to_json_like(1e-5));
+TEST(TypeOperationsDumpToJsonLike, StructWithMapLike) {
+  constexpr auto make_map = [] constexpr {
+    return std::vector<std::pair<std::string, std::string>>{{"key1", "value1"}, {"key2", "value2"}};
+  };
+  EXPECT_EQ_STATIC(R"([["key1","value1"],["key2","value2"]])", rfl::dump_to_json_like(make_map()));
 }
 
-TEST(TypeOperationsDumpToJsonLike, StructWithMapLike) {
-  std::vector<std::pair<std::string, std::string>> map{{"key1", "value1"}, {"key2", "value2"}};
-  EXPECT_EQ(R"([["key1","value1"],["key2","value2"]])", rfl::dump_to_json_like(map));
-}
+namespace test_complex_nesting {
+struct inner_t {
+  std::optional<std::vector<int>> nums;
+  std::string label;
+};
+struct outer_t {
+  inner_t data;
+  std::variant<inner_t, int> choice;
+};
+}  // namespace test_complex_nesting
 
 TEST(TypeOperationsDumpToJsonLike, ComplexNesting) {
-  struct inner_t {
-    std::optional<std::vector<int>> nums;
-    std::string label;
+  constexpr auto make_outer = [] constexpr {
+    return test_complex_nesting::outer_t{
+        test_complex_nesting::inner_t{std::vector<int>{1, 2, 3}, "first"}, 42};
   };
-  struct outer_t {
-    inner_t data;
-    std::variant<inner_t, int> choice;
-  };
-  inner_t i1{std::vector<int>{1, 2, 3}, "first"};
-  inner_t i2{std::nullopt, "second"};
-  outer_t o1{i1, 42};
-  auto result1 = rfl::dump_to_json_like(o1);
-  EXPECT_TRUE(result1 == R"({data:{nums:[1,2,3],label:"first"},choice:42})");
+  EXPECT_TRUE(rfl::dump_to_json_like<char8_t>(make_outer())
+              == u8R"({data:{nums:[1,2,3],label:"first"},choice:42})");
 }
 
 TEST(TypeOperationsDumpToJsonLike, IndentWithTab) {
-  person_t p{"Tabby", 40};
-  EXPECT_EQ("{\n\tname: \"Tabby\",\n\tage: 40\n}", rfl::dump_to_json_like(p, 1, '\t'));
+  constexpr auto make_person = [] constexpr { return person_t{"Tabby", 40}; };
+  EXPECT_EQ_STATIC("{\n\tname: \"Tabby\",\n\tage: 40\n}",
+                   rfl::dump_to_json_like(make_person(), 1, '\t'));
 }
 
 TEST(TypeOperationsDumpToJsonLike, CharTypesChar8T) {
-  std::u8string result = rfl::dump_to_json_like<char8_t>(u8"hello");
-  EXPECT_TRUE(result == u8"\"hello\"");
+  constexpr auto make_hello = [] constexpr { return u8"hello"; };
+  EXPECT_TRUE_STATIC(rfl::dump_to_json_like<char8_t>(make_hello()) == u8"\"hello\"");
 }
 
 TEST(TypeOperationsDumpToJsonLike, CharTypesChar16T) {
-  std::u16string result = rfl::dump_to_json_like<char16_t>(u"world");
-  EXPECT_TRUE(result == u"\"world\"");
+  constexpr auto make_world = [] constexpr { return u"world"; };
+  EXPECT_TRUE_STATIC(rfl::dump_to_json_like<char16_t>(make_world()) == u"\"world\"");
 }
 
 TEST(TypeOperationsDumpToJsonLike, CharTypesChar32T) {
-  std::u32string result = rfl::dump_to_json_like<char32_t>(U"test");
-  EXPECT_TRUE(result == U"\"test\"");
+  constexpr auto make_test = [] constexpr { return U"test"; };
+  EXPECT_TRUE_STATIC(rfl::dump_to_json_like<char32_t>(make_test()) == U"\"test\"");
 }
 
 TEST(TypeOperationsDumpToJsonLike, CharTypesChar8TWithSpecialChars) {
-  std::u8string result = rfl::dump_to_json_like<char8_t>(u8"hello\nworld");
-  EXPECT_TRUE(result == u8"\"hello\\nworld\"");
+  constexpr auto make_hello_world = [] constexpr { return u8"hello\nworld"; };
+  EXPECT_TRUE_STATIC(rfl::dump_to_json_like<char8_t>(make_hello_world()) == u8"\"hello\\nworld\"");
 }
 
 TEST(TypeOperationsDumpToJsonLike, CharTypesChar16TWithSpecialChars) {
-  std::u16string result = rfl::dump_to_json_like<char16_t>(u"hello\nworld");
-  EXPECT_TRUE(result == u"\"hello\\nworld\"");
+  constexpr auto make_hello_world = [] constexpr { return u"hello\nworld"; };
+  EXPECT_TRUE_STATIC(rfl::dump_to_json_like<char16_t>(make_hello_world()) == u"\"hello\\nworld\"");
 }
 
 TEST(TypeOperationsDumpToJsonLike, CharTypesChar32TWithSpecialChars) {
-  std::u32string result = rfl::dump_to_json_like<char32_t>(U"hello\nworld");
-  EXPECT_TRUE(result == U"\"hello\\nworld\"");
+  constexpr auto make_hello_world = [] constexpr { return U"hello\nworld"; };
+  EXPECT_TRUE_STATIC(rfl::dump_to_json_like<char32_t>(make_hello_world()) == U"\"hello\\nworld\"");
 }
 
 // Note: std::vector<char> is handled as a single string since it satisfies string_like concept
 TEST(TypeOperationsDumpToJsonLike, VectorOfChars) {
-  std::vector<char> vec{'a', 'b', 'c'};
-  EXPECT_EQ(R"("abc")", rfl::dump_to_json_like(vec));
+  constexpr auto make_vec = [] constexpr { return std::vector<char>{'a', 'b', 'c'}; };
+  EXPECT_EQ_STATIC(R"("abc")", rfl::dump_to_json_like(make_vec()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, VectorOfDoubles) {
@@ -627,37 +623,50 @@ TEST(TypeOperationsDumpToJsonLike, VectorOfDoubles) {
 }
 
 TEST(TypeOperationsDumpToJsonLike, VectorOfOptionalStrings) {
-  std::vector<std::optional<std::string>> vec{"hello", std::nullopt, "world"};
-  EXPECT_EQ(R"(["hello",nullopt,"world"])", rfl::dump_to_json_like(vec));
+  constexpr auto make_vec = [] constexpr {
+    return std::vector<std::optional<std::string>>{"hello", std::nullopt, "world"};
+  };
+  EXPECT_EQ_STATIC(R"(["hello",nullopt,"world"])", rfl::dump_to_json_like(make_vec()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, VectorOfPairs) {
-  std::vector<std::pair<int, int>> vec{{1, 2}, {3, 4}};
-  EXPECT_EQ("[[1,2],[3,4]]", rfl::dump_to_json_like(vec));
+  constexpr auto make_vec = [] constexpr {
+    return std::vector<std::pair<int, int>>{{1, 2}, {3, 4}};
+  };
+  EXPECT_EQ_STATIC("[[1,2],[3,4]]", rfl::dump_to_json_like(make_vec()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, EmptyPairsVector) {
-  std::vector<std::pair<int, int>> vec{};
-  EXPECT_EQ("[]", rfl::dump_to_json_like(vec));
+  constexpr auto make_vec = [] constexpr { return std::vector<std::pair<int, int>>{}; };
+  EXPECT_EQ_STATIC("[]", rfl::dump_to_json_like(make_vec()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, ArrayOfStrings) {
-  std::array<std::string, 2> arr{"first", "second"};
-  EXPECT_EQ(R"(["first","second"])", rfl::dump_to_json_like(arr));
+  constexpr auto make_arr = [] constexpr { return std::array<std::string, 2>{"first", "second"}; };
+  EXPECT_EQ_STATIC(R"(["first","second"])", rfl::dump_to_json_like(make_arr()));
 }
 
+namespace test_vector_of_bools_in_struct {
+struct settings_t {
+  std::string name;
+  std::vector<bool> flags;
+};
+}  // namespace test_vector_of_bools_in_struct
+
 TEST(TypeOperationsDumpToJsonLike, VectorOfBoolsInStruct) {
-  struct settings_t {
-    std::string name;
-    std::vector<bool> flags;
+  constexpr auto make_settings = [] constexpr {
+    return test_vector_of_bools_in_struct::settings_t{"debug", {true, false, true, false}};
   };
-  settings_t s{"debug", {true, false, true, false}};
-  EXPECT_EQ(R"({name:"debug",flags:[true,false,true,false]})", rfl::dump_to_json_like(s));
+  EXPECT_EQ_STATIC(R"({name:"debug",flags:[true,false,true,false]})",
+                   rfl::dump_to_json_like(make_settings()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, ArrayOfStructs) {
-  std::array<person_t, 2> arr{{{"Alice", 30}, {"Bob", 25}}};
-  EXPECT_EQ(R"([{name:"Alice",age:30},{name:"Bob",age:25}])", rfl::dump_to_json_like(arr));
+  constexpr auto make_arr = [] constexpr {
+    return std::array<person_t, 2>{{{"Alice", 30}, {"Bob", 25}}};
+  };
+  EXPECT_EQ_STATIC(R"([{name:"Alice",age:30},{name:"Bob",age:25}])",
+                   rfl::dump_to_json_like(make_arr()));
 }
 
 TEST(TypeOperationsDumpToJsonLike, Pointers) {
@@ -672,11 +681,15 @@ TEST(TypeOperationsDumpToJsonLike, Pointers) {
   EXPECT_EQ(uR"({first:0x12345678,second:nullptr})", rfl::dump_to_json_like<char16_t>(ps));
 }
 
+namespace test_pointers_to_data_member {
+struct my_pair_t {
+  int first;
+  int second;
+};
+}  // namespace test_pointers_to_data_member
+
 TEST(TypeOperationsDumpToJsonLike, PointersToDataMember) {
-  struct my_pair_t {
-    int first;
-    int second;
-  };
+  using test_pointers_to_data_member::my_pair_t;
 
   // May be "&my_pair_t::first" or "&(...)::my_pair_t::first"
   // where "(...)" is implementation-defined by the C++ standard library.

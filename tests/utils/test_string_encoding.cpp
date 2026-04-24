@@ -727,6 +727,35 @@ TEST(UtilsStringEncoding, ConsumeUtf8InvalidSequenceValidUtf8) {
   EXPECT_EQ(input, end);
 }
 
+TEST(UtilsStringEncoding, ConsumeUtf8InvalidSequence) {
+  // U+110000 which is out of valid Unicode range
+  char input[] = "\xF4\x90\x80\x80";
+  const auto* end = rfl::consume_utf8_invalid_sequence(input, input + 4);
+  EXPECT_EQ(input + 4, end);
+
+  strcpy(input, "\xF4\x90\x8F");
+  end = rfl::consume_utf8_invalid_sequence(input, input + 3);
+  EXPECT_EQ(input + 3, end);
+
+  // Incomplete 3-byte sequence E0 80 + Valid 1-byte character 20
+  strcpy(input, "\xE0\x80\x20");
+  end = rfl::consume_utf8_invalid_sequence(input, input + 3);
+  EXPECT_EQ(input + 2, end);
+
+  strcpy(input, "\xC0\x80");
+  end = rfl::consume_utf8_invalid_sequence(input, input + 2);
+  EXPECT_EQ(input + 2, end);
+
+  strcpy(input, "\x80");
+  end = rfl::consume_utf8_invalid_sequence(input, input + 1);
+  EXPECT_EQ(input + 1, end);
+
+  // C2 A9 => '©'; 20 => ' '
+  strcpy(input, "\xC2\xA9\x20");
+  end = rfl::consume_utf8_invalid_sequence(input, input + 3);
+  EXPECT_EQ(input, end);
+}
+
 // ==================== Consume invalid UTF-16 sequence ====================
 // consume_utf16_invalid_sequence consumes the maximal prefix of continuous invalid UTF-16 code
 // units. Invalid code units include: unpaired surrogates (standalone low surrogates, high

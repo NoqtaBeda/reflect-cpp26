@@ -44,7 +44,6 @@
 #include <reflect_cpp26/utils/string_hash.hpp>
 #include <reflect_cpp26/utils/string_utility.hpp>
 #include <reflect_cpp26/utils/tags.hpp>
-#include <reflect_cpp26/utils/to_string.hpp>
 #include <reflect_cpp26/utils/type_tuple.hpp>
 #include <reflect_cpp26/utils/utility.hpp>
 

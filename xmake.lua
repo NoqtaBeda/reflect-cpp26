@@ -76,7 +76,6 @@ meta_test_cases = {
   "utils/test_meta_tuple",
   "utils/test_string_builder",
   "utils/test_string_encoding",
-  "utils/test_to_string",
   "utils/test_type_tuple",
   "utils/test_utility",
   -- Type Traits
@@ -89,7 +88,6 @@ meta_test_cases = {
   "type_traits/class_types/test_ambiguous_inheritance",
   "type_traits/class_types/test_flattenable_types",
   "type_traits/class_types/test_flattened_nsdm",
-  "type_traits/class_types/test_member_access",
   -- Enum
   "enum/impl/test_enum_flags_category",
   "enum/test_enum_bitwise_operators",
@@ -176,7 +174,6 @@ meta_test_cases = {
   -- Type Operations
   "type_operations/test_dump_to_json_like",
   "type_operations/test_serialize_to_json",
-  "type_operations/test_to_string",
   "type_operations/test_to_structural",
 }
 

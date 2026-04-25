@@ -23,6 +23,7 @@ xmake f -m <debug|release> \
         --sdk=<llvm-root> \
         --cxxflags="-stdlib=libc++" \
         --ldflags="-stdlib=libc++" \
+        --cxxflags="-freflection-latest" \
         --toolchain=llvm  \
         (optional parameters see above)
 

@@ -48,7 +48,6 @@ function make_test_case(path)
     add_files(cpp_path)
     set_languages("c++26")
     add_includedirs("include", ".")
-    add_cxxflags("-freflection-latest")
     add_packages("gtest")
     add_options("static-test")
   end)
@@ -64,7 +63,6 @@ function make_example(path)
     add_files(cpp_path)
     set_languages("c++26")
     add_includedirs("include")
-    add_cxxflags("-freflection-latest")
   end)
 end
 
@@ -74,6 +72,7 @@ meta_test_cases = {
   "utils/test_ctype",
   "utils/test_identifier_naming",
   "utils/test_meta_tuple",
+  "utils/test_ptr_variant",
   "utils/test_string_builder",
   "utils/test_string_encoding",
   "utils/test_type_tuple",

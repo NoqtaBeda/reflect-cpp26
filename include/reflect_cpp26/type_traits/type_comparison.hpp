@@ -23,52 +23,29 @@
 #ifndef REFLECT_CPP26_TYPE_TRAITS_TYPE_COMPARISON_HPP
 #define REFLECT_CPP26_TYPE_TRAITS_TYPE_COMPARISON_HPP
 
-// Root header: Include only:
-// (1) C++ stdlib; (2) utils/config.h; (3) Other root headers
 #include <type_traits>
 
 namespace reflect_cpp26 {
-/**
- * Whether T is exactly the same as one of Args.
- */
 template <class T, class... Args>
 concept same_as_one_of = (std::is_same_v<T, Args> || ...);
 
-/**
- * Whether T is exactly the same as neither of Args.
- */
 template <class T, class... Args>
 concept same_as_none_of = !same_as_one_of<T, Args...>;
 
-/**
- * Whether T is the same as one of Args after removing cv-qualifiers.
- */
 template <class T, class... Args>
 concept same_as_one_of_without_cv =
     (std::is_same_v<std::remove_cv_t<T>, std::remove_cv_t<Args>> || ...);
 
-/**
- * Whether T is the same as neither of Args after removing cv-qualifiers.
- */
 template <class T, class... Args>
 concept same_as_none_of_without_cv = !same_as_one_of_without_cv<T, Args...>;
 
-/**
- * Whether T is the same as one of Args after removing cvref-qualifiers.
- */
 template <class T, class... Args>
 concept same_as_one_of_without_cvref =
     (std::is_same_v<std::remove_cvref_t<T>, std::remove_cvref_t<Args>> || ...);
 
-/**
- * Whether T is the same as neither of Args after removing cvref-qualifiers.
- */
 template <class T, class... Args>
 concept same_as_none_of_without_cvref = !same_as_one_of_without_cvref<T, Args...>;
 
-/**
- * Whether T and Args... are all the exactly same.
- */
 template <class T, class... Args>
 constexpr bool are_all_same_v = (std::is_same_v<T, Args> && ...);
 
@@ -91,6 +68,28 @@ concept not_same_as_without_cv = !std::is_same_v<std::remove_cv_t<T>, std::remov
 
 template <class T, class U>
 concept not_same_as_without_cvref = !std::is_same_v<std::remove_cvref_t<T>, std::remove_cvref_t<U>>;
+
+// -------- Conversion check --------
+
+template <class T, class... Args>
+concept convertible_to_one_of = (std::convertible_to<T, Args> || ...);
+
+template <class T, class... Args>
+concept convertible_to_none_of = !convertible_to_one_of<T, Args...>;
+
+template <class T, class... Args>
+concept convertible_to_one_of_without_cv =
+    (std::convertible_to<std::remove_cv_t<T>, std::remove_cv_t<Args>> || ...);
+
+template <class T, class... Args>
+concept convertible_to_none_of_without_cv = !convertible_to_one_of_without_cv<T, Args...>;
+
+template <class T, class... Args>
+concept convertible_to_one_of_without_cvref =
+    (std::convertible_to<std::remove_cvref_t<T>, std::remove_cvref_t<Args>> || ...);
+
+template <class T, class... Args>
+concept convertible_to_none_of_without_cvref = !convertible_to_one_of_without_cvref<T, Args...>;
 }  // namespace reflect_cpp26
 
 #endif  // REFLECT_CPP26_TYPE_TRAITS_TYPE_COMPARISON_HPP

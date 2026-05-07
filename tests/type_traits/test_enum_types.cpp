@@ -52,13 +52,13 @@ template <>
 constexpr auto rfl::is_enum_flag_v<scoped_2_t> = true;
 
 // Marked as enum flag via annotation
-enum class REFLECT_CPP26_AS_ENUM_FLAG annotated_scoped_t {
+enum class AS_ENUM_FLAG annotated_scoped_t {
   foo = 1,
   bar = 2,
   baz = 4,
 };
 
-enum REFLECT_CPP26_AS_ENUM_FLAG annotated_unscoped_t {
+enum AS_ENUM_FLAG annotated_unscoped_t {
   ANNOTATED_UNSCOPED_A = 1,
   ANNOTATED_UNSCOPED_B = 2,
   ANNOTATED_UNSCOPED_C = 4,
@@ -66,21 +66,21 @@ enum REFLECT_CPP26_AS_ENUM_FLAG annotated_unscoped_t {
 
 TEST(TypeTraits, EnumFlag) {
   // Unscoped enum
-  static_assert(NOT rfl::enum_flag<unscoped_t>);
+  static_assert(NOT rfl::enum_flag_type<unscoped_t>);
   // Scoped enum, without is_enum_flag_v specialization
-  static_assert(NOT rfl::enum_flag<std::errc>);
+  static_assert(NOT rfl::enum_flag_type<std::errc>);
   // Not classified as enum flag even if operator&, operator| and operator^ are all provided
-  static_assert(NOT rfl::enum_flag<std::byte>);
-  static_assert(NOT rfl::enum_flag<scoped_1_t>);
+  static_assert(NOT rfl::enum_flag_type<std::byte>);
+  static_assert(NOT rfl::enum_flag_type<scoped_1_t>);
   // Scoped enum, with is_enum_flag_v specialization
-  static_assert(rfl::enum_flag<scoped_2_t>);
+  static_assert(rfl::enum_flag_type<scoped_2_t>);
   // Scoped, annotated
-  static_assert(rfl::enum_flag<const annotated_scoped_t>);
+  static_assert(rfl::enum_flag_type<const annotated_scoped_t>);
   // Unscoped, annotated
-  static_assert(rfl::enum_flag<volatile annotated_unscoped_t>);
+  static_assert(rfl::enum_flag_type<volatile annotated_unscoped_t>);
 
   // Not enum at all
-  static_assert(NOT rfl::enum_flag<annotated_scoped_t&>);
-  static_assert(NOT rfl::enum_flag<void>);
-  static_assert(NOT rfl::enum_flag<int>);
+  static_assert(NOT rfl::enum_flag_type<annotated_scoped_t&>);
+  static_assert(NOT rfl::enum_flag_type<void>);
+  static_assert(NOT rfl::enum_flag_type<int>);
 }

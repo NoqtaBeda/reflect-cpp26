@@ -24,10 +24,15 @@
 #define REFLECT_CPP26_TYPE_TRAITS_ENUM_TYPES_HPP
 
 #include <concepts>
+#include <reflect_cpp26/utils/concepts.hpp>  // enum_type, scoped_enum_type
 #include <reflect_cpp26/utils/meta_utility.hpp>
 #include <type_traits>
 
 #define REFLECT_CPP26_AS_ENUM_FLAG [[= ::reflect_cpp26::impl::enum_flag_annotation_tag_t{}]]
+
+#ifdef REFLECT_CPP26_IMPORT_MACROS
+#define AS_ENUM_FLAG REFLECT_CPP26_AS_ENUM_FLAG
+#endif
 
 namespace reflect_cpp26 {
 // Specialize is_enum_flag_v to mark an enum type as flag type.
@@ -38,21 +43,19 @@ namespace impl {
 struct enum_flag_annotation_tag_t {};
 
 consteval bool is_enum_flag_type(std::meta::info T) {
+  if (!is_enum_type(T)) {
+    return false;
+  }
   if (extract<bool>(^^is_enum_flag_v, T)) {
     return true;
   }
   // Alternative: Annotate the enum type via macro REFLECT_CPP26_AS_ENUM_FLAG
-  for (auto a : annotations_of(T)) {
-    if (remove_const(type_of(a)) == ^^enum_flag_annotation_tag_t) {
-      return true;  // TODO: Replace this for-loop with std::meta::annotations_of_with_type()
-    }
-  }
-  return false;
+  return !annotations_of_with_type(T, ^^enum_flag_annotation_tag_t).empty();
 }
 }  // namespace impl
 
 template <class T>
-concept enum_flag = impl::is_enum_flag_type(remove_cv(^^T));
+concept enum_flag_type = impl::is_enum_flag_type(remove_cv(^^T));
 }  // namespace reflect_cpp26
 
 #endif  // REFLECT_CPP26_TYPE_TRAITS_ENUM_TYPES_HPP

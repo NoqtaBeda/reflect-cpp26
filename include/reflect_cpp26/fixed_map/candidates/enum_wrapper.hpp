@@ -24,6 +24,7 @@
 #define REFLECT_CPP26_FIXED_MAP_CANDIDATES_ENUM_WRAPPER_HPP
 
 #include <cstddef>
+#include <optional>
 #include <type_traits>
 #include <utility>  // std::to_underlying
 
@@ -39,7 +40,7 @@ public:
     return underlying.size();
   }
 
-  constexpr auto find(key_type key) const -> const value_type* {
+  constexpr auto find(key_type key) const -> std::optional<const value_type&> {
     return underlying.find(std::to_underlying(key));
   }
 

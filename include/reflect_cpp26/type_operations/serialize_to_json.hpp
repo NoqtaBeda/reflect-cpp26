@@ -149,7 +149,7 @@ constexpr bool stringify_enum(basic_string_builder<CharT, Allocator>& dest, T va
 template <bool ToString, bool HaltsOnInvalid, class CharT, class Allocator, class T>
 constexpr bool serialize_enum(basic_string_builder<CharT, Allocator>& dest, T value) {
   if constexpr (ToString) {
-    if constexpr (enum_flag<T>) {
+    if constexpr (enum_flag_type<T>) {
       return stringify_enum_flag<HaltsOnInvalid>(dest, value);
     } else {
       return stringify_enum<HaltsOnInvalid>(dest, value);

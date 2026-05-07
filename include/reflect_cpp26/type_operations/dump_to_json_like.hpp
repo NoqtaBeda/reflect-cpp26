@@ -143,7 +143,7 @@ constexpr void dump_enum_to_string(basic_string_builder<CharT, Allocator>& dest,
 
 template <class CharT, class Allocator, class T>
 constexpr void dump_enum(basic_string_builder<CharT, Allocator>& dest, T value) {
-  if constexpr (enum_flag<T>) {
+  if constexpr (enum_flag_type<T>) {
     dump_enum_flags_to_string(dest, value);
   } else {
     dump_enum_to_string(dest, value);

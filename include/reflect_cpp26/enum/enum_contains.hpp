@@ -39,7 +39,7 @@ private:
 public:
   static constexpr bool operator()(ENoCV value) {
     auto key = impl::promoted(value);
-    return impl::enum_name_map_v<E>.find(key) != nullptr;
+    return impl::enum_name_map_v<E>.find(key).has_value();
   }
 
   static constexpr bool operator()(std::integral auto value) {
@@ -47,15 +47,15 @@ public:
       return false;
     }
     auto value_as_enum = static_cast<ENoCV>(value);
-    return impl::enum_name_map_v<E>.find(impl::promoted(value_as_enum)) != nullptr;
+    return impl::enum_name_map_v<E>.find(impl::promoted(value_as_enum)).has_value();
   }
 
   static constexpr bool operator()(std::string_view str) {
-    return impl::enum_from_string_map_v<E>.find(str) != nullptr;
+    return impl::enum_from_string_map_v<E>.find(str).has_value();
   }
 
   static constexpr bool operator()(ascii_case_insensitive_tag_t, std::string_view str) {
-    return impl::enum_from_ci_string_map_v<E>.find(str) != nullptr;
+    return impl::enum_from_ci_string_map_v<E>.find(str).has_value();
   }
 };
 

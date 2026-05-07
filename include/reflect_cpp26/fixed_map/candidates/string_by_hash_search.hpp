@@ -23,6 +23,7 @@
 #ifndef REFLECT_CPP26_FIXED_MAP_CANDIDATES_STRING_BY_HASH_SEARCH_HPP
 #define REFLECT_CPP26_FIXED_MAP_CANDIDATES_STRING_BY_HASH_SEARCH_HPP
 
+#include <optional>
 #include <reflect_cpp26/fixed_map/candidates/string_empty.hpp>
 #include <reflect_cpp26/fixed_map/impl/string_policy.hpp>
 #include <reflect_cpp26/utils/define_static_values.hpp>
@@ -44,24 +45,25 @@ public:
     return entries.size();
   }
 
-  constexpr auto find(std::basic_string_view<CharT> key) const -> const value_type* {
+  constexpr auto find(std::basic_string_view<CharT> key) const
+      -> std::optional<const value_type&> {
     auto len = key.length();
     if (len < min_length || len > max_length) {
-      return nullptr;
+      return std::nullopt;
     }
     auto hash = Policy<CharT>::hash(key);
     for (const auto& cur : entries) {
       if (hash != cur.elements.first) continue;
       if (Policy<CharT>::equals(cur.elements.second, key)) {
-        return std::addressof(cur.elements.third);
+        return cur.elements.third;
       }
       break;
     }
-    return nullptr;
+    return std::nullopt;
   }
 
   constexpr auto operator[](std::basic_string_view<CharT> key) const -> const value_type& {
-    auto* p = find(key);
+    auto p = find(key);
     return p ? *p : default_v<value_type>;
   }
 
@@ -84,10 +86,11 @@ public:
     return entries.size();
   }
 
-  constexpr auto find(std::basic_string_view<CharT> key) const -> const value_type* {
+  constexpr auto find(std::basic_string_view<CharT> key) const
+      -> std::optional<const value_type&> {
     auto len = key.length();
     if (len < min_length || len > max_length) {
-      return nullptr;
+      return std::nullopt;
     }
     auto hash = Policy<CharT>::hash(key);
     constexpr auto hash_proj = [](const auto& entry) { return unwrap(entry).elements.first; };
@@ -95,24 +98,24 @@ public:
       auto range = std::ranges::equal_range(entries, hash, {}, hash_proj);
       for (const auto& entry : range) {
         const auto& [_, k, v] = unwrap(entry);
-        if (Policy<CharT>::equals(k, key)) return std::addressof(v);
+        if (Policy<CharT>::equals(k, key)) return v;
       }
-      return nullptr;
+      return std::nullopt;
     } else {
       auto pos = std::ranges::lower_bound(entries, hash, {}, hash_proj);
       if (entries.end() == pos) {
-        return nullptr;
+        return std::nullopt;
       }
       const auto& cur = unwrap(*pos).elements;
       if (cur.first == hash && Policy<CharT>::equals(cur.second, key)) {
-        return std::addressof(cur.third);
+        return cur.third;
       }
-      return nullptr;
+      return std::nullopt;
     }
   }
 
   constexpr auto operator[](std::basic_string_view<CharT> key) const -> const value_type& {
-    auto* p = find(key);
+    auto p = find(key);
     return p ? *p : default_v<value_type>;
   }
 

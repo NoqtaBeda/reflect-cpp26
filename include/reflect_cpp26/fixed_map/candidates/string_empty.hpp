@@ -23,6 +23,7 @@
 #ifndef REFLECT_CPP26_FIXED_MAP_CANDIDATES_STRING_EMPTY_HPP
 #define REFLECT_CPP26_FIXED_MAP_CANDIDATES_STRING_EMPTY_HPP
 
+#include <optional>
 #include <reflect_cpp26/fixed_map/impl/common.hpp>
 #include <reflect_cpp26/fixed_map/impl/string_policy.hpp>
 
@@ -37,8 +38,8 @@ public:
     return 0;
   }
 
-  constexpr auto find(std::basic_string_view<CharT>) const -> const value_type* {
-    return nullptr;
+  static constexpr auto find(std::basic_string_view<CharT>) -> std::optional<const value_type&> {
+    return std::nullopt;
   }
 
   constexpr auto operator[](std::basic_string_view<CharT>) const -> const value_type& {

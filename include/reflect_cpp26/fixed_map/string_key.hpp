@@ -146,4 +146,9 @@ consteval auto make_string_key_fixed_map(const KVPairRange& kv_pairs,
 #define REFLECT_CPP26_STRING_KEY_FIXED_MAP(kv_pairs, ...) \
   [:reflect_cpp26::make_string_key_fixed_map(kv_pairs, ##__VA_ARGS__):]
 
+#ifdef REFLECT_CPP26_IMPORT_MACROS
+#define STRING_KEY_FIXED_MAP(kv_pairs, ...) \
+  REFLECT_CPP26_STRING_KEY_FIXED_MAP(kv_pairs, ##__VA_ARGS__)
+#endif
+
 #endif  // REFLECT_CPP26_FIXED_MAP_STRING_KEY_HPP

@@ -36,8 +36,8 @@ private:
 
 public:
   static constexpr auto operator()(std::string_view str) -> std::optional<ENoCV> {
-    auto* p = impl::enum_from_string_map_v<ENoCV>.find(str);
-    if (p != nullptr) {
+    auto p = impl::enum_from_string_map_v<ENoCV>.find(str);
+    if (p.has_value()) {
       return static_cast<ENoCV>(*p);
     }
     return std::nullopt;
@@ -45,8 +45,8 @@ public:
 
   static constexpr auto operator()(ascii_case_insensitive_tag_t, std::string_view str)
       -> std::optional<ENoCV> {
-    auto* p = impl::enum_from_ci_string_map_v<ENoCV>.find(str);
-    if (p != nullptr) {
+    auto p = impl::enum_from_ci_string_map_v<ENoCV>.find(str);
+    if (p.has_value()) {
       return static_cast<ENoCV>(*p);
     }
     return std::nullopt;

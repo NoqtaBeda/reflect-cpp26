@@ -24,4 +24,4 @@
 
 #include "tests/fixed_map/fixed_map_test_options.hpp"
 
-#define FIXED_MAP(...) REFLECT_CPP26_INTEGRAL_KEY_FIXED_MAP(__VA_ARGS__)
+#define FIXED_MAP(...) INTEGRAL_KEY_FIXED_MAP(__VA_ARGS__)

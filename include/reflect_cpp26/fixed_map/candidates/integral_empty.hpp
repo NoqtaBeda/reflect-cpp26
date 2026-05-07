@@ -23,6 +23,7 @@
 #ifndef REFLECT_CPP26_FIXED_MAP_CANDIDATES_INTEGRAL_EMPTY_HPP
 #define REFLECT_CPP26_FIXED_MAP_CANDIDATES_INTEGRAL_EMPTY_HPP
 
+#include <optional>
 #include <reflect_cpp26/fixed_map/impl/common.hpp>
 #include <reflect_cpp26/type_traits/arithmetic_types.hpp>
 #include <reflect_cpp26/utils/concepts.hpp>
@@ -38,8 +39,8 @@ public:
     return 0;
   }
 
-  static constexpr auto find(non_bool_integral auto) -> const value_type* {
-    return nullptr;
+  static constexpr auto find(non_bool_integral auto) -> std::optional<const value_type&> {
+    return std::nullopt;
   }
 
   static constexpr auto operator[](non_bool_integral auto) -> const value_type& {

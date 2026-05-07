@@ -50,6 +50,7 @@ function make_test_case(path)
     add_includedirs("include", ".")
     add_packages("gtest")
     add_options("static-test")
+    add_defines("REFLECT_CPP26_IMPORT_MACROS")
   end)
 end
 

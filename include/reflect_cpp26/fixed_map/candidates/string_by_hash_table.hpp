@@ -46,30 +46,31 @@ public:
     return actual_size;
   }
 
-  constexpr auto find(std::basic_string_view<CharT> key) const -> const value_type* {
+  constexpr auto find(std::basic_string_view<CharT> key) const
+      -> std::optional<const value_type&> {
     auto len = key.length();
     if (len < min_length || len > max_length) {
-      return nullptr;
+      return std::nullopt;
     }
     auto key_hash = Policy<CharT>::hash(key);
     auto start_index = key_hash % modulo;
     template for (constexpr auto I : std::views::iota(0zU, P)) {
       const auto& cur = unwrap(entries[start_index + I * I]).elements;
       if (cur.first == 0) {
-        return nullptr;
+        return std::nullopt;
       }
       if (cur.first == key_hash) {
         if (Policy<CharT>::equals(cur.second, key)) {
-          return std::addressof(cur.third);
+          return cur.third;
         }
-        return nullptr;
+        return std::nullopt;
       }
     }
-    return nullptr;
+    return std::nullopt;
   }
 
   constexpr auto operator[](std::basic_string_view<CharT> key) const -> const value_type& {
-    auto* p = find(key);
+    auto p = find(key);
     return p ? *p : default_v<value_type>;
   }
 

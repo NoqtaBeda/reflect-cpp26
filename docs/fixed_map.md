@@ -43,8 +43,8 @@ array:
 +----------------------------------+
 pseudo-code:
 if key < min_key or key > max_key:
-    return {value: None, is_valid: false}
-return {value: array[key - min_key], is_valid = true}
+    return nullopt
+return array[key - min_key]
 
 2. Dense
 kv-pairs: {3: "A3", 5: "B5", 6: "C6", 8: "D8"}
@@ -57,8 +57,8 @@ array:
 +-------------------------------------------------------------------------------------------------+
 pseudo-code:
 if key < min_key or key > max_key or not array[key - min_key].is_valid:
-    return {value: None, is_valid: false}
-return {value: array[key - min_key].value, is_valid: true}
+    return nullopt
+return array[key - min_key].value
 
 3. Sparse
 kv-pairs: {1: "A1", 3: "B3", 9: "C9", 27: "D27", 81: "E81"}
@@ -113,6 +113,11 @@ consteval auto make_integral_key_fixed_map(
 
 #define REFLECT_CPP26_INTEGRAL_KEY_FIXED_MAP(kv_pairs, ...) \
   [:reflect_cpp26::make_integral_key_fixed_map(kv_pairs, ##__VA_ARGS__):]
+
+#ifdef REFLECT_CPP26_IMPORT_MACROS
+#define INTEGRAL_KEY_FIXED_MAP(kv_pairs, ...) \
+  REFLECT_CPP26_INTEGRAL_KEY_FIXED_MAP(kv_pairs, ##__VA_ARGS__)
+#endif
 ```
 
 Input `kv_pairs` should be a range of key-value pairs whose:
@@ -126,7 +131,7 @@ The function returns a reflected constant of the fixed map, which can be extract
 The generated fixed map supports the following operations (`using value_type = to_structural_result_t<InputValueType>`, _signedness-safe and narrowing-safe_ key comparison applied):
 
 - `size() -> size_t`: Returns the number of entries.
-- `find(key) -> const value_type*`: Returns a pointer to the value for the given key, or `nullptr` if the input key does not exist.
+- `find(key) -> std::optional<const value_type&>`: Returns an optional reference to the value for the given key, or `std::nullopt` if the input key does not exist.
 - `operator[](key) -> const value_type&`: Returns the value for the given key, or `value_type{}` if the input key does not exist.
 
 The argument `options` contains parameters to fine-tune the behavior during fixed map construction:
@@ -149,8 +154,8 @@ constexpr auto map1 = REFLECT_CPP26_INTEGRAL_KEY_FIXED_MAP(map1_entries());
 static_assert(map1.size() == 3);
 static_assert(map1[2] == "two");
 static_assert(map1[4] == "");  // Returns meta_string_view{} representing an empty string
-static_assert(map1.find(2) != nullptr && *map1.find(2) == "two");
-static_assert(map1.find(4) == nullptr);
+static_assert(map1.find(2).has_value() && *map1.find(2) == "two");
+static_assert(!map1.find(4).has_value());
 
 // Enum key
 enum class color { red, green, blue };
@@ -189,6 +194,11 @@ consteval auto make_string_key_fixed_map(
 
 #define REFLECT_CPP26_STRING_KEY_FIXED_MAP(kv_pairs, ...) \
   [:reflect_cpp26::make_string_key_fixed_map(kv_pairs, ##__VA_ARGS__):]
+
+#ifdef REFLECT_CPP26_IMPORT_MACROS
+#define STRING_KEY_FIXED_MAP(kv_pairs, ...) \
+  REFLECT_CPP26_STRING_KEY_FIXED_MAP(kv_pairs, ##__VA_ARGS__)
+#endif
 ```
 
 Input `kv_pairs` should be a range of key-value pairs whose:
@@ -202,7 +212,7 @@ The function returns a reflected constant of the fixed map, which can be extract
 The generated fixed map supports the following operations (`using value_type = to_structural_result_t<InputValueType>`):
 
 - `size() -> size_t`: Returns the number of entries.
-- `find(key) -> const value_type*`: Returns a pointer to the value for the given key, or `nullptr` if the input key does not exist.
+- `find(key) -> std::optional<const value_type&>`: Returns an optional reference to the value for the given key, or `std::nullopt` if the input key does not exist.
 - `operator[](key) -> const value_type&`: Returns the value for the given key, or `value_type{}` if the input key does not exist.
 
 The argument `options` contains parameters to fine-tune the behavior during fixed map construction:
@@ -227,8 +237,8 @@ constexpr auto map = REFLECT_CPP26_STRING_KEY_FIXED_MAP(map_entries());
 static_assert(map.size() == 3);
 static_assert(map["banana"] == 2);
 static_assert(map["BANANA"] == 0);  // Returns int{}
-static_assert(map.find("banana") != nullptr && *map.find("banana") == 2);
-static_assert(map.find("BANANA") == nullptr);
+static_assert(map.find("banana").has_value() && *map.find("banana") == 2);
+static_assert(!map.find("BANANA").has_value());
 
 // Case-insensitive lookup
 constexpr auto ci_map_entries() -> std::vector<std::pair<std::string, int>> {

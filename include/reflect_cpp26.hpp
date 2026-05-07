@@ -20,37 +20,14 @@
  * SOFTWARE.
  **/
 
-#ifndef REFLECT_CPP26_ENUM_ENUM_NAME_HPP
-#define REFLECT_CPP26_ENUM_ENUM_NAME_HPP
+#ifndef REFLECT_CPP26_HPP
+#define REFLECT_CPP26_HPP
 
-#include <reflect_cpp26/enum/impl/enum_maps.hpp>
-#include <reflect_cpp26/utils/concepts.hpp>
+#include <reflect_cpp26/enum.hpp>
+#include <reflect_cpp26/fixed_map.hpp>
+#include <reflect_cpp26/lookup.hpp>
+#include <reflect_cpp26/type_operations.hpp>
+#include <reflect_cpp26/type_traits.hpp>
+#include <reflect_cpp26/utils.hpp>
 
-namespace reflect_cpp26 {
-struct enum_name_t {
-  template <enum_type E>
-  static constexpr auto operator()(E value) -> std::string_view {
-    auto p = impl::enum_name_map_v<E>.find(impl::promoted(value));
-    if (p.has_value()) {
-      return static_cast<std::string_view>(*p);
-    }
-    return {};
-  }
-};
-
-struct enum_name_opt_t {
-  template <enum_type E>
-  static constexpr auto operator()(E value) -> std::optional<std::string_view> {
-    auto p = impl::enum_name_map_v<E>.find(impl::promoted(value));
-    if (p.has_value()) {
-      return static_cast<std::string_view>(*p);
-    }
-    return std::nullopt;
-  }
-};
-
-constexpr auto enum_name = enum_name_t{};
-constexpr auto enum_name_opt = enum_name_opt_t{};
-}  // namespace reflect_cpp26
-
-#endif  // REFLECT_CPP26_ENUM_ENUM_NAME_HPP
+#endif  // REFLECT_CPP26_HPP

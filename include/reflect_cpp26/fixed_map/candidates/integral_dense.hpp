@@ -23,6 +23,7 @@
 #ifndef REFLECT_CPP26_FIXED_MAP_CANDIDATES_INTEGRAL_DENSE_HPP
 #define REFLECT_CPP26_FIXED_MAP_CANDIDATES_INTEGRAL_DENSE_HPP
 
+#include <optional>
 #include <reflect_cpp26/fixed_map/candidates/integral_empty.hpp>
 #include <reflect_cpp26/utils/define_static_values.hpp>
 #include <reflect_cpp26/utils/functional.hpp>
@@ -44,22 +45,22 @@ public:
     return static_cast<size_t>(max_key - min_key + 1);
   }
 
-  constexpr auto find(key_type key) const -> const value_type* {
+  constexpr auto find(key_type key) const -> std::optional<const value_type&> {
     if (key >= min_key && key <= max_key) {
-      return std::addressof(unwrap(entries[key - min_key]));
+      return unwrap(entries[key - min_key]);
     }
-    return nullptr;
+    return std::nullopt;
   }
 
-  constexpr auto find(non_bool_integral auto key) const -> const value_type* {
+  constexpr auto find(non_bool_integral auto key) const -> std::optional<const value_type&> {
     if (!in_range<key_type>(key)) {
-      return nullptr;
+      return std::nullopt;
     }
     return find(static_cast<key_type>(key));
   }
 
   constexpr auto operator[](non_bool_integral auto key) const -> const value_type& {
-    auto* p = find(key);
+    auto p = find(key);
     return p ? *p : default_v<value_type>;
   }
 
@@ -81,25 +82,25 @@ public:
     return actual_size;
   }
 
-  constexpr auto find(key_type key) const -> const value_type* {
+  constexpr auto find(key_type key) const -> std::optional<const value_type&> {
     if (key >= min_key && key <= max_key) {
       const auto& target = unwrap(entries[key - min_key]);
       if (!(target == default_v<value_type>)) {
-        return std::addressof(target);
+        return target;
       }
     }
-    return nullptr;
+    return std::nullopt;
   }
 
-  constexpr auto find(non_bool_integral auto key) const -> const value_type* {
+  constexpr auto find(non_bool_integral auto key) const -> std::optional<const value_type&> {
     if (!in_range<key_type>(key)) {
-      return nullptr;
+      return std::nullopt;
     }
     return find(static_cast<key_type>(key));
   }
 
   constexpr auto operator[](non_bool_integral auto key) const -> const value_type& {
-    auto* p = find(key);
+    auto p = find(key);
     return p ? *p : default_v<value_type>;
   }
 
@@ -123,25 +124,25 @@ public:
     return actual_size;
   }
 
-  constexpr auto find(key_type key) const -> const value_type* {
+  constexpr auto find(key_type key) const -> std::optional<const value_type&> {
     if (key >= min_key && key <= max_key) {
       const auto& target_entry = unwrap(entries[key - min_key]);
       if (target_entry.elements.second) {
-        return std::addressof(target_entry.elements.first);
+        return target_entry.elements.first;
       }
     }
-    return nullptr;
+    return std::nullopt;
   }
 
-  constexpr auto find(non_bool_integral auto key) const -> const value_type* {
+  constexpr auto find(non_bool_integral auto key) const -> std::optional<const value_type&> {
     if (!in_range<key_type>(key)) {
-      return nullptr;
+      return std::nullopt;
     }
     return find(static_cast<key_type>(key));
   }
 
   constexpr auto operator[](non_bool_integral auto key) const -> const value_type& {
-    auto* p = find(key);
+    auto p = find(key);
     return p ? *p : default_v<value_type>;
   }
 

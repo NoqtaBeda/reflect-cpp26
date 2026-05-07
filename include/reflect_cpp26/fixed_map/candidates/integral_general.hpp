@@ -23,6 +23,7 @@
 #ifndef REFLECT_CPP26_FIXED_MAP_CANDIDATES_INTEGRAL_GENERAL_HPP
 #define REFLECT_CPP26_FIXED_MAP_CANDIDATES_INTEGRAL_GENERAL_HPP
 
+#include <optional>
 #include <reflect_cpp26/fixed_map/candidates/integral_dense.hpp>
 #include <reflect_cpp26/fixed_map/candidates/integral_sparse.hpp>
 
@@ -37,7 +38,7 @@ public:
     return dense_part.size() + left_sparse_part.size() + right_sparse_part.size();
   }
 
-  constexpr auto find(key_type key) const -> const value_type* {
+  constexpr auto find(key_type key) const -> std::optional<const value_type&> {
     if (key < dense_part.min_key) {
       return left_sparse_part.find(key);
     }
@@ -47,15 +48,15 @@ public:
     return dense_part.find(key);
   }
 
-  constexpr auto find(non_bool_integral auto key) const -> const value_type* {
+  constexpr auto find(non_bool_integral auto key) const -> std::optional<const value_type&> {
     if (!in_range<key_type>(key)) {
-      return nullptr;
+      return std::nullopt;
     }
     return find(static_cast<key_type>(key));
   }
 
   constexpr auto operator[](non_bool_integral auto key) const -> const value_type& {
-    auto* p = find(key);
+    auto p = find(key);
     return p ? *p : default_v<value_type>;
   }
 

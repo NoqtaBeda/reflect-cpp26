@@ -43,9 +43,9 @@ struct wrapper_t {
 
 #define EXPECT_FOUND(expected_res, flat_map, key) \
   do {                                            \
-    const auto* p = flat_map.find(key);           \
-    EXPECT_NE(nullptr, p);                        \
-    if (p != nullptr) {                           \
+    auto p = flat_map.find(key);                  \
+    EXPECT_TRUE(p.has_value());                   \
+    if (p.has_value()) {                          \
       EXPECT_EQ(expected_res, *p);                \
     }                                             \
   } while (false)
@@ -53,20 +53,20 @@ struct wrapper_t {
 #define EXPECT_NOT_FOUND(expected_res, flat_map, key) \
   do {                                                \
     auto p = flat_map.find(key);                      \
-    EXPECT_EQ(nullptr, p);                            \
+    EXPECT_FALSE(p.has_value());                      \
   } while (false)
 
-#define EXPECT_FOUND_STATIC(expected_res, flat_map, key) \
-  do {                                                   \
-    constexpr const auto* p = flat_map.find(key);        \
-    EXPECT_NE_STATIC(nullptr, p);                        \
-    if constexpr (p != nullptr) {                        \
-      EXPECT_EQ_STATIC(expected_res, *p);                \
-    }                                                    \
+#define EXPECT_FOUND_STATIC(expected_res, flat_map, key)               \
+  do {                                                                 \
+    constexpr auto p = flat_map.find(key);                             \
+    EXPECT_TRUE_STATIC(p.has_value());                                 \
+    if constexpr (p.has_value()) {                                     \
+      EXPECT_EQ_STATIC(expected_res, *p);                              \
+    }                                                                  \
   } while (false)
 
-#define EXPECT_NOT_FOUND_STATIC(expected_res, flat_map, key) \
-  do {                                                       \
-    constexpr const auto* p = flat_map.find(key);            \
-    EXPECT_EQ_STATIC(nullptr, p);                            \
+#define EXPECT_NOT_FOUND_STATIC(expected_res, flat_map, key)           \
+  do {                                                                 \
+    constexpr auto p = flat_map.find(key);                             \
+    EXPECT_FALSE_STATIC(p.has_value());                                \
   } while (false)

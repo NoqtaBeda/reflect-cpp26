@@ -23,6 +23,7 @@
 #ifndef REFLECT_CPP26_FIXED_MAP_CANDIDATES_INTEGRAL_SPARSE_HPP
 #define REFLECT_CPP26_FIXED_MAP_CANDIDATES_INTEGRAL_SPARSE_HPP
 
+#include <optional>
 #include <reflect_cpp26/fixed_map/candidates/integral_empty.hpp>
 #include <reflect_cpp26/utils/define_static_values.hpp>
 #include <reflect_cpp26/utils/meta_tuple.hpp>
@@ -43,24 +44,24 @@ public:
     return entries.size();
   }
 
-  constexpr auto find(key_type key) const -> const value_type* {
+  constexpr auto find(key_type key) const -> std::optional<const value_type&> {
     for (const auto& cur : entries) {
       if (key == cur.elements.first) {
-        return std::addressof(cur.elements.second);
+        return cur.elements.second;
       }
     }
-    return nullptr;
+    return std::nullopt;
   }
 
-  constexpr auto find(non_bool_integral auto key) const -> const value_type* {
+  constexpr auto find(non_bool_integral auto key) const -> std::optional<const value_type&> {
     if (!in_range<key_type>(key)) {
-      return nullptr;
+      return std::nullopt;
     }
     return find(static_cast<key_type>(key));
   }
 
   constexpr auto operator[](non_bool_integral auto key) const -> const value_type& {
-    auto* p = find(key);
+    auto p = find(key);
     return p ? *p : default_v<value_type>;
   }
 
@@ -80,14 +81,14 @@ public:
     return entries.size();
   }
 
-  constexpr auto find(key_type key) const -> const value_type* {
+  constexpr auto find(key_type key) const -> std::optional<const value_type&> {
     const auto* head = entries.begin();
     const auto* tail = entries.end();
     while (head < tail) {
       const auto* mid = head + (tail - head) / 2;
       const auto& entry = unwrap(*mid);
       if (key == entry.elements.first) {
-        return std::addressof(entry.elements.second);
+        return entry.elements.second;
       }
       if (key > entry.elements.first) {
         head = mid + 1;
@@ -95,18 +96,18 @@ public:
         tail = mid;
       }
     }
-    return nullptr;
+    return std::nullopt;
   }
 
-  constexpr auto find(non_bool_integral auto key) const -> const value_type* {
+  constexpr auto find(non_bool_integral auto key) const -> std::optional<const value_type&> {
     if (!in_range<key_type>(key)) {
-      return nullptr;
+      return std::nullopt;
     }
     return find(static_cast<key_type>(key));
   }
 
   constexpr auto operator[](non_bool_integral auto key) const -> const value_type& {
-    auto* p = find(key);
+    auto p = find(key);
     return p ? *p : default_v<value_type>;
   }
 

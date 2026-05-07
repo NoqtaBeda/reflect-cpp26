@@ -28,7 +28,7 @@
 
 #include "tests/fixed_map/fixed_map_test_options.hpp"
 
-#define FIXED_MAP(...) REFLECT_CPP26_STRING_KEY_FIXED_MAP(__VA_ARGS__)
+#define FIXED_MAP(...) STRING_KEY_FIXED_MAP(__VA_ARGS__)
 
 template <class ToCharT, class FromCharT>
 constexpr auto to(const FromCharT* str) -> std::basic_string<ToCharT> {

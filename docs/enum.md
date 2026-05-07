@@ -613,9 +613,15 @@ Defined in header `<reflect_cpp26/enum/enum_flags_name.hpp>`.
 ```cpp
 namespace reflect_cpp26 {
 
+enum class to_string_status {
+  done = 0,
+  invalid_input = 1,
+  buffer_run_out = 2,
+};
+
 template <class Iter>
 struct enum_flags_name_to_result {
-  std::errc ec;
+  to_string_status status;
   Iter out;
 };
 
@@ -639,11 +645,19 @@ struct enum_flags_name_to_t {
       -> enum_flags_name_to_result<Iter>;
   // (2.3)
   template <enum_type E>
-  static constexpr auto operator()(std::ostream& out, E e, char delim = '|') -> std::errc;
+  static constexpr auto operator()(std::ostream& out, E e, char delim = '|') -> to_string_status;
   // (2.4)
   template <enum_type E>
   static constexpr auto operator()(std::ostream& out, E e, std::string_view delim)
-      -> std::errc;
+      -> to_string_status;
+  // (2.5)
+  template <enum_type E>
+  static constexpr auto operator()(string_builder& dest, E e, char delim = '|')
+      -> to_string_status;
+  // (2.6)
+  template <enum_type E>
+  static constexpr auto operator()(string_builder& dest, E e, std::string_view delim)
+      -> to_string_status;
 };
 
 constexpr auto enum_flags_name = enum_flags_name_t{};
@@ -653,13 +667,14 @@ constexpr auto enum_flags_name_to = enum_flags_name_to_t{};
 ```
 
 - (1.1, 1.2) `enum_flags_name(e, delim)` gets the string representation of given enum flags value, entries separated by given delimiter (which is `'|'` by default). If `e` can not be decomposed as disjunction of enum entries defined, `std::nullopt` is returned;
-- (2.1, 2.2) `enum_flags_name_to(iter, sentinel, e, delim)` writes the string representation of given enum flags value to buffer `[iter, sentinel)`, entries separated by given delimiter (which is `'|'` by default). Return value contains two fields `{ec, out}` by the following rules:
-  - If `e` can be decomposed as disjunction of enum entries defined, and given buffer `[iter, sentinel)` is enough to hold the result string, then `ec = std::errc{}` and `out` points to end position of the string written, i.e. `[iter, out)` contains the result string;
-  - If `e` can be decomposed as disjunction of enum entries defined, but given buffer `[iter, sentinel)` can not hold the result string, then `ec = std::errc::value_too_large` and `out` (along with the partial string written to `[iter, out)`) is unspecified;
-  - If `e` can not be decomposed as disjunction of enum entries defined, then `ec = std::errc::invalid_argument` and `out = iter`, i.e. nothing will be written.
+- (2.1, 2.2) `enum_flags_name_to(iter, sentinel, e, delim)` writes the string representation of given enum flags value to buffer `[iter, sentinel)`, entries separated by given delimiter (which is `'|'` by default). Return value contains two fields `{status, out}` by the following rules:
+  - If `e` can be decomposed as disjunction of enum entries defined, and given buffer `[iter, sentinel)` is enough to hold the result string, then `status = to_string_status::done` and `out` points to end position of the string written, i.e. `[iter, out)` contains the result string;
+  - If `e` can be decomposed as disjunction of enum entries defined, but given buffer `[iter, sentinel)` can not hold the result string, then `status = to_string_status::buffer_run_out` and `out` (along with the partial string written to `[iter, out)`) is unspecified;
+  - If `e` can not be decomposed as disjunction of enum entries defined, then `status = to_string_status::invalid_input` and `out = iter`, i.e. nothing will be written.
 - (2.3, 2.4) `enum_flags_name_to(out, e, delim)` writes the string representation of given enum flags value to given output stream, entries separated by given delimiter (which is `'|'` by default). Return value is an error code by the following rules:
-  - If `e` can be decomposed as disjunction of enum entries defined, then `std::errc{}` is returned;
-  - Otherwise, `std::errc::invalid_argument` is returned and nothing is written to the given output stream.
+  - If `e` can be decomposed as disjunction of enum entries defined, then `to_string_status::done` is returned;
+  - Otherwise, `to_string_status::invalid_input` is returned and nothing is written to the given output stream.
+- (2.5, 2.6) `enum_flags_name_to(dest, e, delim)` writes the string representation of given enum flags value to a `string_builder`, entries separated by given delimiter (which is `'|'` by default). The builder handles buffer management internally (reserves space before writing via `out_unsafe()`). Return value is `to_string_status` by the same rules as (2.3, 2.4).
 
 For overload (2.1) and (2.2), `std::unreachable_sentinel` can be used as the second argument for better performance (boundary checks eliminated) when it's ensured that the destination buffer is large enough to hold all possible values.
 
@@ -683,26 +698,32 @@ static_assert(refl::enum_flags_name(static_cast<permissions>(0)) == "");
 static_assert(refl::enum_flags_name(static_cast<permissions>(8)) == std::nullopt);
 
 char buffer[20] = {};
-auto [ec1, out1] =
+auto [status1, out1] =
     refl::enum_flags_name_to(buffer, buffer + 16, static_cast<permissions>(6), " | ");
-assert(ec1 == std::errc{});
+assert(status1 == refl::to_string_status::done);
 assert(out1 == buffer + 15);
 printf("%s\n", buffer); // Possibly "execute | write"
 
 std::ranges::fill(buffer, '\0');
-auto [ec2, _] = refl::enum_flags_name_to(buffer, buffer + 16, static_cast<permissions>(7));
-assert(ec2 == std::errc::value_too_large);
+auto [status2, _] = refl::enum_flags_name_to(buffer, buffer + 16, static_cast<permissions>(7));
+assert(status2 == refl::to_string_status::buffer_run_out);
 
 std::ranges::fill(buffer, '\0');
-auto [ec3, _] = refl::enum_flags_name_to(buffer, buffer + 16, static_cast<permissions>(-1));
-assert(ec3 == std::errc::invalid_argument);
+auto [status3, _] =
+    refl::enum_flags_name_to(buffer, buffer + 16, static_cast<permissions>(-1));
+assert(status3 == refl::to_string_status::invalid_input);
 
 // Possibly writes "execute | write | read" to stdout
-auto ec4 = refl::enum_flags_name_to(std::cout, static_cast<permissions>(7), ", ");
-assert(ec4 == std::errc{});
+auto status4 = refl::enum_flags_name_to(std::cout, static_cast<permissions>(7), ", ");
+assert(status4 == refl::to_string_status::done);
 // Nothing will be written to stdout
-auto ec5 = refl::enum_flags_name_to(std::cout, static_cast<permissions>(15));
-assert(ec5 == std::errc::invalid_argument);
+auto status5 = refl::enum_flags_name_to(std::cout, static_cast<permissions>(15));
+assert(status5 == refl::to_string_status::invalid_input);
+
+auto builder = refl::string_builder{};
+auto status6 = refl::enum_flags_name_to(builder, static_cast<permissions>(3));
+assert(status6 == refl::to_string_status::done);
+printf("%s\n", builder.strview().data()); // Possibly "write|read"
 
 bool write_file_permissions_config(std::string_view file, std::string_view perm_string);
 // Example of monadic operations

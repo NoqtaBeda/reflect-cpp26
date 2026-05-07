@@ -81,33 +81,72 @@ consteval auto make_name_collision_table() -> meta_span<uint8_t> {
 
 template <class CharT, class Allocator, class T>
 constexpr void dump_char(basic_string_builder<CharT, Allocator>& dest, T value) {
-  dest.append_char('\'');
-  dest.template append_char_by<escaping_mode::display_char>(value);
-  dest.append_char('\'');
+  dest.reserve_at_least(8)
+      .append_char_unsafe('\'')
+      .template append_char_by_unsafe<escaping_mode::display_char>(value)
+      .append_char_unsafe('\'');
+}
+
+template <class CharT, class Allocator, class T>
+constexpr void dump_enum_alt_to_string(basic_string_builder<CharT, Allocator>& dest, T value) {
+  constexpr auto type_name = enum_type_name_v<T>;
+
+  if constexpr (is_ascii_string(type_name)) {
+    dest.reserve_at_least(type_name.length() + 2)
+        .append_char_unsafe('(')
+        .append_c_string_unsafe(type_name)
+        .append_char_unsafe(')');
+  } else {
+    dest.reserve_at_least(type_name.length() * 4 + 2)
+        .append_char_unsafe('(')
+        .append_utf_string_unsafe(type_name)
+        .append_char_unsafe(')');
+  }
+  dest.append_integer(std::to_underlying(value));
+}
+
+template <class CharT, class Allocator, class T>
+constexpr void dump_enum_flags_to_string(basic_string_builder<CharT, Allocator>& dest, T value) {
+  if constexpr (std::is_same_v<CharT, char>) {
+    if (enum_flags_name_to(dest, value) != to_string_status::done) [[unlikely]] {
+      dump_enum_alt_to_string(dest, value);
+    }
+  } else {
+    auto str = enum_flags_name(value);
+
+    if (str.has_value()) [[likely]] {
+      if constexpr (enum_names_are_ascii_only_v<T>) {
+        dest.append_c_string(*str);
+      } else {
+        dest.append_utf_string(*str);
+      }
+    } else {
+      dump_enum_alt_to_string(dest, value);
+    }
+  }
+}
+
+template <class CharT, class Allocator, class T>
+constexpr void dump_enum_to_string(basic_string_builder<CharT, Allocator>& dest, T value) {
+  auto str = enum_name(value);
+
+  if (!str.empty()) [[likely]] {
+    if constexpr (enum_names_are_ascii_only_v<T>) {
+      dest.append_c_string(str);
+    } else {
+      dest.append_utf_string(str);
+    }
+  } else {
+    dump_enum_alt_to_string(dest, value);
+  }
 }
 
 template <class CharT, class Allocator, class T>
 constexpr void dump_enum(basic_string_builder<CharT, Allocator>& dest, T value) {
   if constexpr (enum_flag<T>) {
-    auto str = enum_flags_name(value);
-    if (str.has_value()) {
-      dest.append_utf_string(*str);
-    } else {
-      dest.append_char('(')
-          .append_utf_string(enum_type_name_v<T>)
-          .append_char(')')
-          .append_integer(std::to_underlying(value));
-    }
+    dump_enum_flags_to_string(dest, value);
   } else {
-    auto str = enum_name(value);
-    if (!str.empty()) {
-      dest.append_utf_string(str);
-    } else {
-      dest.append_char('(')
-          .append_utf_string(enum_type_name_v<T>)
-          .append_char(')')
-          .append_integer(std::to_underlying(value));
-    }
+    dump_enum_to_string(dest, value);
   }
 }
 
@@ -116,7 +155,7 @@ constexpr void dumper_dispatch_arithmetic(basic_string_builder<CharT, Allocator>
                                           const T& value) {
   if constexpr (std::is_same_v<T, bool>) {
     // (2.1) bool
-    dest.append_utf_string(value ? "true" : "false");
+    dest.append_c_string(value ? "true" : "false");
   } else if constexpr (char_type<T>) {
     // (2.2) Character types
     dump_char(dest, value);
@@ -135,10 +174,10 @@ constexpr void dumper_dispatch_arithmetic(basic_string_builder<CharT, Allocator>
 template <class CharT, class Allocator>
 void dump_pointer(basic_string_builder<CharT, Allocator>& dest, const volatile void* value) {
   if (value == nullptr) {
-    dest.append_utf_string("nullptr");
+    dest.append_c_string("nullptr");
   } else {
     auto p = reinterpret_cast<uintptr_t>(value);
-    dest.append_utf_string("0x").append_integer(p, 16);
+    dest.append_c_string("0x").append_integer(p, 16);
   }
 }
 
@@ -147,7 +186,7 @@ void dump_pointer(basic_string_builder<CharT, Allocator>& dest, const volatile v
 template <class CharT, class Allocator, class MemT, class ClassT>
 void dump_pointer_to_member_function(basic_string_builder<CharT, Allocator>& dest,
                                      MemT ClassT::* value) {
-  dest.append_utf_string("(...)");  // TODO: unimplemented yet
+  dest.append_c_string("(...)");  // TODO: unimplemented yet
 }
 
 // precondition: value != nullptr
@@ -165,15 +204,26 @@ void dump_pointer_to_data_member(basic_string_builder<CharT, Allocator>& dest,
       if (M.actual_offset_bytes() != offset) {
         continue;  // Continues template-for
       }
-      dest.append_char('&')
-          .append_utf_string(display_string_of(parent_of(M.member)))
-          .append_char(':', 2)
-          .append_utf_string(identifier_of(M.member));
+      constexpr auto parent_name = display_string_of(parent_of(M.member));
+      constexpr auto member_name = identifier_of(M.member);
+      if constexpr (is_ascii_string(parent_name) && is_ascii_string(member_name)) {
+        dest.reserve_at_least(parent_name.length() + member_name.length() + 3)
+            .append_char_unsafe('&')
+            .append_c_string_unsafe(parent_name)
+            .append_char_unsafe(':', 2)
+            .append_c_string_unsafe(member_name);
+      } else {
+        dest.reserve_at_least(parent_name.length() * 6 + member_name.length() * 4 + 3)
+            .append_char_unsafe('&')
+            .append_utf_string_unsafe(parent_name)
+            .append_char_unsafe(':', 2)
+            .append_utf_string_unsafe(member_name);
+      }
       return;
     }
   }
   // Mismatch
-  dest.append_utf_string("(malformed: 0x")
+  dest.append_c_string("(malformed: 0x")
       .append_integer(*reinterpret_cast<uintptr_t*>(&value), 16)
       .append_char(')');
 }
@@ -182,11 +232,11 @@ void dump_pointer_to_data_member(basic_string_builder<CharT, Allocator>& dest,
 template <class CharT, class Allocator, class MemT, class ClassT>
 void dump_pointer_to_member(basic_string_builder<CharT, Allocator>& dest, MemT ClassT::* value) {
   if (value == nullptr) {
-    dest.append_utf_string("nullptr");
+    dest.append_c_string("nullptr");
     return;
   }
   if constexpr (!partially_flattenable_class<ClassT>) {
-    dest.append_utf_string("(...)");
+    dest.append_c_string("(...)");
   } else if constexpr (std::is_function_v<MemT>) {
     dump_pointer_to_member_function(dest, value);
   } else {
@@ -200,7 +250,7 @@ constexpr void dumper_dispatch(basic_string_builder<CharT, Allocator>& dest,
                                const Args&... args) {
   if constexpr (std::is_same_v<T, std::monostate>) {
     // (1) std::monostate
-    dest.append_utf_string("monostate");
+    dest.append_c_string("monostate");
   } else if constexpr (std::is_arithmetic_v<T>) {
     // (2) arithmetic types
     dumper_dispatch_arithmetic(dest, value);
@@ -224,13 +274,13 @@ constexpr void dumper_dispatch(basic_string_builder<CharT, Allocator>& dest,
     if (value.has_value()) {
       Parent::operator()(dest, *value, args...);
     } else {
-      dest.append_utf_string("nullopt");
+      dest.append_c_string("nullopt");
     }
   } else if constexpr (template_instance_of<T, std::variant>) {
     // (8) std::variant
     auto visit_fn = [&](const auto& v) -> void { Parent::operator()(dest, v, args...); };
     if (value.valueless_by_exception()) [[unlikely]] {
-      dest.append_utf_string("(valueless by exception)");
+      dest.append_c_string("(valueless by exception)");
     } else {
       std::visit(visit_fn, value);
     }
@@ -253,7 +303,7 @@ constexpr void dumper_dispatch(basic_string_builder<CharT, Allocator>& dest,
     Parent::append_struct(dest, value, args...);
   } else {
     // Others
-    dest.append_utf_string("(...)");
+    dest.append_c_string("(...)");
   }
 }
 
@@ -283,16 +333,40 @@ struct indented_dumper : indented_serializer_base<indented_dumper> {
 
     template for (constexpr auto I : std::views::iota(0zU, N)) {
       constexpr auto M = members[I];
-      if constexpr (I > 0) {
-        dest.append_char(',');
+      if constexpr (I == 0) {
+        dest.reserve_at_least(indent_level + 1)
+            .append_char_unsafe('\n')
+            .append_char_unsafe(indent_char, indent_level);
+      } else {
+        dest.reserve_at_least(indent_level + 2)
+            .append_char_unsafe(',')
+            .append_char_unsafe('\n')
+            .append_char_unsafe(indent_char, indent_level);
       }
-      dest.append_char('\n').append_char(indent_char, indent_level);
       if constexpr (has_name_collision[I]) {
-        dest.append_utf_string(display_string_of(parent_of(M.member)));
-        dest.append_char(':', 2);
+        constexpr auto parent_name = display_string_of(parent_of(M.member));
+        if constexpr (is_ascii_string(parent_name)) {
+          dest.reserve_at_least(parent_name.length() + 2)
+              .append_c_string_unsafe(parent_name)
+              .append_char_unsafe(':', 2);
+        } else {
+          dest.reserve_at_least(parent_name.length() * 6 + 2)
+              .append_utf_string_unsafe(parent_name)
+              .append_char_unsafe(':', 2);
+        }
       }
-      dest.append_utf_string(identifier_of(M.member));
-      dest.append_utf_string(": ");
+      constexpr auto field_name = identifier_of(M.member);
+      if constexpr (is_ascii_string(field_name)) {
+        dest.reserve_at_least(field_name.length() + 2)
+            .append_c_string_unsafe(field_name)
+            .append_char_unsafe(':')
+            .append_char_unsafe(' ');
+      } else {
+        dest.reserve_at_least(field_name.length() * 4 + 2)
+            .append_utf_string_unsafe(field_name)
+            .append_char_unsafe(':')
+            .append_char_unsafe(' ');
+      }
 
       const auto& elem = value.[:M.member:];
       if constexpr (is_reference_type(type_of(M.member))) {
@@ -303,7 +377,10 @@ struct indented_dumper : indented_serializer_base<indented_dumper> {
       }
     }
     indent_level -= indent_size;
-    dest.append_char('\n').append_char(indent_char, indent_level).append_char('}');
+    dest.reserve_at_least(indent_level + 2)
+        .append_char_unsafe('\n')
+        .append_char_unsafe(indent_char, indent_level)
+        .append_char('}');
   }
 };
 
@@ -328,11 +405,27 @@ struct unindented_dumper : unindented_serializer_base<unindented_dumper> {
         dest.append_char(',');
       }
       if constexpr (has_name_collision[I]) {
-        dest.append_utf_string(display_string_of(parent_of(M.member)));
-        dest.append_char(':', 2);
+        constexpr auto parent_name = display_string_of(parent_of(M.member));
+        if constexpr (is_ascii_string(parent_name)) {
+          dest.reserve_at_least(parent_name.length() + 2)
+              .append_c_string_unsafe(parent_name)
+              .append_char_unsafe(':', 2);
+        } else {
+          dest.reserve_at_least(parent_name.length() * 6 + 2)
+              .append_utf_string_unsafe(parent_name)
+              .append_char_unsafe(':', 2);
+        }
       }
-      dest.append_utf_string(identifier_of(M.member));
-      dest.append_char(':');
+      constexpr auto field_name = identifier_of(M.member);
+      if constexpr (is_ascii_string(field_name)) {
+        dest.reserve_at_least(field_name.length() + 1)
+            .append_c_string_unsafe(field_name)
+            .append_char_unsafe(':');
+      } else {
+        dest.reserve_at_least(field_name.length() * 4 + 1)
+            .append_utf_string_unsafe(field_name)
+            .append_char_unsafe(':');
+      }
 
       const auto& elem = value.[:M.member:];
       if constexpr (is_reference_type(type_of(M.member))) {
@@ -348,16 +441,16 @@ struct unindented_dumper : unindented_serializer_base<unindented_dumper> {
 }  // namespace impl::json
 
 template <class CharT, class Allocator, class T>
-constexpr bool dump_to_json_like(basic_string_builder<CharT, Allocator>& dest, const T& value) {
-  return impl::json::unindented_dumper::operator()(dest, value);
+constexpr void dump_to_json_like(basic_string_builder<CharT, Allocator>& dest, const T& value) {
+  impl::json::unindented_dumper::operator()(dest, value);
 }
 
 template <class CharT, class Allocator, class T>
-constexpr bool dump_to_json_like(basic_string_builder<CharT, Allocator>& dest,
+constexpr void dump_to_json_like(basic_string_builder<CharT, Allocator>& dest,
                                  const T& value,
                                  int indent_size,
                                  CharT indent_char = static_cast<CharT>(' ')) {
-  return impl::json::indented_dumper::operator()(dest, value, 0, indent_size, indent_char);
+  impl::json::indented_dumper::operator()(dest, value, 0, indent_size, indent_char);
 }
 
 template <class CharT = char, class T>

@@ -25,6 +25,7 @@
 
 #include <map>
 #include <optional>
+#include <reflect_cpp26/enum/enum_contains.hpp>
 #include <reflect_cpp26/enum/enum_flags_name.hpp>
 #include <reflect_cpp26/enum/enum_name.hpp>
 #include <reflect_cpp26/type_operations/impl/serialize_to_json_common.hpp>
@@ -50,14 +51,10 @@ namespace impl::json {
 template <bool ToString, class CharT, class Allocator, class T>
 static constexpr void serialize_char(basic_string_builder<CharT, Allocator>& dest, T value) {
   if constexpr (ToString) {
-    dest.append_char('"');
-    if constexpr (sizeof(T) <= sizeof(CharT)) {
-      dest.append_char_json_escaped(static_cast<CharT>(value));
-    } else {
-      static_assert(sizeof(T) <= sizeof(char32_t));
-      dest.append_utf_code_point_json_escaped(static_cast<uint32_t>(value));
-    }
-    dest.append_char('"');
+    dest.reserve_at_least(8)
+        .append_char_unsafe('"')
+        .append_utf_code_point_json_escaped_unsafe(static_cast<char32_t>(value))
+        .append_char_unsafe('"');
   } else {
     dest.append_integer(value);
   }
@@ -70,15 +67,15 @@ static constexpr bool serialize_floating_point(basic_string_builder<CharT, Alloc
     if constexpr (HaltsOnInfOrNaN) {
       return false;
     } else {
-      dest.append_utf_string("\"NaN\"");
+      dest.append_c_string("\"NaN\"");
     }
   } else if (std::isinf(value)) [[unlikely]] {
     if constexpr (HaltsOnInfOrNaN) {
       return false;
     } else if (value > 0) {
-      dest.append_utf_string("\"Infinity\"");
+      dest.append_c_string("\"Infinity\"");
     } else {
-      dest.append_utf_string("\"-Infinity\"");
+      dest.append_c_string("\"-Infinity\"");
     }
   } else {
     dest.append_floating_point(value);
@@ -88,17 +85,40 @@ static constexpr bool serialize_floating_point(basic_string_builder<CharT, Alloc
 
 template <bool HaltsOnInvalid, class CharT, class Allocator, class T>
 constexpr bool stringify_enum_flag(basic_string_builder<CharT, Allocator>& dest, T value) {
-  auto str = enum_flags_name(value);
-
-  if (str.has_value()) [[likely]] {
-    dest.append_char('"').append_utf_string(*str).append_char('"');
-    return true;
-  } else if constexpr (HaltsOnInvalid) {
-    return false;
+  if constexpr (std::is_same_v<CharT, char>) {
+    dest.append_char('"');
+    if (enum_flags_name_to(dest, value) == to_string_status::done) [[likely]] {
+      dest.append_char('"');
+    } else {
+      dest.unwind_unsafe();
+      if constexpr (HaltsOnInvalid) {
+        return false;
+      } else {
+        dest.append_c_string("null");
+      }
+    }
   } else {
-    dest.append_utf_string("null");
-    return true;
+    auto str = enum_flags_name(value);
+
+    if (str.has_value()) [[likely]] {
+      if constexpr (enum_names_are_ascii_only_v<T>) {
+        dest.reserve_at_least(str->length() + 2)
+            .append_char_unsafe('"')
+            .append_c_string_unsafe(*str)
+            .append_char_unsafe('"');
+      } else {
+        dest.reserve_at_least(str->length() * 4 + 2)
+            .append_char_unsafe('"')
+            .append_utf_string_unsafe(*str)
+            .append_char_unsafe('"');
+      }
+    } else if constexpr (HaltsOnInvalid) {
+      return false;
+    } else {
+      dest.append_c_string("null");
+    }
   }
+  return true;
 }
 
 template <bool HaltsOnInvalid, class CharT, class Allocator, class T>
@@ -106,12 +126,22 @@ constexpr bool stringify_enum(basic_string_builder<CharT, Allocator>& dest, T va
   auto str = enum_name(value);
 
   if (!str.empty()) [[likely]] {
-    dest.append_char('"').append_utf_string(str).append_char('"');
+    if constexpr (enum_names_are_ascii_only_v<T>) {
+      dest.reserve_at_least(str.length() + 2)
+          .append_char_unsafe('"')
+          .append_c_string_unsafe(str)
+          .append_char_unsafe('"');
+    } else {
+      dest.reserve_at_least(4 * str.length() + 2)
+          .append_char_unsafe('"')
+          .append_utf_string_unsafe(str)
+          .append_char_unsafe('"');
+    }
     return true;
   } else if constexpr (HaltsOnInvalid) {
     return false;
   } else {
-    dest.append_utf_string("null");
+    dest.append_c_string("null");
     return true;
   }
 }
@@ -125,6 +155,9 @@ constexpr bool serialize_enum(basic_string_builder<CharT, Allocator>& dest, T va
       return stringify_enum<HaltsOnInvalid>(dest, value);
     }
   } else {
+    if constexpr (HaltsOnInvalid) {
+      if (!enum_contains<T>(value)) return false;
+    }
     dest.append_integer(std::to_underlying(value));
     return true;
   }
@@ -138,7 +171,7 @@ constexpr bool serializer_dispatch_arithmetic(basic_string_builder<CharT, Alloca
 
   if constexpr (std::is_same_v<T, bool>) {
     // (2.1) bool
-    dest.append_utf_string(value ? "true" : "false");
+    dest.append_c_string(value ? "true" : "false");
     return true;
   } else if constexpr (char_type<T>) {
     // (2.2) Character types
@@ -167,7 +200,7 @@ constexpr bool serializer_dispatch(basic_string_builder<CharT, Allocator>& dest,
 
   if constexpr (std::is_same_v<T, std::monostate>) {
     // (1) std::monostate (typically used as nullish alternative in std::variant)
-    dest.append_utf_string("null");
+    dest.append_c_string("null");
     return true;
   } else if constexpr (std::is_arithmetic_v<T>) {
     // (2) Arithmetic types (see above)
@@ -176,27 +209,30 @@ constexpr bool serializer_dispatch(basic_string_builder<CharT, Allocator>& dest,
   } else if constexpr (std::is_enum_v<T>) {
     // (3) Enum types
     constexpr auto to_string = Options.enum_to_string;
-    constexpr auto halts_on_invalid = to_string && Options.halts_on_invalid_enum;
+    constexpr auto halts_on_invalid = Options.halts_on_invalid_enum;
     auto res = serialize_enum<to_string, halts_on_invalid>(dest, value);
     return res;
   } else if constexpr (string_like<T>) {
     // (4) String-like types
     auto str = make_string_view(value);
-    dest.append_char('"').append_utf_string_json_escaped(str).append_char('"');
+    dest.reserve_at_least(6 * str.length() + 2)
+        .append_char_unsafe('"')
+        .append_utf_string_json_escaped_unsafe(str)
+        .append_char_unsafe('"');
     return true;
   } else if constexpr (template_instance_of<T, std::optional>) {
     // (7) std::optional
     if (value.has_value()) {
       return Parent::operator()(dest, *value, args...);
     } else {
-      dest.append_utf_string("null");
+      dest.append_c_string("null");
       return true;
     }
   } else if constexpr (template_instance_of<T, std::variant>) {
     // (8) std::variant
     auto visit_fn = [&](const auto& v) -> bool { return Parent::operator()(dest, v, args...); };
     if (value.valueless_by_exception()) [[unlikely]] {
-      dest.append_utf_string("null");
+      dest.append_c_string("null");
       return true;
     } else {
       return std::visit(visit_fn, value);
@@ -250,21 +286,37 @@ struct indented_serializer : indented_serializer_base<indented_serializer<Option
     indent_level += indent_size;
 
     template for (constexpr auto I : std::views::iota(0zU, N)) {
-      if constexpr (I > 0) {
-        dest.append_char(',');
-      }
-      dest.append_char('\n').append_char(indent_char, indent_level);
       constexpr auto cur_member = members[I];
-      dest.append_char('"');
-      dest.append_utf_string(identifier_of(cur_member.member));
-      dest.append_utf_string("\": ");
+      constexpr auto cur_member_name = std::meta::identifier_of(cur_member.member);
+      constexpr auto is_ascii_only = is_ascii_string(cur_member_name);
+      if constexpr (I > 0) {
+        dest.reserve_at_least(indent_level + (is_ascii_only ? 1 : 4) * cur_member_name.length() + 6)
+            .append_char_unsafe(',')   // +1
+            .append_char_unsafe('\n')  // +1
+            .append_char_unsafe(indent_char, indent_level);
+      } else {
+        dest.reserve_at_least(indent_level + (is_ascii_only ? 1 : 4) * cur_member_name.length() + 5)
+            .append_char_unsafe('\n')
+            .append_char_unsafe(indent_char, indent_level);
+      }
+      dest.append_char_unsafe('"');  // +1
+      if constexpr (is_ascii_only) {
+        dest.append_c_string_unsafe(cur_member_name);
+      } else {
+        dest.append_utf_string_unsafe(cur_member_name);
+      }
+      dest.append_c_string_unsafe("\": ");  // +3: '"', ':' and ' '
+
       const auto& elem = value.[:cur_member.member:];
       if (!operator()(dest, elem, indent_level, indent_size, indent_char)) [[unlikely]] {
         return false;
       }
     }
     indent_level -= indent_size;
-    dest.append_char('\n').append_char(indent_char, indent_level).append_char('}');
+    dest.reserve_at_least(indent_level + 2)
+        .append_char_unsafe('\n')
+        .append_char_unsafe(indent_char, indent_level)
+        .append_char_unsafe('}');
     return true;
   }
 };
@@ -288,13 +340,23 @@ struct unindented_serializer : unindented_serializer_base<unindented_serializer<
     dest.append_char('{');
 
     template for (constexpr auto I : std::views::iota(0zU, N)) {
-      if constexpr (I > 0) {
-        dest.append_char(',');
-      }
       constexpr auto cur_member = members[I];
-      dest.append_char('"');
-      dest.append_utf_string(identifier_of(cur_member.member));
-      dest.append_utf_string("\":");
+      constexpr auto cur_member_name = std::meta::identifier_of(cur_member.member);
+      constexpr auto is_ascii_only = is_ascii_string(cur_member_name);
+      if constexpr (I > 0) {
+        dest.reserve_at_least((is_ascii_only ? 1 : 4) * cur_member_name.length() + 4);
+        dest.append_char_unsafe(',');  // +1
+      } else {
+        dest.reserve_at_least((is_ascii_only ? 1 : 4) * cur_member_name.length() + 3);
+      }
+      dest.append_char_unsafe('"');  // +1
+      if constexpr (is_ascii_only) {
+        dest.append_c_string_unsafe(cur_member_name);
+      } else {
+        dest.append_utf_string_unsafe(cur_member_name);
+      }
+      dest.append_c_string_unsafe("\":");  // +2: '"' and ':'
+
       const auto& elem = value.[:cur_member.member:];
       if (!operator()(dest, elem)) [[unlikely]] {
         return false;

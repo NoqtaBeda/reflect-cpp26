@@ -42,14 +42,26 @@ struct indented_serializer_base {
 
     using V = typename T::value_type;
     for (const V& elem : value) {
-      is_first ? (void)(is_first = false) : (void)(dest.append_char(','));
-      dest.append_char('\n').append_char(indent_char, indent_level);
+      if (is_first) {
+        is_first = false;
+        dest.reserve_at_least(indent_level + 1)
+            .append_char_unsafe('\n')
+            .append_char_unsafe(indent_char, indent_level);
+      } else {
+        dest.reserve_at_least(indent_level + 2)
+            .append_char_unsafe(',')
+            .append_char_unsafe('\n')
+            .append_char_unsafe(indent_char, indent_level);
+      }
       if (!Derived::operator()(dest, elem, indent_level, indent_size, indent_char)) [[unlikely]] {
         return false;
       }
     }
     indent_level -= indent_size;
-    dest.append_char('\n').append_char(indent_char, indent_level).append_char(']');
+    dest.reserve_at_least(indent_level + 2)
+        .append_char_unsafe('\n')
+        .append_char_unsafe(indent_char, indent_level)
+        .append_char(']');
     return true;
   }
 
@@ -64,15 +76,30 @@ struct indented_serializer_base {
     auto is_first = true;
 
     for (const auto& [k, v] : value) {
-      is_first ? (void)(is_first = false) : (void)(dest.append_char(','));
-      dest.append_char('\n').append_char(indent_char, indent_level);
-      dest.append_char('"').append_utf_string_json_escaped(k).append_utf_string("\": ");
+      auto key_sv = make_string_view(k);
+      if (is_first) {
+        is_first = false;
+        dest.reserve_at_least(indent_level + 6 * key_sv.length() + 5)
+            .append_char_unsafe('\n')
+            .append_char_unsafe(indent_char, indent_level);
+      } else {
+        dest.reserve_at_least(indent_level + 6 * key_sv.length() + 6)
+            .append_char_unsafe(',')   // +1
+            .append_char_unsafe('\n')  // +1
+            .append_char_unsafe(indent_char, indent_level);
+      }
+      dest.append_char_unsafe('"')  // +1
+          .append_utf_string_json_escaped_unsafe(key_sv)
+          .append_c_string_unsafe("\": ");  // +3: '"', ':' and ' '
       if (!Derived::operator()(dest, v, indent_level, indent_size, indent_char)) [[unlikely]] {
         return false;
       }
     }
     indent_level -= indent_size;
-    dest.append_char('\n').append_char(indent_char, indent_level).append_char('}');
+    dest.reserve_at_least(indent_level + 2)
+        .append_char_unsafe('\n')
+        .append_char_unsafe(indent_char, indent_level)
+        .append_char('}');
     return true;
   }
 
@@ -87,17 +114,26 @@ struct indented_serializer_base {
     indent_level += indent_size;
 
     template for (constexpr auto I : std::views::iota(0zU, N)) {
-      if constexpr (I > 0) {
-        dest.append_char(',');
+      if constexpr (I == 0) {
+        dest.reserve_at_least(indent_level + 1)
+            .append_char_unsafe('\n')
+            .append_char_unsafe(indent_char, indent_level);
+      } else {
+        dest.reserve_at_least(indent_level + 2)
+            .append_char_unsafe(',')
+            .append_char_unsafe('\n')
+            .append_char_unsafe(indent_char, indent_level);
       }
-      dest.append_char('\n').append_char(indent_char, indent_level);
       const auto& elem = get_ith_element<I>(value);
       if (!Derived::operator()(dest, elem, indent_level, indent_size, indent_char)) [[unlikely]] {
         return false;
       }
     }
     indent_level -= indent_size;
-    dest.append_char('\n').append_char(indent_char, indent_level).append_char(']');
+    dest.reserve_at_least(indent_level + 2)
+        .append_char_unsafe('\n')
+        .append_char_unsafe(indent_char, indent_level)
+        .append_char(']');
     return true;
   }
 };
@@ -126,8 +162,16 @@ struct unindented_serializer_base {
     auto is_first = true;
 
     for (const auto& [k, v] : value) {
-      is_first ? (void)(is_first = false) : (void)(dest.append_char(','));
-      dest.append_char('"').append_utf_string_json_escaped(k).append_utf_string("\":");
+      auto key_sv = make_string_view(k);
+      if (is_first) {
+        is_first = false;
+        dest.reserve_at_least(6 * key_sv.length() + 3);
+      } else {
+        dest.reserve_at_least(6 * key_sv.length() + 4).append_char_unsafe(',');  // +1
+      }
+      dest.append_char_unsafe('"')  // +1
+          .append_utf_string_json_escaped_unsafe(k)
+          .append_c_string_unsafe("\":");  // +2: '"' and ':'
       if (!Derived::operator()(dest, v)) [[unlikely]] {
         return false;
       }

@@ -89,9 +89,9 @@ struct enum_common_formatter {
     auto dest = ctx.out();
     if (as_flags) {
       auto do_output = [value, dest](auto delim) {
-        auto [ec, out] = enum_flags_name_to(dest, std::unreachable_sentinel, value, delim);
-        if (std::errc{} != ec) {
-          // Expects ec == std::errc::invalid_argument, buffer unchanged
+        auto [status, out] = enum_flags_name_to(dest, std::unreachable_sentinel, value, delim);
+        if (to_string_status::done != status) {
+          // Expects status == to_string_status::invalid_input, buffer unchanged
           return impl::enum_alt_name_to(dest, value);
         } else {
           return out;

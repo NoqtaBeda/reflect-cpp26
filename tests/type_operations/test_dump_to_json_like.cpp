@@ -759,3 +759,384 @@ TEST(TypeOperationsDumpToJsonLike, StructWithReferences) {
 })",
             rfl::dump_to_json_like(s, 4));
 }
+
+// -------- Structs with non-ASCII member names --------
+
+namespace test_non_ascii_members {
+struct 中文书_t {
+  int 页数;
+  std::u8string 标题;
+};
+
+struct русский_t {
+  int номер;
+  std::u8string имя;
+};
+
+struct emoji_t {
+  int 🍎;
+  int 🍊;
+  std::u8string 📝;
+};
+
+struct mixed_unicode_t {
+  int english;
+  int 中文;
+  int русский;
+  int 日本語;
+  int 한국어;
+};
+}  // namespace test_non_ascii_members
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiChineseMembersChar8T) {
+  using namespace test_non_ascii_members;
+  constexpr auto make_book = [] constexpr { return 中文书_t{42, u8"三体"}; };
+  EXPECT_EQ_STATIC(u8R"({页数:42,标题:"三体"})", rfl::dump_to_json_like<char8_t>(make_book()));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiChineseMembersChar16T) {
+  using namespace test_non_ascii_members;
+  constexpr auto make_book = [] constexpr { return 中文书_t{42, u8"三体"}; };
+  EXPECT_EQ_STATIC(uR"({页数:42,标题:"三体"})", rfl::dump_to_json_like<char16_t>(make_book()));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiChineseMembersChar32T) {
+  using namespace test_non_ascii_members;
+  constexpr auto make_book = [] constexpr { return 中文书_t{42, u8"三体"}; };
+  EXPECT_EQ_STATIC(UR"({页数:42,标题:"三体"})", rfl::dump_to_json_like<char32_t>(make_book()));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiChineseWithIndentChar8T) {
+  using namespace test_non_ascii_members;
+  constexpr auto make_book = [] constexpr { return 中文书_t{42, u8"三体"}; };
+  EXPECT_EQ_STATIC(
+      u8R"({
+ 页数: 42,
+ 标题: "三体"
+})",
+      rfl::dump_to_json_like<char8_t>(make_book(), 1));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiChineseWithIndentChar16T) {
+  using namespace test_non_ascii_members;
+  constexpr auto make_book = [] constexpr { return 中文书_t{42, u8"三体"}; };
+  EXPECT_EQ_STATIC(
+      uR"({
+ 页数: 42,
+ 标题: "三体"
+})",
+      rfl::dump_to_json_like<char16_t>(make_book(), 1));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiChineseWithIndentChar32T) {
+  using namespace test_non_ascii_members;
+  constexpr auto make_book = [] constexpr { return 中文书_t{42, u8"三体"}; };
+  EXPECT_EQ_STATIC(
+      UR"({
+ 页数: 42,
+ 标题: "三体"
+})",
+      rfl::dump_to_json_like<char32_t>(make_book(), 1));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiRussianMembersChar8T) {
+  using namespace test_non_ascii_members;
+  constexpr auto make_doc = [] constexpr { return русский_t{1, u8"документ"}; };
+  EXPECT_EQ_STATIC(u8R"({номер:1,имя:"документ"})", rfl::dump_to_json_like<char8_t>(make_doc()));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiRussianMembersChar16T) {
+  using namespace test_non_ascii_members;
+  constexpr auto make_doc = [] constexpr { return русский_t{1, u8"документ"}; };
+  EXPECT_EQ_STATIC(uR"({номер:1,имя:"документ"})", rfl::dump_to_json_like<char16_t>(make_doc()));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiRussianMembersChar32T) {
+  using namespace test_non_ascii_members;
+  constexpr auto make_doc = [] constexpr { return русский_t{1, u8"документ"}; };
+  EXPECT_EQ_STATIC(UR"({номер:1,имя:"документ"})", rfl::dump_to_json_like<char32_t>(make_doc()));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiEmojiMembersChar8T) {
+  using namespace test_non_ascii_members;
+  constexpr auto make_emoji = [] constexpr { return emoji_t{3, 5, u8"hello"}; };
+  EXPECT_EQ_STATIC(u8R"({🍎:3,🍊:5,📝:"hello"})", rfl::dump_to_json_like<char8_t>(make_emoji()));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiEmojiMembersChar16T) {
+  using namespace test_non_ascii_members;
+  constexpr auto make_emoji = [] constexpr { return emoji_t{3, 5, u8"hello"}; };
+  EXPECT_EQ_STATIC(uR"({🍎:3,🍊:5,📝:"hello"})", rfl::dump_to_json_like<char16_t>(make_emoji()));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiEmojiMembersChar32T) {
+  using namespace test_non_ascii_members;
+  constexpr auto make_emoji = [] constexpr { return emoji_t{3, 5, u8"hello"}; };
+  EXPECT_EQ_STATIC(UR"({🍎:3,🍊:5,📝:"hello"})", rfl::dump_to_json_like<char32_t>(make_emoji()));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiMixedUnicodeMembersChar8T) {
+  using namespace test_non_ascii_members;
+  constexpr auto make_mixed = [] constexpr { return mixed_unicode_t{1, 2, 3, 4, 5}; };
+  EXPECT_EQ_STATIC(u8R"({english:1,中文:2,русский:3,日本語:4,한국어:5})",
+                   rfl::dump_to_json_like<char8_t>(make_mixed()));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiMixedUnicodeMembersChar16T) {
+  using namespace test_non_ascii_members;
+  constexpr auto make_mixed = [] constexpr { return mixed_unicode_t{1, 2, 3, 4, 5}; };
+  EXPECT_EQ_STATIC(uR"({english:1,中文:2,русский:3,日本語:4,한국어:5})",
+                   rfl::dump_to_json_like<char16_t>(make_mixed()));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiMixedUnicodeMembersChar32T) {
+  using namespace test_non_ascii_members;
+  constexpr auto make_mixed = [] constexpr { return mixed_unicode_t{1, 2, 3, 4, 5}; };
+  EXPECT_EQ_STATIC(UR"({english:1,中文:2,русский:3,日本語:4,한국어:5})",
+                   rfl::dump_to_json_like<char32_t>(make_mixed()));
+}
+
+namespace test_non_ascii_nested {
+struct 作者_t {
+  std::u8string 姓名;
+  int 年龄;
+};
+struct 书籍_t {
+  std::u8string 书名;
+  作者_t 作者;
+  int 页数;
+};
+}  // namespace test_non_ascii_nested
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiNestedStructChar8T) {
+  using namespace test_non_ascii_nested;
+  constexpr auto make_book = [] constexpr { return 书籍_t{u8"三体", 作者_t{u8"刘慈欣", 60}, 500}; };
+  EXPECT_EQ_STATIC(u8R"({书名:"三体",作者:{姓名:"刘慈欣",年龄:60},页数:500})",
+                   rfl::dump_to_json_like<char8_t>(make_book()));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiNestedStructChar16T) {
+  using namespace test_non_ascii_nested;
+  constexpr auto make_book = [] constexpr { return 书籍_t{u8"三体", 作者_t{u8"刘慈欣", 60}, 500}; };
+  EXPECT_EQ_STATIC(uR"({书名:"三体",作者:{姓名:"刘慈欣",年龄:60},页数:500})",
+                   rfl::dump_to_json_like<char16_t>(make_book()));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiNestedStructChar32T) {
+  using namespace test_non_ascii_nested;
+  constexpr auto make_book = [] constexpr { return 书籍_t{u8"三体", 作者_t{u8"刘慈欣", 60}, 500}; };
+  EXPECT_EQ_STATIC(UR"({书名:"三体",作者:{姓名:"刘慈欣",年龄:60},页数:500})",
+                   rfl::dump_to_json_like<char32_t>(make_book()));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiNestedWithIndentChar8T) {
+  using namespace test_non_ascii_nested;
+  constexpr auto make_book = [] constexpr { return 书籍_t{u8"三体", 作者_t{u8"刘慈欣", 60}, 500}; };
+  EXPECT_EQ_STATIC(
+      u8R"({
+  书名: "三体",
+  作者: {
+    姓名: "刘慈欣",
+    年龄: 60
+  },
+  页数: 500
+})",
+      rfl::dump_to_json_like<char8_t>(make_book(), 2));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiNestedWithIndentChar16T) {
+  using namespace test_non_ascii_nested;
+  constexpr auto make_book = [] constexpr { return 书籍_t{u8"三体", 作者_t{u8"刘慈欣", 60}, 500}; };
+  EXPECT_EQ_STATIC(
+      uR"({
+  书名: "三体",
+  作者: {
+    姓名: "刘慈欣",
+    年龄: 60
+  },
+  页数: 500
+})",
+      rfl::dump_to_json_like<char16_t>(make_book(), 2));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiNestedWithIndentChar32T) {
+  using namespace test_non_ascii_nested;
+  constexpr auto make_book = [] constexpr { return 书籍_t{u8"三体", 作者_t{u8"刘慈欣", 60}, 500}; };
+  EXPECT_EQ_STATIC(
+      UR"({
+  书名: "三体",
+  作者: {
+    姓名: "刘慈欣",
+    年龄: 60
+  },
+  页数: 500
+})",
+      rfl::dump_to_json_like<char32_t>(make_book(), 2));
+}
+
+namespace test_non_ascii_collision {
+struct 数据_t {
+  int x;
+  int y;
+};
+struct 容器_t {
+  数据_t 数据;
+  int x;
+};
+}  // namespace test_non_ascii_collision
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiNameCollisionChar8T) {
+  using namespace test_non_ascii_collision;
+  constexpr auto make_c = [] constexpr { return 容器_t{数据_t{1, 2}, 3}; };
+  EXPECT_EQ_STATIC(u8R"({数据:{x:1,y:2},x:3})", rfl::dump_to_json_like<char8_t>(make_c()));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiNameCollisionChar16T) {
+  using namespace test_non_ascii_collision;
+  constexpr auto make_c = [] constexpr { return 容器_t{数据_t{1, 2}, 3}; };
+  EXPECT_EQ_STATIC(uR"({数据:{x:1,y:2},x:3})", rfl::dump_to_json_like<char16_t>(make_c()));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiNameCollisionChar32T) {
+  using namespace test_non_ascii_collision;
+  constexpr auto make_c = [] constexpr { return 容器_t{数据_t{1, 2}, 3}; };
+  EXPECT_EQ_STATIC(UR"({数据:{x:1,y:2},x:3})", rfl::dump_to_json_like<char32_t>(make_c()));
+}
+
+// -------- Enums with non-ASCII names --------
+
+namespace test_non_ascii_enum {
+enum class 颜色_t {
+  红色,
+  绿色,
+  蓝色,
+};
+
+enum class 權限_t : int {
+  讀取 = 1,
+  寫入 = 2,
+  執行 = 4,
+};
+
+enum class エラーコード_t {
+  成功,
+  失敗,
+  再試行,
+};
+
+struct 設定_t {
+  std::u8string 名前;
+  颜色_t 颜色;
+  權限_t 權限;
+};
+}  // namespace test_non_ascii_enum
+
+REFLECT_CPP26_DEFINE_ENUM_BITWISE_BINARY_OPERATORS(test_non_ascii_enum::權限_t)
+template <>
+constexpr auto rfl::is_enum_flag_v<test_non_ascii_enum::權限_t> = true;
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiEnumChar8T) {
+  using namespace test_non_ascii_enum;
+  EXPECT_EQ_STATIC(u8"红色", rfl::dump_to_json_like<char8_t>(颜色_t::红色));
+  EXPECT_EQ_STATIC(u8"绿色", rfl::dump_to_json_like<char8_t>(颜色_t::绿色));
+  EXPECT_EQ_STATIC(u8"蓝色", rfl::dump_to_json_like<char8_t>(颜色_t::蓝色));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiEnumChar16T) {
+  using namespace test_non_ascii_enum;
+  EXPECT_EQ_STATIC(u"红色", rfl::dump_to_json_like<char16_t>(颜色_t::红色));
+  EXPECT_EQ_STATIC(u"绿色", rfl::dump_to_json_like<char16_t>(颜色_t::绿色));
+  EXPECT_EQ_STATIC(u"蓝色", rfl::dump_to_json_like<char16_t>(颜色_t::蓝色));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiEnumChar32T) {
+  using namespace test_non_ascii_enum;
+  EXPECT_EQ_STATIC(U"红色", rfl::dump_to_json_like<char32_t>(颜色_t::红色));
+  EXPECT_EQ_STATIC(U"绿色", rfl::dump_to_json_like<char32_t>(颜色_t::绿色));
+  EXPECT_EQ_STATIC(U"蓝色", rfl::dump_to_json_like<char32_t>(颜色_t::蓝色));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiEnumFlagChar8T) {
+  using namespace rfl::enum_bitwise_operators;
+  using namespace test_non_ascii_enum;
+  EXPECT_EQ_STATIC(u8"讀取", rfl::dump_to_json_like<char8_t>(權限_t::讀取));
+  EXPECT_THAT(rfl::dump_to_json_like<char8_t>(權限_t::讀取 | 權限_t::寫入),
+              testing::AnyOf(u8"讀取|寫入", u8"寫入|讀取"));
+  EXPECT_THAT(rfl::dump_to_json_like<char8_t>(權限_t::讀取 | 權限_t::寫入 | 權限_t::執行),
+              testing::AnyOf(u8"讀取|寫入|執行",
+                             u8"讀取|執行|寫入",
+                             u8"寫入|讀取|執行",
+                             u8"寫入|執行|讀取",
+                             u8"執行|讀取|寫入",
+                             u8"執行|寫入|讀取"));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiEnumFlagChar16T) {
+  using namespace rfl::enum_bitwise_operators;
+  using namespace test_non_ascii_enum;
+  EXPECT_EQ_STATIC(u"讀取", rfl::dump_to_json_like<char16_t>(權限_t::讀取));
+  EXPECT_THAT(rfl::dump_to_json_like<char16_t>(權限_t::讀取 | 權限_t::寫入),
+              testing::AnyOf(u"讀取|寫入", u"寫入|讀取"));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiEnumFlagChar32T) {
+  using namespace rfl::enum_bitwise_operators;
+  using namespace test_non_ascii_enum;
+  EXPECT_EQ_STATIC(U"讀取", rfl::dump_to_json_like<char32_t>(權限_t::讀取));
+  EXPECT_THAT(rfl::dump_to_json_like<char32_t>(權限_t::讀取 | 權限_t::寫入),
+              testing::AnyOf(U"讀取|寫入", U"寫入|讀取"));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiEnumFlagEmptySet) {
+  using namespace test_non_ascii_enum;
+  EXPECT_EQ_STATIC(u8"", rfl::dump_to_json_like<char8_t>(static_cast<權限_t>(0)));
+  EXPECT_EQ_STATIC(u"", rfl::dump_to_json_like<char16_t>(static_cast<權限_t>(0)));
+  EXPECT_EQ_STATIC(U"", rfl::dump_to_json_like<char32_t>(static_cast<權限_t>(0)));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiEnumFlagInvalid) {
+  using namespace test_non_ascii_enum;
+  EXPECT_EQ_STATIC(u8"(權限_t)8", rfl::dump_to_json_like<char8_t>(static_cast<權限_t>(8)));
+  EXPECT_EQ_STATIC(u"(權限_t)8", rfl::dump_to_json_like<char16_t>(static_cast<權限_t>(8)));
+  EXPECT_EQ_STATIC(U"(權限_t)8", rfl::dump_to_json_like<char32_t>(static_cast<權限_t>(8)));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiEnumJapaneseChar8T) {
+  using namespace test_non_ascii_enum;
+  EXPECT_EQ_STATIC(u8"成功", rfl::dump_to_json_like<char8_t>(エラーコード_t::成功));
+  EXPECT_EQ_STATIC(u8"失敗", rfl::dump_to_json_like<char8_t>(エラーコード_t::失敗));
+  EXPECT_EQ_STATIC(u8"再試行", rfl::dump_to_json_like<char8_t>(エラーコード_t::再試行));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiEnumInStructChar8T) {
+  using namespace test_non_ascii_enum;
+  constexpr auto make_cfg = [] constexpr {
+    return 設定_t{u8"配置文件", 颜色_t::蓝色, 權限_t::讀取 | 權限_t::執行};
+  };
+  auto result = rfl::dump_to_json_like<char8_t>(make_cfg());
+  EXPECT_THAT(result,
+              testing::AnyOf(u8R"({名前:"配置文件",颜色:蓝色,權限:讀取|執行})",
+                             u8R"({名前:"配置文件",颜色:蓝色,權限:執行|讀取})"));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiEnumInStructChar16T) {
+  using namespace test_non_ascii_enum;
+  constexpr auto make_cfg = [] constexpr {
+    return 設定_t{u8"配置文件", 颜色_t::蓝色, 權限_t::讀取 | 權限_t::執行};
+  };
+  auto result = rfl::dump_to_json_like<char16_t>(make_cfg());
+  EXPECT_THAT(result,
+              testing::AnyOf(uR"({名前:"配置文件",颜色:蓝色,權限:讀取|執行})",
+                             uR"({名前:"配置文件",颜色:蓝色,權限:執行|讀取})"));
+}
+
+TEST(TypeOperationsDumpToJsonLike, NonAsciiEnumInStructChar32T) {
+  using namespace test_non_ascii_enum;
+  constexpr auto make_cfg = [] constexpr {
+    return 設定_t{u8"配置文件", 颜色_t::蓝色, 權限_t::讀取 | 權限_t::執行};
+  };
+  auto result = rfl::dump_to_json_like<char32_t>(make_cfg());
+  EXPECT_THAT(result,
+              testing::AnyOf(UR"({名前:"配置文件",颜色:蓝色,權限:讀取|執行})",
+                             UR"({名前:"配置文件",颜色:蓝色,權限:執行|讀取})"));
+}

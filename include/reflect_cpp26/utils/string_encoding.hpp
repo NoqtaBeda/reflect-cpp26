@@ -35,8 +35,8 @@ namespace reflect_cpp26 {
 enum class escaping_mode {
   none = 0,
   json = 1,            // Following RFC 8259 standard
-  display_char = 2,    // Diaplaying character values dueing local debugging
-  display_string = 3,  // Diaplaying string values dueing local debugging
+  display_char = 2,    // Diaplaying character values during local debugging
+  display_string = 3,  // Diaplaying string values during local debugging
 };
 
 enum class escaping_status {

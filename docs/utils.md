@@ -523,30 +523,116 @@ namespace reflect_cpp26 {
 template <class CharT, class Allocator = std::allocator<CharT>>
 class basic_string_builder {
 public:
+  // Construction / Destruction
   constexpr basic_string_builder();
   explicit constexpr basic_string_builder(Allocator alloc);
   explicit constexpr basic_string_builder(size_t initial_size);
   explicit constexpr basic_string_builder(size_t initial_size, Allocator alloc);
 
+  // No copy sementics
+  basic_string_builder(const basic_string_builder&) = delete;
+  auto operator=(const basic_string_builder&) -> basic_string_builder& = delete;
+
+  // Trivial move semantics
+  constexpr basic_string_builder(basic_string_builder&&) = default;
+  constexpr auto operator=(basic_string_builder&&) -> basic_string_builder& = default;
+
+  constexpr ~basic_string_builder();
+
+  // Querying
   constexpr size_t size() const;
   constexpr auto str() const -> std::basic_string<CharT>;
   constexpr auto strview() const& -> std::basic_string_view<CharT>;
 
+  // Buffer management
+  constexpr auto reserve_at_least(size_t n) -> basic_string_builder&;
+
+  // -------- Append single char --------
   constexpr auto append_char(CharT c) -> basic_string_builder&;
   constexpr auto append_char(CharT c, size_t count) -> basic_string_builder&;
+  constexpr auto append_char_unsafe(CharT c) -> basic_string_builder&;
+  constexpr auto append_char_unsafe(CharT c, size_t count) -> basic_string_builder&;
+
+  template <escaping_mode Mode>
+  constexpr auto append_char_by(CharT c) -> basic_string_builder&;
+  template <escaping_mode Mode>
+  constexpr auto append_char_by_unsafe(CharT c) -> basic_string_builder&;
+
   constexpr auto append_char_json_escaped(CharT c) -> basic_string_builder&;
+  constexpr auto append_char_json_escaped_unsafe(CharT c) -> basic_string_builder&;
 
+  // -------- Append single code point --------
   constexpr auto append_utf_code_point(char32_t code_point) -> basic_string_builder&;
-  constexpr auto append_utf_code_point_json_escaped(char32_t code_point) -> basic_string_builder&;
+  constexpr auto append_utf_code_point_unsafe(char32_t code_point) -> basic_string_builder&;
 
+  template <escaping_mode Mode>
+  constexpr auto append_utf_code_point_by(char32_t code_point) -> basic_string_builder&;
+  template <escaping_mode Mode>
+  constexpr auto append_utf_code_point_by_unsafe(char32_t code_point) -> basic_string_builder&;
+
+  constexpr auto append_utf_code_point_json_escaped(char32_t code_point) -> basic_string_builder&;
+  constexpr auto append_utf_code_point_json_escaped_unsafe(char32_t code_point) -> basic_string_builder&;
+
+  // -------- Append string (no UTF conversion) --------
   constexpr auto append_string(const CharT* str, const CharT* str_end) -> basic_string_builder&;
   constexpr auto append_string(const CharT* str) -> basic_string_builder&;
   constexpr auto append_string(std::basic_string_view<CharT> str) -> basic_string_builder&;
+  constexpr auto append_string_unsafe(const CharT* str, const CharT* str_end) -> basic_string_builder&;
+  constexpr auto append_string_unsafe(const CharT* str) -> basic_string_builder&;
+  constexpr auto append_string_unsafe(std::basic_string_view<CharT> str) -> basic_string_builder&;
+
+  template <escaping_mode Mode>
+  constexpr auto append_string_by(const CharT* str, const CharT* str_end) -> basic_string_builder&;
+  template <escaping_mode Mode>
+  constexpr auto append_string_by(const CharT* str) -> basic_string_builder&;
+  template <escaping_mode Mode>
+  constexpr auto append_string_by(std::basic_string_view<CharT> str) -> basic_string_builder&;
+  template <escaping_mode Mode>
+  constexpr auto append_string_by_unsafe(const CharT* str, const CharT* str_end) -> basic_string_builder&;
+  template <escaping_mode Mode>
+  constexpr auto append_string_by_unsafe(const CharT* str) -> basic_string_builder&;
+  template <escaping_mode Mode>
+  constexpr auto append_string_by_unsafe(std::basic_string_view<CharT> str) -> basic_string_builder&;
 
   constexpr auto append_string_json_escaped(const CharT* str, const CharT* str_end) -> basic_string_builder&;
   constexpr auto append_string_json_escaped(const CharT* str) -> basic_string_builder&;
   constexpr auto append_string_json_escaped(std::basic_string_view<CharT> str) -> basic_string_builder&;
+  constexpr auto append_string_json_escaped_unsafe(const CharT* str, const CharT* str_end) -> basic_string_builder&;
+  constexpr auto append_string_json_escaped_unsafe(const CharT* str) -> basic_string_builder&;
+  constexpr auto append_string_json_escaped_unsafe(std::basic_string_view<CharT> str) -> basic_string_builder&;
 
+  // -------- Append C-style string (no UTF conversion) --------
+  constexpr auto append_c_string_unsafe(const char* str, const char* str_end) -> basic_string_builder&;
+  constexpr auto append_c_string_unsafe(const char* str) -> basic_string_builder&;
+  constexpr auto append_c_string_unsafe(std::string_view str) -> basic_string_builder&;
+
+  constexpr auto append_c_string(const char* str, const char* str_end) -> basic_string_builder&;
+  constexpr auto append_c_string(const char* str) -> basic_string_builder&;
+  constexpr auto append_c_string(std::string_view str) -> basic_string_builder&;
+
+  template <escaping_mode Mode>
+  constexpr auto append_c_string_by_unsafe(const char* str, const char* str_end) -> basic_string_builder&;
+  template <escaping_mode Mode>
+  constexpr auto append_c_string_by_unsafe(const char* str) -> basic_string_builder&;
+  template <escaping_mode Mode>
+  constexpr auto append_c_string_by_unsafe(std::string_view str) -> basic_string_builder&;
+
+  template <escaping_mode Mode>
+  constexpr auto append_c_string_by(const char* str, const char* str_end) -> basic_string_builder&;
+  template <escaping_mode Mode>
+  constexpr auto append_c_string_by(const char* str) -> basic_string_builder&;
+  template <escaping_mode Mode>
+  constexpr auto append_c_string_by(std::string_view str) -> basic_string_builder&;
+
+  constexpr auto append_c_string_json_escaped_unsafe(const char* str, const char* str_end) -> basic_string_builder&;
+  constexpr auto append_c_string_json_escaped_unsafe(const char* str) -> basic_string_builder&;
+  constexpr auto append_c_string_json_escaped_unsafe(std::string_view str) -> basic_string_builder&;
+
+  constexpr auto append_c_string_json_escaped(const char* str, const char* str_end) -> basic_string_builder&;
+  constexpr auto append_c_string_json_escaped(const char* str) -> basic_string_builder&;
+  constexpr auto append_c_string_json_escaped(std::string_view str) -> basic_string_builder&;
+
+  // -------- Append string (with UTF conversion) --------
   template <char_type OtherCharT>
   constexpr auto append_utf_string(const OtherCharT* str, const OtherCharT* str_end) -> basic_string_builder&;
   template <char_type OtherCharT>
@@ -555,6 +641,31 @@ public:
   constexpr auto append_utf_string(std::basic_string_view<OtherCharT> str) -> basic_string_builder&;
   template <char_type OtherCharT, class Traits, class OtherAllocator>
   constexpr auto append_utf_string(const std::basic_string<OtherCharT, Traits, OtherAllocator>& str) -> basic_string_builder&;
+  template <char_type OtherCharT>
+  constexpr auto append_utf_string_unsafe(const OtherCharT* str, const OtherCharT* str_end) -> basic_string_builder&;
+  template <char_type OtherCharT>
+  constexpr auto append_utf_string_unsafe(const OtherCharT* str) -> basic_string_builder&;
+  template <char_type OtherCharT>
+  constexpr auto append_utf_string_unsafe(std::basic_string_view<OtherCharT> str) -> basic_string_builder&;
+  template <char_type OtherCharT, class Traits, class OtherAllocator>
+  constexpr auto append_utf_string_unsafe(const std::basic_string<OtherCharT, Traits, OtherAllocator>& str) -> basic_string_builder&;
+
+  template <escaping_mode Mode, char_type OtherCharT>
+  constexpr auto append_utf_string_by(const OtherCharT* str, const OtherCharT* str_end) -> basic_string_builder&;
+  template <escaping_mode Mode, char_type OtherCharT>
+  constexpr auto append_utf_string_by(const OtherCharT* str) -> basic_string_builder&;
+  template <escaping_mode Mode, char_type OtherCharT>
+  constexpr auto append_utf_string_by(std::basic_string_view<OtherCharT> str) -> basic_string_builder&;
+  template <escaping_mode Mode, char_type OtherCharT, class Traits, class OtherAllocator>
+  constexpr auto append_utf_string_by(const std::basic_string<OtherCharT, Traits, OtherAllocator>& str) -> basic_string_builder&;
+  template <escaping_mode Mode, char_type OtherCharT>
+  constexpr auto append_utf_string_by_unsafe(const OtherCharT* str, const OtherCharT* str_end) -> basic_string_builder&;
+  template <escaping_mode Mode, char_type OtherCharT>
+  constexpr auto append_utf_string_by_unsafe(const OtherCharT* str) -> basic_string_builder&;
+  template <escaping_mode Mode, char_type OtherCharT>
+  constexpr auto append_utf_string_by_unsafe(std::basic_string_view<OtherCharT> str) -> basic_string_builder&;
+  template <escaping_mode Mode, char_type OtherCharT, class Traits, class OtherAllocator>
+  constexpr auto append_utf_string_by_unsafe(const std::basic_string<OtherCharT, Traits, OtherAllocator>& str) -> basic_string_builder&;
 
   template <char_type OtherCharT>
   constexpr auto append_utf_string_json_escaped(const OtherCharT* str, const OtherCharT* str_end) -> basic_string_builder&;
@@ -564,7 +675,16 @@ public:
   constexpr auto append_utf_string_json_escaped(std::basic_string_view<OtherCharT> str) -> basic_string_builder&;
   template <char_type OtherCharT, class Traits, class OtherAllocator>
   constexpr auto append_utf_string_json_escaped(const std::basic_string<OtherCharT, Traits, OtherAllocator>& str) -> basic_string_builder&;
+  template <char_type OtherCharT>
+  constexpr auto append_utf_string_json_escaped_unsafe(const OtherCharT* str, const OtherCharT* str_end) -> basic_string_builder&;
+  template <char_type OtherCharT>
+  constexpr auto append_utf_string_json_escaped_unsafe(const OtherCharT* str) -> basic_string_builder&;
+  template <char_type OtherCharT>
+  constexpr auto append_utf_string_json_escaped_unsafe(std::basic_string_view<OtherCharT> str) -> basic_string_builder&;
+  template <char_type OtherCharT, class Traits, class OtherAllocator>
+  constexpr auto append_utf_string_json_escaped_unsafe(const std::basic_string<OtherCharT, Traits, OtherAllocator>& str) -> basic_string_builder&;
 
+  // -------- Append arithmetic types --------
   constexpr auto append_bool(bool value) -> basic_string_builder&;
 
   template <non_bool_integral IntegerT>
@@ -580,6 +700,13 @@ public:
 
   template <std::floating_point FloatT>
   constexpr auto append_floating_point(FloatT value, std::chars_format fmt, int precision) -> basic_string_builder&;
+
+  // -------- Output iterators --------
+  class safe_output_iterator;
+  constexpr auto out() -> safe_output_iterator;
+
+  class unsafe_output_iterator;
+  constexpr auto out_unsafe() -> unsafe_output_iterator;
 };
 
 using string_builder = basic_string_builder<char>;
@@ -599,6 +726,15 @@ using pmr_wstring_builder = basic_string_builder<wchar_t, std::pmr::polymorphic_
 
 The `basic_string_builder` class provides a constexpr-compatible string builder with automatic buffer management and support for UTF encoding conversion.
 
+#### Construction / Destruction
+
+- Default constructor creates a builder with no initial buffer.
+- Constructor taking `Allocator` creates a builder with a custom allocator.
+- Constructor taking `initial_size` allocates an initial buffer of that many characters.
+- Copy construction and copy assignment are **deleted**.
+- Move construction and move assignment are **defaulted**.
+- Destructor deallocates the internal buffer (if any) using the allocator.
+
 #### Type Aliases
 
 | Type Alias          | Character Type | Allocator                         |
@@ -617,31 +753,145 @@ Note: `wstring_builder` does not support UTF conversion because `wchar_t` size v
 - `size()`: Returns the current number of characters in the builder.
 - `str()`: Returns a `std::basic_string<CharT>` with a copy of the current content.
 - `strview()`: Returns a `std::basic_string_view<CharT>` referencing the current content.
+- `reserve_at_least(n)`: Ensures the buffer has capacity for at least `n` additional characters. Grows exponentially if needed.
+
+#### Safe vs Unsafe Variants
+
+Most `append_*` methods come in two forms:
+
+| Variant    | Naming            | Behavior                                                                                                                                             |
+| ---------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Safe**   | `append_*`        | Calls `reserve_at_least` before writing. **Preferred in most cases.**                                                                                |
+| **Unsafe** | `append_*_unsafe` | Assumes the caller has already ensured sufficient buffer space. Skips `reserve_at_least` for performance when buffer capacity is known to be enough. |
+
+Suggested buffer reservation size for each `_unsafe` function is shown in the following table (Constant 6 refers to the max escaped size `\u00xx`. `s, t` refers to UTF-`s` -> UTF-`t` conversion):
+
+| `_unsafe` Method                                                                                 | Worst-Case Buffer Usage                         |
+| ------------------------------------------------------------------------------------------------ | ----------------------------------------------- |
+| `append_char_unsafe(c)`                                                                          | 1                                               |
+| `append_char_unsafe(c, count)`                                                                   | `count`                                         |
+| `append_char_by_unsafe<Mode>(c)` <br> `append_char_json_escaped_unsafe(c)`                       | 6 (escaped: max 6 chars)                        |
+| `append_utf_code_point_unsafe(cp)`                                                               | `32/t` (UTF-8: max 4 bytes)                     |
+| `append_utf_code_point_by_unsafe<Mode>(cp)` <br> `append_utf_code_point_json_escaped_unsafe(cp)` | 6 (escaped: max 6 chars)                        |
+| `append_string_unsafe(s, s+n)` <br> `append_c_string_unsafe(s, s+n)`                             | `n`                                             |
+| `append_string_by_unsafe<Mode>(s, s+n)` <br> `append_c_string_by_unsafe<Mode>(s, s+n)`           | `6 × n` (escaped: worst-case 6×)                |
+| `append_string_json_escaped_unsafe(s, s+n)` <br> `append_c_string_json_escaped_unsafe(s, s+n)`   | `6 × n` (escaped: worst-case 6×)                |
+| `append_utf_string_unsafe(s, s+n)`                                                               | `max(1, s/t) × n` (same-type or UTF conversion) |
+| `append_utf_string_by_unsafe<Mode>(s, s+n)` <br> `append_utf_string_json_escaped_unsafe(s, s+n)` | `6 × n` (escaped: worst-case 6×)                |
+
+The safe variant always delegates to the unsafe variant after reserving enough space.
+
+Typical usage of `_unsafe` variants is chained operation sequence whose total buffer usage is known as prior knowledge. For example:
+
+```cpp
+reflect_cpp26::u8string_builder builder;
+
+// Known: 6 chars for "Name: " + at most 256 chars for name + 12 chars for ", status: OK"
+builder.reserve_at_least(6 + 256 + 12);
+
+// Now all _unsafe variants can be chained without intermediate reserve checks
+builder
+  .append_string_unsafe(u8"Name: ")
+  .append_utf_string_unsafe(name)          // u16string, with at most 128 UTF-16 units
+  .append_string_unsafe(u8", status: OK");
+
+auto result = builder.str();
+```
+
+#### Escaping-mode Template Methods
+
+Methods suffixed `_by` accept an `escaping_mode` template parameter, enabling arbitrary escaping modes (see [Escaping Modes](#escaping-modes)):
+
+- `append_char_by<Mode>`: Append a single character using the specified escaping mode.
+- `append_string_by<Mode>`: Append a same-type string using the specified escaping mode.
+- `append_utf_string_by<Mode>`: Append a (potentially different-type) string using the specified escaping mode.
+- `append_utf_code_point_by<Mode>`: Append a code point using the specified escaping mode.
+
+Each `_by` method also has a `_by_unsafe` counterpart.
+
+Convenience aliases for common modes:
+
+- `append_char_json_escaped` ≈ `append_char_by<escaping_mode::json>`
+- `append_string_json_escaped` ≈ `append_string_by<escaping_mode::json>`
+- `append_utf_string_json_escaped` ≈ `append_utf_string_by<escaping_mode::json>`
+- `append_utf_code_point_json_escaped` ≈ `append_utf_code_point_by<escaping_mode::json>`
+
+And corresponding `_unsafe` versions.
 
 #### Appending Characters
 
 - `append_char(c)`: Appends a single character.
 - `append_char(c, count)`: Appends `count` copies of character `c`.
-- `append_char_json_escaped(c)`: Appends a single character with JSON escaping (if needed).
+- `append_char_unsafe(c)` / `append_char_unsafe(c, count)`: Unsafe variants (no reserve).
+- `append_char_json_escaped(c)`: Appends a single character with JSON escaping.
+- `append_char_json_escaped_unsafe(c)`: Unsafe variant.
+
+#### Appending Code Points
+
 - `append_utf_code_point(code_point)`: Appends a Unicode code point, encoding it appropriately for the builder's character type. Invalid code points are replaced with U+FFFD.
-- `append_utf_code_point_json_escaped(code_point)`: Appends a Unicode code point with JSON escaping.
+- `append_utf_code_point_unsafe(code_point)`: Unsafe variant.
+- `append_utf_code_point_json_escaped(code_point)`: Appends a code point with JSON escaping.
+- `append_utf_code_point_json_escaped_unsafe(code_point)`: Unsafe variant.
 
 #### Appending Strings
 
 The builder supports three types of string append operations:
 
 1. **`append_string`**: Appends raw characters without UTF conversion or escaping.
-   - Overloads: pointer with end, null-terminated pointer, `std::basic_string_view`
+   - Safe overloads: pointer with end, null-terminated pointer, `std::basic_string_view`
+   - Unsafe variants: `append_string_unsafe` with the same overloads
 
 2. **`append_string_json_escaped`**: Appends raw characters with JSON escaping.
-   - Overloads: pointer with end, null-terminated pointer, `std::basic_string_view`
+   - Safe overloads: pointer with end, null-terminated pointer, `std::basic_string_view`
+   - Unsafe variants: `append_string_json_escaped_unsafe` with the same overloads
 
 3. **`append_utf_string`**: Appends strings with automatic UTF encoding conversion. Invalid UTF sequences are replaced with U+FFFD.
-   - Overloads: pointer with end, null-terminated pointer, `std::basic_string_view`, `std::basic_string`
+   - Safe overloads: pointer with end, null-terminated pointer, `std::basic_string_view`, `std::basic_string`
+   - Unsafe variants: `append_utf_string_unsafe` with the same overloads
    - Supports all UTF conversions (UTF-8↔UTF-16, UTF-8↔UTF-32, UTF-16↔UTF-32, and same-type)
 
 4. **`append_utf_string_json_escaped`**: Combines UTF conversion and JSON escaping.
-   - Overloads: pointer with end, null-terminated pointer, `std::basic_string_view`, `std::basic_string`
+   - Safe overloads: pointer with end, null-terminated pointer, `std::basic_string_view`, `std::basic_string`
+   - Unsafe variants: `append_utf_string_json_escaped_unsafe` with the same overloads
+
+#### Appending C-style Strings
+
+The `append_c_string` series accepts `const char*` or `std::string_view` input regardless of the builder's character type. Characters are converted to `CharT` via `static_cast`—no UTF encoding conversion is performed.
+
+1. **`append_c_string`**: Copies `char` characters with `static_cast<CharT>`.
+   - Safe overloads: pointer with end, null-terminated pointer, `std::string_view`
+   - Unsafe variants: `append_c_string_unsafe` with the same overloads
+
+2. **`append_c_string_json_escaped`**: Same as `append_c_string` with JSON escaping.
+   - Safe overloads: pointer with end, null-terminated pointer, `std::string_view`
+   - Unsafe variants: `append_c_string_json_escaped_unsafe` with the same overloads
+
+Null-terminated string overloads (single `const char*` parameter) use `std::ranges::find` to locate `'\0'` then delegate to the `(str, str_end)` overload.
+
+#### Output Iterators
+
+The builder provides two output iterator classes, following the same idiom as `std::back_insert_iterator` (`operator*` and `operator++` are no-ops returning `*this`; `operator=(CharT c)` does the actual work):
+
+**`safe_output_iterator`** — Calls `append_char(c)` on each assignment (calling `reserve_at_least` internally each time):
+
+```cpp
+auto iter = builder.out();  // safe_output_iterator
+*iter++ = 'A';              // calls builder.append_char('A')
+```
+
+**`unsafe_output_iterator`** — Writes directly to the internal buffer. Automatic buffer expansion is **not** performed and you need to ensure the buffer has enough space via manual `reserve_at_least()` call.
+
+```cpp
+auto iter = builder.out_unsafe();  // unsafe_output_iterator
+*iter++ = 'A';
+```
+
+These iterators satisfy `std::output_iterator<CharT>` and can be used with standard algorithms or functions that write through output iterators (e.g. `std::ranges::copy`).
+
+Factory methods:
+
+- `out()`: Returns a `safe_output_iterator` bound to this builder.
+- `out_unsafe()`: Returns an `unsafe_output_iterator` bound to this builder.
 
 #### Appending Numbers
 
@@ -657,6 +907,7 @@ The builder manages a buffer allocated via the provided allocator:
 
 - Initial size can be specified in the constructor
 - When the buffer is full, it grows exponentially (doubles capacity)
+- `reserve_at_least(n)` can be called explicitly to pre-allocate space
 - All operations are constexpr-compatible
 - Buffer memory is deallocated in the destructor using the allocator
 

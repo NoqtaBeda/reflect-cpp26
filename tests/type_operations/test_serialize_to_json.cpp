@@ -712,6 +712,186 @@ TEST(TypeOperationsSerializeToJson, TupleOfStructs) {
                    rfl::serialize_to_json(make_tuple()));
 }
 
+// -------- Non-ASCII struct members and enum names --------
+
+namespace test_non_ascii_serialize {
+struct 用户_t {
+  std::u8string 姓名;
+  int 年龄;
+};
+
+struct 订单_t {
+  std::u8string 编号;
+  用户_t 用户;
+  int 金额;
+};
+
+enum class 颜色_t {
+  红色,
+  绿色,
+  蓝色,
+};
+
+enum class フラグ_t : int {
+  読み取り = 1,
+  書き込み = 2,
+  実行 = 4,
+};
+
+struct 配置_t {
+  std::u8string 名称;
+  颜色_t 颜色;
+  フラグ_t 权限;
+  std::vector<int> 数据;
+};
+}  // namespace test_non_ascii_serialize
+
+REFLECT_CPP26_DEFINE_ENUM_BITWISE_BINARY_OPERATORS(test_non_ascii_serialize::フラグ_t)
+template <>
+constexpr auto rfl::is_enum_flag_v<test_non_ascii_serialize::フラグ_t> = true;
+
+TEST(TypeOperationsSerializeToJson, NonAsciiStruct) {
+  using namespace test_non_ascii_serialize;
+  constexpr auto make_user = []() constexpr { return 用户_t{u8"张三", 30}; };
+  EXPECT_EQ_STATIC(u8R"({"姓名":"张三","年龄":30})", rfl::serialize_to_json<char8_t>(make_user()));
+}
+
+TEST(TypeOperationsSerializeToJson, NonAsciiStructChar16T) {
+  using namespace test_non_ascii_serialize;
+  constexpr auto make_user = []() constexpr { return 用户_t{u8"张三", 30}; };
+  EXPECT_EQ_STATIC(uR"({"姓名":"张三","年龄":30})", rfl::serialize_to_json<char16_t>(make_user()));
+}
+
+TEST(TypeOperationsSerializeToJson, NonAsciiStructChar32T) {
+  using namespace test_non_ascii_serialize;
+  constexpr auto make_user = []() constexpr { return 用户_t{u8"张三", 30}; };
+  EXPECT_EQ_STATIC(UR"({"姓名":"张三","年龄":30})", rfl::serialize_to_json<char32_t>(make_user()));
+}
+
+TEST(TypeOperationsSerializeToJson, NonAsciiNestedStruct) {
+  using namespace test_non_ascii_serialize;
+  constexpr auto make_order = []() constexpr {
+    return 订单_t{u8"ORD-001", 用户_t{u8"李四", 25}, 100};
+  };
+  EXPECT_EQ_STATIC(u8R"({"编号":"ORD-001","用户":{"姓名":"李四","年龄":25},"金额":100})",
+                   rfl::serialize_to_json<char8_t>(make_order()));
+}
+
+TEST(TypeOperationsSerializeToJson, NonAsciiNestedStructIndented) {
+  using namespace test_non_ascii_serialize;
+  constexpr auto make_order = []() constexpr {
+    return 订单_t{u8"ORD-001", 用户_t{u8"李四", 25}, 100};
+  };
+  EXPECT_EQ_STATIC(
+      u8R"({
+  "编号": "ORD-001",
+  "用户": {
+    "姓名": "李四",
+    "年龄": 25
+  },
+  "金额": 100
+})",
+      rfl::serialize_to_json<char8_t>(make_order(), 2, ' '));
+}
+
+TEST(TypeOperationsSerializeToJson, NonAsciiEnum) {
+  using namespace test_non_ascii_serialize;
+  constexpr rfl::serialize_options opts{.enum_to_string = true};
+  EXPECT_EQ_STATIC(u8R"("红色")", (rfl::serialize_to_json<char8_t, opts>(颜色_t::红色)));
+  EXPECT_EQ_STATIC(u8R"("绿色")", (rfl::serialize_to_json<char8_t, opts>(颜色_t::绿色)));
+  EXPECT_EQ_STATIC(u8R"("蓝色")", (rfl::serialize_to_json<char8_t, opts>(颜色_t::蓝色)));
+}
+
+TEST(TypeOperationsSerializeToJson, NonAsciiEnumChar16T) {
+  using namespace test_non_ascii_serialize;
+  constexpr rfl::serialize_options opts{.enum_to_string = true};
+  EXPECT_EQ_STATIC(uR"("红色")", (rfl::serialize_to_json<char16_t, opts>(颜色_t::红色)));
+  EXPECT_EQ_STATIC(uR"("绿色")", (rfl::serialize_to_json<char16_t, opts>(颜色_t::绿色)));
+  EXPECT_EQ_STATIC(uR"("蓝色")", (rfl::serialize_to_json<char16_t, opts>(颜色_t::蓝色)));
+}
+
+TEST(TypeOperationsSerializeToJson, NonAsciiEnumChar32T) {
+  using namespace test_non_ascii_serialize;
+  constexpr rfl::serialize_options opts{.enum_to_string = true};
+  EXPECT_EQ_STATIC(UR"("红色")", (rfl::serialize_to_json<char32_t, opts>(颜色_t::红色)));
+  EXPECT_EQ_STATIC(UR"("绿色")", (rfl::serialize_to_json<char32_t, opts>(颜色_t::绿色)));
+  EXPECT_EQ_STATIC(UR"("蓝色")", (rfl::serialize_to_json<char32_t, opts>(颜色_t::蓝色)));
+}
+
+TEST(TypeOperationsSerializeToJson, NonAsciiEnumFlag) {
+  using namespace rfl::enum_bitwise_operators;
+  using namespace test_non_ascii_serialize;
+  constexpr rfl::serialize_options opts{.enum_to_string = true};
+  EXPECT_EQ_STATIC(u8R"("読み取り")", (rfl::serialize_to_json<char8_t, opts>(フラグ_t::読み取り)));
+  EXPECT_THAT((rfl::serialize_to_json<char8_t, opts>(フラグ_t::読み取り | フラグ_t::書き込み)),
+              testing::AnyOf(u8R"("読み取り|書き込み")", u8R"("書き込み|読み取り")"));
+  EXPECT_THAT((rfl::serialize_to_json<char8_t, opts>(フラグ_t::読み取り | フラグ_t::書き込み
+                                                     | フラグ_t::実行)),
+              testing::AnyOf(u8R"("読み取り|書き込み|実行")",
+                             u8R"("読み取り|実行|書き込み")",
+                             u8R"("書き込み|読み取り|実行")",
+                             u8R"("書き込み|実行|読み取り")",
+                             u8R"("実行|読み取り|書き込み")",
+                             u8R"("実行|書き込み|読み取り")"));
+}
+
+TEST(TypeOperationsSerializeToJson, NonAsciiEnumFlagEmptySet) {
+  using namespace test_non_ascii_serialize;
+  constexpr rfl::serialize_options opts{.enum_to_string = true};
+  EXPECT_EQ_STATIC(u8R"("")", (rfl::serialize_to_json<char8_t, opts>(static_cast<フラグ_t>(0))));
+}
+
+TEST(TypeOperationsSerializeToJson, NonAsciiEnumFlagInvalid) {
+  using namespace test_non_ascii_serialize;
+  constexpr rfl::serialize_options opts{.enum_to_string = true, .halts_on_invalid_enum = true};
+  EXPECT_EQ_STATIC(std::nullopt, (rfl::serialize_to_json<char8_t, opts>(static_cast<フラグ_t>(8))));
+}
+
+TEST(TypeOperationsSerializeToJson, NonAsciiStructWithEnum) {
+  using namespace rfl::enum_bitwise_operators;
+  using namespace test_non_ascii_serialize;
+  constexpr rfl::serialize_options opts{.enum_to_string = true};
+  constexpr auto make_cfg = []() constexpr {
+    return 配置_t{u8"服务器", 颜色_t::蓝色, フラグ_t::読み取り | フラグ_t::実行, {1, 2, 3}};
+  };
+  auto result = rfl::serialize_to_json<char8_t, opts>(make_cfg());
+  EXPECT_THAT(
+      result,
+      testing::AnyOf(u8R"({"名称":"服务器","颜色":"蓝色","权限":"読み取り|実行","数据":[1,2,3]})",
+                     u8R"({"名称":"服务器","颜色":"蓝色","权限":"実行|読み取り","数据":[1,2,3]})"));
+}
+
+TEST(TypeOperationsSerializeToJson, NonAsciiStructWithEnumIndented) {
+  using namespace rfl::enum_bitwise_operators;
+  using namespace test_non_ascii_serialize;
+  constexpr rfl::serialize_options opts{.enum_to_string = true};
+  constexpr auto make_cfg = []() constexpr {
+    return 配置_t{u8"服务器", 颜色_t::蓝色, フラグ_t::読み取り | フラグ_t::実行, {1, 2, 3}};
+  };
+  auto result = rfl::serialize_to_json<char8_t, opts>(make_cfg(), 2, ' ');
+  EXPECT_THAT(result,
+              testing::AnyOf(u8R"({
+  "名称": "服务器",
+  "颜色": "蓝色",
+  "权限": "読み取り|実行",
+  "数据": [
+    1,
+    2,
+    3
+  ]
+})",
+                             u8R"({
+  "名称": "服务器",
+  "颜色": "蓝色",
+  "权限": "実行|読み取り",
+  "数据": [
+    1,
+    2,
+    3
+  ]
+})"));
+}
+
 namespace test_struct_with_variant {
 struct container_t {
   std::variant<int, std::string> v1;

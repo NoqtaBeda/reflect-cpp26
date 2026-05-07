@@ -1,7 +1,6 @@
 # Prerequisites
 
-- Recommended: GCC Trunk
-- Legacy: [Experimental LLVM fork with C++26 Reflection support](https://github.com/bloomberg/clang-p2996/tree/p2996)
+- GCC 16.1 or later
 
 # Build & Run Test Cases
 
@@ -18,32 +17,26 @@ xmake f -m <debug|release> \
         --toolchain=gcc \
         (optional parameters see above)
 
-# Using experimental LLVM fork with C++26 Reflection support
-xmake f -m <debug|release> \
-        --sdk=<llvm-root> \
-        --cxxflags="-stdlib=libc++" \
-        --ldflags="-stdlib=libc++" \
-        --cxxflags="-freflection-latest" \
-        --toolchain=llvm  \
-        (optional parameters see above)
-
 # Build and run
 xmake run --group=tests/**
-# Using experimental LLVM: Build and run with libc++
-LD_LIBRARY_PATH=<path-to-libc++> xmake run --group=tests/**
 ```
 
 # TODO
 
-- Replace `structural_type` to the standard [`std::is_structural_type_v`](https://www.open-std.org/JTC1/SC22/WG21/docs/papers/2025/p3856r3.pdf) once it is implemented by the compiler.
+- Fix `structural_type` implementation
 - `fixed_set`
-- utils:
-  - `append_*_unsafe` and `reserve_and_append` for string builder
-- enum:
-  - `enum_flags_name_to` with string builder
 - lookup:
   - Complete redesign
 - type_operations
   - Serialize to YAML
-  - Deserialize from JSON or YAML
-  - Performance fix to JSON serializer & dumper
+
+`structural_type` can be replaced by the standard [`std::is_structural_type_v`](https://www.open-std.org/JTC1/SC22/WG21/docs/papers/2025/p3856r8.pdf) yet it's not supported by GCC 16.1. Our own `structural_type` implementation shall be preserved:
+
+```cpp
+#if __cpp_lib_is_structural >= 2026XXL
+template <class T>
+concept structural_type = std::is_structural_type_v<T>;
+#else
+// Our own implementation
+#endif
+```

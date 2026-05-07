@@ -46,6 +46,11 @@ constexpr auto enum_names_array_v = enum_names<E, Order>();
 
 template <enum_type E, enum_entry_order Order = enum_entry_order::original>
 constexpr auto enum_names_v = std::span{impl::enum_names_array_v<std::remove_cv_t<E>, Order>};
+
+template <enum_type E>
+constexpr auto enum_names_are_ascii_only_v = std::ranges::all_of(
+    enum_meta_entries_v<std::remove_cv_t<E>, enum_entry_order::original>,
+    [](std::meta::info entry) { return is_ascii_string(std::meta::identifier_of(entry)); });
 }  // namespace reflect_cpp26
 
 #endif  // REFLECT_CPP26_ENUM_ENUM_NAMES_HPP

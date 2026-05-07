@@ -27,11 +27,18 @@
 #include <iostream>
 #include <reflect_cpp26/enum/impl/enum_flags.hpp>
 #include <reflect_cpp26/utils/concepts.hpp>
+#include <reflect_cpp26/utils/string_builder.hpp>
 
 namespace reflect_cpp26 {
+enum class to_string_status {
+  done = 0,
+  invalid_input = 1,
+  buffer_run_out = 2,
+};
+
 template <class Iter>
 struct enum_flags_name_to_result {
-  std::errc ec;
+  to_string_status status;
   Iter out;
 };
 
@@ -89,10 +96,10 @@ constexpr auto regular_enum_flags_name_to_impl(Iter iter, Sentinel sentinel, E f
   constexpr const auto& decomp = enum_flags_decomposer_v<E>;
   auto remaining = unsigned_promoted(flags);
   if (remaining == 0) {
-    return {.ec = std::errc{}, .out = iter};  // Nothing to copy from ""
+    return {.status = to_string_status::done, .out = iter};  // Nothing to copy from ""
   }
   if ((remaining & decomp.full_set) != remaining) {
-    return {.ec = std::errc::invalid_argument, .out = iter};
+    return {.status = to_string_status::invalid_input, .out = iter};
   }
 
   // First pass checks whether flags can be decomposed
@@ -100,7 +107,7 @@ constexpr auto regular_enum_flags_name_to_impl(Iter iter, Sentinel sentinel, E f
     if constexpr (std::popcount(e.underlying) != 1) {
       auto intersection = remaining & e.underlying;
       if (intersection != e.underlying && intersection != 0) {
-        return {.ec = std::errc::invalid_argument, .out = iter};
+        return {.status = to_string_status::invalid_input, .out = iter};
       }
     }
   }
@@ -109,15 +116,15 @@ constexpr auto regular_enum_flags_name_to_impl(Iter iter, Sentinel sentinel, E f
   template for (constexpr auto e : decomp.units) {
     if ((remaining & e.underlying) != 0) {
       if (!is_first && !do_copy_segment(iter, sentinel, delim)) {
-        return {.ec = std::errc::value_too_large, .out = iter};
+        return {.status = to_string_status::buffer_run_out, .out = iter};
       }
       is_first = false;
       if (!do_copy_segment(iter, sentinel, e.name)) {
-        return {.ec = std::errc::value_too_large, .out = iter};
+        return {.status = to_string_status::buffer_run_out, .out = iter};
       }
     }
   }
-  return {.ec = std::errc{}, .out = iter};  // OK
+  return {.status = to_string_status::done, .out = iter};  // OK
 }
 
 template <class Iter, class Sentinel, class E, class Delim>
@@ -126,13 +133,13 @@ constexpr auto irregular_enum_flags_name_to_impl(Iter iter, Sentinel sentinel, E
   constexpr const auto& decomp = enum_flags_decomposer_v<E>;
   auto underlying = unsigned_promoted(flags);
   if (underlying == 0) {
-    return {.ec = std::errc{}, .out = iter};  // Nothing to copy from ""
+    return {.status = to_string_status::done, .out = iter};  // Nothing to copy from ""
   }
   if ((underlying & decomp.full_set) != underlying) {
-    return {.ec = std::errc::invalid_argument, .out = iter};
+    return {.status = to_string_status::invalid_input, .out = iter};
   }
 
-  // First passchecks whether flags can be decomposed properly
+  // First pass checks whether flags can be decomposed properly
   auto covered = unsigned_promoted_t<E>{0};
   for (auto i = 0zU, n = decomp.units.size(); i < n; i++) {
     auto u = decomp.units[i].underlying;
@@ -141,7 +148,7 @@ constexpr auto irregular_enum_flags_name_to_impl(Iter iter, Sentinel sentinel, E
     }
   }
   if (covered != underlying) {
-    return {.ec = std::errc::invalid_argument, .out = iter};
+    return {.status = to_string_status::invalid_input, .out = iter};
   }
 
   // Second pass generates the flags string
@@ -153,11 +160,11 @@ constexpr auto irregular_enum_flags_name_to_impl(Iter iter, Sentinel sentinel, E
       continue;
     }
     if (covered != 0 && !do_copy_segment(iter, sentinel, delim)) {
-      return {.ec = std::errc::value_too_large, .out = iter};
+      return {.status = to_string_status::buffer_run_out, .out = iter};
     }
     auto cur_name = decomp.units[i].name;
     if (!do_copy_segment(iter, sentinel, cur_name)) {
-      return {.ec = std::errc::value_too_large, .out = iter};
+      return {.status = to_string_status::buffer_run_out, .out = iter};
     }
     if ((covered |= u) == underlying) {
       break;
@@ -167,15 +174,16 @@ constexpr auto irregular_enum_flags_name_to_impl(Iter iter, Sentinel sentinel, E
       vis[decomp.subset_indices[j]] = true;
     }
   }
-  return {.ec = std::errc{}, .out = iter};
+  return {.status = to_string_status::done, .out = iter};
 }
 
 template <class Iter, class Sentinel, class E, class Delim>
 constexpr auto enum_flags_name_to_impl(Iter iter, Sentinel sentinel, E flags, Delim delim)
     -> enum_flags_name_to_result<Iter> {
   if constexpr (enum_flags_is_empty_v<E>) {
-    auto ec = (std::to_underlying(flags) != 0) ? std::errc::invalid_argument : std::errc{};
-    return {.ec = ec, .out = iter};
+    auto status =
+        (std::to_underlying(flags) != 0) ? to_string_status::invalid_input : to_string_status::done;
+    return {.status = status, .out = iter};
   } else if constexpr (enum_flags_is_regular_v<E>) {
     return regular_enum_flags_name_to_impl(iter, sentinel, flags, delim);
   } else {
@@ -197,8 +205,8 @@ constexpr auto enum_flags_name_impl(E flags, Delim delim) -> std::optional<std::
     auto res = std::string{};
     auto ok = false;
     res.resize_and_overwrite(reserved_size, [&](char* buffer, size_t) {
-      auto [ec, out] = enum_flags_name_to_impl(buffer, std::unreachable_sentinel, flags, delim);
-      ok = (std::errc{} == ec);
+      auto [status, out] = enum_flags_name_to_impl(buffer, std::unreachable_sentinel, flags, delim);
+      ok = (to_string_status::done == status);
       return out - buffer;
     });
     if (!ok) {
@@ -236,18 +244,52 @@ struct enum_flags_name_to_t {
   }
 
   template <enum_type E>
-  static constexpr auto operator()(std::ostream& out, E value, char delim = '|') -> std::errc {
-    auto [ec, _] = impl::enum_flags_name_to_impl(
+  static constexpr auto operator()(std::ostream& out, E value, char delim = '|')
+      -> to_string_status {
+    auto [status, _] = impl::enum_flags_name_to_impl(
         std::ostreambuf_iterator<char>(out), std::unreachable_sentinel, value, delim);
-    return ec;
+    return status;
   }
 
   template <enum_type E>
   static constexpr auto operator()(std::ostream& out, E value, std::string_view delim)
-      -> std::errc {
-    auto [ec, _] = impl::enum_flags_name_to_impl(
+      -> to_string_status {
+    auto [status, _] = impl::enum_flags_name_to_impl(
         std::ostreambuf_iterator<char>(out), std::unreachable_sentinel, value, delim);
-    return ec;
+    return status;
+  }
+
+  template <enum_type E>
+  static constexpr auto operator()(string_builder& dest, E value, char delim = '|')
+      -> to_string_status {
+    if constexpr (impl::enum_flags_is_empty_v<E>) {
+      return (std::to_underlying(value) == 0) ? to_string_status::done
+                                              : to_string_status::invalid_input;
+    } else {
+      constexpr const auto& decomp = impl::enum_flags_decomposer_v<E>;
+      auto reserved_size = impl::enum_flag_names_sum_length_v<E> + decomp.units.size();
+      dest.reserve_at_least(reserved_size);
+      auto [status, _] =
+          impl::enum_flags_name_to_impl(dest.out_unsafe(), std::unreachable_sentinel, value, delim);
+      return status;
+    }
+  }
+
+  template <enum_type E>
+  static constexpr auto operator()(string_builder& dest, E value, std::string_view delim)
+      -> to_string_status {
+    if constexpr (impl::enum_flags_is_empty_v<E>) {
+      return (std::to_underlying(value) == 0) ? to_string_status::done
+                                              : to_string_status::invalid_input;
+    } else {
+      constexpr const auto& decomp = impl::enum_flags_decomposer_v<E>;
+      auto reserved_size =
+          impl::enum_flag_names_sum_length_v<E> + delim.length() * decomp.units.size();
+      dest.reserve_at_least(reserved_size);
+      auto [status, _] =
+          impl::enum_flags_name_to_impl(dest.out_unsafe(), std::unreachable_sentinel, value, delim);
+      return status;
+    }
   }
 };
 
